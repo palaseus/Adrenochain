@@ -1,0 +1,61 @@
+# GoChain Configuration File
+
+# Network Configuration
+network:
+  listen_port: 0  # 0 for random port
+  bootstrap_peers: []
+  enable_mdns: true
+  enable_relay: false
+  max_peers: 50
+  connection_timeout: 30s
+
+# Blockchain Configuration
+blockchain:
+  genesis_block_reward: 1000000000  # 1 billion units
+  block_time: 10s
+  difficulty_adjustment_interval: 2016
+  target_block_time: 10s
+  max_block_size: 1000000  # 1MB
+
+# Mining Configuration
+mining:
+  enabled: false
+  mining_threads: 1
+  block_time: 10s
+  max_block_size: 1000000
+  coinbase_address: "miner_reward"
+  coinbase_reward: 1000000000
+
+# Mempool Configuration
+mempool:
+  max_size: 100000  # 100KB
+  min_fee_rate: 1   # 1 unit per byte
+
+# Wallet Configuration
+wallet:
+  key_type: "ecdsa"  # ecdsa or ed25519
+  passphrase: ""
+
+# Storage Configuration
+storage:
+  data_dir: "./data"
+  db_type: "badger"  # badger or leveldb
+
+# Logging Configuration
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "text"  # text or json
+  output: "stdout"  # stdout, stderr, or file path
+
+# API Configuration
+api:
+  enabled: false
+  listen_addr: "127.0.0.1:8080"
+  cors_enabled: true
+  rate_limit: 1000  # requests per minute
+
+# Metrics Configuration
+metrics:
+  enabled: false
+  listen_addr: "127.0.0.1:9090"
+  collect_interval: 15s 
