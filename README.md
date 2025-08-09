@@ -165,7 +165,7 @@ This codebase is educational and not hardened. Notable findings and recommendati
   - Some maps are protected with RWMutex; access patterns are straightforward. Nevertheless, there is no shutdown orchestration across subsystems besides best-effort closes.
 
 - Testing
-  - Unit tests exist for `block`, `chain`, `wallet`. No tests for miner, mempool, net, or storage. Recommendation: expand test coverage, fuzz transaction encoding/decoding and signature verification.
+  - Unit tests exist for `block`, `chain`, `wallet`, and `net`. Placeholder tests have been added for `pkg/proto/net` and `proto/net`. Recommendation: expand test coverage for `miner`, `mempool`, and `storage`, and add more comprehensive tests for `net`, including fuzzing transaction encoding/decoding and signature verification.
 
 Given these points, do not use this codebase for production networks or managing real value.
 
