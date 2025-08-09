@@ -2,11 +2,17 @@ package wallet
 
 import (
 	"testing"
+	"github.com/gochain/gochain/pkg/utxo"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"encoding/hex"
 )
 
 func TestNewWallet(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
@@ -43,7 +49,8 @@ func TestDefaultWalletConfig(t *testing.T) {
 
 func TestCreateDefaultAccount(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
@@ -76,7 +83,8 @@ func TestCreateDefaultAccount(t *testing.T) {
 
 func TestCreateAccount(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
@@ -117,21 +125,20 @@ func TestCreateAccount(t *testing.T) {
 	}
 
 	if retrievedAccount != account {
-		t.Error("Retrieved account is not the same as created account")
-	}
+		t.Error("Retrieved account is not the same as created account")	}
 }
 
 func TestGetAllAccounts(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
 
 	accounts := wallet.GetAllAccounts()
 	if len(accounts) == 0 {
-		t.Fatal("No accounts found")
-	}
+		t.Fatal("No accounts found")	}
 
 	// Should have at least the default account
 	if len(accounts) < 1 {
@@ -148,13 +155,20 @@ func TestGetAllAccounts(t *testing.T) {
 
 func TestCreateTransaction(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
 
 	fromAccount := wallet.GetDefaultAccount()
-	toAddress := "recipient_address_123"
+	// Generate a valid recipient address
+	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate recipient key: %v", err)
+	}
+	// Removed: toPubKey := &toPrivKey.PublicKey
+	toAddress := hex.EncodeToString(wallet.generateAddress(toPrivKey))
 	amount := uint64(1000)
 	fee := uint64(10)
 
@@ -191,13 +205,20 @@ func TestCreateTransaction(t *testing.T) {
 
 func TestSignTransaction(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
 
 	fromAccount := wallet.GetDefaultAccount()
-	toAddress := "recipient_address_123"
+	// Generate a valid recipient address
+	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate recipient key: %v", err)
+	}
+	// Removed: toPubKey := &toPrivKey.PublicKey
+	toAddress := hex.EncodeToString(wallet.generateAddress(toPrivKey))
 	amount := uint64(1000)
 	fee := uint64(10)
 
@@ -225,7 +246,8 @@ func TestSignTransaction(t *testing.T) {
 
 func TestUpdateBalance(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
@@ -251,7 +273,8 @@ func TestUpdateBalance(t *testing.T) {
 
 func TestImportPrivateKey(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
@@ -286,7 +309,8 @@ func TestImportPrivateKey(t *testing.T) {
 
 func TestExportPrivateKey(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
@@ -309,7 +333,8 @@ func TestExportPrivateKey(t *testing.T) {
 
 func TestWalletString(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}
@@ -322,7 +347,8 @@ func TestWalletString(t *testing.T) {
 
 func TestAccountString(t *testing.T) {
 	config := DefaultWalletConfig()
-	wallet, err := NewWallet(config)
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us)
 	if err != nil {
 		t.Fatalf("Failed to create wallet: %v", err)
 	}

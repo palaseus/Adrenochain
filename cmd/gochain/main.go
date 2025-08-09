@@ -19,6 +19,7 @@ import (
 	proto_net "github.com/gochain/gochain/pkg/proto/net"
 	"github.com/gochain/gochain/pkg/storage"
 	"github.com/gochain/gochain/pkg/wallet"
+	"github.com/gochain/gochain/pkg/utxo"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -304,7 +305,10 @@ func createWalletCmd() *cobra.Command {
 		Short: "Create a new wallet",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			walletConfig := wallet.DefaultWalletConfig()
-			wallet, err := wallet.NewWallet(walletConfig)
+			// In a real application, the UTXOSet would be passed from the main node
+			// For CLI commands, we'll create a dummy one for now.
+			us := utxo.NewUTXOSet()
+			wallet, err := wallet.NewWallet(walletConfig, us)
 			if err != nil {
 				return fmt.Errorf("failed to create wallet: %w", err)
 			}
@@ -328,7 +332,10 @@ func createTransactionCmd() *cobra.Command {
 		Short: "Send a transaction",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			walletConfig := wallet.DefaultWalletConfig()
-			wallet, err := wallet.NewWallet(walletConfig)
+			// In a real application, the UTXOSet would be passed from the main node
+			// For CLI commands, we'll create a dummy one for now.
+			us := utxo.NewUTXOSet()
+			wallet, err := wallet.NewWallet(walletConfig, us)
 			if err != nil {
 				return fmt.Errorf("failed to create wallet: %w", err)
 			}
@@ -369,7 +376,10 @@ func getBalanceCmd() *cobra.Command {
 		Short: "Get account balance",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			walletConfig := wallet.DefaultWalletConfig()
-			wallet, err := wallet.NewWallet(walletConfig)
+			// In a real application, the UTXOSet would be passed from the main node
+			// For CLI commands, we'll create a dummy one for now.
+			us := utxo.NewUTXOSet()
+			wallet, err := wallet.NewWallet(walletConfig, us)
 			if err != nil {
 				return fmt.Errorf("failed to create wallet: %w", err)
 			}

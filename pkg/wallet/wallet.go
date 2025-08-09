@@ -9,11 +9,9 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
-	// "crypto/aes" // Removed unused import
-	// "crypto/cipher" // Removed unused import
-	// "io" // Removed unused import
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/utxo"
 )
 
 // Wallet represents a cryptocurrency wallet
@@ -22,6 +20,7 @@ type Wallet struct {
 	accounts   map[string]*Account
 	defaultKey *ecdsa.PrivateKey
 	keyType    KeyType
+	utxoSet    *utxo.UTXOSet
 }
 
 // Account represents a wallet account
@@ -56,10 +55,11 @@ func DefaultWalletConfig() *WalletConfig {
 }
 
 // NewWallet creates a new wallet
-func NewWallet(config *WalletConfig) (*Wallet, error) {
+func NewWallet(config *WalletConfig, us *utxo.UTXOSet) (*Wallet, error) {
 	wallet := &Wallet{
 		accounts: make(map[string]*Account),
 		keyType:  config.KeyType,
+		utxoSet:  us,
 		// storage:  config.Storage,
 	}
 
@@ -173,7 +173,8 @@ func (w *Wallet) Decrypt(data []byte) ([]byte, error) {
 
 // createDefaultAccount creates the default account from the default key
 func (w *Wallet) createDefaultAccount() error {
-	address := w.generateAddress(w.defaultKey)
+	addressBytes := w.generateAddress(w.defaultKey)
+	address := hex.EncodeToString(addressBytes)
 
 	account := &Account{
 		Address:    address,
@@ -191,7 +192,7 @@ func (w *Wallet) createDefaultAccount() error {
 }
 
 // generateAddress generates an address from a private key
-func (w *Wallet) generateAddress(privateKey *ecdsa.PrivateKey) string {
+func (w *Wallet) generateAddress(privateKey *ecdsa.PrivateKey) []byte {
 	publicKey := privateKey.Public().(*ecdsa.PublicKey)
 	publicKeyBytes := publicKeyToBytes(publicKey)
 
@@ -201,7 +202,7 @@ func (w *Wallet) generateAddress(privateKey *ecdsa.PrivateKey) string {
 	// Take the last 20 bytes as the address
 	address := hash[len(hash)-20:]
 
-	return hex.EncodeToString(address)
+	return address
 }
 
 // CreateAccount creates a new account
@@ -222,7 +223,8 @@ func (w *Wallet) CreateAccount() (*Account, error) {
 		}
 	}
 
-	address := w.generateAddress(privateKey)
+	addressBytes := w.generateAddress(privateKey)
+	address := hex.EncodeToString(addressBytes)
 
 	account := &Account{
 		Address:    address,
@@ -295,9 +297,13 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 	outputs := make([]*block.TxOutput, 0)
 
 	// Output to recipient
+	recipientPubKeyHash, err := addressToPubKeyHash(toAddress)
+	if err != nil {
+		return nil, fmt.Errorf("invalid recipient address: %w", err)
+	}
 	outputs = append(outputs, &block.TxOutput{
 		Value:        amount,
-		ScriptPubKey: []byte(toAddress),
+		ScriptPubKey: recipientPubKeyHash,
 	})
 
 	// No change output is created in this simplified model
@@ -496,7 +502,8 @@ func (w *Wallet) ImportPrivateKey(privateKeyHex string) (*Account, error) {
 	}
 
 	// Generate address
-	address := w.generateAddress(privateKey)
+	addressBytes := w.generateAddress(privateKey)
+	address := hex.EncodeToString(addressBytes)
 
 	// Check if account already exists; return the existing account instead of error
 	if existing := w.GetAccount(address); existing != nil {
@@ -585,4 +592,17 @@ func concatRS(r, s *big.Int) []byte {
 	copy(out[32-len(rb):32], rb)
 	copy(out[64-len(sb):], sb)
 	return out
+}
+
+// addressToPubKeyHash converts a hex-encoded address string to its byte representation (public key hash)
+func addressToPubKeyHash(address string) ([]byte, error) {
+	pubKeyHash, err := hex.DecodeString(address)
+	if err != nil {
+		return nil, fmt.Errorf("invalid address hex: %w", err)
+	}
+	// A valid address is 20 bytes (after hashing public key and taking last 20 bytes)
+	if len(pubKeyHash) != 20 {
+		return nil, fmt.Errorf("invalid address length: %d", len(pubKeyHash))
+	}
+	return pubKeyHash, nil
 }

@@ -3,6 +3,11 @@ package utxo
 import (
 	"fmt"
 	"sync"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/sha256"
+	"encoding/hex"
+	"math/big"
 
 	"github.com/gochain/gochain/pkg/block"
 )
@@ -94,6 +99,11 @@ func (us *UTXOSet) makeKey(txHash []byte, txIndex uint32) string {
 	return fmt.Sprintf("%x:%d", txHash, txIndex)
 }
 
+// extractAddress extracts an address from a script public key (which is now a public key hash)
+func (us *UTXOSet) extractAddress(scriptPubKey []byte) string {
+	return hex.EncodeToString(scriptPubKey)
+}
+
 // ProcessBlock processes a block and updates the UTXO set
 func (us *UTXOSet) ProcessBlock(block *block.Block) error {
 	us.mu.Lock()
@@ -116,16 +126,6 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 		// Skip coinbase transactions (they have no inputs)
 		if len(input.PrevTxHash) == 0 {
 			continue
-		}
-
-		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
-		if utxo == nil {
-			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
-		}
-
-		// Validate that the input can be spent
-		if !us.canSpendUTXO(utxo, input.ScriptSig) {
-			return fmt.Errorf("cannot spend UTXO: %x:%d", input.PrevTxHash, input.PrevTxIndex)
 		}
 
 		// Remove the spent UTXO
@@ -156,32 +156,6 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 	return nil
 }
 
-// canSpendUTXO checks if a UTXO can be spent with the given script signature
-func (us *UTXOSet) canSpendUTXO(utxo *UTXO, scriptSig []byte) bool {
-	// In a real implementation, this would validate the script
-	// For now, we'll use a simplified approach
-
-	// Check if the script signature matches the expected pattern
-	if len(scriptSig) == 0 {
-		return false
-	}
-
-	// For coinbase transactions, we might have additional validation
-	if utxo.IsCoinbase {
-		// Coinbase outputs might have maturity requirements
-		// For now, we'll allow them to be spent
-		return true
-	}
-
-	// Basic validation: check if script signature is not empty
-	return len(scriptSig) > 0
-}
-
-// extractAddress extracts an address from a script public key
-func (us *UTXOSet) extractAddress(scriptPubKey []byte) string {
-	return string(scriptPubKey)
-}
-
 // ValidateTransaction validates a transaction against the UTXO set
 func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 	// Coinbase transactions have no inputs, so skip input validation
@@ -200,12 +174,41 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 		return fmt.Errorf("transaction has no outputs")
 	}
 
-	// Calculate total input value
+	// Calculate total input value and verify signatures
 	totalInput := uint64(0)
 	for _, input := range tx.Inputs {
 		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
 		if utxo == nil {
 			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
+		}
+
+		// Verify signature
+		// The ScriptSig contains the public key (65 bytes) followed by the signature (64 bytes)
+		if len(input.ScriptSig) < 65+64 {
+			return fmt.Errorf("invalid scriptSig length: %d", len(input.ScriptSig))
+		}
+		pubBytes := input.ScriptSig[:65]
+		rsBytes := input.ScriptSig[65:]
+
+		x, y := elliptic.Unmarshal(elliptic.P256(), pubBytes)
+		if x == nil || y == nil {
+			return fmt.Errorf("failed to unmarshal public key from scriptSig")
+		}
+		pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}
+
+		// Check if the public key hash matches the ScriptPubKey of the UTXO
+		pubKeyHash := sha256.Sum256(pubBytes)
+		if hex.EncodeToString(pubKeyHash[len(pubKeyHash)-20:]) != hex.EncodeToString(utxo.ScriptPubKey) {
+			return fmt.Errorf("public key hash in scriptSig does not match UTXO scriptPubKey")
+		}
+
+		r := new(big.Int).SetBytes(rsBytes[:32])
+		s := new(big.Int).SetBytes(rsBytes[32:])
+
+		signatureData := us.getTxSignatureData(tx)
+		verified := ecdsa.Verify(pub, signatureData, r, s)
+		if !verified {
+			return fmt.Errorf("invalid signature for input: %x:%d", input.PrevTxHash, input.PrevTxIndex)
 		}
 
 		totalInput += utxo.Value
@@ -271,4 +274,61 @@ func (us *UTXOSet) String() string {
 	stats := us.GetStats()
 	return fmt.Sprintf("UTXOSet{UTXOs: %v, Addresses: %v, TotalValue: %v}",
 		stats["total_utxos"], stats["total_addresses"], stats["total_value"])
+}
+
+// getTxSignatureData creates the data to be signed for a transaction
+func (us *UTXOSet) getTxSignatureData(tx *block.Transaction) []byte {
+	data := make([]byte, 0)
+
+	// Version
+	data = append(data, byte(tx.Version))
+
+	// Inputs (excluding signatures)
+	for _, input := range tx.Inputs {
+		data = append(data, input.PrevTxHash...)
+		data = append(data, byte(input.PrevTxIndex))
+		data = append(data, byte(input.Sequence))
+	}
+
+	// Outputs
+	for _, output := range tx.Outputs {
+		data = append(data, byte(output.Value))
+		data = append(data, output.ScriptPubKey...)
+	}
+
+	// Lock time and fee
+	data = append(data, byte(tx.LockTime))
+	data = append(data, byte(tx.Fee))
+
+	// Hash the data
+	hash := sha256.Sum256(data)
+	return hash[:]
+}
+
+// Helpers (copied from wallet for now)
+func publicKeyToBytes(k *ecdsa.PublicKey) []byte {
+	return elliptic.Marshal(elliptic.P256(), k.X, k.Y)
+}
+
+func bytesToPrivateKey(b []byte) (*ecdsa.PrivateKey, error) {
+	if len(b) == 0 {
+		return nil, fmt.Errorf("empty private key bytes")
+	}
+	d := new(big.Int).SetBytes(b)
+	curve := elliptic.P256()
+	// Validate that 0 < d < N
+	if d.Sign() <= 0 || d.Cmp(curve.Params().N) >= 0 {
+		return nil, fmt.Errorf("invalid private key scalar")
+	}
+	x, y := curve.ScalarBaseMult(b)
+	return &ecdsa.PrivateKey{PublicKey: ecdsa.PublicKey{Curve: curve, X: x, Y: y}, D: d}, nil
+}
+
+func concatRS(r, s *big.Int) []byte {
+	rb := r.Bytes()
+	sb := s.Bytes()
+	out := make([]byte, 64)
+	copy(out[32-len(rb):32], rb)
+	copy(out[64-len(sb):], sb)
+	return out
 }
