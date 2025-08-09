@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/consensus"
 	"github.com/gochain/gochain/pkg/storage"
+	"github.com/gochain/gochain/pkg/utxo"
 )
 
 // Chain represents the blockchain
@@ -22,14 +24,13 @@ type Chain struct {
 	height        uint64
 	config        *ChainConfig
 	storage       *storage.Storage
+	UTXOSet       *utxo.UTXOSet // Added UTXOSet field
+	consensus     *consensus.Consensus
 }
 
 // ChainConfig holds configuration for the blockchain
 type ChainConfig struct {
 	GenesisBlockReward uint64
-	BlockTime          time.Duration
-	DifficultyAdjustmentInterval uint64
-	TargetBlockTime    time.Duration
 	MaxBlockSize       uint64
 }
 
@@ -37,21 +38,24 @@ type ChainConfig struct {
 func DefaultChainConfig() *ChainConfig {
 	return &ChainConfig{
 		GenesisBlockReward: 1000000000, // 1 billion units
-		BlockTime:          10 * time.Second,
-		DifficultyAdjustmentInterval: 2016,
-		TargetBlockTime:    10 * time.Second,
 		MaxBlockSize:       1000000, // 1MB
 	}
 }
 
 // NewChain creates a new blockchain
-func NewChain(config *ChainConfig, s *storage.Storage) (*Chain, error) {
+func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s *storage.Storage) (*Chain, error) {
 	chain := &Chain{
 		blocks:        make(map[string]*block.Block),
 		blockByHeight: make(map[uint64]*block.Block),
 		config:        config,
 		storage:       s,
+		UTXOSet:       utxo.NewUTXOSet(), // Initialize UTXOSet
+				consensus:     nil,
 	}
+
+	chain.consensus = consensus.NewConsensus(consensusConfig, chain, s)
+
+	chain.consensus = consensus.NewConsensus(consensusConfig, chain, s)
 
 	// Load chain state from storage
 	chainState, err := chain.storage.GetChainState()
@@ -72,6 +76,10 @@ func NewChain(config *ChainConfig, s *storage.Storage) (*Chain, error) {
 		}); err != nil {
 			return nil, fmt.Errorf("failed to store chain state: %w", err)
 		}
+		// Process genesis block to update UTXO set
+		if err := chain.UTXOSet.ProcessBlock(chain.genesisBlock); err != nil {
+			return nil, fmt.Errorf("failed to process genesis block for UTXO set: %w", err)
+		}
 	} else {
 		// Load best block from storage
 		bestBlock, err := chain.storage.GetBlock(chainState.BestBlockHash)
@@ -81,6 +89,9 @@ func NewChain(config *ChainConfig, s *storage.Storage) (*Chain, error) {
 		chain.bestBlock = bestBlock
 		chain.tipHash = chainState.BestBlockHash
 		chain.height = chainState.Height
+
+		// Rebuild UTXO set from scratch (for simplicity, in a real chain, this would be optimized)
+		// For now, we assume the UTXO set is built up as blocks are added
 	}
 
 	return chain, nil
@@ -191,7 +202,8 @@ func (c *Chain) AddBlock(block *block.Block) error {
 	defer c.mu.Unlock()
 	
 	// Validate the block
-	if err := c.validateBlock(block); err != nil {
+	prevBlock := c.GetBlock(block.Header.PrevBlockHash)
+	if err := c.consensus.ValidateBlock(block, prevBlock); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
 	}
 	
@@ -212,12 +224,21 @@ func (c *Chain) AddBlock(block *block.Block) error {
 		c.tipHash = hash
 		c.height = block.Header.Height
 		
+		// Update consensus
+		if prevBlock != nil {
+							c.consensus.UpdateDifficulty()
+		}
+
 		// Store updated chain state
 		if err := c.storage.StoreChainState(&storage.ChainState{
 			BestBlockHash: c.tipHash,
 			Height:        c.height,
 		}); err != nil {
 			return fmt.Errorf("failed to store chain state: %w", err)
+		}
+		// Process block to update UTXO set
+		if err := c.UTXOSet.ProcessBlock(block); err != nil {
+			return fmt.Errorf("failed to process block for UTXO set: %w", err)
 		}
 	}
 	
@@ -258,8 +279,15 @@ func (c *Chain) validateBlock(block *block.Block) error {
 	}
 	
 	// Validate proof of work
-	if !c.validateProofOfWork(block) {
+	if !c.consensus.ValidateProofOfWork(block) {
 		return fmt.Errorf("invalid proof of work")
+	}
+
+	// Validate transactions against UTXO set
+	for _, tx := range block.Transactions {
+		if err := c.UTXOSet.ValidateTransaction(tx); err != nil {
+			return fmt.Errorf("transaction validation failed: %w", err)
+		}
 	}
 	
 	return nil
@@ -306,68 +334,6 @@ func (c *Chain) getTransactionSize(tx *block.Transaction) uint64 {
 	return size
 }
 
-// validateProofOfWork validates the proof of work for a block
-func (c *Chain) validateProofOfWork(block *block.Block) bool {
-	hash := block.CalculateHash()
-	target := c.calculateTarget(block.Header.Difficulty)
-	
-	// Check if hash is less than target
-	return c.hashLessThan(hash, target)
-}
-
-// calculateTarget calculates the target hash for a given difficulty
-func (c *Chain) calculateTarget(difficulty uint64) []byte {
-	// For difficulty 0, any hash is valid (return all zeros)
-	if difficulty == 0 {
-		return make([]byte, 32)
-	}
-	
-	// Simple difficulty calculation
-	// Target = 2^(256-difficulty)
-	target := make([]byte, 32)
-	
-	if difficulty >= 256 {
-		// Maximum difficulty: all zeros
-		return target
-	}
-	
-	// Set the target based on difficulty
-	byteIndex := difficulty / 8
-	bitIndex := difficulty % 8
-	
-	if byteIndex < 32 {
-		target[byteIndex] = 1 << bitIndex
-	}
-	
-	return target
-}
-
-// hashLessThan checks if hash1 is less than hash2
-func (c *Chain) hashLessThan(hash1, hash2 []byte) bool {
-	// If target is all zeros (difficulty 0), any hash is valid
-	allZeros := true
-	for _, b := range hash2 {
-		if b != 0 {
-			allZeros = false
-			break
-		}
-	}
-	if allZeros {
-		return true
-	}
-	
-	// Normal comparison
-	for i := 0; i < len(hash1); i++ {
-		if hash1[i] < hash2[i] {
-			return true
-		}
-		if hash1[i] > hash2[i] {
-			return false
-		}
-	}
-	return false
-}
-
 // isBetterChain checks if the new block creates a better chain
 func (c *Chain) isBetterChain(block *block.Block) bool {
 	// For now, use longest chain rule
@@ -377,9 +343,6 @@ func (c *Chain) isBetterChain(block *block.Block) bool {
 
 // GetBlock returns a block by its hash
 func (c *Chain) GetBlock(hash []byte) *block.Block {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	
 	// Try to get from in-memory cache first
 	if block, exists := c.blocks[string(hash)]; exists {
 		return block
@@ -399,9 +362,6 @@ func (c *Chain) GetBlock(hash []byte) *block.Block {
 
 // GetBlockByHeight returns a block by its height
 func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	
 	// Try to get from in-memory cache first
 	if block, exists := c.blockByHeight[height]; exists {
 		return block
@@ -429,9 +389,6 @@ func (c *Chain) GetBestBlock() *block.Block {
 
 // GetHeight returns the current chain height
 func (c *Chain) GetHeight() uint64 {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	
 	return c.height
 }
 
@@ -445,43 +402,14 @@ func (c *Chain) GetTipHash() []byte {
 
 // GetGenesisBlock returns the genesis block
 func (c *Chain) GetGenesisBlock() *block.Block {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.genesisBlock
 }
 
 // CalculateNextDifficulty calculates the difficulty for the next block
 func (c *Chain) CalculateNextDifficulty() uint64 {
-	if c.height < c.config.DifficultyAdjustmentInterval {
-		return c.bestBlock.Header.Difficulty
-	}
-	
-	// Get the block from difficulty adjustment interval ago
-	oldBlock := c.GetBlockByHeight(c.height - c.config.DifficultyAdjustmentInterval + 1)
-	if oldBlock == nil {
-		return c.bestBlock.Header.Difficulty
-	}
-	
-	// Calculate time difference
-	timeDiff := c.bestBlock.Header.Timestamp.Sub(oldBlock.Header.Timestamp)
-	expectedTime := c.config.TargetBlockTime * time.Duration(c.config.DifficultyAdjustmentInterval)
-	
-	// Adjust difficulty
-	newDifficulty := c.bestBlock.Header.Difficulty
-	if timeDiff < expectedTime/4 {
-		newDifficulty = newDifficulty * 4
-	} else if timeDiff < expectedTime/2 {
-		newDifficulty = newDifficulty * 2
-	} else if timeDiff > expectedTime*4 {
-		newDifficulty = newDifficulty / 4
-	} else if timeDiff > expectedTime*2 {
-		newDifficulty = newDifficulty / 2
-	}
-	
-	// Ensure minimum difficulty
-	if newDifficulty < 1 {
-		newDifficulty = 1
-	}
-	
-	return newDifficulty
+	return c.consensus.GetDifficulty()
 }
 
 // ForkChoice implements fork choice rules
@@ -507,4 +435,4 @@ func (c *Chain) String() string {
 	
 	return fmt.Sprintf("Chain{Height: %d, BestBlock: %s, TipHash: %x}", 
 		c.height, c.bestBlock, c.tipHash)
-} 
+}  
