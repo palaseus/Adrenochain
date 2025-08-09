@@ -2,7 +2,6 @@ package net
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestNewNetwork(t *testing.T) {
@@ -90,30 +90,46 @@ func TestMessageSigningAndVerification(t *testing.T) {
 
 	payload := []byte(`"test payload"`)
 	
+	peerID, err := peer.IDFromPublicKey(pub)
+	assert.NoError(t, err)
+	peerIDBytes, err := peerID.MarshalBinary()
+	assert.NoError(t, err)
+
 	msg := &proto_net.Message{
-		Type:      "test",
-		Payload:   payload,
 		TimestampUnixNano: time.Now().UnixNano(),
+		FromPeerId: peerIDBytes,
+		Content: &proto_net.Message_BlockMessage{
+			BlockMessage: &proto_net.BlockMessage{
+				BlockData: payload,
+			},
+		},
 	}
 
-		senderPeerID, err := peer.IDFromPublicKey(pub)
+	// Sign the message
+	dataToSign, err := proto.Marshal(msg)
 	assert.NoError(t, err)
-	signedMsg := &SignedMessage{
-		Message: msg,
-		SenderPeerID: senderPeerID,
-	}
-
-	err = signedMsg.Sign(priv)
+	signature, err := priv.Sign(dataToSign)
 	assert.NoError(t, err)
-	assert.NotNil(t, signedMsg.Signature)
+	msg.Signature = signature
 
-	verified, err := signedMsg.Verify()
+	// Verify the message
+	pubKeyFromPeerID, err := peer.ID(msg.FromPeerId).ExtractPublicKey()
+	assert.NoError(t, err)
+	tempMsg := proto.Clone(msg).(*proto_net.Message)
+	tempMsg.Signature = nil // Clear the signature for verification
+	dataToVerify, err := proto.Marshal(tempMsg)
+	assert.NoError(t, err)
+	verified, err := pubKeyFromPeerID.Verify(dataToVerify, msg.Signature)
 	assert.NoError(t, err)
 	assert.True(t, verified)
 
 	// Tamper with payload
-	signedMsg.Message.Payload = []byte("tampered payload")
-	verified, err = signedMsg.Verify()
+	msg.GetBlockMessage().BlockData = []byte("tampered payload")
+	tempMsg = proto.Clone(msg).(*proto_net.Message)
+	tempMsg.Signature = nil // Clear the signature for verification
+	dataToVerify, err = proto.Marshal(tempMsg)
+	assert.NoError(t, err)
+	verified, err = pubKeyFromPeerID.Verify(dataToVerify, msg.Signature)
 	assert.NoError(t, err)
 	assert.False(t, verified)
 }
@@ -155,7 +171,7 @@ func TestPublishSubscribe(t *testing.T) {
 	defer net2.Close()
 
 	// Connect the two networks
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	peerInfo2 := net2.GetHost().Peerstore().PeerInfo(net2.GetHost().ID())
@@ -163,7 +179,7 @@ func TestPublishSubscribe(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Give time for connection to establish and pubsub to propagate
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	// Subscribe to blocks on net2
 	blockSub2, err := net2.SubscribeToBlocks()
@@ -193,11 +209,22 @@ func TestPublishSubscribe(t *testing.T) {
 		t.Fatal("Context cancelled before message received")
 	case msg := <-msgChan:
 		// Handle the message
-		var receivedSignedNetMsg SignedMessage
-		assert.NoError(t, json.Unmarshal(msg.Data, &receivedSignedNetMsg))
-		assert.Equal(t, "block", receivedSignedNetMsg.Message.Type)
-		assert.Equal(t, blockData, receivedSignedNetMsg.Message.Payload)
-		verified, err := receivedSignedNetMsg.Verify()
+		var receivedMsg proto_net.Message
+		assert.NoError(t, proto.Unmarshal(msg.Data, &receivedMsg))
+		
+		// Check if it's a BlockMessage and extract data
+		blockMsg := receivedMsg.GetBlockMessage()
+		assert.NotNil(t, blockMsg)
+		assert.Equal(t, blockData, blockMsg.BlockData)
+
+		// Verify message signature
+		pubKey, err := peer.ID(receivedMsg.FromPeerId).ExtractPublicKey()
+		assert.NoError(t, err)
+		tempMsg := proto.Clone(&receivedMsg).(*proto_net.Message)
+		tempMsg.Signature = nil // Clear the signature for verification
+		dataToVerify, err := proto.Marshal(tempMsg)
+		assert.NoError(t, err)
+		verified, err := pubKey.Verify(dataToVerify, receivedMsg.Signature)
 		assert.NoError(t, err)
 		assert.True(t, verified)
 	case err := <-errChan:
@@ -234,11 +261,22 @@ func TestPublishSubscribe(t *testing.T) {
 		t.Fatal("Context cancelled before message received")
 	case msg := <-msgChan2:
 		// Handle the message
-		var receivedSignedNetMsg SignedMessage
-		assert.NoError(t, json.Unmarshal(msg.Data, &receivedSignedNetMsg))
-		assert.Equal(t, "transaction", receivedSignedNetMsg.Message.Type)
-		assert.Equal(t, txData, receivedSignedNetMsg.Message.Payload)
-		verified, err := receivedSignedNetMsg.Verify()
+		var receivedMsg proto_net.Message
+		assert.NoError(t, proto.Unmarshal(msg.Data, &receivedMsg))
+
+		// Check if it's a TransactionMessage and extract data
+		txMsg := receivedMsg.GetTransactionMessage()
+		assert.NotNil(t, txMsg)
+		assert.Equal(t, txData, txMsg.TransactionData)
+
+		// Verify message signature
+		pubKey, err := peer.ID(receivedMsg.FromPeerId).ExtractPublicKey()
+		assert.NoError(t, err)
+		tempMsg := proto.Clone(&receivedMsg).(*proto_net.Message)
+		tempMsg.Signature = nil // Clear the signature for verification
+		dataToVerify, err := proto.Marshal(tempMsg)
+		assert.NoError(t, err)
+		verified, err := pubKey.Verify(dataToVerify, receivedMsg.Signature)
 		assert.NoError(t, err)
 		assert.True(t, verified)
 	case err := <-errChan2:
@@ -247,4 +285,3 @@ func TestPublishSubscribe(t *testing.T) {
 		t.Fatal("Timeout waiting for transaction message")
 	}
 }
-

@@ -16,10 +16,12 @@ import (
 	"github.com/gochain/gochain/pkg/miner"
 	netpkg "github.com/gochain/gochain/pkg/net"
 	"github.com/gochain/gochain/pkg/storage"
+	proto_net "github.com/gochain/gochain/pkg/proto/net"
 	"github.com/gochain/gochain/pkg/wallet"
-	"github.com/libp2p/go-libp2p/core/peer" // Add this import
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -116,14 +118,26 @@ func runNode(cmd *cobra.Command, args []string) error {
 				return
 			}
 
-			var networkMsg netpkg.SignedMessage
-			if err := json.Unmarshal(msg.Data, &networkMsg); err != nil {
+			var networkMsg proto_net.Message
+			if err := proto.Unmarshal(msg.Data, &networkMsg); err != nil {
 				fmt.Printf("Failed to unmarshal network message for block: %v\n", err)
 				continue
 			}
 
 			// Verify message signature
-			verified, err := networkMsg.Verify()
+			pubKey, err := peer.ID(networkMsg.FromPeerId).ExtractPublicKey()
+			if err != nil {
+				fmt.Printf("Error extracting public key for block message: %v\n", err)
+				continue
+			}
+			tempMsg := proto.Clone(&networkMsg).(*proto_net.Message)
+			tempMsg.Signature = nil // Clear the signature for verification
+			dataToVerify, err := proto.Marshal(tempMsg)
+			if err != nil {
+				fmt.Printf("Error marshaling block message for verification: %v\n", err)
+				continue
+			}
+			verified, err := pubKey.Verify(dataToVerify, networkMsg.Signature)
 			if err != nil {
 				fmt.Printf("Error verifying block message signature: %v\n", err)
 				continue
@@ -133,14 +147,21 @@ func runNode(cmd *cobra.Command, args []string) error {
 				continue
 			}
 
-			var block block.Block
-			if err := json.Unmarshal(networkMsg.Payload, &block); err != nil {
-				fmt.Printf("Failed to unmarshal block from payload: %v\n", err)
+			// Handle block message content
+			switch content := networkMsg.Content.(type) {
+			case *proto_net.Message_BlockMessage:
+				var block block.Block
+				if err := json.Unmarshal(content.BlockMessage.BlockData, &block); err != nil {
+					fmt.Printf("Failed to unmarshal block from payload: %v\n", err)
+					continue
+				}
+				fmt.Printf("Received block from network: %s\n", block.String())
+				if err := chain.AddBlock(&block); err != nil {
+					fmt.Printf("Failed to add received block: %v\n", err)
+				}
+			default:
+				fmt.Printf("Received unknown message type for block subscription: %T\n", content)
 				continue
-			}
-			fmt.Printf("Received block from network: %s\n", block.String())
-			if err := chain.AddBlock(&block); err != nil {
-				fmt.Printf("Failed to add received block: %v\n", err)
 			}
 		}
 	}()
@@ -159,20 +180,32 @@ func runNode(cmd *cobra.Command, args []string) error {
 				return
 			}
 
-			var networkMsg netpkg.SignedMessage
-			if err := json.Unmarshal(msg.Data, &networkMsg); err != nil {
+			var networkMsg proto_net.Message
+			if err := proto.Unmarshal(msg.Data, &networkMsg); err != nil {
 				fmt.Printf("Failed to unmarshal network message for transaction: %v\n", err)
 				continue
 			}
 
 			// Verify message signature
-			verified, err := networkMsg.Verify()
+			pubKey, err := peer.ID(networkMsg.FromPeerId).ExtractPublicKey()
+			if err != nil {
+				fmt.Printf("Error extracting public key for transaction message: %v\n", err)
+				continue
+			}
+			tempMsg := proto.Clone(&networkMsg).(*proto_net.Message)
+			tempMsg.Signature = nil // Clear the signature for verification
+			dataToVerify, err := proto.Marshal(tempMsg)
+			if err != nil {
+				fmt.Printf("Error marshaling transaction message for verification: %v\n", err)
+				continue
+			}
+			verified, err := pubKey.Verify(dataToVerify, networkMsg.Signature)
 			if err != nil {
 				fmt.Printf("Error verifying transaction message signature: %v\n", err)
 				continue
 			}
 			if !verified {
-				senderPeerID, err := peer.IDFromBytes(networkMsg.Message.FromPeerId)
+				senderPeerID, err := peer.IDFromBytes(networkMsg.FromPeerId)
 				if err != nil {
 					fmt.Printf("Failed to get peer ID from bytes: %v\n", err)
 					continue
@@ -181,14 +214,21 @@ func runNode(cmd *cobra.Command, args []string) error {
 				continue
 			}
 
-			var tx block.Transaction
-			if err := json.Unmarshal(networkMsg.Message.Payload, &tx); err != nil {
-				fmt.Printf("Failed to unmarshal transaction from payload: %v\n", err)
+			// Handle transaction message content
+			switch content := networkMsg.Content.(type) {
+			case *proto_net.Message_TransactionMessage:
+				var tx block.Transaction
+				if err := json.Unmarshal(content.TransactionMessage.TransactionData, &tx); err != nil {
+					fmt.Printf("Failed to unmarshal transaction from payload: %v\n", err)
+					continue
+				}
+				fmt.Printf("Received transaction from network: %s\n", tx.String())
+				if err := mempool.AddTransaction(&tx); err != nil {
+					fmt.Printf("Failed to add received transaction: %v\n", err)
+				}
+			default:
+				fmt.Printf("Received unknown message type for transaction subscription: %T\n", content)
 				continue
-			}
-			fmt.Printf("Received transaction from network: %s\n", tx.String())
-			if err := mempool.AddTransaction(&tx); err != nil {
-				fmt.Printf("Failed to add received transaction: %v\n", err)
 			}
 		}
 	}()

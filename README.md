@@ -64,6 +64,25 @@ cd gochain
 go build -tags='p2p db' ./cmd/gochain
 ```
 
+### Protobuf Generation
+
+This project uses Protocol Buffers for defining network messages. Go code is generated from `.proto` files.
+
+To generate the Go code from the `.proto` definitions, ensure you have `protoc` (the Protocol Buffer compiler) and `protoc-gen-go` (the Go plugin for `protoc`) installed and available in your system's PATH.
+
+You can typically install `protoc-gen-go` using:
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+```
+
+Once the tools are set up, you can generate the Go code using the provided `Makefile`:
+
+```bash
+make proto
+```
+
+This command will generate `message.pb.go` in the `pkg/proto/net/` directory.
+
 ### Configuration
 An example config is provided at `config/config.yaml`. Relevant sections:
 - `network`: listen port, bootstrap peers, MDNS, peer limits
@@ -165,7 +184,7 @@ This codebase is educational and not hardened. Notable findings and recommendati
   - Some maps are protected with RWMutex; access patterns are straightforward. Nevertheless, there is no shutdown orchestration across subsystems besides best-effort closes.
 
 - Testing
-  - Unit tests exist for `block`, `chain`, `wallet`. No tests for miner, mempool, net, or storage. Recommendation: expand test coverage, fuzz transaction encoding/decoding and signature verification.
+  - Unit tests exist for `block`, `chain`, `wallet`, and `net`. Placeholder tests have been added for `pkg/proto/net` and `proto/net`. Recommendation: expand test coverage for `miner`, `mempool`, and `storage`, and add more comprehensive tests for `net`, including fuzzing transaction encoding/decoding and signature verification.
 
 Given these points, do not use this codebase for production networks or managing real value.
 

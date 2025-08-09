@@ -3,15 +3,15 @@ package net
 import (
 	"context"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
+	libp2p "github.com/libp2p/go-libp2p"
+
 	"github.com/gochain/gochain/pkg/chain"
 	"github.com/gochain/gochain/pkg/mempool"
 	proto_net "github.com/gochain/gochain/pkg/proto/net"
-	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -25,6 +25,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
 	"github.com/multiformats/go-multiaddr"
+	"google.golang.org/protobuf/proto"
 )
 
 // Notifiee methods for network.Notifiee interface
@@ -288,40 +289,6 @@ func (n *Network) SubscribeToTransactions() (*pubsub.Subscription, error) {
 	return n.pubsub.Subscribe("transactions")
 }
 
-// SignedMessage represents a network message with signature and public key
-type SignedMessage struct {
-	*proto_net.Message
-	SenderPeerID peer.ID `json:"sender_peer_id"` // Peer ID of the sender
-	Signature    []byte  `json:"signature"`      // Signature of the message
-}
-
-// Sign signs the message with the given private key
-func (m *SignedMessage) Sign(privKey crypto.PrivKey) error {
-	data, err := json.Marshal(m.Message)
-	if err != nil {
-		return err
-	}
-	signature, err := privKey.Sign(data)
-	if err != nil {
-		return err
-	}
-	m.Signature = signature
-	return nil
-}
-
-// Verify verifies the message signature
-func (m *SignedMessage) Verify() (bool, error) {
-	pubKey, err := m.SenderPeerID.ExtractPublicKey()
-	if err != nil {
-		return false, err
-	}
-	data, err := json.Marshal(m.Message)
-	if err != nil {
-		return false, err
-	}
-	return pubKey.Verify(data, m.Signature)
-}
-
 // PublishBlock publishes a block to the network
 func (n *Network) PublishBlock(blockData []byte) error {
 	pubKey := n.host.Peerstore().PubKey(n.host.ID())
@@ -334,25 +301,35 @@ func (n *Network) PublishBlock(blockData []byte) error {
 		return fmt.Errorf("failed to get peer ID from public key: %w", err)
 	}
 
-	msg := &proto_net.Message{
-		Type:      "block",
-		Payload:   blockData,
-		TimestampUnixNano: time.Now().UnixNano(),
-		FromPeerId:  []byte(peerID),
-	}
-
-	signedMsg := &SignedMessage{
-		Message: msg,
-		SenderPeerID: n.host.ID(),
-	}
-
-	if err := signedMsg.Sign(n.privKey); err != nil {
-		return fmt.Errorf("failed to sign block message: %w", err)
-	}
-
-	data, err := json.Marshal(signedMsg)
+	peerIDBytes, err := peerID.MarshalBinary()
 	if err != nil {
-		return fmt.Errorf("failed to marshal signed block message: %w", err)
+		return fmt.Errorf("failed to marshal peer ID: %w", err)
+	}
+
+	msg := &proto_net.Message{
+		TimestampUnixNano: time.Now().UnixNano(),
+		FromPeerId:  peerIDBytes,
+		Content: &proto_net.Message_BlockMessage{
+			BlockMessage: &proto_net.BlockMessage{
+				BlockData: blockData,
+			},
+		},
+	}
+
+	// Sign the message
+	dataToSign, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message for signing: %w", err)
+	}
+	signature, err := n.privKey.Sign(dataToSign)
+	if err != nil {
+		return fmt.Errorf("failed to sign message: %w", err)
+	}
+	msg.Signature = signature
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal block message: %w", err)
 	}
 
 	return n.pubsub.Publish("blocks", data)
@@ -370,25 +347,35 @@ func (n *Network) PublishTransaction(txData []byte) error {
 		return fmt.Errorf("failed to get peer ID from public key: %w", err)
 	}
 
-	msg := &proto_net.Message{
-		Type:      "transaction",
-		Payload:   txData,
-		TimestampUnixNano: time.Now().UnixNano(),
-		FromPeerId:  []byte(peerID),
-	}
-
-	signedMsg := &SignedMessage{
-		Message: msg,
-		SenderPeerID: n.host.ID(),
-	}
-
-	if err := signedMsg.Sign(n.privKey); err != nil {
-		return fmt.Errorf("failed to sign transaction message: %w", err)
-	}
-
-	data, err := json.Marshal(signedMsg)
+	peerIDBytes, err := peerID.MarshalBinary()
 	if err != nil {
-		return fmt.Errorf("failed to marshal signed transaction message: %w", err)
+		return fmt.Errorf("failed to marshal peer ID: %w", err)
+	}
+
+	msg := &proto_net.Message{
+		TimestampUnixNano: time.Now().UnixNano(),
+		FromPeerId:  peerIDBytes,
+		Content: &proto_net.Message_TransactionMessage{
+			TransactionMessage: &proto_net.TransactionMessage{
+				TransactionData: txData,
+			},
+		},
+	}
+
+	// Sign the message
+	dataToSign, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message for signing: %w", err)
+	}
+	signature, err := n.privKey.Sign(dataToSign)
+	if err != nil {
+		return fmt.Errorf("failed to sign message: %w", err)
+	}
+	msg.Signature = signature
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal transaction message: %w", err)
 	}
 
 	return n.pubsub.Publish("transactions", data)

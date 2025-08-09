@@ -21,22 +21,115 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Your message definitions below
+// Specific message types for different content
+type BlockMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BlockData     []byte                 `protobuf:"bytes,1,opt,name=block_data,json=blockData,proto3" json:"block_data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockMessage) Reset() {
+	*x = BlockMessage{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockMessage) ProtoMessage() {}
+
+func (x *BlockMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockMessage.ProtoReflect.Descriptor instead.
+func (*BlockMessage) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *BlockMessage) GetBlockData() []byte {
+	if x != nil {
+		return x.BlockData
+	}
+	return nil
+}
+
+type TransactionMessage struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TransactionData []byte                 `protobuf:"bytes,1,opt,name=transaction_data,json=transactionData,proto3" json:"transaction_data,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *TransactionMessage) Reset() {
+	*x = TransactionMessage{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TransactionMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransactionMessage) ProtoMessage() {}
+
+func (x *TransactionMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransactionMessage.ProtoReflect.Descriptor instead.
+func (*TransactionMessage) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TransactionMessage) GetTransactionData() []byte {
+	if x != nil {
+		return x.TransactionData
+	}
+	return nil
+}
+
+// Message represents a generic network message
 type Message struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Type              string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Payload           []byte                 `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
-	TimestampUnixNano int64                  `protobuf:"varint,3,opt,name=timestamp_unix_nano,json=timestampUnixNano,proto3" json:"timestamp_unix_nano,omitempty"`
-	FromPeerId        []byte                 `protobuf:"bytes,4,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
-	SenderPeerId      []byte                 `protobuf:"bytes,5,opt,name=sender_peer_id,json=senderPeerId,proto3" json:"sender_peer_id,omitempty"`
-	Signature         []byte                 `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	TimestampUnixNano int64                  `protobuf:"varint,1,opt,name=timestamp_unix_nano,json=timestampUnixNano,proto3" json:"timestamp_unix_nano,omitempty"`
+	FromPeerId        []byte                 `protobuf:"bytes,2,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
+	// Use oneof to ensure only one type of content is present
+	//
+	// Types that are valid to be assigned to Content:
+	//
+	//	*Message_BlockMessage
+	//	*Message_TransactionMessage
+	Content       isMessage_Content `protobuf_oneof:"content"`
+	Signature     []byte            `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Message) Reset() {
 	*x = Message{}
-	mi := &file_pkg_proto_net_message_proto_msgTypes[0]
+	mi := &file_pkg_proto_net_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -48,7 +141,7 @@ func (x *Message) String() string {
 func (*Message) ProtoMessage() {}
 
 func (x *Message) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_net_message_proto_msgTypes[0]
+	mi := &file_pkg_proto_net_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -61,21 +154,7 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Message.ProtoReflect.Descriptor instead.
 func (*Message) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *Message) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *Message) GetPayload() []byte {
-	if x != nil {
-		return x.Payload
-	}
-	return nil
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Message) GetTimestampUnixNano() int64 {
@@ -92,9 +171,27 @@ func (x *Message) GetFromPeerId() []byte {
 	return nil
 }
 
-func (x *Message) GetSenderPeerId() []byte {
+func (x *Message) GetContent() isMessage_Content {
 	if x != nil {
-		return x.SenderPeerId
+		return x.Content
+	}
+	return nil
+}
+
+func (x *Message) GetBlockMessage() *BlockMessage {
+	if x != nil {
+		if x, ok := x.Content.(*Message_BlockMessage); ok {
+			return x.BlockMessage
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetTransactionMessage() *TransactionMessage {
+	if x != nil {
+		if x, ok := x.Content.(*Message_TransactionMessage); ok {
+			return x.TransactionMessage
+		}
 	}
 	return nil
 }
@@ -106,19 +203,40 @@ func (x *Message) GetSignature() []byte {
 	return nil
 }
 
+type isMessage_Content interface {
+	isMessage_Content()
+}
+
+type Message_BlockMessage struct {
+	BlockMessage *BlockMessage `protobuf:"bytes,3,opt,name=block_message,json=blockMessage,proto3,oneof"`
+}
+
+type Message_TransactionMessage struct {
+	TransactionMessage *TransactionMessage `protobuf:"bytes,4,opt,name=transaction_message,json=transactionMessage,proto3,oneof"`
+}
+
+func (*Message_BlockMessage) isMessage_Content() {}
+
+func (*Message_TransactionMessage) isMessage_Content() {}
+
 var File_pkg_proto_net_message_proto protoreflect.FileDescriptor
 
 const file_pkg_proto_net_message_proto_rawDesc = "" +
 	"\n" +
-	"\x1bpkg/proto/net/message.proto\x12\x03net\"\xcd\x01\n" +
-	"\aMessage\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x12\x18\n" +
-	"\apayload\x18\x02 \x01(\fR\apayload\x12.\n" +
-	"\x13timestamp_unix_nano\x18\x03 \x01(\x03R\x11timestampUnixNano\x12 \n" +
-	"\ffrom_peer_id\x18\x04 \x01(\fR\n" +
-	"fromPeerId\x12$\n" +
-	"\x0esender_peer_id\x18\x05 \x01(\fR\fsenderPeerId\x12\x1c\n" +
-	"\tsignature\x18\x06 \x01(\fR\tsignatureB*Z(github.com/gochain/gochain/pkg/proto/netb\x06proto3"
+	"\x1bpkg/proto/net/message.proto\x12\x03net\"-\n" +
+	"\fBlockMessage\x12\x1d\n" +
+	"\n" +
+	"block_data\x18\x01 \x01(\fR\tblockData\"?\n" +
+	"\x12TransactionMessage\x12)\n" +
+	"\x10transaction_data\x18\x01 \x01(\fR\x0ftransactionData\"\x8a\x02\n" +
+	"\aMessage\x12.\n" +
+	"\x13timestamp_unix_nano\x18\x01 \x01(\x03R\x11timestampUnixNano\x12 \n" +
+	"\ffrom_peer_id\x18\x02 \x01(\fR\n" +
+	"fromPeerId\x128\n" +
+	"\rblock_message\x18\x03 \x01(\v2\x11.net.BlockMessageH\x00R\fblockMessage\x12J\n" +
+	"\x13transaction_message\x18\x04 \x01(\v2\x17.net.TransactionMessageH\x00R\x12transactionMessage\x12\x1c\n" +
+	"\tsignature\x18\x05 \x01(\fR\tsignatureB\t\n" +
+	"\acontentB*Z(github.com/gochain/gochain/pkg/proto/netb\x06proto3"
 
 var (
 	file_pkg_proto_net_message_proto_rawDescOnce sync.Once
@@ -132,16 +250,20 @@ func file_pkg_proto_net_message_proto_rawDescGZIP() []byte {
 	return file_pkg_proto_net_message_proto_rawDescData
 }
 
-var file_pkg_proto_net_message_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_pkg_proto_net_message_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_pkg_proto_net_message_proto_goTypes = []any{
-	(*Message)(nil), // 0: net.Message
+	(*BlockMessage)(nil),       // 0: net.BlockMessage
+	(*TransactionMessage)(nil), // 1: net.TransactionMessage
+	(*Message)(nil),            // 2: net.Message
 }
 var file_pkg_proto_net_message_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: net.Message.block_message:type_name -> net.BlockMessage
+	1, // 1: net.Message.transaction_message:type_name -> net.TransactionMessage
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_pkg_proto_net_message_proto_init() }
@@ -149,13 +271,17 @@ func file_pkg_proto_net_message_proto_init() {
 	if File_pkg_proto_net_message_proto != nil {
 		return
 	}
+	file_pkg_proto_net_message_proto_msgTypes[2].OneofWrappers = []any{
+		(*Message_BlockMessage)(nil),
+		(*Message_TransactionMessage)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_net_message_proto_rawDesc), len(file_pkg_proto_net_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

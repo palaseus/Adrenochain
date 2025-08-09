@@ -2,15 +2,26 @@ syntax = "proto3";
 
 package net;
 
-// MUST specify the Go import path for this proto's generated code:
 option go_package = "github.com/gochain/gochain/pkg/proto/net";
 
-// Your message definitions below
+// Specific message types for different content
+message BlockMessage {
+  bytes block_data = 1;
+}
+
+message TransactionMessage {
+  bytes transaction_data = 1;
+}
+
+// Message represents a generic network message
 message Message {
-  string type = 1;
-  bytes payload = 2;
-  int64 timestamp_unix_nano = 3;
-  bytes from_peer_id = 4;
-  bytes sender_peer_id = 5;
-  bytes signature = 6;
+  int64 timestamp_unix_nano = 1;
+  bytes from_peer_id = 2;
+
+  // Use oneof to ensure only one type of content is present
+  oneof content {
+    BlockMessage block_message = 3;
+    TransactionMessage transaction_message = 4;
+  }
+  bytes signature = 5;
 }
