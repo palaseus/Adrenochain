@@ -11,6 +11,7 @@ import (
 	"github.com/gochain/gochain/pkg/block"
 	"github.com/gochain/gochain/pkg/chain"
 	"github.com/gochain/gochain/pkg/mempool"
+	"github.com/gochain/gochain/pkg/consensus"
 )
 
 // Miner represents a blockchain miner
@@ -24,6 +25,7 @@ type Miner struct {
 	currentBlock  *block.Block
 	ctx           context.Context
 	cancel        context.CancelFunc
+	consensus     *consensus.Consensus
 }
 
 // MinerConfig holds configuration for the miner
@@ -59,6 +61,7 @@ func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig)
 		stopMining: make(chan struct{}),
 		ctx:        ctx,
 		cancel:     cancel,
+		consensus:  consensus.NewConsensus(consensus.DefaultConsensusConfig()),
 	}
 }
 
@@ -156,9 +159,6 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 	// Get transactions from mempool
 	transactions := m.mempool.GetTransactionsForBlock(m.config.MaxBlockSize)
 	
-	// Create coinbase transaction
-	coinbaseTx := m.createCoinbaseTransaction(prevBlock.Header.Height + 1)
-	
 	// Create new block
 	newBlock := &block.Block{
 		Header: &block.Header{
@@ -172,6 +172,11 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 		},
 		Transactions: make([]*block.Transaction, 0),
 	}
+
+	m.currentBlock = newBlock
+
+	// Create coinbase transaction
+	coinbaseTx := m.createCoinbaseTransaction(prevBlock.Header.Height + 1)
 	
 	// Add coinbase transaction first
 	newBlock.AddTransaction(coinbaseTx)
@@ -198,7 +203,7 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 	}
 	
 	// Create coinbase output
-	output := &block.TxOutput{
+	out := &block.TxOutput{
 		Value:        m.config.CoinbaseReward + totalFees,
 		ScriptPubKey: []byte(m.config.CoinbaseAddress),
 	}
@@ -207,7 +212,7 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 	tx := &block.Transaction{
 		Version:  1,
 		Inputs:   make([]*block.TxInput, 0), // Coinbase has no inputs
-		Outputs:  []*block.TxOutput{output},
+		Outputs:  []*block.TxOutput{out},
 		LockTime: 0,
 		Fee:      0,
 	}
@@ -220,67 +225,7 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 
 // mineBlock performs proof-of-work mining on a block
 func (m *Miner) mineBlock(block *block.Block) error {
-	target := m.calculateTarget(block.Header.Difficulty)
-	
-	// Try different nonces
-	for nonce := uint64(0); nonce < ^uint64(0); nonce++ {
-		select {
-		case <-m.ctx.Done():
-			return fmt.Errorf("mining cancelled")
-		case <-m.stopMining:
-			return fmt.Errorf("mining stopped")
-		default:
-			// Continue mining
-		}
-		
-		// Set nonce
-		block.Header.Nonce = nonce
-		
-		// Calculate hash
-		hash := block.CalculateHash()
-		
-		// Check if hash meets target
-		if m.hashLessThan(hash, target) {
-			return nil // Block mined successfully
-		}
-	}
-	
-	return fmt.Errorf("failed to find valid nonce")
-}
-
-// calculateTarget calculates the target hash for a given difficulty
-func (m *Miner) calculateTarget(difficulty uint64) []byte {
-	// Simple difficulty calculation
-	// Target = 2^(256-difficulty)
-	target := make([]byte, 32)
-	
-	if difficulty >= 256 {
-		// Maximum difficulty: all zeros
-		return target
-	}
-	
-	// Set the target based on difficulty
-	byteIndex := difficulty / 8
-	bitIndex := difficulty % 8
-	
-	if byteIndex < 32 {
-		target[byteIndex] = 1 << bitIndex
-	}
-	
-	return target
-}
-
-// hashLessThan checks if hash1 is less than hash2
-func (m *Miner) hashLessThan(hash1, hash2 []byte) bool {
-	for i := 0; i < len(hash1); i++ {
-		if hash1[i] < hash2[i] {
-			return true
-		}
-		if hash1[i] > hash2[i] {
-			return false
-		}
-	}
-	return false
+	return m.consensus.MineBlock(block, m.stopMining)
 }
 
 // calculateTransactionHash calculates the hash of a transaction
@@ -362,4 +307,4 @@ func (m *Miner) String() string {
 	
 	return fmt.Sprintf("Miner{Mining: %t, Threads: %d, BlockTime: %v}", 
 		m.isMining, m.config.MiningThreads, m.config.BlockTime)
-} 
+}

@@ -1,7 +1,7 @@
 package utxo
 
 import (
-	"crypto/sha256"
+	
 	"fmt"
 	"sync"
 
@@ -36,9 +36,6 @@ func NewUTXOSet() *UTXOSet {
 
 // AddUTXO adds a UTXO to the set
 func (us *UTXOSet) AddUTXO(utxo *UTXO) {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-	
 	key := us.makeKey(utxo.TxHash, utxo.TxIndex)
 	us.utxos[key] = utxo
 	
@@ -48,9 +45,6 @@ func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 
 // RemoveUTXO removes a UTXO from the set
 func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-	
 	key := us.makeKey(txHash, txIndex)
 	utxo, exists := us.utxos[key]
 	if !exists {
@@ -69,9 +63,6 @@ func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
 
 // GetUTXO retrieves a UTXO by transaction hash and index
 func (us *UTXOSet) GetUTXO(txHash []byte, txIndex uint32) *UTXO {
-	us.mu.RLock()
-	defer us.mu.RUnlock()
-	
 	key := us.makeKey(txHash, txIndex)
 	return us.utxos[key]
 }
@@ -189,26 +180,20 @@ func (us *UTXOSet) canSpendUTXO(utxo *UTXO, scriptSig []byte) bool {
 
 // extractAddress extracts an address from a script public key
 func (us *UTXOSet) extractAddress(scriptPubKey []byte) string {
-	// In a real implementation, this would parse the script and extract the address
-	// For now, we'll use a simplified approach
-	
-	if len(scriptPubKey) == 0 {
-		return "unknown"
-	}
-	
-	// If it looks like a hex string, use it directly
-	if len(scriptPubKey) >= 20 {
-		return fmt.Sprintf("%x", scriptPubKey[:20])
-	}
-	
-	// Otherwise, hash the script and use the first 20 bytes
-	hash := sha256.Sum256(scriptPubKey)
-	return fmt.Sprintf("%x", hash[:20])
+	return string(scriptPubKey)
 }
 
 // ValidateTransaction validates a transaction against the UTXO set
 func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
-	// Check if transaction has inputs and outputs
+	// Coinbase transactions have no inputs, so skip input validation
+	if len(tx.Inputs) == 0 {
+		if len(tx.Outputs) == 0 {
+			return fmt.Errorf("coinbase transaction must have at least one output")
+		}
+		return nil // Coinbase transactions are valid if they have outputs
+	}
+
+	// Regular transactions must have inputs and outputs
 	if len(tx.Inputs) == 0 {
 		return fmt.Errorf("transaction has no inputs")
 	}
@@ -219,11 +204,6 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 	// Calculate total input value
 	totalInput := uint64(0)
 	for _, input := range tx.Inputs {
-		// Skip coinbase transactions
-		if len(input.PrevTxHash) == 0 {
-			continue
-		}
-		
 		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
 		if utxo == nil {
 			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)

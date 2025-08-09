@@ -1,15 +1,29 @@
 package chain
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/storage"
 )
 
 func TestNewChain(t *testing.T) {
+	dataDir := "./test_chain_data_new_chain"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	if chain == nil {
 		t.Fatal("NewChain returned nil")
@@ -33,8 +47,20 @@ func TestNewChain(t *testing.T) {
 }
 
 func TestGenesisBlock(t *testing.T) {
+	dataDir := "./test_chain_data_genesis_block"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	genesis := chain.GetGenesisBlock()
 	if genesis == nil {
@@ -80,8 +106,20 @@ func TestGenesisBlock(t *testing.T) {
 }
 
 func TestAddBlock(t *testing.T) {
+	dataDir := "./test_chain_data_add_block"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	// Create a valid block
 	prevBlock := chain.GetBestBlock()
@@ -124,14 +162,26 @@ func TestAddBlock(t *testing.T) {
 		t.Errorf("Expected height 1, got %d", chain.GetHeight())
 	}
 
-	if chain.GetBestBlock() != newBlock {
+	if chain.GetBestBlock().HexHash() != newBlock.HexHash() {
 		t.Error("Best block was not updated")
 	}
 }
 
 func TestBlockValidation(t *testing.T) {
+	dataDir := "./test_chain_data_block_validation"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	// Test invalid block (wrong prev hash)
 	invalidBlock := &block.Block{
@@ -174,8 +224,20 @@ func TestBlockValidation(t *testing.T) {
 }
 
 func TestGetBlock(t *testing.T) {
+	dataDir := "./test_chain_data_get_block"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	// Get genesis block by hash
 	genesis := chain.GetGenesisBlock()
@@ -186,7 +248,7 @@ func TestGetBlock(t *testing.T) {
 		t.Fatal("Failed to retrieve genesis block by hash")
 	}
 
-	if retrievedBlock != genesis {
+	if retrievedBlock.HexHash() != genesis.HexHash() {
 		t.Error("Retrieved block is not the same as genesis block")
 	}
 
@@ -196,14 +258,26 @@ func TestGetBlock(t *testing.T) {
 		t.Fatal("Failed to retrieve genesis block by height")
 	}
 
-	if retrievedBlockByHeight != genesis {
+	if retrievedBlockByHeight.HexHash() != genesis.HexHash() {
 		t.Error("Retrieved block by height is not the same as genesis block")
 	}
 }
 
 func TestChainState(t *testing.T) {
+	dataDir := "./test_chain_data_chain_state"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	// Check initial state
 	if chain.GetHeight() != 0 {
@@ -211,7 +285,7 @@ func TestChainState(t *testing.T) {
 	}
 
 	genesis := chain.GetGenesisBlock()
-	if chain.GetBestBlock() != genesis {
+	if chain.GetBestBlock().HexHash() != genesis.HexHash() {
 		t.Error("Best block should be genesis block initially")
 	}
 
@@ -227,8 +301,20 @@ func TestChainState(t *testing.T) {
 }
 
 func TestDifficultyCalculation(t *testing.T) {
+	dataDir := "./test_chain_data_difficulty_calculation"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	// Initial difficulty should be 1
 	if chain.CalculateNextDifficulty() != 1 {
@@ -262,8 +348,20 @@ func TestChainConfig(t *testing.T) {
 }
 
 func TestBlockSizeValidation(t *testing.T) {
+	dataDir := "./test_chain_data_block_size_validation"
+	defer os.RemoveAll(dataDir)
+	
+	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage.Close()
+
 	config := DefaultChainConfig()
-	chain := NewChain(config)
+	chain, err := NewChain(config, storage)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
 	// Create a block that exceeds max size
 	prevBlock := chain.GetBestBlock()
@@ -299,4 +397,4 @@ func TestBlockSizeValidation(t *testing.T) {
 	if err := chain.AddBlock(largeBlock); err == nil {
 		t.Error("Should fail to add block that exceeds max size")
 	}
-} 
+}

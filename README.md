@@ -9,21 +9,22 @@ This codebase is designed for learning and experimentation rather than productio
 - Very simple proof-of-work (target-based) mining
 - In-memory blockchain and mempool
 - Minimal wallet with ECDSA (P-256) keys, signing and verification
-- Optional P2P networking using libp2p (GossipSub, DHT)
-- Optional persistent storage using BadgerDB
-- CLI for running a node, managing wallet, sending transactions, and inspecting chain state
+- Integrated P2P networking using libp2p (GossipSub, DHT, mDNS discovery)
+- Integrated persistent storage using BadgerDB
+- CLI for running a full node, managing wallet, sending transactions, and inspecting chain state
 
 ### Architecture overview
+- `cmd/gochain`: The main CLI entrypoint that orchestrates and connects all core components to run a full node.
 - `pkg/block`: Core types for Block, Header, Transaction, inputs/outputs, and validation helpers
 - `pkg/chain`: In-memory blockchain, genesis block creation, adding and validating blocks, difficulty calculation
 - `pkg/mempool`: Transaction mempool and selection for block assembly
 - `pkg/miner`: Periodic block assembly and proof-of-work hashing loop
 - `pkg/wallet`: Key generation, simple address derivation, transaction creation and signing, verification
-- `pkg/net`: P2P networking (libp2p GossipSub, DHT-based discovery, MDNS) [optional via build tag]
-- `pkg/storage`: Persistence layer backed by BadgerDB [optional via build tag]
+- `pkg/net`: P2P networking (libp2p GossipSub, DHT-based discovery, MDNS). The `Network` struct implements `libp2p/core/network.Notifiee` and `libp2p/p2p/discovery/mdns.Notifee` for robust peer handling.
+- `pkg/storage`: Persistence layer backed by BadgerDB. The `chain.NewChain` now explicitly takes a `*storage.Storage` instance.
 - `pkg/consensus`, `pkg/utxo`: Stubs or simple helpers to extend later
-- `cmd/gochain`: CLI entrypoint (cobra) to run a node and simple wallet ops
-- `config/config.yaml`: Example configuration
+
+Components are designed with dependency injection, allowing for flexible connections and testability.
 
 ### Build targets and Go versions
 This repository supports two build modes to keep the default toolchain footprint small and allow development on older Go versions:
@@ -34,8 +35,8 @@ This repository supports two build modes to keep the default toolchain footprint
   - CLI requires Go 1.20+; on older Go versions the CLI prints a message and exits
 
 - Full node (recommended): Go 1.20+ with tags `p2p` and `db`
-  - Enables libp2p networking and BadgerDB storage
-  - Builds the CLI to run a functional node
+  - Enables libp2p networking and BadgerDB storage, which are now fully integrated into the `cmd/gochain` application.
+  - Builds the CLI to run a functional node.
 
 Examples:
 
@@ -102,10 +103,13 @@ Note: The current wallet in the CLI is ephemeral and created in-process. It does
 ### Testing
 ```bash
 # Run all package tests (recommended)
-go test ./pkg/...
+go test ./...
 
 # Run specific package
 go test ./pkg/wallet -v
+
+# Run the main application integration test
+go test ./cmd/gochain -v
 ```
 
 If building/running with `-tags='p2p db'`, use Go 1.20+ to satisfy dependencies of libp2p, quic-go, and Badger.

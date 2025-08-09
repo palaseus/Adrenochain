@@ -74,6 +74,7 @@ func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 	}
 	
 	// Calculate transaction size and fee rate
+    // Calculate transaction size and fee rate
 	size := mp.calculateTransactionSize(tx)
 	feeRate := mp.calculateFeeRate(tx, size)
 	
@@ -271,8 +272,8 @@ func (h *TransactionHeap) Remove(entry *TransactionEntry) {
 func (h TransactionHeap) Len() int { return len(h) }
 
 func (h TransactionHeap) Less(i, j int) bool {
-	// For fee-based heap: higher fee rate first
-	return h[i].FeeRate > h[j].FeeRate
+	// For fee-based heap: lower fee rate first
+	return h[i].FeeRate < h[j].FeeRate
 }
 
 func (h TransactionHeap) Swap(i, j int) {

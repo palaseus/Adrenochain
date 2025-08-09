@@ -8,18 +8,20 @@ import (
 	"time"
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/storage"
 )
 
 // Chain represents the blockchain
 type Chain struct {
 	mu            sync.RWMutex
-	blocks        map[string]*block.Block // hash -> block
-	blockByHeight map[uint64]*block.Block // height -> block
+	blocks        map[string]*block.Block // hash -> block (in-memory cache)
+	blockByHeight map[uint64]*block.Block // height -> block (in-memory cache)
 	bestBlock     *block.Block
 	genesisBlock  *block.Block
 	tipHash       []byte
 	height        uint64
 	config        *ChainConfig
+	storage       *storage.Storage
 }
 
 // ChainConfig holds configuration for the blockchain
@@ -43,17 +45,45 @@ func DefaultChainConfig() *ChainConfig {
 }
 
 // NewChain creates a new blockchain
-func NewChain(config *ChainConfig) *Chain {
+func NewChain(config *ChainConfig, s *storage.Storage) (*Chain, error) {
 	chain := &Chain{
 		blocks:        make(map[string]*block.Block),
 		blockByHeight: make(map[uint64]*block.Block),
 		config:        config,
+		storage:       s,
 	}
-	
-	// Create genesis block
-	chain.createGenesisBlock()
-	
-	return chain
+
+	// Load chain state from storage
+	chainState, err := chain.storage.GetChainState()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load chain state: %w", err)
+	}
+
+	if chainState.Height == 0 {
+		// No chain state found, create genesis block
+		chain.createGenesisBlock()
+		// Store genesis block in storage
+		if err := chain.storage.StoreBlock(chain.genesisBlock); err != nil {
+			return nil, fmt.Errorf("failed to store genesis block: %w", err)
+		}
+		if err := chain.storage.StoreChainState(&storage.ChainState{
+			BestBlockHash: chain.genesisBlock.CalculateHash(),
+			Height:        chain.genesisBlock.Header.Height,
+		}); err != nil {
+			return nil, fmt.Errorf("failed to store chain state: %w", err)
+		}
+	} else {
+		// Load best block from storage
+		bestBlock, err := chain.storage.GetBlock(chainState.BestBlockHash)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load best block: %w", err)
+		}
+		chain.bestBlock = bestBlock
+		chain.tipHash = chainState.BestBlockHash
+		chain.height = chainState.Height
+	}
+
+	return chain, nil
 }
 
 // createGenesisBlock creates the genesis block
@@ -172,14 +202,23 @@ func (c *Chain) AddBlock(block *block.Block) error {
 	}
 	
 	// Add block to storage
-	c.blocks[string(hash)] = block
-	c.blockByHeight[block.Header.Height] = block
+	if err := c.storage.StoreBlock(block); err != nil {
+		return fmt.Errorf("failed to store block: %w", err)
+	}
 	
 	// Update chain tip if this block extends the current best chain
 	if c.isBetterChain(block) {
 		c.bestBlock = block
 		c.tipHash = hash
 		c.height = block.Header.Height
+		
+		// Store updated chain state
+		if err := c.storage.StoreChainState(&storage.ChainState{
+			BestBlockHash: c.tipHash,
+			Height:        c.height,
+		}); err != nil {
+			return fmt.Errorf("failed to store chain state: %w", err)
+		}
 	}
 	
 	return nil
@@ -200,8 +239,8 @@ func (c *Chain) validateBlock(block *block.Block) error {
 	
 	// Check if previous block exists (except for genesis)
 	if block.Header.Height > 0 {
-		prevBlock, exists := c.blocks[string(block.Header.PrevBlockHash)]
-		if !exists {
+		prevBlock, err := c.storage.GetBlock(block.Header.PrevBlockHash)
+		if err != nil || prevBlock == nil {
 			return fmt.Errorf("previous block not found")
 		}
 		
@@ -341,7 +380,21 @@ func (c *Chain) GetBlock(hash []byte) *block.Block {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	
-	return c.blocks[string(hash)]
+	// Try to get from in-memory cache first
+	if block, exists := c.blocks[string(hash)]; exists {
+		return block
+	}
+	
+	// Otherwise, load from storage
+	block, err := c.storage.GetBlock(hash)
+	if err != nil {
+		return nil
+	}
+	
+	// Add to in-memory cache
+	c.blocks[string(hash)] = block
+	
+	return block
 }
 
 // GetBlockByHeight returns a block by its height
@@ -349,7 +402,21 @@ func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	
-	return c.blockByHeight[height]
+	// Try to get from in-memory cache first
+	if block, exists := c.blockByHeight[height]; exists {
+		return block
+	}
+	
+	// Otherwise, iterate through blocks to find by height (less efficient)
+	// In a real implementation, storage would provide this directly
+	for _, block := range c.blocks {
+		if block.Header.Height == height {
+			c.blockByHeight[height] = block // Cache it
+			return block
+		}
+	}
+	
+	return nil
 }
 
 // GetBestBlock returns the current best block
@@ -426,6 +493,11 @@ func (c *Chain) ForkChoice(newBlock *block.Block) error {
 	}
 	
 	return fmt.Errorf("block does not extend the best chain")
+}
+
+// Close closes the chain's storage
+func (c *Chain) Close() error {
+	return c.storage.Close()
 }
 
 // String returns a string representation of the chain

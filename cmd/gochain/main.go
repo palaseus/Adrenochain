@@ -1,25 +1,24 @@
 //go:build go1.20
-// +build go1.20
+
 package main
 
 import (
-    "context"
-    "flag"
-    "fmt"
-    "log"
-    "os"
-    "os/signal"
-    "syscall"
-    "time"
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-    "github.com/gochain/gochain/pkg/block"
-    "github.com/gochain/gochain/pkg/chain"
-    "github.com/gochain/gochain/pkg/mempool"
-    "github.com/gochain/gochain/pkg/miner"
-    netpkg "github.com/gochain/gochain/pkg/net"
-    "github.com/gochain/gochain/pkg/wallet"
-    "github.com/spf13/cobra"
-    "github.com/spf13/viper"
+	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/chain"
+	"github.com/gochain/gochain/pkg/mempool"
+	"github.com/gochain/gochain/pkg/miner"
+	netpkg "github.com/gochain/gochain/pkg/net"
+	"github.com/gochain/gochain/pkg/storage"
+	"github.com/gochain/gochain/pkg/wallet"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -68,8 +67,18 @@ func runNode(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Mining: %t\n", mining)
 
 	// Create blockchain components
+	storageConfig := storage.DefaultStorageConfig().WithDataDir("./data")
+	storage, err := storage.NewStorage(storageConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create storage: %w", err)
+	}
+	defer storage.Close()
+
 	chainConfig := chain.DefaultChainConfig()
-	chain := chain.NewChain(chainConfig)
+	chain, err := chain.NewChain(chainConfig, storage)
+	if err != nil {
+		return fmt.Errorf("failed to create chain: %w", err)
+	}
 
 	mempoolConfig := mempool.DefaultMempoolConfig()
 	mempool := mempool.NewMempool(mempoolConfig)
@@ -84,35 +93,73 @@ func runNode(cmd *cobra.Command, args []string) error {
 	networkConfig.EnableMDNS = true
 	networkConfig.MaxPeers = 50
 
-    net, err := netpkg.NewNetwork(networkConfig)
+    net, err := netpkg.NewNetwork(networkConfig, chain, mempool)
 	if err != nil {
 		return fmt.Errorf("failed to create network: %w", err)
 	}
 
-	walletConfig := wallet.DefaultWalletConfig()
-	wallet, err := wallet.NewWallet(walletConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create wallet: %w", err)
-	}
+	
 
 	// Set up network message handlers
-	if err := net.SubscribeToBlocks(func(block *block.Block) {
-		fmt.Printf("Received block from network: %s\n", block.String())
-		if err := chain.AddBlock(block); err != nil {
-			fmt.Printf("Failed to add received block: %v\n", err)
-		}
-	}); err != nil {
+	blockSub, err := net.SubscribeToBlocks()
+	if err != nil {
 		return fmt.Errorf("failed to subscribe to blocks: %w", err)
 	}
+	defer blockSub.Cancel() // Ensure subscription is cancelled on shutdown
 
-	if err := net.SubscribeToTransactions(func(tx *block.Transaction) {
-		fmt.Printf("Received transaction from network: %s\n", tx.String())
-		if err := mempool.AddTransaction(tx); err != nil {
-			fmt.Printf("Failed to add received transaction: %v\n", err)
+	go func() {
+		for {
+			msg, err := blockSub.Next(net.GetContext())
+			if err != nil {
+				fmt.Printf("Error receiving block: %v\n", err)
+				return
+			}
+			var blockData []byte
+			if err := json.Unmarshal(msg.Data, &blockData); err != nil {
+				fmt.Printf("Failed to unmarshal block data: %v\n", err)
+				continue
+			}
+			var block block.Block
+			if err := json.Unmarshal(blockData, &block); err != nil {
+				fmt.Printf("Failed to unmarshal block: %v\n", err)
+				continue
+			}
+			fmt.Printf("Received block from network: %s\n", block.String())
+			if err := chain.AddBlock(&block); err != nil {
+				fmt.Printf("Failed to add received block: %v\n", err)
+			}
 		}
-	}); err != nil {
+	}()
+
+	txSub, err := net.SubscribeToTransactions()
+	if err != nil {
 		return fmt.Errorf("failed to subscribe to transactions: %w", err)
 	}
+	defer txSub.Cancel() // Ensure subscription is cancelled on shutdown
+
+	go func() {
+		for {
+			msg, err := txSub.Next(net.GetContext())
+			if err != nil {
+				fmt.Printf("Error receiving transaction: %v\n", err)
+				return
+			}
+			var txData []byte
+			if err := json.Unmarshal(msg.Data, &txData); err != nil {
+				fmt.Printf("Failed to unmarshal transaction data: %v\n", err)
+				continue
+			}
+			var tx block.Transaction
+			if err := json.Unmarshal(txData, &tx); err != nil {
+				fmt.Printf("Failed to unmarshal transaction: %v\n", err)
+				continue
+			}
+			fmt.Printf("Received transaction from network: %s\n", tx.String())
+			if err := mempool.AddTransaction(&tx); err != nil {
+				fmt.Printf("Failed to add received transaction: %v\n", err)
+			}
+		}
+	}()
 
 	// Start mining if enabled
 	if mining {
@@ -134,7 +181,7 @@ func runNode(cmd *cobra.Command, args []string) error {
 				fmt.Printf("Status: Height=%d, Hash=%x, Peers=%d, Mempool=%d\n",
 					chain.GetHeight(),
 					bestBlock.CalculateHash(),
-					net.GetPeerCount(),
+					len(net.GetPeers()),
 					mempool.GetTransactionCount())
 			}
 		}
@@ -273,8 +320,18 @@ func getBlockchainInfoCmd() *cobra.Command {
 		Use:   "info",
 		Short: "Get blockchain information",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			storageConfig := storage.DefaultStorageConfig().WithDataDir("./data")
+			storage, err := storage.NewStorage(storageConfig)
+			if err != nil {
+				return fmt.Errorf("failed to create storage: %w", err)
+			}
+			defer storage.Close()
+
 			chainConfig := chain.DefaultChainConfig()
-			chain := chain.NewChain(chainConfig)
+			chain, err := chain.NewChain(chainConfig, storage)
+			if err != nil {
+				return fmt.Errorf("failed to create chain: %w", err)
+			}
 
 			bestBlock := chain.GetBestBlock()
 			fmt.Printf("Blockchain Information:\n")
