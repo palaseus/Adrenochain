@@ -112,6 +112,20 @@ go test ./pkg/wallet -v
 go test ./cmd/gochain -v
 ```
 
+### Recent Updates
+
+This section summarizes recent changes made to the codebase:
+
+*   **Test Suite Fixes:**
+    *   Resolved build errors in `cmd/gochain/main.go` related to string literals and `viper` configuration.
+    *   Corrected `networkMsg` type usage in `cmd/gochain/main.go` for proper message unmarshaling.
+    *   Removed unused import in `cmd/gochain/main.go`.
+    *   All existing tests now pass.
+*   **Test File Creation:**
+    *   Added placeholder test files for `pkg/proto/net` and `proto/net` to ensure all packages have a basic test presence.
+*   **Architectural Audit:**
+    *   A high-level architectural audit was performed, confirming the project's modular design suitable for educational purposes. It also highlighted areas for future improvement in robustness, scalability, and security, consistent with the existing "Security/audit summary" and "Roadmap ideas".
+
 If building/running with `-tags='p2p db'`, use Go 1.20+ to satisfy dependencies of libp2p, quic-go, and Badger.
 
 ### Developer notes

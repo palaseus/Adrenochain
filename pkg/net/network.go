@@ -10,20 +10,21 @@ import (
 
 	"github.com/gochain/gochain/pkg/chain"
 	"github.com/gochain/gochain/pkg/mempool"
+	proto_net "github.com/gochain/gochain/pkg/proto/net"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	
+
+	"github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/libp2p/go-libp2p/p2p/transport/websocket"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p-pubsub"
 )
 
 // Notifiee methods for network.Notifiee interface
@@ -95,6 +96,7 @@ type Network struct {
 	cancel        context.CancelFunc
 	chain         *chain.Chain
 	mempool       *mempool.Mempool
+	privKey       crypto.PrivKey // Private key of the host
 }
 
 // PeerInfo holds information about a connected peer
@@ -126,14 +128,6 @@ func DefaultNetworkConfig() *NetworkConfig {
 		MaxPeers:       50,
 		ConnectionTimeout: 30 * time.Second,
 	}
-}
-
-// Message represents a network message
-type Message struct {
-	Type      string          `json:"type"`
-	Payload   json.RawMessage `json:"payload"`
-	Timestamp time.Time       `json:"timestamp"`
-	From      peer.ID         `json:"from"`
 }
 
 // NewNetwork creates a new P2P network
@@ -199,6 +193,7 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		cancel:        cancel,
 		chain:         chain,
 		mempool:       mempool,
+		privKey:       priv,
 	}
 	
 	// Set up event handlers
@@ -293,12 +288,108 @@ func (n *Network) SubscribeToTransactions() (*pubsub.Subscription, error) {
 	return n.pubsub.Subscribe("transactions")
 }
 
+// SignedMessage represents a network message with signature and public key
+type SignedMessage struct {
+	*proto_net.Message
+	SenderPeerID peer.ID `json:"sender_peer_id"` // Peer ID of the sender
+	Signature    []byte  `json:"signature"`      // Signature of the message
+}
+
+// Sign signs the message with the given private key
+func (m *SignedMessage) Sign(privKey crypto.PrivKey) error {
+	data, err := json.Marshal(m.Message)
+	if err != nil {
+		return err
+	}
+	signature, err := privKey.Sign(data)
+	if err != nil {
+		return err
+	}
+	m.Signature = signature
+	return nil
+}
+
+// Verify verifies the message signature
+func (m *SignedMessage) Verify() (bool, error) {
+	pubKey, err := m.SenderPeerID.ExtractPublicKey()
+	if err != nil {
+		return false, err
+	}
+	data, err := json.Marshal(m.Message)
+	if err != nil {
+		return false, err
+	}
+	return pubKey.Verify(data, m.Signature)
+}
+
 // PublishBlock publishes a block to the network
 func (n *Network) PublishBlock(blockData []byte) error {
-	return n.pubsub.Publish("blocks", blockData)
+	pubKey := n.host.Peerstore().PubKey(n.host.ID())
+	if pubKey == nil {
+		return fmt.Errorf("public key not found for host ID: %s", n.host.ID().String())
+	}
+	
+	peerID, err := peer.IDFromPublicKey(pubKey)
+	if err != nil {
+		return fmt.Errorf("failed to get peer ID from public key: %w", err)
+	}
+
+	msg := &proto_net.Message{
+		Type:      "block",
+		Payload:   blockData,
+		TimestampUnixNano: time.Now().UnixNano(),
+		FromPeerId:  []byte(peerID),
+	}
+
+	signedMsg := &SignedMessage{
+		Message: msg,
+		SenderPeerID: n.host.ID(),
+	}
+
+	if err := signedMsg.Sign(n.privKey); err != nil {
+		return fmt.Errorf("failed to sign block message: %w", err)
+	}
+
+	data, err := json.Marshal(signedMsg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal signed block message: %w", err)
+	}
+
+	return n.pubsub.Publish("blocks", data)
 }
 
 // PublishTransaction publishes a transaction to the network
 func (n *Network) PublishTransaction(txData []byte) error {
-	return n.pubsub.Publish("transactions", txData)
+	pubKey := n.host.Peerstore().PubKey(n.host.ID())
+	if pubKey == nil {
+		return fmt.Errorf("public key not found for host ID: %s", n.host.ID().String())
+	}
+	
+	peerID, err := peer.IDFromPublicKey(pubKey)
+	if err != nil {
+		return fmt.Errorf("failed to get peer ID from public key: %w", err)
+	}
+
+	msg := &proto_net.Message{
+		Type:      "transaction",
+		Payload:   txData,
+		TimestampUnixNano: time.Now().UnixNano(),
+		FromPeerId:  []byte(peerID),
+	}
+
+	signedMsg := &SignedMessage{
+		Message: msg,
+		SenderPeerID: n.host.ID(),
+	}
+
+	if err := signedMsg.Sign(n.privKey); err != nil {
+		return fmt.Errorf("failed to sign transaction message: %w", err)
+	}
+
+	data, err := json.Marshal(signedMsg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal signed transaction message: %w", err)
+	}
+
+	return n.pubsub.Publish("transactions", data)
 }

@@ -17,6 +17,7 @@ import (
 	netpkg "github.com/gochain/gochain/pkg/net"
 	"github.com/gochain/gochain/pkg/storage"
 	"github.com/gochain/gochain/pkg/wallet"
+	"github.com/libp2p/go-libp2p/core/peer" // Add this import
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -114,14 +115,27 @@ func runNode(cmd *cobra.Command, args []string) error {
 				fmt.Printf("Error receiving block: %v\n", err)
 				return
 			}
-			var blockData []byte
-			if err := json.Unmarshal(msg.Data, &blockData); err != nil {
-				fmt.Printf("Failed to unmarshal block data: %v\n", err)
+
+			var networkMsg netpkg.SignedMessage
+			if err := json.Unmarshal(msg.Data, &networkMsg); err != nil {
+				fmt.Printf("Failed to unmarshal network message for block: %v\n", err)
 				continue
 			}
+
+			// Verify message signature
+			verified, err := networkMsg.Verify()
+			if err != nil {
+				fmt.Printf("Error verifying block message signature: %v\n", err)
+				continue
+			}
+			if !verified {
+				fmt.Printf("Invalid block message signature from %s\n", peer.ID(networkMsg.FromPeerId).String())
+				continue
+			}
+
 			var block block.Block
-			if err := json.Unmarshal(blockData, &block); err != nil {
-				fmt.Printf("Failed to unmarshal block: %v\n", err)
+			if err := json.Unmarshal(networkMsg.Payload, &block); err != nil {
+				fmt.Printf("Failed to unmarshal block from payload: %v\n", err)
 				continue
 			}
 			fmt.Printf("Received block from network: %s\n", block.String())
@@ -144,14 +158,32 @@ func runNode(cmd *cobra.Command, args []string) error {
 				fmt.Printf("Error receiving transaction: %v\n", err)
 				return
 			}
-			var txData []byte
-			if err := json.Unmarshal(msg.Data, &txData); err != nil {
-				fmt.Printf("Failed to unmarshal transaction data: %v\n", err)
+
+			var networkMsg netpkg.SignedMessage
+			if err := json.Unmarshal(msg.Data, &networkMsg); err != nil {
+				fmt.Printf("Failed to unmarshal network message for transaction: %v\n", err)
 				continue
 			}
+
+			// Verify message signature
+			verified, err := networkMsg.Verify()
+			if err != nil {
+				fmt.Printf("Error verifying transaction message signature: %v\n", err)
+				continue
+			}
+			if !verified {
+				senderPeerID, err := peer.IDFromBytes(networkMsg.Message.FromPeerId)
+				if err != nil {
+					fmt.Printf("Failed to get peer ID from bytes: %v\n", err)
+					continue
+				}
+				fmt.Printf("Invalid transaction message signature from %s\n", senderPeerID.String())
+				continue
+			}
+
 			var tx block.Transaction
-			if err := json.Unmarshal(txData, &tx); err != nil {
-				fmt.Printf("Failed to unmarshal transaction: %v\n", err)
+			if err := json.Unmarshal(networkMsg.Message.Payload, &tx); err != nil {
+				fmt.Printf("Failed to unmarshal transaction from payload: %v\n", err)
 				continue
 			}
 			fmt.Printf("Received transaction from network: %s\n", tx.String())
@@ -344,4 +376,4 @@ func getBlockchainInfoCmd() *cobra.Command {
 			return nil
 		},
 	}
-} 
+}
