@@ -25,10 +25,10 @@ func TestMineAndValidateBlock(t *testing.T) {
 
 	b := &block.Block{
 		Header: &block.Header{
-			Version:    1,
+			Version:       1,
 			PrevBlockHash: []byte{},
-			Timestamp:  time.Now(),
-			Difficulty: c.GetDifficulty(),
+			Timestamp:     time.Now(),
+			Difficulty:    c.GetDifficulty(),
 		},
 	}
 	b.Header.MerkleRoot = b.CalculateMerkleRoot()
@@ -49,10 +49,10 @@ func TestValidateInvalidBlock(t *testing.T) {
 	// Block with invalid version
 	b := &block.Block{
 		Header: &block.Header{
-			Version:    0,
+			Version:       0,
 			PrevBlockHash: []byte{},
-			Timestamp:  time.Now(),
-			Difficulty: c.GetDifficulty(),
+			Timestamp:     time.Now(),
+			Difficulty:    c.GetDifficulty(),
 		},
 	}
 	b.Header.MerkleRoot = b.CalculateMerkleRoot()

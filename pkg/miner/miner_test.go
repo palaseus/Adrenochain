@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	
 	"github.com/gochain/gochain/pkg/chain"
+	"github.com/gochain/gochain/pkg/consensus"
 	"github.com/gochain/gochain/pkg/mempool"
 	"github.com/gochain/gochain/pkg/storage"
 	"github.com/stretchr/testify/assert"
@@ -14,20 +14,22 @@ import (
 func TestMiner(t *testing.T) {
 	dataDir := "./test_miner_data_test_miner"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
 	defer storage.Close()
 
-	chain, err := chain.NewChain(chain.DefaultChainConfig(), storage)
+	chainConfig := chain.DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := chain.NewChain(chainConfig, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
 	mempool := mempool.NewMempool(mempool.DefaultMempoolConfig())
 	config := DefaultMinerConfig()
-	miner := NewMiner(chain, mempool, config)
+	miner := NewMiner(chain, mempool, config, consensusConfig)
 
 	// Test Start and Stop
 	err = miner.StartMining()
@@ -41,20 +43,22 @@ func TestMiner(t *testing.T) {
 func TestCreateNewBlock(t *testing.T) {
 	dataDir := "./test_miner_data_test_create_new_block"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
 	defer storage.Close()
 
-	chain, err := chain.NewChain(chain.DefaultChainConfig(), storage)
+	chainConfig := chain.DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := chain.NewChain(chainConfig, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
 	mempool := mempool.NewMempool(mempool.DefaultMempoolConfig())
 	config := DefaultMinerConfig()
-	miner := NewMiner(chain, mempool, config)
+	miner := NewMiner(chain, mempool, config, consensusConfig)
 
 	prevBlock := chain.GetBestBlock()
 

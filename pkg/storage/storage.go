@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	
 
 	"github.com/gochain/gochain/pkg/block"
 )
@@ -69,8 +68,8 @@ func (s *Storage) GetBlock(hash []byte) (*block.Block, error) {
 
 // ChainState represents the state of the blockchain.
 type ChainState struct {
-	BestBlockHash []byte    `json:"best_block_hash"`
-	Height        uint64    `json:"height"`
+	BestBlockHash []byte `json:"best_block_hash"`
+	Height        uint64 `json:"height"`
 }
 
 // StoreChainState stores the chain state to a file.

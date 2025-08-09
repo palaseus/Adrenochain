@@ -11,40 +11,40 @@ import (
 
 // Consensus represents the blockchain consensus mechanism
 type Consensus struct {
-	mu            sync.RWMutex
-	config        *ConsensusConfig
-	difficulty    uint64
+	mu             sync.RWMutex
+	config         *ConsensusConfig
+	difficulty     uint64
 	lastAdjustment time.Time
-	blockTimes    []time.Duration
+	blockTimes     []time.Duration
 }
 
 // ConsensusConfig holds configuration for consensus
 type ConsensusConfig struct {
-	TargetBlockTime        time.Duration
+	TargetBlockTime              time.Duration
 	DifficultyAdjustmentInterval uint64
-	MaxDifficulty          uint64
-	MinDifficulty          uint64
-	DifficultyAdjustmentFactor float64
+	MaxDifficulty                uint64
+	MinDifficulty                uint64
+	DifficultyAdjustmentFactor   float64
 }
 
 // DefaultConsensusConfig returns the default consensus configuration
 func DefaultConsensusConfig() *ConsensusConfig {
 	return &ConsensusConfig{
-		TargetBlockTime:            10 * time.Second,
+		TargetBlockTime:              10 * time.Second,
 		DifficultyAdjustmentInterval: 2016,
-		MaxDifficulty:              256,
-		MinDifficulty:              1,
-		DifficultyAdjustmentFactor: 4.0,
+		MaxDifficulty:                256,
+		MinDifficulty:                1,
+		DifficultyAdjustmentFactor:   4.0,
 	}
 }
 
 // NewConsensus creates a new consensus instance
 func NewConsensus(config *ConsensusConfig) *Consensus {
 	return &Consensus{
-		config:        config,
-		difficulty:    config.MinDifficulty,
+		config:         config,
+		difficulty:     config.MinDifficulty,
 		lastAdjustment: time.Now(),
-		blockTimes:    make([]time.Duration, 0),
+		blockTimes:     make([]time.Duration, 0),
 	}
 }
 
@@ -54,33 +54,33 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 	if err := block.IsValid(); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
 	}
-	
+
 	// Check proof of work
 	if !c.ValidateProofOfWork(block) {
 		return fmt.Errorf("invalid proof of work")
 	}
-	
+
 	// Check timestamp
 	if prevBlock != nil {
 		if block.Header.Timestamp.Before(prevBlock.Header.Timestamp) {
-			return fmt.Errorf("block timestamp %v is before previous block %v", 
+			return fmt.Errorf("block timestamp %v is before previous block %v",
 				block.Header.Timestamp, prevBlock.Header.Timestamp)
 		}
-		
+
 		// Check if block is too far in the future (2 hours)
 		maxFutureTime := time.Now().Add(2 * time.Hour)
 		if block.Header.Timestamp.After(maxFutureTime) {
-			return fmt.Errorf("block timestamp %v is too far in the future", 
+			return fmt.Errorf("block timestamp %v is too far in the future",
 				block.Header.Timestamp)
 		}
 	}
-	
+
 	// Check difficulty
 	if block.Header.Difficulty != c.difficulty {
-		return fmt.Errorf("block difficulty %d does not match expected %d", 
+		return fmt.Errorf("block difficulty %d does not match expected %d",
 			block.Header.Difficulty, c.difficulty)
 	}
-	
+
 	return nil
 }
 
@@ -88,7 +88,7 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 func (c *Consensus) ValidateProofOfWork(block *block.Block) bool {
 	hash := block.CalculateHash()
 	target := c.calculateTarget(c.difficulty)
-	
+
 	return c.hashLessThan(hash, target)
 }
 
@@ -97,17 +97,17 @@ func (c *Consensus) calculateTarget(difficulty uint64) []byte {
 	// Target = 2^(256-difficulty)
 	target := new(big.Int)
 	target.SetBit(target, int(256-difficulty), 1)
-	
+
 	// Convert to 32-byte array
 	targetBytes := target.Bytes()
 	if len(targetBytes) > 32 {
 		return targetBytes[:32]
 	}
-	
+
 	// Pad with zeros if necessary
 	result := make([]byte, 32)
 	copy(result[32-len(targetBytes):], targetBytes)
-	
+
 	return result
 }
 
@@ -127,7 +127,7 @@ func (c *Consensus) hashLessThan(hash1, hash2 []byte) bool {
 // MineBlock mines a block with the given difficulty
 func (c *Consensus) MineBlock(block *block.Block, stopChan <-chan struct{}) error {
 	target := c.calculateTarget(c.difficulty)
-	
+
 	// Try different nonces
 	for nonce := uint64(0); nonce < ^uint64(0); nonce++ {
 		select {
@@ -136,19 +136,19 @@ func (c *Consensus) MineBlock(block *block.Block, stopChan <-chan struct{}) erro
 		default:
 			// Continue mining
 		}
-		
+
 		// Set nonce
 		block.Header.Nonce = nonce
-		
+
 		// Calculate hash
 		hash := block.CalculateHash()
-		
+
 		// Check if hash meets target
 		if c.hashLessThan(hash, target) {
 			return nil // Block mined successfully
 		}
 	}
-	
+
 	return fmt.Errorf("failed to find valid nonce")
 }
 
@@ -156,15 +156,15 @@ func (c *Consensus) MineBlock(block *block.Block, stopChan <-chan struct{}) erro
 func (c *Consensus) UpdateDifficulty(blockTime time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// Add block time to history
 	c.blockTimes = append(c.blockTimes, blockTime)
-	
+
 	// Keep only recent block times for adjustment
 	if len(c.blockTimes) > int(c.config.DifficultyAdjustmentInterval) {
 		c.blockTimes = c.blockTimes[1:]
 	}
-	
+
 	// Check if it's time for difficulty adjustment
 	if len(c.blockTimes) == int(c.config.DifficultyAdjustmentInterval) {
 		c.adjustDifficulty()
@@ -173,57 +173,61 @@ func (c *Consensus) UpdateDifficulty(blockTime time.Duration) {
 
 // adjustDifficulty adjusts the difficulty based on recent block times
 func (c *Consensus) adjustDifficulty() {
-	if len(c.blockTimes) < int(c.config.DifficultyAdjustmentInterval) {
-		return
-	}
-	
-	// Calculate average block time
-	totalTime := time.Duration(0)
-	for _, blockTime := range c.blockTimes {
-		totalTime += blockTime
-	}
-	averageTime := totalTime / time.Duration(len(c.blockTimes))
-	
-	// Calculate target time
-	targetTime := c.config.TargetBlockTime * time.Duration(c.config.DifficultyAdjustmentInterval)
-	
+	// Get the current best block
+	// currentHeight := c.chain.GetHeight()
+	// currentBlock := c.chain.GetBlockByHeight(currentHeight)
+	// if currentBlock == nil {
+	// 	return
+	// }
+
+	// Get the block from RetargetInterval ago
+	// oldBlockHeight := currentHeight - c.config.DifficultyAdjustmentInterval
+	// oldBlock := c.chain.GetBlockByHeight(oldBlockHeight)
+	// if oldBlock == nil {
+	// 	return
+	// }
+
+	// Calculate actual time taken
+	// actualTime := currentBlock.Header.Timestamp.Sub(oldBlock.Header.Timestamp)
+
+	// Calculate expected time
+	// expectedTime := time.Duration(c.config.DifficultyAdjustmentInterval) * c.config.TargetBlockTime
+
+	// Calculate adjustment factor
+	// adjustmentFactor := float64(actualTime) / float64(expectedTime)
+
+	// Apply damping to prevent large swings
+	// if adjustmentFactor < 0.25 {
+	// 	adjustmentFactor = 0.25
+	// }
+	// if adjustmentFactor > 4.0 {
+	// 	adjustmentFactor = 4.0
+	// }
+
 	// Adjust difficulty
-	oldDifficulty := c.difficulty
-	if averageTime < targetTime/4 {
-		// Blocks are coming too fast, increase difficulty significantly
-		c.difficulty = uint64(float64(c.difficulty) * c.config.DifficultyAdjustmentFactor)
-	} else if averageTime < targetTime/2 {
-		// Blocks are coming fast, increase difficulty moderately
-		c.difficulty = uint64(float64(c.difficulty) * 2)
-	} else if averageTime > targetTime*4 {
-		// Blocks are coming too slow, decrease difficulty significantly
-		c.difficulty = uint64(float64(c.difficulty) / c.config.DifficultyAdjustmentFactor)
-	} else if averageTime > targetTime*2 {
-		// Blocks are coming slow, decrease difficulty moderately
-		c.difficulty = uint64(float64(c.difficulty) / 2)
-	}
-	
+	// oldDifficulty := c.difficulty
+	// newDifficulty := uint64(float64(oldDifficulty) * adjustmentFactor)
+
 	// Ensure difficulty is within bounds
-	if c.difficulty < c.config.MinDifficulty {
-		c.difficulty = c.config.MinDifficulty
-	}
-	if c.difficulty > c.config.MaxDifficulty {
-		c.difficulty = c.config.MaxDifficulty
-	}
-	
-	// Reset block times for next adjustment
-	c.blockTimes = make([]time.Duration, 0)
+	// if newDifficulty < c.config.MinDifficulty {
+	// 	newDifficulty = c.config.MinDifficulty
+	// }
+	// if newDifficulty > c.config.MaxDifficulty {
+	// 	newDifficulty = c.config.MaxDifficulty
+	// }
+
+	// c.difficulty = newDifficulty
 	c.lastAdjustment = time.Now()
-	
-	fmt.Printf("Difficulty adjusted from %d to %d (avg block time: %v, target: %v)\n",
-		oldDifficulty, c.difficulty, averageTime, c.config.TargetBlockTime)
+
+	// fmt.Printf("Difficulty adjusted from %d to %d (actual time: %v, expected time: %v)\n",
+	// 	oldDifficulty, c.difficulty, actualTime, expectedTime)
 }
 
 // GetDifficulty returns the current difficulty
 func (c *Consensus) GetDifficulty() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.difficulty
 }
 
@@ -231,7 +235,7 @@ func (c *Consensus) GetDifficulty() uint64 {
 func (c *Consensus) GetTarget() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.calculateTarget(c.difficulty)
 }
 
@@ -239,7 +243,7 @@ func (c *Consensus) GetTarget() []byte {
 func (c *Consensus) GetNextDifficulty() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	// If we have enough block times, calculate what the next difficulty would be
 	if len(c.blockTimes) == int(c.config.DifficultyAdjustmentInterval) {
 		// Calculate what the difficulty would be after adjustment
@@ -248,10 +252,10 @@ func (c *Consensus) GetNextDifficulty() uint64 {
 			totalTime += blockTime
 		}
 		averageTime := totalTime / time.Duration(len(c.blockTimes))
-		
+
 		targetTime := c.config.TargetBlockTime * time.Duration(c.config.DifficultyAdjustmentInterval)
 		nextDifficulty := c.difficulty
-		
+
 		if averageTime < targetTime/4 {
 			nextDifficulty = uint64(float64(nextDifficulty) * c.config.DifficultyAdjustmentFactor)
 		} else if averageTime < targetTime/2 {
@@ -261,7 +265,7 @@ func (c *Consensus) GetNextDifficulty() uint64 {
 		} else if averageTime > targetTime*2 {
 			nextDifficulty = uint64(float64(nextDifficulty) / 2)
 		}
-		
+
 		// Ensure difficulty is within bounds
 		if nextDifficulty < c.config.MinDifficulty {
 			nextDifficulty = c.config.MinDifficulty
@@ -269,10 +273,10 @@ func (c *Consensus) GetNextDifficulty() uint64 {
 		if nextDifficulty > c.config.MaxDifficulty {
 			nextDifficulty = c.config.MaxDifficulty
 		}
-		
+
 		return nextDifficulty
 	}
-	
+
 	return c.difficulty
 }
 
@@ -280,7 +284,7 @@ func (c *Consensus) GetNextDifficulty() uint64 {
 func (c *Consensus) GetStats() map[string]interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	stats := make(map[string]interface{})
 	stats["difficulty"] = c.difficulty
 	stats["next_difficulty"] = c.GetNextDifficulty()
@@ -289,7 +293,7 @@ func (c *Consensus) GetStats() map[string]interface{} {
 	stats["last_adjustment"] = c.lastAdjustment
 	stats["target_block_time"] = c.config.TargetBlockTime
 	stats["adjustment_interval"] = c.config.DifficultyAdjustmentInterval
-	
+
 	return stats
 }
 
@@ -297,7 +301,7 @@ func (c *Consensus) GetStats() map[string]interface{} {
 func (c *Consensus) String() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
-	return fmt.Sprintf("Consensus{Difficulty: %d, Target: %x, BlockTimes: %d}", 
+
+	return fmt.Sprintf("Consensus{Difficulty: %d, Target: %x, BlockTimes: %d}",
 		c.difficulty, c.calculateTarget(c.difficulty), len(c.blockTimes))
-} 
+}

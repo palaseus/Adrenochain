@@ -10,32 +10,32 @@ import (
 
 	"github.com/gochain/gochain/pkg/block"
 	"github.com/gochain/gochain/pkg/chain"
-	"github.com/gochain/gochain/pkg/mempool"
 	"github.com/gochain/gochain/pkg/consensus"
+	"github.com/gochain/gochain/pkg/mempool"
 )
 
 // Miner represents a blockchain miner
 type Miner struct {
-	mu            sync.RWMutex
-	chain         *chain.Chain
-	mempool       *mempool.Mempool
-	config        *MinerConfig
-	isMining      bool
-	stopMining    chan struct{}
-	currentBlock  *block.Block
-	ctx           context.Context
-	cancel        context.CancelFunc
-	consensus     *consensus.Consensus
+	mu           sync.RWMutex
+	chain        *chain.Chain
+	mempool      *mempool.Mempool
+	config       *MinerConfig
+	isMining     bool
+	stopMining   chan struct{}
+	currentBlock *block.Block
+	ctx          context.Context
+	cancel       context.CancelFunc
+	consensus    *consensus.Consensus
 }
 
 // MinerConfig holds configuration for the miner
 type MinerConfig struct {
-	MiningEnabled     bool
-	MiningThreads     int
-	BlockTime         time.Duration
-	MaxBlockSize      uint64
-	CoinbaseAddress   string
-	CoinbaseReward    uint64
+	MiningEnabled   bool
+	MiningThreads   int
+	BlockTime       time.Duration
+	MaxBlockSize    uint64
+	CoinbaseAddress string
+	CoinbaseReward  uint64
 }
 
 // DefaultMinerConfig returns the default miner configuration
@@ -51,9 +51,9 @@ func DefaultMinerConfig() *MinerConfig {
 }
 
 // NewMiner creates a new miner
-func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig) *Miner {
+func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig, consensusConfig *consensus.ConsensusConfig) *Miner {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Miner{
 		chain:      chain,
 		mempool:    mempool,
@@ -61,7 +61,7 @@ func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig)
 		stopMining: make(chan struct{}),
 		ctx:        ctx,
 		cancel:     cancel,
-		consensus:  consensus.NewConsensus(consensus.DefaultConsensusConfig()),
+		consensus:  consensus.NewConsensus(consensusConfig),
 	}
 }
 
@@ -69,17 +69,17 @@ func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig)
 func (m *Miner) StartMining() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if m.isMining {
 		return fmt.Errorf("mining already in progress")
 	}
-	
+
 	m.isMining = true
 	m.stopMining = make(chan struct{})
-	
+
 	// Start mining in a goroutine
 	go m.mineBlocks()
-	
+
 	return nil
 }
 
@@ -87,11 +87,11 @@ func (m *Miner) StartMining() error {
 func (m *Miner) StopMining() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if !m.isMining {
 		return
 	}
-	
+
 	m.isMining = false
 	close(m.stopMining)
 }
@@ -100,7 +100,7 @@ func (m *Miner) StopMining() {
 func (m *Miner) IsMining() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	return m.isMining
 }
 
@@ -108,7 +108,7 @@ func (m *Miner) IsMining() bool {
 func (m *Miner) mineBlocks() {
 	ticker := time.NewTicker(m.config.BlockTime)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -132,25 +132,25 @@ func (m *Miner) mineNextBlock() error {
 	if bestBlock == nil {
 		return fmt.Errorf("no best block available")
 	}
-	
+
 	// Create a new block
 	newBlock := m.createNewBlock(bestBlock)
 	if newBlock == nil {
 		return fmt.Errorf("failed to create new block")
 	}
-	
+
 	// Mine the block
 	if err := m.mineBlock(newBlock); err != nil {
 		return fmt.Errorf("failed to mine block: %w", err)
 	}
-	
+
 	// Add the block to the chain
 	if err := m.chain.AddBlock(newBlock); err != nil {
 		return fmt.Errorf("failed to add block to chain: %w", err)
 	}
-	
+
 	fmt.Printf("Mined new block: %s\n", newBlock.String())
-	
+
 	return nil
 }
 
@@ -158,7 +158,7 @@ func (m *Miner) mineNextBlock() error {
 func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 	// Get transactions from mempool
 	transactions := m.mempool.GetTransactionsForBlock(m.config.MaxBlockSize)
-	
+
 	// Create new block
 	newBlock := &block.Block{
 		Header: &block.Header{
@@ -177,18 +177,18 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 
 	// Create coinbase transaction
 	coinbaseTx := m.createCoinbaseTransaction(prevBlock.Header.Height + 1)
-	
+
 	// Add coinbase transaction first
 	newBlock.AddTransaction(coinbaseTx)
-	
+
 	// Add other transactions
 	for _, tx := range transactions {
 		newBlock.AddTransaction(tx)
 	}
-	
+
 	// Calculate Merkle root
 	newBlock.Header.MerkleRoot = newBlock.CalculateMerkleRoot()
-	
+
 	return newBlock
 }
 
@@ -201,13 +201,13 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 			totalFees += tx.Fee
 		}
 	}
-	
+
 	// Create coinbase output
 	out := &block.TxOutput{
 		Value:        m.config.CoinbaseReward + totalFees,
 		ScriptPubKey: []byte(m.config.CoinbaseAddress),
 	}
-	
+
 	// Create transaction
 	tx := &block.Transaction{
 		Version:  1,
@@ -216,10 +216,10 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 		LockTime: 0,
 		Fee:      0,
 	}
-	
+
 	// Calculate transaction hash
 	tx.Hash = m.calculateTransactionHash(tx)
-	
+
 	return tx
 }
 
@@ -231,12 +231,12 @@ func (m *Miner) mineBlock(block *block.Block) error {
 // calculateTransactionHash calculates the hash of a transaction
 func (m *Miner) calculateTransactionHash(tx *block.Transaction) []byte {
 	data := make([]byte, 0)
-	
+
 	// Version
 	versionBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(versionBytes, tx.Version)
 	data = append(data, versionBytes...)
-	
+
 	// Inputs
 	for _, input := range tx.Inputs {
 		data = append(data, input.PrevTxHash...)
@@ -248,7 +248,7 @@ func (m *Miner) calculateTransactionHash(tx *block.Transaction) []byte {
 		binary.BigEndian.PutUint32(seqBytes, input.Sequence)
 		data = append(data, seqBytes...)
 	}
-	
+
 	// Outputs
 	for _, output := range tx.Outputs {
 		valueBytes := make([]byte, 8)
@@ -256,17 +256,17 @@ func (m *Miner) calculateTransactionHash(tx *block.Transaction) []byte {
 		data = append(data, valueBytes...)
 		data = append(data, output.ScriptPubKey...)
 	}
-	
+
 	// Lock time
 	lockTimeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(lockTimeBytes, tx.LockTime)
 	data = append(data, lockTimeBytes...)
-	
+
 	// Fee
 	feeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(feeBytes, tx.Fee)
 	data = append(data, feeBytes...)
-	
+
 	hash := sha256.Sum256(data)
 	return hash[:]
 }
@@ -275,7 +275,7 @@ func (m *Miner) calculateTransactionHash(tx *block.Transaction) []byte {
 func (m *Miner) GetCurrentBlock() *block.Block {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	return m.currentBlock
 }
 
@@ -283,13 +283,13 @@ func (m *Miner) GetCurrentBlock() *block.Block {
 func (m *Miner) GetMiningStats() map[string]interface{} {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	stats := make(map[string]interface{})
 	stats["isMining"] = m.isMining
 	stats["currentBlock"] = m.currentBlock
 	stats["difficulty"] = m.chain.GetBestBlock().Header.Difficulty
 	stats["height"] = m.chain.GetHeight()
-	
+
 	return stats
 }
 
@@ -304,7 +304,7 @@ func (m *Miner) Close() error {
 func (m *Miner) String() string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
-	return fmt.Sprintf("Miner{Mining: %t, Threads: %d, BlockTime: %v}", 
+
+	return fmt.Sprintf("Miner{Mining: %t, Threads: %d, BlockTime: %v}",
 		m.isMining, m.config.MiningThreads, m.config.BlockTime)
 }

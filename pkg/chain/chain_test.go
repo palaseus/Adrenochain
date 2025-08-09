@@ -6,13 +6,15 @@ import (
 	"time"
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/consensus"
 	"github.com/gochain/gochain/pkg/storage"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewChain(t *testing.T) {
 	dataDir := "./test_chain_data_new_chain"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -20,7 +22,8 @@ func TestNewChain(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -49,7 +52,7 @@ func TestNewChain(t *testing.T) {
 func TestGenesisBlock(t *testing.T) {
 	dataDir := "./test_chain_data_genesis_block"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -57,7 +60,8 @@ func TestGenesisBlock(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -108,7 +112,7 @@ func TestGenesisBlock(t *testing.T) {
 func TestAddBlock(t *testing.T) {
 	dataDir := "./test_chain_data_add_block"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -116,7 +120,8 @@ func TestAddBlock(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -124,15 +129,15 @@ func TestAddBlock(t *testing.T) {
 	// Create a valid block
 	prevBlock := chain.GetBestBlock()
 	prevHash := prevBlock.CalculateHash()
-	
+
 	newBlock := &block.Block{
 		Header: &block.Header{
 			Version:       1,
 			PrevBlockHash: prevHash,
-			MerkleRoot:    []byte("merkle_root"),
+			MerkleRoot:    nil, // Will be calculated after adding transactions
 			Timestamp:     time.Now(),
-			Difficulty:    0, // Use difficulty 0 for testing (any hash is valid)
-			Nonce:         42,
+			Difficulty:    chain.CalculateNextDifficulty(),
+			Nonce:         0,
 			Height:        1,
 		},
 		Transactions: []*block.Transaction{},
@@ -153,6 +158,12 @@ func TestAddBlock(t *testing.T) {
 	newBlock.AddTransaction(tx)
 	newBlock.Header.MerkleRoot = newBlock.CalculateMerkleRoot()
 
+	// Mine the block to satisfy proof of work
+	stopChan := make(chan struct{})
+	defer close(stopChan)
+	err = chain.consensus.MineBlock(newBlock, stopChan)
+	assert.NoError(t, err, "Failed to mine block")
+
 	// Add block should succeed
 	if err := chain.AddBlock(newBlock); err != nil {
 		t.Errorf("Failed to add valid block: %v", err)
@@ -170,7 +181,7 @@ func TestAddBlock(t *testing.T) {
 func TestBlockValidation(t *testing.T) {
 	dataDir := "./test_chain_data_block_validation"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -178,7 +189,8 @@ func TestBlockValidation(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -204,7 +216,7 @@ func TestBlockValidation(t *testing.T) {
 	// Test invalid block (wrong height)
 	prevBlock := chain.GetBestBlock()
 	prevHash := prevBlock.CalculateHash()
-	
+
 	wrongHeightBlock := &block.Block{
 		Header: &block.Header{
 			Version:       1,
@@ -226,7 +238,7 @@ func TestBlockValidation(t *testing.T) {
 func TestGetBlock(t *testing.T) {
 	dataDir := "./test_chain_data_get_block"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -234,7 +246,8 @@ func TestGetBlock(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -242,7 +255,7 @@ func TestGetBlock(t *testing.T) {
 	// Get genesis block by hash
 	genesis := chain.GetGenesisBlock()
 	genesisHash := genesis.CalculateHash()
-	
+
 	retrievedBlock := chain.GetBlock(genesisHash)
 	if retrievedBlock == nil {
 		t.Fatal("Failed to retrieve genesis block by hash")
@@ -266,7 +279,7 @@ func TestGetBlock(t *testing.T) {
 func TestChainState(t *testing.T) {
 	dataDir := "./test_chain_data_chain_state"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -274,7 +287,8 @@ func TestChainState(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -303,7 +317,7 @@ func TestChainState(t *testing.T) {
 func TestDifficultyCalculation(t *testing.T) {
 	dataDir := "./test_chain_data_difficulty_calculation"
 	defer os.RemoveAll(dataDir)
-	
+
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
@@ -311,7 +325,8 @@ func TestDifficultyCalculation(t *testing.T) {
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -334,14 +349,6 @@ func TestChainConfig(t *testing.T) {
 		t.Error("Genesis block reward should not be zero")
 	}
 
-	if config.BlockTime <= 0 {
-		t.Error("Block time should be positive")
-	}
-
-	if config.DifficultyAdjustmentInterval == 0 {
-		t.Error("Difficulty adjustment interval should not be zero")
-	}
-
 	if config.MaxBlockSize == 0 {
 		t.Error("Max block size should not be zero")
 	}
@@ -350,15 +357,16 @@ func TestChainConfig(t *testing.T) {
 func TestBlockSizeValidation(t *testing.T) {
 	dataDir := "./test_chain_data_block_size_validation"
 	defer os.RemoveAll(dataDir)
-	
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
-	if err != nil {
-		t.Fatalf("Failed to create storage: %v", err)
+
+	storage, storageErr := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if storageErr != nil {
+		t.Fatalf("Failed to create storage: %v", storageErr)
 	}
 	defer storage.Close()
 
 	config := DefaultChainConfig()
-	chain, err := NewChain(config, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storage)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -366,14 +374,14 @@ func TestBlockSizeValidation(t *testing.T) {
 	// Create a block that exceeds max size
 	prevBlock := chain.GetBestBlock()
 	prevHash := prevBlock.CalculateHash()
-	
+
 	largeBlock := &block.Block{
 		Header: &block.Header{
 			Version:       1,
 			PrevBlockHash: prevHash,
 			MerkleRoot:    []byte("merkle_root"),
 			Timestamp:     time.Now(),
-			Difficulty:    1000,
+			Difficulty:    chain.CalculateNextDifficulty(),
 			Nonce:         42,
 			Height:        1,
 		},

@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/gochain/gochain/pkg/chain"
+	"github.com/gochain/gochain/pkg/consensus"
 	"github.com/gochain/gochain/pkg/mempool"
 	proto_net "github.com/gochain/gochain/pkg/proto/net"
 	"github.com/gochain/gochain/pkg/storage"
+	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 )
@@ -23,7 +24,8 @@ func TestNewNetwork(t *testing.T) {
 	defer dummyStorage.Close()
 
 	dummyChainConfig := chain.DefaultChainConfig()
-	dummyChain, err := chain.NewChain(dummyChainConfig, dummyStorage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	dummyChain, err := chain.NewChain(dummyChainConfig, consensusConfig, dummyStorage)
 	assert.NoError(t, err)
 
 	dummyMempoolConfig := mempool.DefaultMempoolConfig()
@@ -44,7 +46,8 @@ func TestNetworkConnect(t *testing.T) {
 	defer dummyStorage1.Close()
 
 	dummyChainConfig1 := chain.DefaultChainConfig()
-	dummyChain1, err := chain.NewChain(dummyChainConfig1, dummyStorage1)
+	consensusConfig1 := consensus.DefaultConsensusConfig()
+	dummyChain1, err := chain.NewChain(dummyChainConfig1, consensusConfig1, dummyStorage1)
 	assert.NoError(t, err)
 
 	dummyMempoolConfig1 := mempool.DefaultMempoolConfig()
@@ -55,7 +58,8 @@ func TestNetworkConnect(t *testing.T) {
 	defer dummyStorage2.Close()
 
 	dummyChainConfig2 := chain.DefaultChainConfig()
-	dummyChain2, err := chain.NewChain(dummyChainConfig2, dummyStorage2)
+	consensusConfig2 := consensus.DefaultConsensusConfig()
+	dummyChain2, err := chain.NewChain(dummyChainConfig2, consensusConfig2, dummyStorage2)
 	assert.NoError(t, err)
 
 	dummyMempoolConfig2 := mempool.DefaultMempoolConfig()
@@ -89,7 +93,7 @@ func TestMessageSigningAndVerification(t *testing.T) {
 	assert.NoError(t, err)
 
 	payload := []byte(`"test payload"`)
-	
+
 	peerID, err := peer.IDFromPublicKey(pub)
 	assert.NoError(t, err)
 	peerIDBytes, err := peerID.MarshalBinary()
@@ -97,7 +101,7 @@ func TestMessageSigningAndVerification(t *testing.T) {
 
 	msg := &proto_net.Message{
 		TimestampUnixNano: time.Now().UnixNano(),
-		FromPeerId: peerIDBytes,
+		FromPeerId:        peerIDBytes,
 		Content: &proto_net.Message_BlockMessage{
 			BlockMessage: &proto_net.BlockMessage{
 				BlockData: payload,
@@ -141,7 +145,8 @@ func TestPublishSubscribe(t *testing.T) {
 	defer dummyStorage1.Close()
 
 	dummyChainConfig1 := chain.DefaultChainConfig()
-	dummyChain1, err := chain.NewChain(dummyChainConfig1, dummyStorage1)
+	consensusConfig1 := consensus.DefaultConsensusConfig()
+	dummyChain1, err := chain.NewChain(dummyChainConfig1, consensusConfig1, dummyStorage1)
 	assert.NoError(t, err)
 
 	dummyMempoolConfig1 := mempool.DefaultMempoolConfig()
@@ -152,7 +157,8 @@ func TestPublishSubscribe(t *testing.T) {
 	defer dummyStorage2.Close()
 
 	dummyChainConfig2 := chain.DefaultChainConfig()
-	dummyChain2, err := chain.NewChain(dummyChainConfig2, dummyStorage2)
+	consensusConfig2 := consensus.DefaultConsensusConfig()
+	dummyChain2, err := chain.NewChain(dummyChainConfig2, consensusConfig2, dummyStorage2)
 	assert.NoError(t, err)
 
 	dummyMempoolConfig2 := mempool.DefaultMempoolConfig()
@@ -211,7 +217,7 @@ func TestPublishSubscribe(t *testing.T) {
 		// Handle the message
 		var receivedMsg proto_net.Message
 		assert.NoError(t, proto.Unmarshal(msg.Data, &receivedMsg))
-		
+
 		// Check if it's a BlockMessage and extract data
 		blockMsg := receivedMsg.GetBlockMessage()
 		assert.NotNil(t, blockMsg)

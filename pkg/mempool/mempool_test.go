@@ -2,11 +2,24 @@ package mempool
 
 import (
 	"testing"
-	
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/utxo"
 	"github.com/stretchr/testify/assert"
 )
+
+// Helper function to create a dummy UTXO
+func createDummyUTXO(txHash []byte, txIndex uint32, value uint64, address string) *utxo.UTXO {
+	return &utxo.UTXO{
+		TxHash:       txHash,
+		TxIndex:      txIndex,
+		Value:        value,
+		ScriptPubKey: []byte(address),
+		Address:      address,
+		IsCoinbase:   false,
+		Height:       1, // Dummy height
+	}
+}
 
 func TestMempool(t *testing.T) {
 	config := DefaultMempoolConfig()
@@ -43,7 +56,8 @@ func TestMempool(t *testing.T) {
 
 func TestMempoolEviction(t *testing.T) {
 	config := DefaultMempoolConfig()
-	config.MaxSize = 200
+	config.MaxSize = 300
+	config.MinFeeRate = 0 // Set MinFeeRate to 0 for this test
 	mp := NewMempool(config)
 
 	tx1 := &block.Transaction{
@@ -59,7 +73,7 @@ func TestMempoolEviction(t *testing.T) {
 
 	tx2 := &block.Transaction{
 		Hash: []byte("tx2"),
-		Fee:  200,
+		Fee:  100,
 		Inputs: []*block.TxInput{
 			{PrevTxHash: []byte("prev_tx2"), PrevTxIndex: 0, ScriptSig: []byte("sig2")},
 		},
@@ -70,12 +84,12 @@ func TestMempoolEviction(t *testing.T) {
 
 	tx3 := &block.Transaction{
 		Hash: []byte("tx3"),
-		Fee:  100,
+		Fee:  1, // Changed from 100 to 1
 		Inputs: []*block.TxInput{
 			{PrevTxHash: []byte("prev_tx3"), PrevTxIndex: 0, ScriptSig: []byte("sig3")},
 		},
 		Outputs: []*block.TxOutput{
-			{Value: 50, ScriptPubKey: []byte("pubkey3")},
+			{Value: 149, ScriptPubKey: []byte("pubkey3")}, // Changed from 50 to 149
 		},
 	}
 
@@ -91,7 +105,7 @@ func TestMempoolEviction(t *testing.T) {
 	// This should evict tx3
 	tx4 := &block.Transaction{
 		Hash: []byte("tx4"),
-		Fee:  150,
+		Fee:  100,
 		Inputs: []*block.TxInput{
 			{PrevTxHash: []byte("prev_tx4"), PrevTxIndex: 0, ScriptSig: []byte("sig4")},
 		},

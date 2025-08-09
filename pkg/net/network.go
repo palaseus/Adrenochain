@@ -83,21 +83,20 @@ func (n *Network) HandlePeerFound(peerInfo peer.AddrInfo) {
 	}
 }
 
-
 // Network represents the P2P network layer
 type Network struct {
-	mu            sync.RWMutex
-	host          host.Host
-	dht           *dht.IpfsDHT
-	pubsub        *pubsub.PubSub
-	peers         map[peer.ID]*PeerInfo
+	mu             sync.RWMutex
+	host           host.Host
+	dht            *dht.IpfsDHT
+	pubsub         *pubsub.PubSub
+	peers          map[peer.ID]*PeerInfo
 	bootstrapPeers []multiaddr.Multiaddr
-	config        *NetworkConfig
-	ctx           context.Context
-	cancel        context.CancelFunc
-	chain         *chain.Chain
-	mempool       *mempool.Mempool
-	privKey       crypto.PrivKey // Private key of the host
+	config         *NetworkConfig
+	ctx            context.Context
+	cancel         context.CancelFunc
+	chain          *chain.Chain
+	mempool        *mempool.Mempool
+	privKey        crypto.PrivKey // Private key of the host
 }
 
 // PeerInfo holds information about a connected peer
@@ -111,22 +110,22 @@ type PeerInfo struct {
 
 // NetworkConfig holds configuration for the network
 type NetworkConfig struct {
-	ListenPort     int
-	BootstrapPeers []string
-	EnableMDNS     bool
-	EnableRelay    bool
-	MaxPeers       int
+	ListenPort        int
+	BootstrapPeers    []string
+	EnableMDNS        bool
+	EnableRelay       bool
+	MaxPeers          int
 	ConnectionTimeout time.Duration
 }
 
 // DefaultNetworkConfig returns the default network configuration
 func DefaultNetworkConfig() *NetworkConfig {
 	return &NetworkConfig{
-		ListenPort:     0, // Random port
-		BootstrapPeers: []string{},
-		EnableMDNS:     true,
-		EnableRelay:    false,
-		MaxPeers:       50,
+		ListenPort:        0, // Random port
+		BootstrapPeers:    []string{},
+		EnableMDNS:        true,
+		EnableRelay:       false,
+		MaxPeers:          50,
 		ConnectionTimeout: 30 * time.Second,
 	}
 }
@@ -134,14 +133,14 @@ func DefaultNetworkConfig() *NetworkConfig {
 // NewNetwork creates a new P2P network
 func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Mempool) (*Network, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Generate a new key pair
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, rand.Reader)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to generate key pair: %w", err)
 	}
-	
+
 	// Create libp2p host
 	host, err := libp2p.New(
 		libp2p.Identity(priv),
@@ -150,7 +149,7 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Transport(websocket.New),
-		
+
 		libp2p.EnableHolePunching(),
 		libp2p.NATPortMap(),
 	)
@@ -158,21 +157,21 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		cancel()
 		return nil, fmt.Errorf("failed to create host: %w", err)
 	}
-	
+
 	// Create DHT
 	dht, err := dht.New(ctx, host, dht.Mode(dht.ModeServer))
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create DHT: %w", err)
 	}
-	
+
 	// Create pubsub
 	pubsub, err := pubsub.NewGossipSub(ctx, host, pubsub.WithMessageSigning(true))
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create pubsub: %w", err)
 	}
-	
+
 	// Parse bootstrap peers
 	var bootstrapPeers []multiaddr.Multiaddr
 	for _, addr := range config.BootstrapPeers {
@@ -182,33 +181,33 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		}
 		bootstrapPeers = append(bootstrapPeers, ma)
 	}
-	
+
 	network := &Network{
-		host:          host,
-		dht:           dht,
-		pubsub:        pubsub,
-		peers:         make(map[peer.ID]*PeerInfo),
+		host:           host,
+		dht:            dht,
+		pubsub:         pubsub,
+		peers:          make(map[peer.ID]*PeerInfo),
 		bootstrapPeers: bootstrapPeers,
-		config:        config,
-		ctx:           ctx,
-		cancel:        cancel,
-		chain:         chain,
-		mempool:       mempool,
-		privKey:       priv,
+		config:         config,
+		ctx:            ctx,
+		cancel:         cancel,
+		chain:          chain,
+		mempool:        mempool,
+		privKey:        priv,
 	}
-	
+
 	// Set up event handlers
 	host.Network().Notify(network)
-	
+
 	// Start peer discovery
 	if err := network.startPeerDiscovery(); err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start peer discovery: %w", err)
 	}
-	
+
 	// Connect to bootstrap peers
 	go network.connectToBootstrapPeers()
-	
+
 	return network, nil
 }
 
@@ -295,7 +294,7 @@ func (n *Network) PublishBlock(blockData []byte) error {
 	if pubKey == nil {
 		return fmt.Errorf("public key not found for host ID: %s", n.host.ID().String())
 	}
-	
+
 	peerID, err := peer.IDFromPublicKey(pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to get peer ID from public key: %w", err)
@@ -308,7 +307,7 @@ func (n *Network) PublishBlock(blockData []byte) error {
 
 	msg := &proto_net.Message{
 		TimestampUnixNano: time.Now().UnixNano(),
-		FromPeerId:  peerIDBytes,
+		FromPeerId:        peerIDBytes,
 		Content: &proto_net.Message_BlockMessage{
 			BlockMessage: &proto_net.BlockMessage{
 				BlockData: blockData,
@@ -341,7 +340,7 @@ func (n *Network) PublishTransaction(txData []byte) error {
 	if pubKey == nil {
 		return fmt.Errorf("public key not found for host ID: %s", n.host.ID().String())
 	}
-	
+
 	peerID, err := peer.IDFromPublicKey(pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to get peer ID from public key: %w", err)
@@ -354,7 +353,7 @@ func (n *Network) PublishTransaction(txData []byte) error {
 
 	msg := &proto_net.Message{
 		TimestampUnixNano: time.Now().UnixNano(),
-		FromPeerId:  peerIDBytes,
+		FromPeerId:        peerIDBytes,
 		Content: &proto_net.Message_TransactionMessage{
 			TransactionMessage: &proto_net.TransactionMessage{
 				TransactionData: txData,

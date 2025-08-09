@@ -12,11 +12,12 @@ import (
 
 	"github.com/gochain/gochain/pkg/block"
 	"github.com/gochain/gochain/pkg/chain"
+	"github.com/gochain/gochain/pkg/consensus"
 	"github.com/gochain/gochain/pkg/mempool"
 	"github.com/gochain/gochain/pkg/miner"
 	netpkg "github.com/gochain/gochain/pkg/net"
-	"github.com/gochain/gochain/pkg/storage"
 	proto_net "github.com/gochain/gochain/pkg/proto/net"
+	"github.com/gochain/gochain/pkg/storage"
 	"github.com/gochain/gochain/pkg/wallet"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/spf13/cobra"
@@ -78,7 +79,8 @@ func runNode(cmd *cobra.Command, args []string) error {
 	defer storage.Close()
 
 	chainConfig := chain.DefaultChainConfig()
-	chain, err := chain.NewChain(chainConfig, storage)
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := chain.NewChain(chainConfig, consensusConfig, storage)
 	if err != nil {
 		return fmt.Errorf("failed to create chain: %w", err)
 	}
@@ -89,19 +91,17 @@ func runNode(cmd *cobra.Command, args []string) error {
 	minerConfig := miner.DefaultMinerConfig()
 	minerConfig.MiningEnabled = mining
 	minerConfig.CoinbaseAddress = "miner_reward"
-	miner := miner.NewMiner(chain, mempool, minerConfig)
+	miner := miner.NewMiner(chain, mempool, minerConfig, consensusConfig)
 
-    networkConfig := netpkg.DefaultNetworkConfig()
+	networkConfig := netpkg.DefaultNetworkConfig()
 	networkConfig.ListenPort = port
 	networkConfig.EnableMDNS = true
 	networkConfig.MaxPeers = 50
 
-    net, err := netpkg.NewNetwork(networkConfig, chain, mempool)
+	net, err := netpkg.NewNetwork(networkConfig, chain, mempool)
 	if err != nil {
 		return fmt.Errorf("failed to create network: %w", err)
 	}
-
-	
 
 	// Set up network message handlers
 	blockSub, err := net.SubscribeToBlocks()
@@ -400,7 +400,8 @@ func getBlockchainInfoCmd() *cobra.Command {
 			defer storage.Close()
 
 			chainConfig := chain.DefaultChainConfig()
-			chain, err := chain.NewChain(chainConfig, storage)
+			consensusConfig := consensus.DefaultConsensusConfig()
+			chain, err := chain.NewChain(chainConfig, consensusConfig, storage)
 			if err != nil {
 				return fmt.Errorf("failed to create chain: %w", err)
 			}

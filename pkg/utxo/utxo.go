@@ -1,7 +1,6 @@
 package utxo
 
 import (
-	
 	"fmt"
 	"sync"
 
@@ -10,20 +9,20 @@ import (
 
 // UTXOSet represents the set of unspent transaction outputs
 type UTXOSet struct {
-	mu      sync.RWMutex
-	utxos   map[string]*UTXO // key: "txHash:index"
+	mu       sync.RWMutex
+	utxos    map[string]*UTXO  // key: "txHash:index"
 	balances map[string]uint64 // address -> balance
 }
 
 // UTXO represents an unspent transaction output
 type UTXO struct {
-	TxHash      []byte `json:"tx_hash"`
-	TxIndex     uint32 `json:"tx_index"`
-	Value       uint64 `json:"value"`
+	TxHash       []byte `json:"tx_hash"`
+	TxIndex      uint32 `json:"tx_index"`
+	Value        uint64 `json:"value"`
 	ScriptPubKey []byte `json:"script_pub_key"`
-	Address     string `json:"address"`
-	IsCoinbase  bool   `json:"is_coinbase"`
-	Height      uint64 `json:"height"`
+	Address      string `json:"address"`
+	IsCoinbase   bool   `json:"is_coinbase"`
+	Height       uint64 `json:"height"`
 }
 
 // NewUTXOSet creates a new UTXO set
@@ -38,7 +37,7 @@ func NewUTXOSet() *UTXOSet {
 func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 	key := us.makeKey(utxo.TxHash, utxo.TxIndex)
 	us.utxos[key] = utxo
-	
+
 	// Update balance
 	us.balances[utxo.Address] += utxo.Value
 }
@@ -50,13 +49,13 @@ func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
 	if !exists {
 		return nil
 	}
-	
+
 	// Update balance
 	us.balances[utxo.Address] -= utxo.Value
 	if us.balances[utxo.Address] == 0 {
 		delete(us.balances, utxo.Address)
 	}
-	
+
 	delete(us.utxos, key)
 	return utxo
 }
@@ -71,7 +70,7 @@ func (us *UTXOSet) GetUTXO(txHash []byte, txIndex uint32) *UTXO {
 func (us *UTXOSet) GetBalance(address string) uint64 {
 	us.mu.RLock()
 	defer us.mu.RUnlock()
-	
+
 	return us.balances[address]
 }
 
@@ -79,14 +78,14 @@ func (us *UTXOSet) GetBalance(address string) uint64 {
 func (us *UTXOSet) GetAddressUTXOs(address string) []*UTXO {
 	us.mu.RLock()
 	defer us.mu.RUnlock()
-	
+
 	var addressUTXOs []*UTXO
 	for _, utxo := range us.utxos {
 		if utxo.Address == address {
 			addressUTXOs = append(addressUTXOs, utxo)
 		}
 	}
-	
+
 	return addressUTXOs
 }
 
@@ -99,14 +98,14 @@ func (us *UTXOSet) makeKey(txHash []byte, txIndex uint32) string {
 func (us *UTXOSet) ProcessBlock(block *block.Block) error {
 	us.mu.Lock()
 	defer us.mu.Unlock()
-	
+
 	// Process each transaction in the block
 	for _, tx := range block.Transactions {
 		if err := us.processTransaction(tx, block.Header.Height); err != nil {
 			return fmt.Errorf("failed to process transaction: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -118,42 +117,42 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 		if len(input.PrevTxHash) == 0 {
 			continue
 		}
-		
+
 		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
 		if utxo == nil {
 			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
 		}
-		
+
 		// Validate that the input can be spent
 		if !us.canSpendUTXO(utxo, input.ScriptSig) {
 			return fmt.Errorf("cannot spend UTXO: %x:%d", input.PrevTxHash, input.PrevTxIndex)
 		}
-		
+
 		// Remove the spent UTXO
 		us.RemoveUTXO(input.PrevTxHash, input.PrevTxIndex)
 	}
-	
+
 	// Add new outputs
 	for i, output := range tx.Outputs {
 		// Determine if this is a coinbase transaction
 		isCoinbase := len(tx.Inputs) == 0
-		
+
 		// Extract address from script public key (simplified)
 		address := us.extractAddress(output.ScriptPubKey)
-		
+
 		utxo := &UTXO{
-			TxHash:      tx.Hash,
-			TxIndex:     uint32(i),
-			Value:       output.Value,
+			TxHash:       tx.Hash,
+			TxIndex:      uint32(i),
+			Value:        output.Value,
 			ScriptPubKey: output.ScriptPubKey,
-			Address:     address,
-			IsCoinbase:  isCoinbase,
-			Height:      height,
+			Address:      address,
+			IsCoinbase:   isCoinbase,
+			Height:       height,
 		}
-		
+
 		us.AddUTXO(utxo)
 	}
-	
+
 	return nil
 }
 
@@ -161,19 +160,19 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 func (us *UTXOSet) canSpendUTXO(utxo *UTXO, scriptSig []byte) bool {
 	// In a real implementation, this would validate the script
 	// For now, we'll use a simplified approach
-	
+
 	// Check if the script signature matches the expected pattern
 	if len(scriptSig) == 0 {
 		return false
 	}
-	
+
 	// For coinbase transactions, we might have additional validation
 	if utxo.IsCoinbase {
 		// Coinbase outputs might have maturity requirements
 		// For now, we'll allow them to be spent
 		return true
 	}
-	
+
 	// Basic validation: check if script signature is not empty
 	return len(scriptSig) > 0
 }
@@ -200,7 +199,7 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 	if len(tx.Outputs) == 0 {
 		return fmt.Errorf("transaction has no outputs")
 	}
-	
+
 	// Calculate total input value
 	totalInput := uint64(0)
 	for _, input := range tx.Inputs {
@@ -208,27 +207,27 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 		if utxo == nil {
 			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
 		}
-		
+
 		totalInput += utxo.Value
 	}
-	
+
 	// Calculate total output value
 	totalOutput := uint64(0)
 	for _, output := range tx.Outputs {
 		totalOutput += output.Value
 	}
-	
+
 	// Check if outputs exceed inputs (including fees)
 	if totalOutput > totalInput {
 		return fmt.Errorf("output value %d exceeds input value %d", totalOutput, totalInput)
 	}
-	
+
 	// Validate that the fee is reasonable
 	fee := totalInput - totalOutput
 	if fee < tx.Fee {
 		return fmt.Errorf("actual fee %d is less than specified fee %d", fee, tx.Fee)
 	}
-	
+
 	return nil
 }
 
@@ -236,18 +235,18 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 func (us *UTXOSet) GetStats() map[string]interface{} {
 	us.mu.RLock()
 	defer us.mu.RUnlock()
-	
+
 	stats := make(map[string]interface{})
 	stats["total_utxos"] = len(us.utxos)
 	stats["total_addresses"] = len(us.balances)
-	
+
 	// Calculate total value
 	totalValue := uint64(0)
 	for _, balance := range us.balances {
 		totalValue += balance
 	}
 	stats["total_value"] = totalValue
-	
+
 	return stats
 }
 
@@ -255,7 +254,7 @@ func (us *UTXOSet) GetStats() map[string]interface{} {
 func (us *UTXOSet) GetUTXOCount() int {
 	us.mu.RLock()
 	defer us.mu.RUnlock()
-	
+
 	return len(us.utxos)
 }
 
@@ -263,13 +262,13 @@ func (us *UTXOSet) GetUTXOCount() int {
 func (us *UTXOSet) GetAddressCount() int {
 	us.mu.RLock()
 	defer us.mu.RUnlock()
-	
+
 	return len(us.balances)
 }
 
 // String returns a string representation of the UTXO set
 func (us *UTXOSet) String() string {
 	stats := us.GetStats()
-	return fmt.Sprintf("UTXOSet{UTXOs: %v, Addresses: %v, TotalValue: %v}", 
+	return fmt.Sprintf("UTXOSet{UTXOs: %v, Addresses: %v, TotalValue: %v}",
 		stats["total_utxos"], stats["total_addresses"], stats["total_value"])
-} 
+}

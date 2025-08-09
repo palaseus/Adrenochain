@@ -44,7 +44,7 @@ func TestNewBlock(t *testing.T) {
 
 func TestAddTransaction(t *testing.T) {
 	block := NewBlock([]byte("prev_hash"), 1, 1000)
-	
+
 	tx := &Transaction{
 		Version: 1,
 		Inputs:  []*TxInput{},
@@ -129,7 +129,7 @@ func TestCalculateMerkleRoot(t *testing.T) {
 
 func TestBlockValidation(t *testing.T) {
 	block := NewBlock([]byte("prev_hash"), 1, 1000)
-	
+
 	// Valid block should pass validation
 	if err := block.IsValid(); err != nil {
 		t.Errorf("Valid block failed validation: %v", err)
@@ -241,4 +241,4 @@ func TestHexHash(t *testing.T) {
 	if hexHash != expectedHex {
 		t.Errorf("Expected hex hash %s, got %s", expectedHex, hexHash)
 	}
-} 
+}

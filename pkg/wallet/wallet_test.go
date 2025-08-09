@@ -332,4 +332,4 @@ func TestAccountString(t *testing.T) {
 	if accountStr == "" {
 		t.Error("Account string representation is empty")
 	}
-} 
+}

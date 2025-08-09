@@ -38,7 +38,7 @@ type ChainConfig struct {
 func DefaultChainConfig() *ChainConfig {
 	return &ChainConfig{
 		GenesisBlockReward: 1000000000, // 1 billion units
-		MaxBlockSize:       1000000, // 1MB
+		MaxBlockSize:       1000000,    // 1MB
 	}
 }
 
@@ -50,12 +50,10 @@ func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s
 		config:        config,
 		storage:       s,
 		UTXOSet:       utxo.NewUTXOSet(), // Initialize UTXOSet
-				consensus:     nil,
+		consensus:     nil,
 	}
 
-	chain.consensus = consensus.NewConsensus(consensusConfig, chain, s)
-
-	chain.consensus = consensus.NewConsensus(consensusConfig, chain, s)
+	chain.consensus = consensus.NewConsensus(consensusConfig)
 
 	// Load chain state from storage
 	chainState, err := chain.storage.GetChainState()
@@ -102,8 +100,8 @@ func (c *Chain) createGenesisBlock() {
 	genesis := &block.Block{
 		Header: &block.Header{
 			Version:       1,
-			PrevBlockHash: make([]byte, 32), // 32 bytes of zeros
-			MerkleRoot:    make([]byte, 32), // Will be calculated
+			PrevBlockHash: make([]byte, 32),         // 32 bytes of zeros
+			MerkleRoot:    make([]byte, 32),         // Will be calculated
 			Timestamp:     time.Unix(1231006505, 0), // Bitcoin genesis timestamp
 			Difficulty:    1,
 			Nonce:         0,
@@ -111,17 +109,17 @@ func (c *Chain) createGenesisBlock() {
 		},
 		Transactions: make([]*block.Transaction, 0),
 	}
-	
+
 	// Create coinbase transaction
 	coinbaseTx := c.createCoinbaseTransaction(genesis.Header.Height, c.config.GenesisBlockReward)
 	genesis.AddTransaction(coinbaseTx)
-	
+
 	// Calculate Merkle root
 	genesis.Header.MerkleRoot = genesis.CalculateMerkleRoot()
-	
+
 	// Calculate hash
 	hash := genesis.CalculateHash()
-	
+
 	// Store genesis block
 	c.blocks[string(hash)] = genesis
 	c.blockByHeight[0] = genesis
@@ -138,7 +136,7 @@ func (c *Chain) createCoinbaseTransaction(height uint64, reward uint64) *block.T
 		Value:        reward,
 		ScriptPubKey: []byte(fmt.Sprintf("COINBASE_%d", height)),
 	}
-	
+
 	tx := &block.Transaction{
 		Version:  1,
 		Inputs:   make([]*block.TxInput, 0), // Coinbase has no inputs
@@ -146,22 +144,22 @@ func (c *Chain) createCoinbaseTransaction(height uint64, reward uint64) *block.T
 		LockTime: 0,
 		Fee:      0,
 	}
-	
+
 	// Calculate transaction hash
 	tx.Hash = c.calculateTransactionHash(tx)
-	
+
 	return tx
 }
 
 // calculateTransactionHash calculates the hash of a transaction
 func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
 	data := make([]byte, 0)
-	
+
 	// Version
 	versionBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(versionBytes, tx.Version)
 	data = append(data, versionBytes...)
-	
+
 	// Inputs
 	for _, input := range tx.Inputs {
 		data = append(data, input.PrevTxHash...)
@@ -173,7 +171,7 @@ func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
 		binary.BigEndian.PutUint32(seqBytes, input.Sequence)
 		data = append(data, seqBytes...)
 	}
-	
+
 	// Outputs
 	for _, output := range tx.Outputs {
 		valueBytes := make([]byte, 8)
@@ -181,17 +179,17 @@ func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
 		data = append(data, valueBytes...)
 		data = append(data, output.ScriptPubKey...)
 	}
-	
+
 	// Lock time
 	lockTimeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(lockTimeBytes, tx.LockTime)
 	data = append(data, lockTimeBytes...)
-	
+
 	// Fee
 	feeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(feeBytes, tx.Fee)
 	data = append(data, feeBytes...)
-	
+
 	hash := sha256.Sum256(data)
 	return hash[:]
 }
@@ -200,33 +198,34 @@ func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
 func (c *Chain) AddBlock(block *block.Block) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// Validate the block
 	prevBlock := c.GetBlock(block.Header.PrevBlockHash)
 	if err := c.consensus.ValidateBlock(block, prevBlock); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
 	}
-	
+
 	// Check if block already exists
 	hash := block.CalculateHash()
 	if _, exists := c.blocks[string(hash)]; exists {
 		return fmt.Errorf("block already exists")
 	}
-	
+
 	// Add block to storage
 	if err := c.storage.StoreBlock(block); err != nil {
 		return fmt.Errorf("failed to store block: %w", err)
 	}
-	
+
 	// Update chain tip if this block extends the current best chain
 	if c.isBetterChain(block) {
 		c.bestBlock = block
 		c.tipHash = hash
 		c.height = block.Header.Height
-		
+
 		// Update consensus
 		if prevBlock != nil {
-							c.consensus.UpdateDifficulty()
+			blockTime := block.Header.Timestamp.Sub(prevBlock.Header.Timestamp)
+			c.consensus.UpdateDifficulty(blockTime)
 		}
 
 		// Store updated chain state
@@ -241,7 +240,7 @@ func (c *Chain) AddBlock(block *block.Block) error {
 			return fmt.Errorf("failed to process block for UTXO set: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -251,33 +250,33 @@ func (c *Chain) validateBlock(block *block.Block) error {
 	if err := block.IsValid(); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
 	}
-	
+
 	// Check block size
 	if c.getBlockSize(block) > c.config.MaxBlockSize {
-		return fmt.Errorf("block size %d exceeds maximum %d", 
+		return fmt.Errorf("block size %d exceeds maximum %d",
 			c.getBlockSize(block), c.config.MaxBlockSize)
 	}
-	
+
 	// Check if previous block exists (except for genesis)
 	if block.Header.Height > 0 {
 		prevBlock, err := c.storage.GetBlock(block.Header.PrevBlockHash)
 		if err != nil || prevBlock == nil {
 			return fmt.Errorf("previous block not found")
 		}
-		
+
 		// Check height continuity
 		if prevBlock.Header.Height+1 != block.Header.Height {
-			return fmt.Errorf("height discontinuity: expected %d, got %d", 
+			return fmt.Errorf("height discontinuity: expected %d, got %d",
 				prevBlock.Header.Height+1, block.Header.Height)
 		}
-		
+
 		// Check timestamp
 		if block.Header.Timestamp.Before(prevBlock.Header.Timestamp) {
-			return fmt.Errorf("block timestamp %v is before previous block %v", 
+			return fmt.Errorf("block timestamp %v is before previous block %v",
 				block.Header.Timestamp, prevBlock.Header.Timestamp)
 		}
 	}
-	
+
 	// Validate proof of work
 	if !c.consensus.ValidateProofOfWork(block) {
 		return fmt.Errorf("invalid proof of work")
@@ -289,48 +288,48 @@ func (c *Chain) validateBlock(block *block.Block) error {
 			return fmt.Errorf("transaction validation failed: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
 // getBlockSize calculates the approximate size of a block
 func (c *Chain) getBlockSize(block *block.Block) uint64 {
 	size := uint64(0)
-	
+
 	// Header size (fixed)
 	size += 80 // 32 + 32 + 8 + 8 + 8 + 4 = 92, rounded to 80 for simplicity
-	
+
 	// Transaction count
 	size += 4
-	
+
 	// Transaction sizes
 	for _, tx := range block.Transactions {
 		size += c.getTransactionSize(tx)
 	}
-	
+
 	return size
 }
 
 // getTransactionSize calculates the approximate size of a transaction
 func (c *Chain) getTransactionSize(tx *block.Transaction) uint64 {
 	size := uint64(0)
-	
+
 	// Version + LockTime + Fee
 	size += 4 + 8 + 8
-	
+
 	// Input count + Output count
 	size += 4 + 4
-	
+
 	// Inputs
 	for _, input := range tx.Inputs {
 		size += 32 + 4 + uint64(len(input.ScriptSig)) + 4
 	}
-	
+
 	// Outputs
 	for _, output := range tx.Outputs {
 		size += 8 + uint64(len(output.ScriptPubKey))
 	}
-	
+
 	return size
 }
 
@@ -347,16 +346,16 @@ func (c *Chain) GetBlock(hash []byte) *block.Block {
 	if block, exists := c.blocks[string(hash)]; exists {
 		return block
 	}
-	
+
 	// Otherwise, load from storage
 	block, err := c.storage.GetBlock(hash)
 	if err != nil {
 		return nil
 	}
-	
+
 	// Add to in-memory cache
 	c.blocks[string(hash)] = block
-	
+
 	return block
 }
 
@@ -366,7 +365,7 @@ func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
 	if block, exists := c.blockByHeight[height]; exists {
 		return block
 	}
-	
+
 	// Otherwise, iterate through blocks to find by height (less efficient)
 	// In a real implementation, storage would provide this directly
 	for _, block := range c.blocks {
@@ -375,7 +374,7 @@ func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
 			return block
 		}
 	}
-	
+
 	return nil
 }
 
@@ -383,7 +382,7 @@ func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
 func (c *Chain) GetBestBlock() *block.Block {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.bestBlock
 }
 
@@ -396,7 +395,7 @@ func (c *Chain) GetHeight() uint64 {
 func (c *Chain) GetTipHash() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return c.tipHash
 }
 
@@ -419,7 +418,7 @@ func (c *Chain) ForkChoice(newBlock *block.Block) error {
 	if newBlock.Header.Height > c.height {
 		return c.AddBlock(newBlock)
 	}
-	
+
 	return fmt.Errorf("block does not extend the best chain")
 }
 
@@ -432,7 +431,7 @@ func (c *Chain) Close() error {
 func (c *Chain) String() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
-	return fmt.Sprintf("Chain{Height: %d, BestBlock: %s, TipHash: %x}", 
+
+	return fmt.Sprintf("Chain{Height: %d, BestBlock: %s, TipHash: %x}",
 		c.height, c.bestBlock, c.tipHash)
-}  
+}

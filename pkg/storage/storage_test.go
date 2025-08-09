@@ -21,11 +21,11 @@ func TestFileStorage(t *testing.T) {
 	// Test StoreBlock and GetBlock
 	b := &block.Block{
 		Header: &block.Header{
-			Version:    1,
+			Version:       1,
 			PrevBlockHash: []byte{},
-			Timestamp:  time.Now(),
-			Difficulty: 1,
-			Height:     1,
+			Timestamp:     time.Now(),
+			Difficulty:    1,
+			Height:        1,
 		},
 	}
 	b.Header.MerkleRoot = b.CalculateMerkleRoot()

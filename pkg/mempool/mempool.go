@@ -11,13 +11,13 @@ import (
 
 // Mempool represents the transaction memory pool
 type Mempool struct {
-	mu            sync.RWMutex
-	transactions  map[string]*TransactionEntry // tx hash -> entry
-	byFee         *TransactionHeap            // Priority queue by fee
-	byTime        *TransactionHeap            // Priority queue by time
-	maxSize       uint64
-	currentSize   uint64
-	minFeeRate    uint64 // minimum fee per byte
+	mu           sync.RWMutex
+	transactions map[string]*TransactionEntry // tx hash -> entry
+	byFee        *TransactionHeapMin          // Priority queue by fee
+	byTime       *TransactionHeap             // Priority queue by time
+	maxSize      uint64
+	currentSize  uint64
+	minFeeRate   uint64 // minimum fee per byte
 }
 
 // TransactionEntry wraps a transaction with metadata
@@ -50,15 +50,15 @@ func DefaultMempoolConfig() *MempoolConfig {
 func NewMempool(config *MempoolConfig) *Mempool {
 	mp := &Mempool{
 		transactions: make(map[string]*TransactionEntry),
-		byFee:        &TransactionHeap{},
+		byFee:        &TransactionHeapMin{},
 		byTime:       &TransactionHeap{},
 		maxSize:      config.MaxSize,
 		minFeeRate:   config.MinFeeRate,
 	}
-	
+
 	heap.Init(mp.byFee)
 	heap.Init(mp.byTime)
-	
+
 	return mp
 }
 
@@ -66,23 +66,23 @@ func NewMempool(config *MempoolConfig) *Mempool {
 func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
-	
+
 	// Check if transaction already exists
 	txHash := string(tx.Hash)
 	if _, exists := mp.transactions[txHash]; exists {
 		return fmt.Errorf("transaction already in mempool")
 	}
-	
+
 	// Calculate transaction size and fee rate
-    // Calculate transaction size and fee rate
+	// Calculate transaction size and fee rate
 	size := mp.calculateTransactionSize(tx)
 	feeRate := mp.calculateFeeRate(tx, size)
-	
+
 	// Check minimum fee rate
 	if feeRate < mp.minFeeRate {
 		return fmt.Errorf("fee rate %d below minimum %d", feeRate, mp.minFeeRate)
 	}
-	
+
 	// Check if adding this transaction would exceed mempool size
 	if mp.currentSize+size > mp.maxSize {
 		// Try to evict low-fee transactions to make room
@@ -90,7 +90,7 @@ func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 			return fmt.Errorf("mempool full and cannot evict enough transactions")
 		}
 	}
-	
+
 	// Create transaction entry
 	entry := &TransactionEntry{
 		Transaction: tx,
@@ -98,15 +98,15 @@ func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 		Size:        size,
 		Timestamp:   time.Now(),
 	}
-	
+
 	// Add to mempool
 	mp.transactions[txHash] = entry
 	mp.currentSize += size
-	
+
 	// Add to priority queues
 	heap.Push(mp.byFee, entry)
 	heap.Push(mp.byTime, entry)
-	
+
 	return nil
 }
 
@@ -114,23 +114,23 @@ func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 func (mp *Mempool) RemoveTransaction(txHash []byte) bool {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
-	
+
 	hash := string(txHash)
 	entry, exists := mp.transactions[hash]
 	if !exists {
 		return false
 	}
-	
+
 	// Remove from maps and queues
 	delete(mp.transactions, hash)
 	mp.currentSize -= entry.Size
-	
+
 	// Remove from fee queue
 	mp.byFee.Remove(entry)
-	
+
 	// Remove from time queue
 	mp.byTime.Remove(entry)
-	
+
 	return true
 }
 
@@ -138,12 +138,12 @@ func (mp *Mempool) RemoveTransaction(txHash []byte) bool {
 func (mp *Mempool) GetTransaction(txHash []byte) *block.Transaction {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
-	
+
 	entry, exists := mp.transactions[string(txHash)]
 	if !exists {
 		return nil
 	}
-	
+
 	return entry.Transaction
 }
 
@@ -151,32 +151,32 @@ func (mp *Mempool) GetTransaction(txHash []byte) *block.Transaction {
 func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
-	
+
 	var transactions []*block.Transaction
 	currentSize := uint64(0)
-	
+
 	// Create a copy of the fee queue to avoid modifying the original
-	feeQueue := make(TransactionHeap, mp.byFee.Len())
+	feeQueue := make(TransactionHeapMin, mp.byFee.Len())
 	copy(feeQueue, *mp.byFee)
-	
+
 	// Sort by fee rate (highest first)
 	for feeQueue.Len() > 0 && currentSize < maxSize {
 		entry := heap.Pop(&feeQueue).(*TransactionEntry)
-		
+
 		// Check if transaction still exists in mempool
 		if _, exists := mp.transactions[string(entry.Transaction.Hash)]; !exists {
 			continue
 		}
-		
+
 		// Check if adding this transaction would exceed block size
 		if currentSize+entry.Size > maxSize {
 			break
 		}
-		
+
 		transactions = append(transactions, entry.Transaction)
 		currentSize += entry.Size
 	}
-	
+
 	return transactions
 }
 
@@ -184,7 +184,7 @@ func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction 
 func (mp *Mempool) GetSize() uint64 {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
-	
+
 	return mp.currentSize
 }
 
@@ -192,7 +192,7 @@ func (mp *Mempool) GetSize() uint64 {
 func (mp *Mempool) GetTransactionCount() int {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
-	
+
 	return len(mp.transactions)
 }
 
@@ -200,12 +200,12 @@ func (mp *Mempool) GetTransactionCount() int {
 func (mp *Mempool) Clear() {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
-	
+
 	mp.transactions = make(map[string]*TransactionEntry)
-	mp.byFee = &TransactionHeap{}
+	mp.byFee = &TransactionHeapMin{}
 	mp.byTime = &TransactionHeap{}
 	mp.currentSize = 0
-	
+
 	heap.Init(mp.byFee)
 	heap.Init(mp.byTime)
 }
@@ -213,43 +213,43 @@ func (mp *Mempool) Clear() {
 // evictLowFeeTransactions evicts low-fee transactions to make room for new ones
 func (mp *Mempool) evictLowFeeTransactions(requiredSize uint64) bool {
 	evictedSize := uint64(0)
-	
+
 	// Evict transactions by lowest fee rate first
 	for mp.byFee.Len() > 0 && evictedSize < requiredSize {
 		entry := heap.Pop(mp.byFee).(*TransactionEntry)
-		
+
 		// Remove from mempool
 		delete(mp.transactions, string(entry.Transaction.Hash))
 		mp.currentSize -= entry.Size
 		evictedSize += entry.Size
-		
+
 		// Remove from time queue
 		mp.byTime.Remove(entry)
 	}
-	
+
 	return evictedSize >= requiredSize
 }
 
 // calculateTransactionSize calculates the size of a transaction
 func (mp *Mempool) calculateTransactionSize(tx *block.Transaction) uint64 {
 	size := uint64(0)
-	
+
 	// Version + LockTime + Fee
 	size += 4 + 8 + 8
-	
+
 	// Input count + Output count
 	size += 4 + 4
-	
+
 	// Inputs
 	for _, input := range tx.Inputs {
 		size += 32 + 4 + uint64(len(input.ScriptSig)) + 4
 	}
-	
+
 	// Outputs
 	for _, output := range tx.Outputs {
 		size += 8 + uint64(len(output.ScriptPubKey))
 	}
-	
+
 	return size
 }
 
@@ -272,8 +272,8 @@ func (h *TransactionHeap) Remove(entry *TransactionEntry) {
 func (h TransactionHeap) Len() int { return len(h) }
 
 func (h TransactionHeap) Less(i, j int) bool {
-	// For fee-based heap: lower fee rate first
-	return h[i].FeeRate < h[j].FeeRate
+	// For fee-based heap: higher fee rate first
+	return h[i].FeeRate > h[j].FeeRate
 }
 
 func (h TransactionHeap) Swap(i, j int) {
@@ -293,10 +293,50 @@ func (h *TransactionHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
 	entry := old[n-1]
-	old[n-1] = nil  // avoid memory leak
+	old[n-1] = nil   // avoid memory leak
 	entry.index = -1 // for safety
 	*h = old[0 : n-1]
 	return entry
+}
+
+// TransactionHeapMin implements heap.Interface for transaction prioritization (min-heap)
+type TransactionHeapMin []*TransactionEntry
+
+func (h TransactionHeapMin) Len() int { return len(h) }
+
+func (h TransactionHeapMin) Less(i, j int) bool {
+	// For fee-based min-heap: lower fee rate first
+	return h[i].FeeRate < h[j].FeeRate
+}
+
+func (h TransactionHeapMin) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
+	h[i].index = i
+	h[j].index = j
+}
+
+func (h *TransactionHeapMin) Push(x interface{}) {
+	n := len(*h)
+	entry := x.(*TransactionEntry)
+	entry.index = n
+	*h = append(*h, entry)
+}
+
+func (h *TransactionHeapMin) Pop() interface{} {
+	old := *h
+	n := len(old)
+	entry := old[n-1]
+	old[n-1] = nil   // avoid memory leak
+	entry.index = -1 // for safety
+	*h = old[0 : n-1]
+	return entry
+}
+
+// Remove removes a transaction from the heap
+func (h *TransactionHeapMin) Remove(entry *TransactionEntry) {
+	if entry.index >= 0 && entry.index < h.Len() {
+		heap.Remove(h, entry.index)
+	}
 }
 
 // TimeHeap implements heap.Interface for time-based prioritization
@@ -326,7 +366,7 @@ func (h *TimeHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
 	entry := old[n-1]
-	old[n-1] = nil  // avoid memory leak
+	old[n-1] = nil   // avoid memory leak
 	entry.index = -1 // for safety
 	*h = old[0 : n-1]
 	return entry
@@ -336,7 +376,7 @@ func (h *TimeHeap) Pop() interface{} {
 func (mp *Mempool) String() string {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
-	
-	return fmt.Sprintf("Mempool{Size: %d/%d, Transactions: %d, MinFeeRate: %d}", 
+
+	return fmt.Sprintf("Mempool{Size: %d/%d, Transactions: %d, MinFeeRate: %d}",
 		mp.currentSize, mp.maxSize, len(mp.transactions), mp.minFeeRate)
-} 
+}

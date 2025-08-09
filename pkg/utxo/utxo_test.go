@@ -51,13 +51,13 @@ func TestUTXOSet(t *testing.T) {
 	us := NewUTXOSet()
 
 	utxo1 := &UTXO{
-		TxHash:      calculateTxHash(&block.Transaction{Version: 1, Outputs: []*block.TxOutput{{Value: 100, ScriptPubKey: []byte("pubkey1")}}}),
-		TxIndex:     0,
-		Value:       100,
+		TxHash:       calculateTxHash(&block.Transaction{Version: 1, Outputs: []*block.TxOutput{{Value: 100, ScriptPubKey: []byte("pubkey1")}}}),
+		TxIndex:      0,
+		Value:        100,
 		ScriptPubKey: []byte("pubkey1"),
-		Address:     "addr1",
-		IsCoinbase:  false,
-		Height:      1,
+		Address:      "addr1",
+		IsCoinbase:   false,
+		Height:       1,
 	}
 
 	// Test AddUTXO
