@@ -1,26 +1,35 @@
 package wallet
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
+	"os" // Added import for os.IsNotExist
 	"sync"
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/gochain/gochain/pkg/storage" // Added import
 	"github.com/gochain/gochain/pkg/utxo"
 )
 
 // Wallet represents a cryptocurrency wallet
 type Wallet struct {
-	mu         sync.RWMutex
-	accounts   map[string]*Account
-	defaultKey *ecdsa.PrivateKey
-	keyType    KeyType
-	utxoSet    *utxo.UTXOSet
+	mu           sync.RWMutex
+	accounts     map[string]*Account
+	defaultKey   *ecdsa.PrivateKey
+	keyType      KeyType
+	utxoSet      *utxo.UTXOSet
+	storage      *storage.Storage // Added storage field
+	walletFilePath string         // Added walletFilePath field
+	passphrase   string         // Added passphrase field
 }
 
 // Account represents a wallet account
@@ -44,6 +53,7 @@ const (
 type WalletConfig struct {
 	KeyType    KeyType
 	Passphrase string
+	WalletFile string // Added WalletFile to config
 }
 
 // DefaultWalletConfig returns the default wallet configuration
@@ -51,25 +61,27 @@ func DefaultWalletConfig() *WalletConfig {
 	return &WalletConfig{
 		KeyType:    KeyTypeECDSA,
 		Passphrase: "",
+		WalletFile: "wallet.dat", // Default wallet file name
 	}
 }
 
 // NewWallet creates a new wallet
-func NewWallet(config *WalletConfig, us *utxo.UTXOSet) (*Wallet, error) {
+func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
 	wallet := &Wallet{
-		accounts: make(map[string]*Account),
-		keyType:  config.KeyType,
-		utxoSet:  us,
-		// storage:  config.Storage,
+		accounts:     make(map[string]*Account),
+		keyType:      config.KeyType,
+		utxoSet:      us,
+		storage:      s,                 // Initialize storage
+		walletFilePath: config.WalletFile, // Initialize wallet file path
+		passphrase:   config.Passphrase, // Initialize passphrase
 	}
 
 	// Try to load the wallet from storage
-	// if err := wallet.Load(); err != nil {
-	// 	return nil, fmt.Errorf("failed to load wallet: %w", err)
-	// }
-
-	if len(wallet.accounts) == 0 {
-		// Wallet doesn't exist or is empty, create a new one
+	if err := wallet.Load(); err != nil {
+		if !os.IsNotExist(err) { // Only return error if it's not "file not found"
+			return nil, fmt.Errorf("failed to load wallet: %w", err)
+		}
+		// If wallet file doesn't exist, create a new one
 		var defaultKey *ecdsa.PrivateKey
 		var errKey error
 
@@ -96,9 +108,9 @@ func NewWallet(config *WalletConfig, us *utxo.UTXOSet) (*Wallet, error) {
 		}
 
 		// Save the new wallet
-		// if err := wallet.Save(); err != nil {
-		// 	return nil, fmt.Errorf("failed to save new wallet: %w", err)
-		// }
+		if err := wallet.Save(); err != nil {
+			return nil, fmt.Errorf("failed to save new wallet: %w", err)
+		}
 	}
 
 	return wallet, nil
@@ -109,13 +121,17 @@ func (w *Wallet) Save() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// data, err := json.Marshal(w.accounts)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to marshal wallet accounts: %w", err)
-	// }
+	data, err := json.Marshal(w.accounts)
+	if err != nil {
+		return fmt.Errorf("failed to marshal wallet accounts: %w", err)
+	}
 
-	// return w.storage.Write(encryptedData)
-	return nil // Temporarily return nil to allow compilation
+	encryptedData, err := w.Encrypt(data)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt wallet data: %w", err)
+	}
+
+	return w.storage.Write([]byte(w.walletFilePath), encryptedData)
 }
 
 // Load loads and decrypts the wallet from storage
@@ -123,52 +139,59 @@ func (w *Wallet) Load() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	return nil
+	encryptedData, err := w.storage.Read([]byte(w.walletFilePath))
+	if err != nil {
+		return err // Propagate os.IsNotExist error
+	}
+
+	decryptedData, err := w.Decrypt(encryptedData)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt wallet data: %w", err)
+	}
+
+	return json.Unmarshal(decryptedData, &w.accounts)
 }
 
 // Encrypt encrypts data using AES-GCM
 func (w *Wallet) Encrypt(data []byte) ([]byte, error) {
-	// key := sha256.Sum256([]byte(w.storage.Path()))
-	// block, err := aes.NewCipher(key[:])
-	// if err != nil {
-	// 	return nil, err
-	// }
+	key := sha256.Sum256([]byte(w.passphrase))
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return nil, err
+	}
 
-	// gcm, err := cipher.NewGCM(block)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err	}
 
-	// nonce := make([]byte, gcm.NonceSize())
-	// if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-	// 	return nil, err
-	// }
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
 
-	// return gcm.Seal(nonce, nonce, data, nil), nil
-	return data, nil // Temporarily return original data
+	return gcm.Seal(nonce, nonce, data, nil), nil
 }
 
 // Decrypt decrypts data using AES-GCM
 func (w *Wallet) Decrypt(data []byte) ([]byte, error) {
-	// key := sha256.Sum256([]byte(w.storage.Path()))
-	// block, err := aes.NewCipher(key[:])
-	// if err != nil {
-	// 	return nil, err
-	// }
+	key := sha256.Sum256([]byte(w.passphrase))
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return nil, err
+	}
 
-	// gcm, err := cipher.NewGCM(block)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
 
-	// nonceSize := gcm.NonceSize()
-	// if len(data) < nonceSize {
-	// 	return nil, fmt.Errorf("ciphertext too short")
-	// }
+	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
 
-	// nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	// return gcm.Open(nil, nonce, ciphertext, nil)
-	return data, nil // Temporarily return original data
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
 // createDefaultAccount creates the default account from the default key
@@ -297,13 +320,13 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 	outputs := make([]*block.TxOutput, 0)
 
 	// Output to recipient
-	recipientPubKeyHash, err := addressToPubKeyHash(toAddress)
+	recipPubKeyHash, err := addressToPubKeyHash(toAddress)
 	if err != nil {
 		return nil, fmt.Errorf("invalid recipient address: %w", err)
 	}
 	outputs = append(outputs, &block.TxOutput{
 		Value:        amount,
-		ScriptPubKey: recipientPubKeyHash,
+		ScriptPubKey: recipPubKeyHash,
 	})
 
 	// No change output is created in this simplified model

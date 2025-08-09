@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"encoding/hex" // Added import
 
 	"github.com/gochain/gochain/pkg/block"
 )
@@ -101,6 +102,28 @@ func (s *Storage) GetChainState() (*ChainState, error) {
 		return nil, err
 	}
 	return &state, nil
+}
+
+// Write writes a key-value pair to storage.
+func (s *Storage) Write(key []byte, value []byte) error {
+	filename := filepath.Join(s.dataDir, hex.EncodeToString(key))
+	return os.WriteFile(filename, value, 0644)
+}
+
+// Read reads a value from storage given a key.
+func (s *Storage) Read(key []byte) ([]byte, error) {
+	filename := filepath.Join(s.dataDir, hex.EncodeToString(key))
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// Delete deletes a key-value pair from storage.
+func (s *Storage) Delete(key []byte) error {
+	filename := filepath.Join(s.dataDir, hex.EncodeToString(key))
+	return os.Remove(filename)
 }
 
 // Close is a no-op for file-based storage.

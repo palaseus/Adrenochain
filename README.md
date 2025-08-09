@@ -9,7 +9,8 @@ This codebase is designed for learning and experimentation rather than productio
 - Very simple proof-of-work (target-based) mining
 - In-memory blockchain and mempool
 - Minimal wallet with ECDSA (P-256) keys, signing and verification
-- **Improved UTXO (Unspent Transaction Output) integration for tracking and managing transaction outputs.**
+- **Persistent and encrypted wallet for secure storage of keys on disk.**
+- Improved UTXO (Unspent Transaction Output) integration for tracking and managing transaction outputs.
 - Integrated P2P networking using libp2p (GossipSub, DHT, mDNS discovery)
 - Integrated persistent storage using BadgerDB
 - CLI for running a full node, managing wallet, sending transactions, and inspecting chain state
@@ -20,11 +21,11 @@ This codebase is designed for learning and experimentation rather than productio
 - `pkg/chain`: In-memory blockchain, genesis block creation, adding and validating blocks, difficulty calculation
 - `pkg/mempool`: Transaction mempool and selection for block assembly
 - `pkg/miner`: Periodic block assembly and proof-of-work hashing loop
-- `pkg/wallet`: Key generation, simple address derivation, transaction creation and signing, verification
+- `pkg/wallet`: Key generation, simple address derivation, transaction creation and signing, verification. **Now includes functionality for persisting and encrypting wallet data to disk.**
 - `pkg/net`: P2P networking (libp2p GossipSub, DHT-based discovery, MDNS). The `Network` struct implements `libp2p/core/network.Notifiee` and `libp2p/p2p/discovery/mdns.Notifee` for robust peer handling.
 - `pkg/storage`: Persistence layer backed by BadgerDB. The `chain.NewChain` now explicitly takes a `*storage.Storage` instance.
 - `pkg/consensus`: Stubs or simple helpers to extend later
-- `pkg/utxo`: **Manages the Unspent Transaction Output (UTXO) set, including adding and removing UTXOs, and tracking address balances. This is a foundational component for transaction validation and double-spend prevention.**
+- `pkg/utxo`: Manages the Unspent Transaction Output (UTXO) set, including adding and removing UTXOs, and tracking address balances. This is a foundational component for transaction validation and double-spend prevention.
 
 Components are designed with dependency injection, allowing for flexible connections and testability.
 
@@ -100,26 +101,29 @@ CLI flags in `cmd/gochain` override config values:
 - `--port`: network port (0 for random)
 - `--mining`: enable mining
 - `--network`: string label (mainnet/testnet/devnet) used for logs only
+- `--wallet-file`: path to wallet data file (default: `wallet.dat` in `./wallet_data`)
+- `--passphrase`: passphrase for wallet encryption/decryption
 
 ### CLI usage
 ```bash
 # Run the node (requires Go 1.20+; build with -tags='p2p db' for full features)
 ./gochain --config ./config/config.yaml --port 0 --mining
 
-# Create a wallet (ephemeral in-memory wallet)
-./gochain wallet
+# Create or load a wallet (now persistent and encrypted)
+# Use --wallet-file and --passphrase flags
+./gochain wallet --wallet-file mywallet.dat --passphrase "your_secret_passphrase"
 
-# Send a transaction (ephemeral in-memory wallet)
-./gochain send --from <address> --to <recipient> --amount 1000 --fee 10
+# Send a transaction (loads wallet from file)
+./gochain send --from <address> --to <recipient> --amount 1000 --fee 10 --wallet-file mywallet.dat --passphrase "your_secret_passphrase"
 
-# Query an address balance (ephemeral in-memory wallet)
-./gochain balance --address <address>
+# Query an address balance (loads wallet from file)
+./gochain balance --address <address> --wallet-file mywallet.dat --passphrase "your_secret_passphrase"
 
 # Get chain info (height, best block, etc.)
 ./gochain info
 ```
 
-Note: The current wallet in the CLI is ephemeral and created in-process. It does not persist keys to disk.
+Note: The wallet now persists keys to disk and encrypts them using the provided passphrase.
 
 ### Testing
 ```bash
@@ -147,6 +151,12 @@ This section summarizes recent changes made to the codebase:
 *   **UTXO and Wallet Integration Fixes:**
     *   Resolved compilation errors and unused variable warnings in `pkg/wallet/wallet_test.go` related to `ecdsa.GenerateKey` and `wallet.generateAddress` usage.
     *   Corrected the `ScriptPubKey` and address handling logic in `pkg/utxo/utxo_test.go` to ensure consistency with the `UTXOSet`'s internal representation, leading to successful `TestProcessBlock` execution.
+*   **Persistent and Encrypted Wallet Implementation:**
+    *   Implemented persistent storage for wallet data using the existing file-based `pkg/storage` mechanism.
+    *   Added AES-GCM encryption/decryption for wallet data, secured by a user-provided passphrase.
+    *   Updated `pkg/wallet` to load and save wallet data automatically.
+    *   Integrated wallet persistence into the CLI commands (`wallet`, `send`, `balance`) via new `--wallet-file` and `--passphrase` flags.
+    *   Added comprehensive unit tests for wallet persistence and encryption/decryption.
 *   **Test File Creation:**
     *   Added placeholder test files for `pkg/proto/net` and `proto/net` to ensure all packages have a basic test presence.
 *   **Architectural Audit:**
@@ -168,11 +178,11 @@ This codebase is educational and not hardened. Notable findings and recommendati
   - Uses ECDSA P-256 from the Go stdlib, not secp256k1 (common in many chains).
   - Address derivation: SHA-256 of uncompressed public key, last 20 bytes. There is no checksum (e.g., no base58check/bech32). Collisions are highly unlikely but usability and safety (typo detection) are weak.
   - Transaction signing format is non-standard (stores public key concatenated with raw r||s). There is no DER encoding or canonical s enforcement; malleability is possible. Recommendation: adopt a canonical signature format and enforce low-s, or switch to an existing, vetted transaction format.
-  - The wallet does not persist keys nor encrypt them at rest.
+  - **The wallet now persists keys to disk and encrypts them using AES-GCM with a user-provided passphrase. However, the passphrase itself is not stored, and key derivation is a simple SHA-256 hash, which is not resistant to brute-force attacks. For production, a key derivation function like scrypt or Argon2 should be used.**
 
 - Transaction model
-  - Inputs reference a placeholder 32-byte prev hash with index 0; **however, the `pkg/utxo` now provides basic UTXO tracking and balance validation within the `ProcessBlock` function. Double-spend prevention is still not fully implemented at the transaction validation level.**
-  - `CreateTransaction` currently omits balance checks and does not create change outputs. **Recommendation: enhance `CreateTransaction` to integrate with the UTXO set for proper balance checks and to generate change outputs.**
+  - Inputs reference a placeholder 32-byte prev hash with index 0; however, the `pkg/utxo` now provides basic UTXO tracking and balance validation within the `ProcessBlock` function. Double-spend prevention is still not fully implemented at the transaction validation level.
+  - `CreateTransaction` currently omits balance checks and does not create change outputs. Recommendation: enhance `CreateTransaction` to integrate with the UTXO set for proper balance checks and to generate change outputs.
 
 - Block validation and consensus
   - Proof-of-work target and difficulty adjustment are extremely simplified. The target representation is not endian- or field-validated, and difficulty retargeting is naive.
@@ -191,13 +201,13 @@ This codebase is educational and not hardened. Notable findings and recommendati
   - Some maps are protected with RWMutex; access patterns are straightforward. Nevertheless, there is no shutdown orchestration across subsystems besides best-effort closes.
 
 - Testing
-  - Unit tests exist for `block`, `chain`, `wallet`, and `net`. Placeholder tests have been added for `pkg/proto/net` and `proto/net`. **Test coverage for `pkg/utxo` has been significantly improved with the `TestProcessBlock` fix.** Recommendation: expand test coverage for `miner`, `mempool`, and `storage`, and add more comprehensive tests for `net`, including fuzzing transaction encoding/decoding and signature verification.
+  - Unit tests exist for `block`, `chain`, `wallet`, and `net`. Placeholder tests have been added for `pkg/proto/net` and `proto/net`. Test coverage for `pkg/utxo` has been significantly improved with the `TestProcessBlock` fix. Recommendation: expand test coverage for `miner`, `mempool`, and `storage`, and add more comprehensive tests for `net`, including fuzzing transaction encoding/decoding and signature verification.
 
 Given these points, do not use this codebase for production networks or managing real value.
 
 ### Roadmap ideas
-- **Further enhance UTXO set or account-based state for comprehensive balance and nonce management.**
-- Persistent and secure wallet (disk keystore, encryption, HD keys)
+- Further enhance UTXO set or account-based state for comprehensive balance and nonce management.
+- **Further enhance persistent and secure wallet (disk keystore, stronger encryption/key derivation, HD keys).**
 - Standardized transaction serialization (e.g., RLP/Protobuf) and signature scheme
 - Further enhance mempool policy and fee estimation (Initial work on eviction logic completed)
 - Further strengthen PoW difficulty adjustment and consensus rules (Initial work on difficulty calculation completed)

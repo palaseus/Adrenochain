@@ -31,6 +31,8 @@ var (
 	port       int
 	mining     bool
 	network    string
+	walletFile string // New global flag
+	passphrase string // New global flag
 )
 
 func main() {
@@ -47,6 +49,8 @@ and wallet functionality.`,
 	rootCmd.PersistentFlags().IntVar(&port, "port", 0, "network port (0 for random)")
 	rootCmd.PersistentFlags().BoolVar(&mining, "mining", false, "enable mining")
 	rootCmd.PersistentFlags().StringVar(&network, "network", "mainnet", "network type (mainnet, testnet, devnet)")
+	rootCmd.PersistentFlags().StringVar(&walletFile, "wallet-file", "wallet.dat", "path to wallet file") // New flag
+	rootCmd.PersistentFlags().StringVar(&passphrase, "passphrase", "", "passphrase for wallet encryption") // New flag
 
 	// Add subcommands
 	rootCmd.AddCommand(createWalletCmd())
@@ -73,15 +77,15 @@ func runNode(cmd *cobra.Command, args []string) error {
 
 	// Create blockchain components
 	storageConfig := storage.DefaultStorageConfig().WithDataDir("./data")
-	storage, err := storage.NewStorage(storageConfig)
+	nodeStorage, err := storage.NewStorage(storageConfig) // Renamed to nodeStorage to avoid conflict
 	if err != nil {
 		return fmt.Errorf("failed to create storage: %w", err)
 	}
-	defer storage.Close()
+	defer nodeStorage.Close()
 
 	chainConfig := chain.DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := chain.NewChain(chainConfig, consensusConfig, storage)
+	chain, err := chain.NewChain(chainConfig, consensusConfig, nodeStorage)
 	if err != nil {
 		return fmt.Errorf("failed to create chain: %w", err)
 	}
@@ -302,19 +306,33 @@ func loadConfig() error {
 func createWalletCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "wallet",
-		Short: "Create a new wallet",
+		Short: "Create or load a wallet",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			walletConfig := wallet.DefaultWalletConfig()
-			// In a real application, the UTXOSet would be passed from the main node
-			// For CLI commands, we'll create a dummy one for now.
-			us := utxo.NewUTXOSet()
-			wallet, err := wallet.NewWallet(walletConfig, us)
+			// Create storage for wallet
+			walletStorageConfig := storage.DefaultStorageConfig().WithDataDir("./wallet_data")
+			walletStorage, err := storage.NewStorage(walletStorageConfig)
 			if err != nil {
-				return fmt.Errorf("failed to create wallet: %w", err)
+				return fmt.Errorf("failed to create wallet storage: %w", err)
+			}
+			defer walletStorage.Close()
+
+			walletConfig := wallet.DefaultWalletConfig()
+			walletConfig.WalletFile = walletFile
+			walletConfig.Passphrase = passphrase
+
+			us := utxo.NewUTXOSet() // Still a dummy UTXOSet for CLI commands
+			wallet, err := wallet.NewWallet(walletConfig, us, walletStorage)
+			if err != nil {
+				return fmt.Errorf("failed to create/load wallet: %w", err)
+			}
+
+			// Save the wallet after creation/loading (important for new wallets)
+			if err := wallet.Save(); err != nil {
+				return fmt.Errorf("failed to save wallet: %w", err)
 			}
 
 			account := wallet.GetDefaultAccount()
-			fmt.Printf("Wallet created successfully!\n")
+			fmt.Printf("Wallet created/loaded successfully!\n")
 			fmt.Printf("Default account address: %s\n", account.Address)
 			fmt.Printf("Public key: %x\n", account.PublicKey)
 
@@ -331,18 +349,32 @@ func createTransactionCmd() *cobra.Command {
 		Use:   "send",
 		Short: "Send a transaction",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			walletConfig := wallet.DefaultWalletConfig()
-			// In a real application, the UTXOSet would be passed from the main node
-			// For CLI commands, we'll create a dummy one for now.
-			us := utxo.NewUTXOSet()
-			wallet, err := wallet.NewWallet(walletConfig, us)
+			// Create storage for wallet
+			walletStorageConfig := storage.DefaultStorageConfig().WithDataDir("./wallet_data")
+			walletStorage, err := storage.NewStorage(walletStorageConfig)
 			if err != nil {
-				return fmt.Errorf("failed to create wallet: %w", err)
+				return fmt.Errorf("failed to create wallet storage: %w", err)
+			}
+			defer walletStorage.Close()
+
+			walletConfig := wallet.DefaultWalletConfig()
+			walletConfig.WalletFile = walletFile
+			walletConfig.Passphrase = passphrase
+
+			us := utxo.NewUTXOSet() // Still a dummy UTXOSet for CLI commands
+			wallet, err := wallet.NewWallet(walletConfig, us, walletStorage)
+			if err != nil {
+				return fmt.Errorf("failed to load wallet: %w", err)
 			}
 
 			tx, err := wallet.CreateTransaction(from, to, amount, fee)
 			if err != nil {
 				return fmt.Errorf("failed to create transaction: %w", err)
+			}
+
+			// Save the wallet after transaction (to update nonce)
+			if err := wallet.Save(); err != nil {
+				return fmt.Errorf("failed to save wallet: %w", err)
 			}
 
 			fmt.Printf("Transaction created successfully!\n")
@@ -375,13 +407,22 @@ func getBalanceCmd() *cobra.Command {
 		Use:   "balance",
 		Short: "Get account balance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			walletConfig := wallet.DefaultWalletConfig()
-			// In a real application, the UTXOSet would be passed from the main node
-			// For CLI commands, we'll create a dummy one for now.
-			us := utxo.NewUTXOSet()
-			wallet, err := wallet.NewWallet(walletConfig, us)
+			// Create storage for wallet
+			walletStorageConfig := storage.DefaultStorageConfig().WithDataDir("./wallet_data")
+			walletStorage, err := storage.NewStorage(walletStorageConfig)
 			if err != nil {
-				return fmt.Errorf("failed to create wallet: %w", err)
+				return fmt.Errorf("failed to create wallet storage: %w", err)
+			}
+			defer walletStorage.Close()
+
+			walletConfig := wallet.DefaultWalletConfig()
+			walletConfig.WalletFile = walletFile
+			walletConfig.Passphrase = passphrase
+
+			us := utxo.NewUTXOSet() // Still a dummy UTXOSet for CLI commands
+			wallet, err := wallet.NewWallet(walletConfig, us, walletStorage)
+			if err != nil {
+				return fmt.Errorf("failed to load wallet: %w", err)
 			}
 
 			balance := wallet.GetBalance(address)

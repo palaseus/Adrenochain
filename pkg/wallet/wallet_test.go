@@ -1,256 +1,171 @@
 package wallet
 
 import (
+	"os"
 	"testing"
+
+	"github.com/gochain/gochain/pkg/storage" // Added import
 	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/stretchr/testify/assert" // Added import for assert
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
 )
 
+// Helper function to create a temporary storage for tests
+func newTestStorage(t *testing.T) *storage.Storage {
+	tempDir, err := os.MkdirTemp("", "wallet_test_storage")
+	assert.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(tempDir) }) // Clean up after test
+
+	storageConfig := storage.DefaultStorageConfig().WithDataDir(tempDir)
+	s, err := storage.NewStorage(storageConfig)
+	assert.NoError(t, err)
+	return s
+}
+
 func TestNewWallet(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
+	wallet, err := NewWallet(config, us, s) // Pass storage
 
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
-
-	if wallet == nil {
-		t.Fatal("Wallet is nil")
-	}
-
-	if wallet.defaultKey == nil {
-		t.Fatal("Default key is nil")
-	}
-
-	if wallet.keyType != config.KeyType {
-		t.Errorf("Expected key type %d, got %d", config.KeyType, wallet.keyType)
-	}
-
-	if len(wallet.accounts) == 0 {
-		t.Fatal("No accounts were created")
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, wallet)
+	assert.NotNil(t, wallet.defaultKey)
+	assert.Equal(t, config.KeyType, wallet.keyType)
+	assert.NotEmpty(t, wallet.accounts)
 }
 
 func TestDefaultWalletConfig(t *testing.T) {
 	config := DefaultWalletConfig()
 
-	if config.KeyType != KeyTypeECDSA {
-		t.Errorf("Expected default key type ECDSA, got %d", config.KeyType)
-	}
-
-	if config.Passphrase != "" {
-		t.Error("Expected empty passphrase by default")
-	}
+	assert.Equal(t, KeyTypeECDSA, config.KeyType)
+	assert.Empty(t, config.Passphrase)
+	assert.Equal(t, "wallet.dat", config.WalletFile) // Check default wallet file
 }
 
 func TestCreateDefaultAccount(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	account := wallet.GetDefaultAccount()
-	if account == nil {
-		t.Fatal("Default account is nil")
-	}
-
-	if account.Address == "" {
-		t.Error("Account address is empty")
-	}
-
-	if len(account.PublicKey) == 0 {
-		t.Error("Account public key is empty")
-	}
-
-	if len(account.PrivateKey) == 0 {
-		t.Error("Account private key is empty")
-	}
-
-	if account.Balance != 0 {
-		t.Errorf("Expected initial balance 0, got %d", account.Balance)
-	}
-
-	if account.Nonce != 0 {
-		t.Errorf("Expected initial nonce 0, got %d", account.Nonce)
-	}
+	assert.NotNil(t, account)
+	assert.NotEmpty(t, account.Address)
+	assert.NotEmpty(t, account.PublicKey)
+	assert.NotEmpty(t, account.PrivateKey)
+	assert.Equal(t, uint64(0), account.Balance)
+	assert.Equal(t, uint64(0), account.Nonce)
 }
 
 func TestCreateAccount(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	initialAccountCount := len(wallet.GetAllAccounts())
 
 	account, err := wallet.CreateAccount()
-	if err != nil {
-		t.Fatalf("Failed to create account: %v", err)
-	}
-
-	if account == nil {
-		t.Fatal("Created account is nil")
-	}
-
-	if account.Address == "" {
-		t.Error("Account address is empty")
-	}
-
-	if len(account.PublicKey) == 0 {
-		t.Error("Account public key is empty")
-	}
-
-	if len(account.PrivateKey) == 0 {
-		t.Error("Account private key is empty")
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, account)
+	assert.NotEmpty(t, account.Address)
+	assert.NotEmpty(t, account.PublicKey)
+	assert.NotEmpty(t, account.PrivateKey)
 
 	// Check that account was added to wallet
 	newAccountCount := len(wallet.GetAllAccounts())
-	if newAccountCount != initialAccountCount+1 {
-		t.Errorf("Expected %d accounts, got %d", initialAccountCount+1, newAccountCount)
-	}
+	assert.Equal(t, initialAccountCount+1, newAccountCount)
 
 	// Verify account can be retrieved
 	retrievedAccount := wallet.GetAccount(account.Address)
-	if retrievedAccount == nil {
-		t.Fatal("Failed to retrieve created account")
-	}
-
-	if retrievedAccount != account {
-		t.Error("Retrieved account is not the same as created account")	}
+	assert.Equal(t, account, retrievedAccount)
 }
 
 func TestGetAllAccounts(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	accounts := wallet.GetAllAccounts()
-	if len(accounts) == 0 {
-		t.Fatal("No accounts found")	}
+	assert.NotEmpty(t, accounts)
 
 	// Should have at least the default account
-	if len(accounts) < 1 {
-		t.Errorf("Expected at least 1 account, got %d", len(accounts))
-	}
+	assert.True(t, len(accounts) >= 1)
 
 	// Check that all accounts have valid addresses
 	for i, account := range accounts {
-		if account.Address == "" {
-			t.Errorf("Account %d has empty address", i)
-		}
+		assert.NotEmpty(t, account.Address, "Account %d has empty address", i)
 	}
 }
 
 func TestCreateTransaction(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	fromAccount := wallet.GetDefaultAccount()
 	// Generate a valid recipient address
 	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("Failed to generate recipient key: %v", err)
-	}
-	// Removed: toPubKey := &toPrivKey.PublicKey
+	assert.NoError(t, err)
 	toAddress := hex.EncodeToString(wallet.generateAddress(toPrivKey))
 	amount := uint64(1000)
 	fee := uint64(10)
 
 	tx, err := wallet.CreateTransaction(fromAccount.Address, toAddress, amount, fee)
-	if err != nil {
-		t.Fatalf("Failed to create transaction: %v", err)
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, tx)
 
-	if tx == nil {
-		t.Fatal("Created transaction is nil")
-	}
-
-	if tx.Version != 1 {
-		t.Errorf("Expected transaction version 1, got %d", tx.Version)
-	}
-
-	if tx.Fee != fee {
-		t.Errorf("Expected fee %d, got %d", fee, tx.Fee)
-	}
-
-	if len(tx.Outputs) != 1 {
-		t.Errorf("Expected 1 output, got %d", len(tx.Outputs))
-	}
-
-	if tx.Outputs[0].Value != amount {
-		t.Errorf("Expected output value %d, got %d", amount, tx.Outputs[0].Value)
-	}
-
-	// Check that transaction hash is calculated
-	if len(tx.Hash) == 0 {
-		t.Error("Transaction hash is empty")
-	}
+	assert.Equal(t, uint32(1), tx.Version)
+	assert.Equal(t, fee, tx.Fee)
+	assert.Equal(t, 1, len(tx.Outputs))
+	assert.Equal(t, amount, tx.Outputs[0].Value)
+	assert.NotEmpty(t, tx.Hash)
 }
 
 func TestSignTransaction(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	fromAccount := wallet.GetDefaultAccount()
 	// Generate a valid recipient address
 	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("Failed to generate recipient key: %v", err)
-	}
-	// Removed: toPubKey := &toPrivKey.PublicKey
+	assert.NoError(t, err)
 	toAddress := hex.EncodeToString(wallet.generateAddress(toPrivKey))
 	amount := uint64(1000)
 	fee := uint64(10)
 
 	tx, err := wallet.CreateTransaction(fromAccount.Address, toAddress, amount, fee)
-	if err != nil {
-		t.Fatalf("Failed to create transaction: %v", err)
-	}
+	assert.NoError(t, err)
 
 	// Sign the transaction
 	err = wallet.SignTransaction(tx, fromAccount.Address)
-	if err != nil {
-		t.Fatalf("Failed to sign transaction: %v", err)
-	}
+	assert.NoError(t, err)
 
 	// Verify the signature
 	valid, err := wallet.VerifyTransaction(tx)
-	if err != nil {
-		t.Fatalf("Failed to verify transaction: %v", err)
-	}
-
-	if !valid {
-		t.Error("Transaction signature verification failed")
-	}
+	assert.NoError(t, err)
+	assert.True(t, valid, "Transaction signature verification failed")
 }
 
 func TestUpdateBalance(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	account := wallet.GetDefaultAccount()
 	initialBalance := wallet.GetBalance(account.Address)
@@ -261,101 +176,135 @@ func TestUpdateBalance(t *testing.T) {
 
 	// Check that balance was updated
 	updatedBalance := wallet.GetBalance(account.Address)
-	if updatedBalance != newBalance {
-		t.Errorf("Expected balance %d, got %d", newBalance, updatedBalance)
-	}
+	assert.Equal(t, newBalance, updatedBalance)
 
 	// Check that initial balance was different
-	if initialBalance == updatedBalance {
-		t.Error("Balance should have changed")
-	}
+	assert.NotEqual(t, initialBalance, updatedBalance)
 }
 
 func TestImportPrivateKey(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	// Export a private key from existing account
 	account := wallet.GetDefaultAccount()
 	privateKeyHex, err := wallet.ExportPrivateKey(account.Address)
-	if err != nil {
-		t.Fatalf("Failed to export private key: %v", err)
-	}
+	assert.NoError(t, err)
 
 	// Import the private key
 	importedAccount, err := wallet.ImportPrivateKey(privateKeyHex)
-	if err != nil {
-		t.Fatalf("Failed to import private key: %v", err)
-	}
-
-	if importedAccount == nil {
-		t.Fatal("Imported account is nil")
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, importedAccount)
 
 	// Check that addresses match
-	if importedAccount.Address != account.Address {
-		t.Errorf("Expected address %s, got %s", account.Address, importedAccount.Address)
-	}
+	assert.Equal(t, account.Address, importedAccount.Address)
 
 	// Check that public keys match
-	if string(importedAccount.PublicKey) != string(account.PublicKey) {
-		t.Error("Public keys don't match")
-	}
+	assert.Equal(t, string(account.PublicKey), string(importedAccount.PublicKey))
 }
 
 func TestExportPrivateKey(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	account := wallet.GetDefaultAccount()
 	privateKeyHex, err := wallet.ExportPrivateKey(account.Address)
-	if err != nil {
-		t.Fatalf("Failed to export private key: %v", err)
-	}
+	assert.NoError(t, err)
 
-	if privateKeyHex == "" {
-		t.Error("Exported private key is empty")
-	}
+	assert.NotEmpty(t, privateKeyHex)
 
-	// Check that it's a valid hex string
-	if len(privateKeyHex) != 64 { // 32 bytes = 64 hex chars
-		t.Errorf("Expected private key hex length 64, got %d", len(privateKeyHex))
-	}
+	// Check that it's a valid hex string (32 bytes = 64 hex chars for P-256 private key)
+	assert.Equal(t, 64, len(privateKeyHex))
 }
 
 func TestWalletString(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	walletStr := wallet.String()
-	if walletStr == "" {
-		t.Error("Wallet string representation is empty")
-	}
+	assert.NotEmpty(t, walletStr)
 }
 
 func TestAccountString(t *testing.T) {
+	s := newTestStorage(t)
 	config := DefaultWalletConfig()
 	us := utxo.NewUTXOSet()
-	wallet, err := NewWallet(config, us)
-	if err != nil {
-		t.Fatalf("Failed to create wallet: %v", err)
-	}
+	wallet, err := NewWallet(config, us, s) // Pass storage
+	assert.NoError(t, err)
 
 	account := wallet.GetDefaultAccount()
 	accountStr := account.String()
-	if accountStr == "" {
-		t.Error("Account string representation is empty")
-	}
+	assert.NotEmpty(t, accountStr)
+}
+
+func TestWalletPersistence(t *testing.T) {
+	s := newTestStorage(t)
+	passphrase := "test_passphrase"
+	walletFile := "my_test_wallet.dat"
+
+	// 1. Create a new wallet and save it
+	config1 := DefaultWalletConfig()
+	config1.Passphrase = passphrase
+	config1.WalletFile = walletFile
+	us1 := utxo.NewUTXOSet()
+	wallet1, err := NewWallet(config1, us1, s)
+	assert.NoError(t, err)
+	assert.NotNil(t, wallet1)
+	assert.NotEmpty(t, wallet1.GetAllAccounts())
+	initialAccountAddress := wallet1.GetDefaultAccount().Address
+
+	// 2. Load the wallet with the correct passphrase
+	config2 := DefaultWalletConfig()
+	config2.Passphrase = passphrase
+	config2.WalletFile = walletFile
+	us2 := utxo.NewUTXOSet()
+	wallet2, err := NewWallet(config2, us2, s)
+	assert.NoError(t, err)
+	assert.NotNil(t, wallet2)
+	assert.Equal(t, initialAccountAddress, wallet2.GetDefaultAccount().Address)
+	assert.Equal(t, len(wallet1.GetAllAccounts()), len(wallet2.GetAllAccounts()))
+
+	// 3. Attempt to load with an incorrect passphrase
+	config3 := DefaultWalletConfig()
+	config3.Passphrase = "wrong_passphrase"
+	config3.WalletFile = walletFile
+	us3 := utxo.NewUTXOSet()
+	_, err = NewWallet(config3, us3, s)
+	assert.Error(t, err) // Expect an error due to decryption failure
+}
+
+func TestWalletEncryptionDecryption(t *testing.T) {
+	s := newTestStorage(t) // Need a storage instance for NewWallet, though not directly used here
+	passphrase := "super_secret_key"
+	config := DefaultWalletConfig()
+	config.Passphrase = passphrase
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us, s)
+	assert.NoError(t, err)
+
+	originalData := []byte("This is some sensitive data to be encrypted.")
+
+	encryptedData, err := wallet.Encrypt(originalData)
+	assert.NoError(t, err)
+	assert.NotNil(t, encryptedData)
+	assert.NotEqual(t, originalData, encryptedData) // Encrypted data should be different
+
+	decryptedData, err := wallet.Decrypt(encryptedData)
+	assert.NoError(t, err)
+	assert.NotNil(t, decryptedData)
+	assert.Equal(t, originalData, decryptedData) // Decrypted data should match original
+
+	// Test with incorrect passphrase
+	wallet.passphrase = "incorrect_passphrase"
+	_, err = wallet.Decrypt(encryptedData)
+	assert.Error(t, err) // Expect an error due to incorrect decryption
 }
