@@ -206,8 +206,6 @@ This codebase is educational and not hardened. Notable findings and recommendati
 Given these points, do not use this codebase for production networks or managing real value.
 
 ### Roadmap ideas
-- Further enhance UTXO set or account-based state for comprehensive balance and nonce management.
-- **Further enhance persistent and secure wallet (disk keystore, stronger encryption/key derivation, HD keys).**
 - Standardized transaction serialization (e.g., RLP/Protobuf) and signature scheme
 - Further enhance mempool policy and fee estimation (Initial work on eviction logic completed)
 - Further strengthen PoW difficulty adjustment and consensus rules (Initial work on difficulty calculation completed)
