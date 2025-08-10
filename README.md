@@ -253,11 +253,21 @@ go test ./...
 go build ./cmd/gochain
 ```
 
+<<<<<<< HEAD
 ### Code Standards
 - Follow Go formatting standards (`gofmt`)
 - Write comprehensive tests for new features
 - Update documentation for API changes
 - Ensure all tests pass before submitting PRs
+=======
+### Roadmap ideas
+- Standardized transaction serialization (e.g., RLP/Protobuf) and signature scheme
+- Further enhance mempool policy and fee estimation (Initial work on eviction logic completed)
+- Further strengthen PoW difficulty adjustment and consensus rules (Initial work on difficulty calculation completed)
+- Enhance P2P message validation, signature checks, and peer scoring (Initial network test fixes completed)
+- Expand test coverage, including end-to-end integration tests and property-based tests (Significant progress made on unit test stability)
+- Monitoring/metrics and a JSON-RPC/REST API
+>>>>>>> 668f40fd4e55374020026af8473ce7fb5f0e4999
 
 ### Testing Guidelines
 - Unit tests for all new functionality
