@@ -4,13 +4,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gochain/gochain/pkg/storage" // Added import
-	"github.com/gochain/gochain/pkg/utxo"
-	"github.com/stretchr/testify/assert" // Added import for assert
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
+
+	"github.com/gochain/gochain/pkg/storage" // Added import
+	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/stretchr/testify/assert" // Added import for assert
 )
 
 // Helper function to create a temporary storage for tests
@@ -114,6 +115,19 @@ func TestCreateTransaction(t *testing.T) {
 	assert.NoError(t, err)
 
 	fromAccount := wallet.GetDefaultAccount()
+
+	// Create a test UTXO for the fromAccount so it has funds to spend
+	testUTXO := &utxo.UTXO{
+		TxHash:       []byte("test_tx_hash"),
+		TxIndex:      0,
+		Value:        5000, // Give it 5000 to spend
+		ScriptPubKey: fromAccount.PublicKey,
+		Address:      fromAccount.Address,
+		IsCoinbase:   false,
+		Height:       1,
+	}
+	us.AddUTXO(testUTXO)
+
 	// Generate a valid recipient address
 	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	assert.NoError(t, err)
@@ -127,7 +141,7 @@ func TestCreateTransaction(t *testing.T) {
 
 	assert.Equal(t, uint32(1), tx.Version)
 	assert.Equal(t, fee, tx.Fee)
-	assert.Equal(t, 1, len(tx.Outputs))
+	assert.Equal(t, 2, len(tx.Outputs)) // 1 for recipient, 1 for change
 	assert.Equal(t, amount, tx.Outputs[0].Value)
 	assert.NotEmpty(t, tx.Hash)
 }
@@ -140,6 +154,19 @@ func TestSignTransaction(t *testing.T) {
 	assert.NoError(t, err)
 
 	fromAccount := wallet.GetDefaultAccount()
+
+	// Create a test UTXO for the fromAccount so it has funds to spend
+	testUTXO := &utxo.UTXO{
+		TxHash:       []byte("test_tx_hash_sign"),
+		TxIndex:      0,
+		Value:        5000, // Give it 5000 to spend
+		ScriptPubKey: fromAccount.PublicKey,
+		Address:      fromAccount.Address,
+		IsCoinbase:   false,
+		Height:       1,
+	}
+	us.AddUTXO(testUTXO)
+
 	// Generate a valid recipient address
 	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	assert.NoError(t, err)

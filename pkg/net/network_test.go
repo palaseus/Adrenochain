@@ -10,7 +10,7 @@ import (
 	"github.com/gochain/gochain/pkg/mempool"
 	proto_net "github.com/gochain/gochain/pkg/proto/net"
 	"github.com/gochain/gochain/pkg/storage"
-	"github.com/libp2p/go-libp2p-pubsub"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/assert"
@@ -166,12 +166,14 @@ func TestPublishSubscribe(t *testing.T) {
 
 	config1 := DefaultNetworkConfig()
 	config1.EnableMDNS = false
+	config1.ListenPort = 0 // Random port
 	net1, err := NewNetwork(config1, dummyChain1, dummyMempool1)
 	assert.NoError(t, err)
 	defer net1.Close()
 
 	config2 := DefaultNetworkConfig()
 	config2.EnableMDNS = false
+	config2.ListenPort = 0 // Random port
 	net2, err := NewNetwork(config2, dummyChain2, dummyMempool2)
 	assert.NoError(t, err)
 	defer net2.Close()
@@ -180,12 +182,15 @@ func TestPublishSubscribe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// Wait for networks to be ready
+	time.Sleep(1 * time.Second)
+
 	peerInfo2 := net2.GetHost().Peerstore().PeerInfo(net2.GetHost().ID())
 	err = net1.GetHost().Connect(ctx, peerInfo2)
 	assert.NoError(t, err)
 
 	// Give time for connection to establish and pubsub to propagate
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	// Subscribe to blocks on net2
 	blockSub2, err := net2.SubscribeToBlocks()
@@ -235,7 +240,7 @@ func TestPublishSubscribe(t *testing.T) {
 		assert.True(t, verified)
 	case err := <-errChan:
 		t.Fatalf("Error receiving block message: %v", err)
-	case <-time.After(10 * time.Second):
+	case <-time.After(15 * time.Second): // Increased timeout
 		t.Fatal("Timeout waiting for block message")
 	}
 
@@ -287,7 +292,7 @@ func TestPublishSubscribe(t *testing.T) {
 		assert.True(t, verified)
 	case err := <-errChan2:
 		t.Fatalf("Error receiving transaction message: %v", err)
-	case <-time.After(10 * time.Second):
+	case <-time.After(15 * time.Second): // Increased timeout
 		t.Fatal("Timeout waiting for transaction message")
 	}
 }

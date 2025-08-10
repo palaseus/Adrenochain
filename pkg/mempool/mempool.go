@@ -9,36 +9,37 @@ import (
 	"github.com/gochain/gochain/pkg/block"
 )
 
-// Mempool represents the transaction memory pool
+// Mempool represents the transaction memory pool.
+// It stores unconfirmed transactions and prioritizes them for inclusion in blocks.
 type Mempool struct {
-	mu           sync.RWMutex
-	transactions map[string]*TransactionEntry // tx hash -> entry
-	byFee        *TransactionHeapMin          // Priority queue by fee
-	byTime       *TransactionHeap             // Priority queue by time
-	maxSize      uint64
-	currentSize  uint64
-	minFeeRate   uint64 // minimum fee per byte
+	mu           sync.RWMutex                 // mu protects concurrent access to mempool fields.
+	transactions map[string]*TransactionEntry // transactions stores all transactions in the mempool, keyed by hash.
+	byFee        *TransactionHeapMin          // byFee is a min-heap for transactions, ordered by fee rate (lowest first).
+	byTime       *TransactionHeap             // byTime is a max-heap for transactions, ordered by timestamp (oldest first).
+	maxSize      uint64                       // maxSize is the maximum allowed size of the mempool in bytes.
+	currentSize  uint64                       // currentSize is the current total size of transactions in the mempool.
+	minFeeRate   uint64                       // minFeeRate is the minimum fee per byte required for a transaction to enter the mempool.
 }
 
-// TransactionEntry wraps a transaction with metadata
+// TransactionEntry wraps a transaction with metadata used for mempool management.
 type TransactionEntry struct {
-	Transaction *block.Transaction
-	FeeRate     uint64 // fee per byte
-	Size        uint64
-	Timestamp   time.Time
-	index       int // for heap operations
+	Transaction *block.Transaction // Transaction is the actual blockchain transaction.
+	FeeRate     uint64             // FeeRate is the transaction fee per byte.
+	Size        uint64             // Size is the approximate size of the transaction in bytes.
+	Timestamp   time.Time          // Timestamp is when the transaction was added to the mempool.
+	index       int                // index is used by the heap.Interface implementation.
 }
 
-// TransactionHeap implements heap.Interface for transaction prioritization
+// TransactionHeap implements heap.Interface for transaction prioritization based on fee rate (max-heap).
 type TransactionHeap []*TransactionEntry
 
-// MempoolConfig holds configuration for the mempool
+// MempoolConfig holds configuration parameters for the mempool.
 type MempoolConfig struct {
-	MaxSize    uint64
-	MinFeeRate uint64
+	MaxSize    uint64 // MaxSize is the maximum allowed size of the mempool in bytes.
+	MinFeeRate uint64 // MinFeeRate is the minimum fee per byte required for a transaction.
 }
 
-// DefaultMempoolConfig returns the default mempool configuration
+// DefaultMempoolConfig returns the default mempool configuration.
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
 		MaxSize:    100000, // 100KB
@@ -46,7 +47,8 @@ func DefaultMempoolConfig() *MempoolConfig {
 	}
 }
 
-// NewMempool creates a new transaction mempool
+// NewMempool creates a new transaction mempool instance.
+// It initializes the internal data structures and heaps for transaction prioritization.
 func NewMempool(config *MempoolConfig) *Mempool {
 	mp := &Mempool{
 		transactions: make(map[string]*TransactionEntry),
@@ -62,7 +64,9 @@ func NewMempool(config *MempoolConfig) *Mempool {
 	return mp
 }
 
-// AddTransaction adds a transaction to the mempool
+// AddTransaction adds a transaction to the mempool.
+// It validates the transaction, calculates its fee rate, and adds it to the internal data structures.
+// If the mempool is full, it attempts to evict lower-fee transactions.
 func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
@@ -110,7 +114,8 @@ func (mp *Mempool) AddTransaction(tx *block.Transaction) error {
 	return nil
 }
 
-// RemoveTransaction removes a transaction from the mempool
+// RemoveTransaction removes a transaction from the mempool given its hash.
+// It returns true if the transaction was found and removed, false otherwise.
 func (mp *Mempool) RemoveTransaction(txHash []byte) bool {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
@@ -134,7 +139,8 @@ func (mp *Mempool) RemoveTransaction(txHash []byte) bool {
 	return true
 }
 
-// GetTransaction returns a transaction by its hash
+// GetTransaction returns a transaction from the mempool by its hash.
+// It returns nil if the transaction is not found.
 func (mp *Mempool) GetTransaction(txHash []byte) *block.Transaction {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -147,7 +153,8 @@ func (mp *Mempool) GetTransaction(txHash []byte) *block.Transaction {
 	return entry.Transaction
 }
 
-// GetTransactionsForBlock returns transactions for block assembly
+// GetTransactionsForBlock returns a list of transactions suitable for inclusion in a new block.
+// Transactions are prioritized by fee rate (highest first) and limited by the given maxSize.
 func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -180,7 +187,7 @@ func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction 
 	return transactions
 }
 
-// GetSize returns the current mempool size
+// GetSize returns the current total size of transactions in the mempool in bytes.
 func (mp *Mempool) GetSize() uint64 {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -188,7 +195,7 @@ func (mp *Mempool) GetSize() uint64 {
 	return mp.currentSize
 }
 
-// GetTransactionCount returns the number of transactions in the mempool
+// GetTransactionCount returns the number of transactions currently in the mempool.
 func (mp *Mempool) GetTransactionCount() int {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -196,7 +203,7 @@ func (mp *Mempool) GetTransactionCount() int {
 	return len(mp.transactions)
 }
 
-// Clear removes all transactions from the mempool
+// Clear removes all transactions from the mempool.
 func (mp *Mempool) Clear() {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
@@ -211,6 +218,8 @@ func (mp *Mempool) Clear() {
 }
 
 // evictLowFeeTransactions evicts low-fee transactions to make room for new ones
+// evictLowFeeTransactions evicts transactions with the lowest fee rates to free up space in the mempool.
+// It continues to evict until the requiredSize is met or no more transactions can be evicted.
 func (mp *Mempool) evictLowFeeTransactions(requiredSize uint64) bool {
 	evictedSize := uint64(0)
 
@@ -231,6 +240,7 @@ func (mp *Mempool) evictLowFeeTransactions(requiredSize uint64) bool {
 }
 
 // calculateTransactionSize calculates the size of a transaction
+// calculateTransactionSize calculates the approximate size of a transaction in bytes.
 func (mp *Mempool) calculateTransactionSize(tx *block.Transaction) uint64 {
 	size := uint64(0)
 
@@ -254,6 +264,7 @@ func (mp *Mempool) calculateTransactionSize(tx *block.Transaction) uint64 {
 }
 
 // calculateFeeRate calculates the fee rate (fee per byte) of a transaction
+// calculateFeeRate calculates the fee rate (fee per byte) of a transaction.
 func (mp *Mempool) calculateFeeRate(tx *block.Transaction, size uint64) uint64 {
 	if size == 0 {
 		return 0
@@ -261,7 +272,7 @@ func (mp *Mempool) calculateFeeRate(tx *block.Transaction, size uint64) uint64 {
 	return tx.Fee / size
 }
 
-// Remove removes a transaction from the heap
+// Remove removes a TransactionEntry from the TransactionHeap.
 func (h *TransactionHeap) Remove(entry *TransactionEntry) {
 	if entry.index >= 0 && entry.index < h.Len() {
 		heap.Remove(h, entry.index)
@@ -299,7 +310,7 @@ func (h *TransactionHeap) Pop() interface{} {
 	return entry
 }
 
-// TransactionHeapMin implements heap.Interface for transaction prioritization (min-heap)
+// TransactionHeapMin implements heap.Interface for transaction prioritization based on fee rate (min-heap).
 type TransactionHeapMin []*TransactionEntry
 
 func (h TransactionHeapMin) Len() int { return len(h) }
@@ -332,14 +343,14 @@ func (h *TransactionHeapMin) Pop() interface{} {
 	return entry
 }
 
-// Remove removes a transaction from the heap
+// Remove removes a TransactionEntry from the TransactionHeapMin.
 func (h *TransactionHeapMin) Remove(entry *TransactionEntry) {
 	if entry.index >= 0 && entry.index < h.Len() {
 		heap.Remove(h, entry.index)
 	}
 }
 
-// TimeHeap implements heap.Interface for time-based prioritization
+// TimeHeap implements heap.Interface for transaction prioritization based on timestamp (min-heap).
 type TimeHeap []*TransactionEntry
 
 func (h TimeHeap) Len() int { return len(h) }

@@ -155,6 +155,7 @@ func TestAddBlock(t *testing.T) {
 		},
 		Fee: 0, // Coinbase has no fee
 	}
+	tx.Hash = make([]byte, 32) // Set a dummy hash for validation
 	newBlock.AddTransaction(tx)
 	newBlock.Header.MerkleRoot = newBlock.CalculateMerkleRoot()
 
@@ -200,7 +201,7 @@ func TestBlockValidation(t *testing.T) {
 		Header: &block.Header{
 			Version:       1,
 			PrevBlockHash: []byte("wrong_hash"),
-			MerkleRoot:    []byte("merkle_root"),
+			MerkleRoot:    make([]byte, 32),
 			Timestamp:     time.Now(),
 			Difficulty:    0, // Use difficulty 0 for testing (any hash is valid)
 			Nonce:         42,
@@ -208,6 +209,16 @@ func TestBlockValidation(t *testing.T) {
 		},
 		Transactions: []*block.Transaction{},
 	}
+
+	// Add a dummy transaction to ensure MerkleRoot is calculated
+	dummyTx := &block.Transaction{
+		Version: 1,
+		Inputs:  []*block.TxInput{},
+		Outputs: []*block.TxOutput{{Value: 1, ScriptPubKey: []byte("dummy")}},
+	}
+	dummyTx.Hash = make([]byte, 32)
+	invalidBlock.AddTransaction(dummyTx)
+	invalidBlock.Header.MerkleRoot = invalidBlock.CalculateMerkleRoot()
 
 	if err := chain.AddBlock(invalidBlock); err == nil {
 		t.Error("Should fail to add block with wrong prev hash")
@@ -221,7 +232,7 @@ func TestBlockValidation(t *testing.T) {
 		Header: &block.Header{
 			Version:       1,
 			PrevBlockHash: prevHash,
-			MerkleRoot:    []byte("merkle_root"),
+			MerkleRoot:    make([]byte, 32),
 			Timestamp:     time.Now(),
 			Difficulty:    0, // Use difficulty 0 for testing (any hash is valid)
 			Nonce:         42,
@@ -229,6 +240,16 @@ func TestBlockValidation(t *testing.T) {
 		},
 		Transactions: []*block.Transaction{},
 	}
+
+	// Add a dummy transaction to ensure MerkleRoot is calculated
+	dummyTx2 := &block.Transaction{
+		Version: 1,
+		Inputs:  []*block.TxInput{},
+		Outputs: []*block.TxOutput{{Value: 1, ScriptPubKey: []byte("dummy")}},
+	}
+	dummyTx2.Hash = make([]byte, 32)
+	wrongHeightBlock.AddTransaction(dummyTx2)
+	wrongHeightBlock.Header.MerkleRoot = wrongHeightBlock.CalculateMerkleRoot()
 
 	if err := chain.AddBlock(wrongHeightBlock); err == nil {
 		t.Error("Should fail to add block with wrong height")

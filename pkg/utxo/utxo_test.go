@@ -134,7 +134,7 @@ func TestProcessBlock(t *testing.T) {
 
 	// Verify UTXOs and balances
 	assert.Equal(t, 2, us.GetUTXOCount())
-	assert.Equal(t, uint64(30), us.GetBalance(addr2Hex))   // Use hex-encoded address
-	assert.Equal(t, uint64(15), us.GetBalance(addr1Hex))   // Use hex-encoded address
+	assert.Equal(t, uint64(30), us.GetBalance(addr2Hex))    // Use hex-encoded address
+	assert.Equal(t, uint64(15), us.GetBalance(addr1Hex))    // Use hex-encoded address
 	assert.Equal(t, uint64(0), us.GetBalance(minerAddrHex)) // Use hex-encoded address // Coinbase output should be spent
 }

@@ -154,8 +154,8 @@ func TestBlockValidation(t *testing.T) {
 func TestHeaderValidation(t *testing.T) {
 	header := &Header{
 		Version:       1,
-		PrevBlockHash: []byte("prev_hash"),
-		MerkleRoot:    []byte("merkle_root"),
+		PrevBlockHash: make([]byte, 32),
+		MerkleRoot:    make([]byte, 32),
 		Timestamp:     time.Now(),
 		Difficulty:    1000,
 		Nonce:         0,
@@ -196,6 +196,7 @@ func TestTransactionValidation(t *testing.T) {
 		LockTime: 0,
 		Fee:      0, // Coinbase has no fee
 	}
+	tx.Hash = make([]byte, 32) // Set a dummy hash for validation
 
 	// Valid transaction should pass validation
 	if err := tx.IsValid(); err != nil {

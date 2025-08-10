@@ -17,8 +17,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 
-	"github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p-pubsub"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
@@ -68,12 +68,20 @@ func (n *Network) HandlePeerFound(peerInfo peer.AddrInfo) {
 
 	if _, found := n.peers[peerInfo.ID]; !found {
 		fmt.Printf("Discovered new peer: %s\n", peerInfo.ID.String())
+
+		// Check peer limit before adding
+		if len(n.peers) >= n.config.MaxPeers {
+			fmt.Printf("Skipping connection to %s: MaxPeers limit reached (%d)\n", peerInfo.ID.String(), n.config.MaxPeers)
+			return
+		}
+
 		n.peers[peerInfo.ID] = &PeerInfo{
 			ID:        peerInfo.ID,
 			Addrs:     peerInfo.Addrs,
 			Connected: time.Now(),
 			LastSeen:  time.Now(),
 		}
+
 		// Attempt to connect to the discovered peer
 		go func() {
 			if err := n.host.Connect(n.ctx, peerInfo); err != nil {
@@ -241,6 +249,17 @@ func (n *Network) connectToBootstrapPeers() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
+			n.mu.RLock()
+			currentPeers := len(n.host.Network().Peers())
+			maxPeers := n.config.MaxPeers
+			n.mu.RUnlock()
+
+			if currentPeers >= maxPeers {
+				fmt.Printf("Skipping bootstrap connection to %s: MaxPeers limit reached (%d)\n", peerinfo.ID.String(), maxPeers)
+				return
+			}
+
 			if err := n.host.Connect(n.ctx, *peerinfo); err != nil {
 				fmt.Printf("Failed to connect to bootstrap peer %s: %v\n", peerinfo.ID.String(), err)
 			} else {

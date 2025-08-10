@@ -61,7 +61,7 @@ func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig,
 		stopMining: make(chan struct{}),
 		ctx:        ctx,
 		cancel:     cancel,
-		consensus:  consensus.NewConsensus(consensusConfig),
+		consensus:  consensus.NewConsensus(consensusConfig, chain),
 	}
 }
 

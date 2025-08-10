@@ -1,13 +1,13 @@
 package utxo
 
 import (
-	"fmt"
-	"sync"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/gochain/gochain/pkg/block"
 )

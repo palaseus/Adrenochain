@@ -13,28 +13,28 @@ import (
 	"github.com/gochain/gochain/pkg/utxo"
 )
 
-// Chain represents the blockchain
+// Chain represents the blockchain, managing blocks, chain state, and interactions with storage, UTXO set, and consensus.
 type Chain struct {
-	mu            sync.RWMutex
-	blocks        map[string]*block.Block // hash -> block (in-memory cache)
-	blockByHeight map[uint64]*block.Block // height -> block (in-memory cache)
-	bestBlock     *block.Block
-	genesisBlock  *block.Block
-	tipHash       []byte
-	height        uint64
-	config        *ChainConfig
-	storage       *storage.Storage
-	UTXOSet       *utxo.UTXOSet // Added UTXOSet field
-	consensus     *consensus.Consensus
+	mu            sync.RWMutex            // mu protects concurrent access to chain fields.
+	blocks        map[string]*block.Block // blocks is an in-memory cache of hash -> block.
+	blockByHeight map[uint64]*block.Block // blockByHeight is an in-memory cache of height -> block.
+	bestBlock     *block.Block            // bestBlock is the current tip of the longest chain.
+	genesisBlock  *block.Block            // genesisBlock is the first block in the chain.
+	tipHash       []byte                  // tipHash is the hash of the current best block.
+	height        uint64                  // height is the current height of the chain (number of blocks).
+	config        *ChainConfig            // config holds the chain's configuration parameters.
+	storage       *storage.Storage        // storage provides persistent storage for blocks and chain state.
+	UTXOSet       *utxo.UTXOSet           // UTXOSet manages the unspent transaction outputs.
+	consensus     *consensus.Consensus    // consensus handles the blockchain's consensus rules.
 }
 
-// ChainConfig holds configuration for the blockchain
+// ChainConfig holds configuration parameters for the blockchain.
 type ChainConfig struct {
-	GenesisBlockReward uint64
-	MaxBlockSize       uint64
+	GenesisBlockReward uint64 // GenesisBlockReward is the reward for the genesis block.
+	MaxBlockSize       uint64 // MaxBlockSize is the maximum allowed size for a block in bytes.
 }
 
-// DefaultChainConfig returns the default chain configuration
+// DefaultChainConfig returns the default configuration for the blockchain.
 func DefaultChainConfig() *ChainConfig {
 	return &ChainConfig{
 		GenesisBlockReward: 1000000000, // 1 billion units
@@ -42,7 +42,8 @@ func DefaultChainConfig() *ChainConfig {
 	}
 }
 
-// NewChain creates a new blockchain
+// NewChain creates a new blockchain instance.
+// It initializes the chain from storage or creates a new genesis block if no chain state is found.
 func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s *storage.Storage) (*Chain, error) {
 	chain := &Chain{
 		blocks:        make(map[string]*block.Block),
@@ -50,10 +51,9 @@ func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s
 		config:        config,
 		storage:       s,
 		UTXOSet:       utxo.NewUTXOSet(), // Initialize UTXOSet
-		consensus:     nil,
 	}
 
-	chain.consensus = consensus.NewConsensus(consensusConfig)
+	chain.consensus = consensus.NewConsensus(consensusConfig, chain)
 
 	// Load chain state from storage
 	chainState, err := chain.storage.GetChainState()
@@ -96,6 +96,8 @@ func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s
 }
 
 // createGenesisBlock creates the genesis block
+// createGenesisBlock creates the very first block in the blockchain.
+// It initializes the genesis block with predefined values and a coinbase transaction.
 func (c *Chain) createGenesisBlock() {
 	genesis := &block.Block{
 		Header: &block.Header{
@@ -130,6 +132,8 @@ func (c *Chain) createGenesisBlock() {
 }
 
 // createCoinbaseTransaction creates a coinbase transaction
+// createCoinbaseTransaction creates a special transaction that rewards the miner for creating a new block.
+// Coinbase transactions have no inputs and are the first transaction in a block.
 func (c *Chain) createCoinbaseTransaction(height uint64, reward uint64) *block.Transaction {
 	// Create a simple coinbase transaction
 	output := &block.TxOutput{
@@ -152,6 +156,8 @@ func (c *Chain) createCoinbaseTransaction(height uint64, reward uint64) *block.T
 }
 
 // calculateTransactionHash calculates the hash of a transaction
+// calculateTransactionHash calculates the SHA256 hash of a transaction.
+// This hash serves as the transaction's unique identifier.
 func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
 	data := make([]byte, 0)
 
@@ -194,8 +200,16 @@ func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
 	return hash[:]
 }
 
-// AddBlock adds a new block to the chain
+// AddBlock adds a new block to the chain.
+// It validates the block against consensus rules, stores it, and updates the chain state if it extends the best chain.
 func (c *Chain) AddBlock(block *block.Block) error {
+	if block == nil {
+		return fmt.Errorf("cannot add nil block")
+	}
+	if block.Header == nil {
+		return fmt.Errorf("block header cannot be nil")
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -245,7 +259,16 @@ func (c *Chain) AddBlock(block *block.Block) error {
 }
 
 // validateBlock validates a block before adding it to the chain
+// validateBlock performs internal validation checks on a block before it is added to the chain.
+// This includes checks for block size, previous block existence, height continuity, timestamp, proof of work, and transaction validity.
 func (c *Chain) validateBlock(block *block.Block) error {
+	if block == nil {
+		return fmt.Errorf("block cannot be nil")
+	}
+	if block.Header == nil {
+		return fmt.Errorf("block header cannot be nil")
+	}
+
 	// Basic block validation
 	if err := block.IsValid(); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
@@ -293,6 +316,7 @@ func (c *Chain) validateBlock(block *block.Block) error {
 }
 
 // getBlockSize calculates the approximate size of a block
+// getBlockSize calculates the approximate size of a block in bytes.
 func (c *Chain) getBlockSize(block *block.Block) uint64 {
 	size := uint64(0)
 
@@ -311,6 +335,7 @@ func (c *Chain) getBlockSize(block *block.Block) uint64 {
 }
 
 // getTransactionSize calculates the approximate size of a transaction
+// getTransactionSize calculates the approximate size of a transaction in bytes.
 func (c *Chain) getTransactionSize(tx *block.Transaction) uint64 {
 	size := uint64(0)
 
@@ -334,13 +359,19 @@ func (c *Chain) getTransactionSize(tx *block.Transaction) uint64 {
 }
 
 // isBetterChain checks if the new block creates a better chain
+// isBetterChain checks if the new block creates a better chain than the current best chain.
+// Currently, it implements the longest chain rule.
 func (c *Chain) isBetterChain(block *block.Block) bool {
+	if block == nil || block.Header == nil {
+		return false
+	}
 	// For now, use longest chain rule
 	// In a real implementation, this would consider accumulated difficulty
 	return block.Header.Height > c.height
 }
 
-// GetBlock returns a block by its hash
+// GetBlock returns a block by its hash.
+// It first checks the in-memory cache, then loads from storage if not found.
 func (c *Chain) GetBlock(hash []byte) *block.Block {
 	// Try to get from in-memory cache first
 	if block, exists := c.blocks[string(hash)]; exists {
@@ -359,7 +390,8 @@ func (c *Chain) GetBlock(hash []byte) *block.Block {
 	return block
 }
 
-// GetBlockByHeight returns a block by its height
+// GetBlockByHeight returns a block by its height.
+// It first checks the in-memory cache, then iterates through blocks (less efficient) if not found.
 func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
 	// Try to get from in-memory cache first
 	if block, exists := c.blockByHeight[height]; exists {
@@ -378,7 +410,7 @@ func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
 	return nil
 }
 
-// GetBestBlock returns the current best block
+// GetBestBlock returns the current best block (tip) of the chain.
 func (c *Chain) GetBestBlock() *block.Block {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -386,12 +418,12 @@ func (c *Chain) GetBestBlock() *block.Block {
 	return c.bestBlock
 }
 
-// GetHeight returns the current chain height
+// GetHeight returns the current height of the chain.
 func (c *Chain) GetHeight() uint64 {
 	return c.height
 }
 
-// GetTipHash returns the hash of the current tip
+// GetTipHash returns the hash of the current best block (tip) of the chain.
 func (c *Chain) GetTipHash() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -399,19 +431,21 @@ func (c *Chain) GetTipHash() []byte {
 	return c.tipHash
 }
 
-// GetGenesisBlock returns the genesis block
+// GetGenesisBlock returns the genesis block of the chain.
 func (c *Chain) GetGenesisBlock() *block.Block {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.genesisBlock
 }
 
-// CalculateNextDifficulty calculates the difficulty for the next block
+// CalculateNextDifficulty calculates the difficulty for the next block to be mined.
+// This is delegated to the consensus module.
 func (c *Chain) CalculateNextDifficulty() uint64 {
 	return c.consensus.GetDifficulty()
 }
 
-// ForkChoice implements fork choice rules
+// ForkChoice implements the fork choice rules to determine the canonical chain.
+// Currently, it uses the longest chain rule.
 func (c *Chain) ForkChoice(newBlock *block.Block) error {
 	// For now, implement longest chain rule
 	// In a real implementation, this would consider accumulated difficulty
@@ -422,12 +456,12 @@ func (c *Chain) ForkChoice(newBlock *block.Block) error {
 	return fmt.Errorf("block does not extend the best chain")
 }
 
-// Close closes the chain's storage
+// Close closes the chain's underlying storage.
 func (c *Chain) Close() error {
 	return c.storage.Close()
 }
 
-// String returns a string representation of the chain
+// String returns a human-readable string representation of the chain.
 func (c *Chain) String() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

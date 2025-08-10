@@ -9,25 +9,35 @@ import (
 	"github.com/gochain/gochain/pkg/block"
 )
 
-// Consensus represents the blockchain consensus mechanism
+// ChainReader defines the methods from the chain that the consensus package needs
+// to interact with the blockchain state without creating circular dependencies.
+type ChainReader interface {
+	GetHeight() uint64
+	GetBlockByHeight(height uint64) *block.Block
+	GetBlock(hash []byte) *block.Block
+}
+
+// Consensus represents the blockchain consensus mechanism.
+// It manages difficulty adjustment, proof-of-work validation, and block mining.
 type Consensus struct {
-	mu             sync.RWMutex
-	config         *ConsensusConfig
-	difficulty     uint64
-	lastAdjustment time.Time
-	blockTimes     []time.Duration
+	mu             sync.RWMutex     // mu protects concurrent access to consensus fields.
+	config         *ConsensusConfig // config holds the consensus configuration parameters.
+	difficulty     uint64           // difficulty is the current mining difficulty.
+	lastAdjustment time.Time        // lastAdjustment records the time of the last difficulty adjustment.
+	blockTimes     []time.Duration  // blockTimes stores the durations of recent blocks for difficulty adjustment.
+	chain          ChainReader      // chain is a reference to the chain, used to query block information.
 }
 
-// ConsensusConfig holds configuration for consensus
+// ConsensusConfig holds configuration parameters for the consensus mechanism.
 type ConsensusConfig struct {
-	TargetBlockTime              time.Duration
-	DifficultyAdjustmentInterval uint64
-	MaxDifficulty                uint64
-	MinDifficulty                uint64
-	DifficultyAdjustmentFactor   float64
+	TargetBlockTime              time.Duration // TargetBlockTime is the desired average time between blocks.
+	DifficultyAdjustmentInterval uint64        // DifficultyAdjustmentInterval is the number of blocks after which difficulty is adjusted.
+	MaxDifficulty                uint64        // MaxDifficulty is the maximum allowed difficulty.
+	MinDifficulty                uint64        // MinDifficulty is the minimum allowed difficulty.
+	DifficultyAdjustmentFactor   float64       // DifficultyAdjustmentFactor is used to dampen difficulty swings.
 }
 
-// DefaultConsensusConfig returns the default consensus configuration
+// DefaultConsensusConfig returns the default consensus configuration.
 func DefaultConsensusConfig() *ConsensusConfig {
 	return &ConsensusConfig{
 		TargetBlockTime:              10 * time.Second,
@@ -38,17 +48,73 @@ func DefaultConsensusConfig() *ConsensusConfig {
 	}
 }
 
-// NewConsensus creates a new consensus instance
-func NewConsensus(config *ConsensusConfig) *Consensus {
+// NewConsensus creates a new consensus instance.
+// It initializes the consensus mechanism with the given configuration and a reference to the chain.
+func NewConsensus(config *ConsensusConfig, chain ChainReader) *Consensus {
 	return &Consensus{
 		config:         config,
 		difficulty:     config.MinDifficulty,
 		lastAdjustment: time.Now(),
 		blockTimes:     make([]time.Duration, 0),
+		chain:          chain,
 	}
 }
 
-// ValidateBlock validates a block according to consensus rules
+// calculateExpectedDifficulty calculates the expected difficulty for a given block height.
+// This is used during block validation to ensure the block's difficulty matches the network's rules.
+func (c *Consensus) calculateExpectedDifficulty(blockHeight uint64) (uint64, error) {
+	if blockHeight == 0 {
+		return c.config.MinDifficulty, nil // Genesis block always has min difficulty
+	}
+
+	if blockHeight%c.config.DifficultyAdjustmentInterval != 0 {
+		// If not an adjustment block, difficulty is the same as the previous block
+		prevBlock := c.chain.GetBlockByHeight(blockHeight - 1)
+		if prevBlock == nil {
+			return 0, fmt.Errorf("previous block not found for height %d", blockHeight)
+		}
+		return prevBlock.Header.Difficulty, nil
+	}
+
+	// It's an adjustment block, calculate new difficulty
+	currentBlock := c.chain.GetBlockByHeight(blockHeight - 1)
+	if currentBlock == nil {
+		return 0, fmt.Errorf("current block not found for height %d", blockHeight-1)
+	}
+
+	oldBlockHeight := blockHeight - c.config.DifficultyAdjustmentInterval
+	oldBlock := c.chain.GetBlockByHeight(oldBlockHeight)
+	if oldBlock == nil {
+		return 0, fmt.Errorf("old block not found for height %d", oldBlockHeight)
+	}
+
+	actualTime := currentBlock.Header.Timestamp.Sub(oldBlock.Header.Timestamp)
+	expectedTime := time.Duration(c.config.DifficultyAdjustmentInterval) * c.config.TargetBlockTime
+
+	adjustmentFactor := float64(actualTime) / float64(expectedTime)
+
+	if adjustmentFactor < 1.0/c.config.DifficultyAdjustmentFactor {
+		adjustmentFactor = 1.0 / c.config.DifficultyAdjustmentFactor
+	}
+	if adjustmentFactor > c.config.DifficultyAdjustmentFactor {
+		adjustmentFactor = c.config.DifficultyAdjustmentFactor
+	}
+
+	oldDifficulty := oldBlock.Header.Difficulty
+	newDifficulty := uint64(float64(oldDifficulty) * adjustmentFactor)
+
+	if newDifficulty < c.config.MinDifficulty {
+		newDifficulty = c.config.MinDifficulty
+	}
+	if newDifficulty > c.config.MaxDifficulty {
+		newDifficulty = c.config.MaxDifficulty
+	}
+
+	return newDifficulty, nil
+}
+
+// ValidateBlock validates a block according to consensus rules.
+// It checks proof-of-work, timestamp, and difficulty.
 func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) error {
 	// Basic block validation
 	if err := block.IsValid(); err != nil {
@@ -76,15 +142,21 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 	}
 
 	// Check difficulty
-	if block.Header.Difficulty != c.difficulty {
+	expectedDifficulty, err := c.calculateExpectedDifficulty(block.Header.Height)
+	if err != nil {
+		return fmt.Errorf("failed to calculate expected difficulty: %w", err)
+	}
+
+	if block.Header.Difficulty != expectedDifficulty {
 		return fmt.Errorf("block difficulty %d does not match expected %d",
-			block.Header.Difficulty, c.difficulty)
+			block.Header.Difficulty, expectedDifficulty)
 	}
 
 	return nil
 }
 
-// ValidateProofOfWork validates the proof of work for a block
+// ValidateProofOfWork validates the proof of work for a block.
+// It checks if the block's hash is less than or equal to the target derived from the current difficulty.
 func (c *Consensus) ValidateProofOfWork(block *block.Block) bool {
 	hash := block.CalculateHash()
 	target := c.calculateTarget(c.difficulty)
@@ -92,7 +164,8 @@ func (c *Consensus) ValidateProofOfWork(block *block.Block) bool {
 	return c.hashLessThan(hash, target)
 }
 
-// calculateTarget calculates the target hash for a given difficulty
+// calculateTarget calculates the target hash for a given difficulty.
+// The target is a 32-byte array that the block's hash must be less than or equal to.
 func (c *Consensus) calculateTarget(difficulty uint64) []byte {
 	// Target = 2^(256-difficulty)
 	target := new(big.Int)
@@ -111,7 +184,8 @@ func (c *Consensus) calculateTarget(difficulty uint64) []byte {
 	return result
 }
 
-// hashLessThan checks if hash1 is less than hash2
+// hashLessThan checks if hash1 is lexicographically less than hash2.
+// This is used to determine if a block's hash meets the target difficulty.
 func (c *Consensus) hashLessThan(hash1, hash2 []byte) bool {
 	for i := 0; i < len(hash1); i++ {
 		if hash1[i] < hash2[i] {
@@ -124,7 +198,8 @@ func (c *Consensus) hashLessThan(hash1, hash2 []byte) bool {
 	return false
 }
 
-// MineBlock mines a block with the given difficulty
+// MineBlock mines a block by finding a nonce that satisfies the proof-of-work requirement.
+// It continuously increments the nonce and calculates the block hash until the target is met or mining is stopped.
 func (c *Consensus) MineBlock(block *block.Block, stopChan <-chan struct{}) error {
 	target := c.calculateTarget(c.difficulty)
 
@@ -152,7 +227,8 @@ func (c *Consensus) MineBlock(block *block.Block, stopChan <-chan struct{}) erro
 	return fmt.Errorf("failed to find valid nonce")
 }
 
-// UpdateDifficulty updates the difficulty based on recent block times
+// UpdateDifficulty updates the difficulty based on recent block times.
+// It collects block times and triggers a difficulty adjustment when enough blocks have been mined.
 func (c *Consensus) UpdateDifficulty(blockTime time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -171,59 +247,66 @@ func (c *Consensus) UpdateDifficulty(blockTime time.Duration) {
 	}
 }
 
-// adjustDifficulty adjusts the difficulty based on recent block times
+// adjustDifficulty adjusts the difficulty based on recent block times.
+// It aims to keep the average block time close to the TargetBlockTime.
 func (c *Consensus) adjustDifficulty() {
-	// Get the current best block
-	// currentHeight := c.chain.GetHeight()
-	// currentBlock := c.chain.GetBlockByHeight(currentHeight)
-	// if currentBlock == nil {
-	// 	return
-	// }
+	// Get the current height from the chain
+	currentHeight := c.chain.GetHeight()
+	if currentHeight < c.config.DifficultyAdjustmentInterval {
+		// Not enough blocks to adjust difficulty yet
+		return
+	}
 
-	// Get the block from RetargetInterval ago
-	// oldBlockHeight := currentHeight - c.config.DifficultyAdjustmentInterval
-	// oldBlock := c.chain.GetBlockByHeight(oldBlockHeight)
-	// if oldBlock == nil {
-	// 	return
-	// }
+	// Get the current block (tip of the chain)
+	currentBlock := c.chain.GetBlockByHeight(currentHeight)
+	if currentBlock == nil {
+		return
+	}
 
-	// Calculate actual time taken
-	// actualTime := currentBlock.Header.Timestamp.Sub(oldBlock.Header.Timestamp)
+	// Get the block from DifficultyAdjustmentInterval ago
+	oldBlockHeight := currentHeight - c.config.DifficultyAdjustmentInterval
+	oldBlock := c.chain.GetBlockByHeight(oldBlockHeight)
+	if oldBlock == nil {
+		return
+	}
 
-	// Calculate expected time
-	// expectedTime := time.Duration(c.config.DifficultyAdjustmentInterval) * c.config.TargetBlockTime
+	// Calculate actual time taken for the last DifficultyAdjustmentInterval blocks
+	actualTime := currentBlock.Header.Timestamp.Sub(oldBlock.Header.Timestamp)
+
+	// Calculate expected time for the last DifficultyAdjustmentInterval blocks
+	expectedTime := time.Duration(c.config.DifficultyAdjustmentInterval) * c.config.TargetBlockTime
 
 	// Calculate adjustment factor
-	// adjustmentFactor := float64(actualTime) / float64(expectedTime)
+	adjustmentFactor := float64(actualTime) / float64(expectedTime)
 
 	// Apply damping to prevent large swings
-	// if adjustmentFactor < 0.25 {
-	// 	adjustmentFactor = 0.25
-	// }
-	// if adjustmentFactor > 4.0 {
-	// 	adjustmentFactor = 4.0
-	// }
+	if adjustmentFactor < 1.0/c.config.DifficultyAdjustmentFactor {
+		adjustmentFactor = 1.0 / c.config.DifficultyAdjustmentFactor
+	}
+	if adjustmentFactor > c.config.DifficultyAdjustmentFactor {
+		adjustmentFactor = c.config.DifficultyAdjustmentFactor
+	}
 
 	// Adjust difficulty
-	// oldDifficulty := c.difficulty
-	// newDifficulty := uint64(float64(oldDifficulty) * adjustmentFactor)
+	oldDifficulty := c.difficulty
+	newDifficulty := uint64(float64(oldDifficulty) * adjustmentFactor)
 
 	// Ensure difficulty is within bounds
-	// if newDifficulty < c.config.MinDifficulty {
-	// 	newDifficulty = c.config.MinDifficulty
-	// }
-	// if newDifficulty > c.config.MaxDifficulty {
-	// 	newDifficulty = c.config.MaxDifficulty
-	// }
+	if newDifficulty < c.config.MinDifficulty {
+		newDifficulty = c.config.MinDifficulty
+	}
+	if newDifficulty > c.config.MaxDifficulty {
+		newDifficulty = c.config.MaxDifficulty
+	}
 
-	// c.difficulty = newDifficulty
+	c.difficulty = newDifficulty
 	c.lastAdjustment = time.Now()
 
-	// fmt.Printf("Difficulty adjusted from %d to %d (actual time: %v, expected time: %v)\n",
-	// 	oldDifficulty, c.difficulty, actualTime, expectedTime)
+	fmt.Printf("Difficulty adjusted from %d to %d (actual time: %v, expected time: %v)\n",
+		oldDifficulty, c.difficulty, actualTime, expectedTime)
 }
 
-// GetDifficulty returns the current difficulty
+// GetDifficulty returns the current mining difficulty.
 func (c *Consensus) GetDifficulty() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -231,7 +314,7 @@ func (c *Consensus) GetDifficulty() uint64 {
 	return c.difficulty
 }
 
-// GetTarget returns the current target hash
+// GetTarget returns the current target hash for the mining difficulty.
 func (c *Consensus) GetTarget() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -239,7 +322,8 @@ func (c *Consensus) GetTarget() []byte {
 	return c.calculateTarget(c.difficulty)
 }
 
-// GetNextDifficulty returns the next difficulty that will be used
+// GetNextDifficulty calculates and returns what the next difficulty would be
+// based on the collected block times, without actually adjusting the current difficulty.
 func (c *Consensus) GetNextDifficulty() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -280,7 +364,7 @@ func (c *Consensus) GetNextDifficulty() uint64 {
 	return c.difficulty
 }
 
-// GetStats returns consensus statistics
+// GetStats returns a map of current consensus statistics.
 func (c *Consensus) GetStats() map[string]interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -297,7 +381,7 @@ func (c *Consensus) GetStats() map[string]interface{} {
 	return stats
 }
 
-// String returns a string representation of the consensus
+// String returns a human-readable string representation of the consensus state.
 func (c *Consensus) String() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

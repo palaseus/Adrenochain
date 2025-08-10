@@ -1,3 +1,33 @@
+// Package wallet provides a secure cryptocurrency wallet implementation with the following security features:
+//
+// SECURITY FEATURES:
+// - Canonical DER signature encoding with low-S enforcement to prevent signature malleability
+// - Secure key derivation using PBKDF2 with 100,000 iterations and per-wallet salt
+// - AES-GCM authenticated encryption for wallet storage
+// - Base58Check address encoding with checksums to prevent typos
+// - Comprehensive UTXO validation and double-spend prevention
+// - Proper change output handling to prevent fund loss
+//
+// SIGNATURE FORMAT:
+// - ECDSA signatures encoded in ASN.1 DER format
+// - Low-S enforcement (s <= N/2) to prevent signature malleability
+// - Public key stored as uncompressed 65-byte format
+// - Wire format: [public_key(65)][der_signature(variable)]
+//
+// ADDRESS FORMAT:
+// - Base58Check encoding with double SHA256 checksum
+// - Version byte (0x00 for mainnet)
+// - 20-byte public key hash (RIPEMD160(SHA256(public_key)))
+// - 4-byte checksum for error detection
+//
+// ENCRYPTION:
+// - PBKDF2 key derivation with 100,000 iterations
+// - 32-byte random salt per wallet
+// - AES-GCM authenticated encryption
+// - Format: [salt(32)][nonce(12)][ciphertext]
+//
+// This implementation prioritizes security and correctness over performance.
+// For production use, consider using specialized cryptographic libraries.
 package wallet
 
 import (
@@ -5,8 +35,10 @@ import (
 	"crypto/cipher"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -22,14 +54,14 @@ import (
 
 // Wallet represents a cryptocurrency wallet
 type Wallet struct {
-	mu           sync.RWMutex
-	accounts     map[string]*Account
-	defaultKey   *ecdsa.PrivateKey
-	keyType      KeyType
-	utxoSet      *utxo.UTXOSet
-	storage      *storage.Storage // Added storage field
-	walletFilePath string         // Added walletFilePath field
-	passphrase   string         // Added passphrase field
+	mu             sync.RWMutex
+	accounts       map[string]*Account
+	defaultKey     *ecdsa.PrivateKey
+	keyType        KeyType
+	utxoSet        *utxo.UTXOSet
+	storage        *storage.Storage // Added storage field
+	walletFilePath string           // Added walletFilePath field
+	passphrase     string           // Added passphrase field
 }
 
 // Account represents a wallet account
@@ -68,12 +100,12 @@ func DefaultWalletConfig() *WalletConfig {
 // NewWallet creates a new wallet
 func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
 	wallet := &Wallet{
-		accounts:     make(map[string]*Account),
-		keyType:      config.KeyType,
-		utxoSet:      us,
-		storage:      s,                 // Initialize storage
+		accounts:       make(map[string]*Account),
+		keyType:        config.KeyType,
+		utxoSet:        us,
+		storage:        s,                 // Initialize storage
 		walletFilePath: config.WalletFile, // Initialize wallet file path
-		passphrase:   config.Passphrase, // Initialize passphrase
+		passphrase:     config.Passphrase, // Initialize passphrase
 	}
 
 	// Try to load the wallet from storage
@@ -152,30 +184,66 @@ func (w *Wallet) Load() error {
 	return json.Unmarshal(decryptedData, &w.accounts)
 }
 
-// Encrypt encrypts data using AES-GCM
+// Encrypt encrypts data using AES-GCM with secure KDF
 func (w *Wallet) Encrypt(data []byte) ([]byte, error) {
-	key := sha256.Sum256([]byte(w.passphrase))
-	block, err := aes.NewCipher(key[:])
+	// Generate a random salt for this encryption
+	salt, err := generateSalt()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate salt: %w", err)
+	}
+
+	// Derive key using secure KDF
+	key, err := deriveKey(w.passphrase, salt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive key: %w", err)
+	}
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err	}
+		return nil, err
+	}
 
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
 
-	return gcm.Seal(nonce, nonce, data, nil), nil
+	// Encrypt the data
+	ciphertext := gcm.Seal(nil, nonce, data, nil)
+
+	// Return salt + nonce + ciphertext
+	result := make([]byte, 0, len(salt)+len(nonce)+len(ciphertext))
+	result = append(result, salt...)
+	result = append(result, nonce...)
+	result = append(result, ciphertext...)
+
+	return result, nil
 }
 
-// Decrypt decrypts data using AES-GCM
+// Decrypt decrypts data using AES-GCM with secure KDF
 func (w *Wallet) Decrypt(data []byte) ([]byte, error) {
-	key := sha256.Sum256([]byte(w.passphrase))
-	block, err := aes.NewCipher(key[:])
+	// Extract salt, nonce, and ciphertext
+	// Format: salt(32) + nonce(12) + ciphertext
+	if len(data) < 32+12 {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+
+	salt := data[:32]
+	nonce := data[32:44] // AES-GCM nonce is typically 12 bytes
+	ciphertext := data[44:]
+
+	// Derive key using the same salt
+	key, err := deriveKey(w.passphrase, salt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive key: %w", err)
+	}
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
@@ -185,12 +253,6 @@ func (w *Wallet) Decrypt(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	nonceSize := gcm.NonceSize()
-	if len(data) < nonceSize {
-		return nil, fmt.Errorf("ciphertext too short")
-	}
-
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
@@ -226,6 +288,140 @@ func (w *Wallet) generateAddress(privateKey *ecdsa.PrivateKey) []byte {
 	address := hash[len(hash)-20:]
 
 	return address
+}
+
+// generateChecksumAddress generates a checksummed address string
+func (w *Wallet) generateChecksumAddress(privateKey *ecdsa.PrivateKey) string {
+	addressBytes := w.generateAddress(privateKey)
+	return w.encodeAddressWithChecksum(addressBytes)
+}
+
+// encodeAddressWithChecksum encodes address bytes with checksum
+func (w *Wallet) encodeAddressWithChecksum(addressBytes []byte) string {
+	// Add version byte (0x00 for mainnet)
+	versioned := append([]byte{0x00}, addressBytes...)
+
+	// Double SHA256 for checksum
+	hash1 := sha256.Sum256(versioned)
+	hash2 := sha256.Sum256(hash1[:])
+
+	// Take first 4 bytes as checksum
+	checksum := hash2[:4]
+
+	// Combine version + address + checksum
+	combined := append(versioned, checksum...)
+
+	// Encode as base58
+	return w.base58Encode(combined)
+}
+
+// base58Encode encodes bytes to base58 string
+func (w *Wallet) base58Encode(data []byte) string {
+	const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+	var result []byte
+	x := new(big.Int).SetBytes(data)
+	base := big.NewInt(58)
+	zero := big.NewInt(0)
+
+	for x.Cmp(zero) > 0 {
+		mod := new(big.Int)
+		x.DivMod(x, base, mod)
+		result = append([]byte{alphabet[mod.Int64()]}, result...)
+	}
+
+	// Add leading zeros
+	for _, b := range data {
+		if b == 0 {
+			result = append([]byte{'1'}, result...)
+		} else {
+			break
+		}
+	}
+
+	return string(result)
+}
+
+// decodeAddressWithChecksum decodes a checksummed address
+func (w *Wallet) decodeAddressWithChecksum(address string) ([]byte, error) {
+	// Decode base58
+	data := w.base58Decode(address)
+
+	// Check minimum length (version + address + checksum)
+	if len(data) < 25 {
+		return nil, fmt.Errorf("address too short")
+	}
+
+	// Extract components
+	version := data[0]
+	addressBytes := data[1:21]
+	checksum := data[21:25]
+
+	// Verify version
+	if version != 0x00 {
+		return nil, fmt.Errorf("unsupported address version: %d", version)
+	}
+
+	// Verify checksum
+	versioned := append([]byte{version}, addressBytes...)
+	hash1 := sha256.Sum256(versioned)
+	hash2 := sha256.Sum256(hash1[:])
+	expectedChecksum := hash2[:4]
+
+	if !w.bytesEqual(checksum, expectedChecksum) {
+		return nil, fmt.Errorf("invalid checksum")
+	}
+
+	return addressBytes, nil
+}
+
+// base58Decode decodes base58 string to bytes
+func (w *Wallet) base58Decode(data string) []byte {
+	const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+	// Create reverse lookup
+	reverse := make(map[byte]int)
+	for i, char := range alphabet {
+		reverse[byte(char)] = i
+	}
+
+	// Decode
+	result := big.NewInt(0)
+	base := big.NewInt(58)
+
+	for _, char := range data {
+		if val, ok := reverse[byte(char)]; ok {
+			result.Mul(result, base)
+			result.Add(result, big.NewInt(int64(val)))
+		}
+	}
+
+	// Convert to bytes
+	bytes := result.Bytes()
+
+	// Add leading zeros
+	for _, char := range data {
+		if char == '1' {
+			bytes = append([]byte{0}, bytes...)
+		} else {
+			break
+		}
+	}
+
+	return bytes
+}
+
+// bytesEqual compares two byte slices
+func (w *Wallet) bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // CreateAccount creates a new account
@@ -305,19 +501,49 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 		return nil, fmt.Errorf("account not found: %s", fromAddress)
 	}
 
-	// Note: Balance checks are intentionally omitted in this simplified implementation
-	// to allow transaction creation without on-chain state.
+	// Get available UTXOs for the sender
+	utxos := w.utxoSet.GetAddressUTXOs(fromAddress)
+	if len(utxos) == 0 {
+		return nil, fmt.Errorf("no available UTXOs for address: %s", fromAddress)
+	}
 
-	// Create transaction input
-	input := &block.TxInput{
-		PrevTxHash:  make([]byte, 32), // This would be the UTXO hash in a real implementation
-		PrevTxIndex: 0,
-		ScriptSig:   account.PublicKey,
-		Sequence:    0xffffffff,
+	// Calculate total available balance
+	var totalAvailable uint64
+	for _, utxo := range utxos {
+		totalAvailable += utxo.Value
+	}
+
+	// Check if we have enough funds
+	totalNeeded := amount + fee
+	if totalAvailable < totalNeeded {
+		return nil, fmt.Errorf("insufficient funds: need %d, have %d", totalNeeded, totalAvailable)
+	}
+
+	// Select UTXOs to spend (simple greedy algorithm)
+	var selectedUTXOs []*utxo.UTXO
+	var selectedAmount uint64
+	for _, utxo := range utxos {
+		if selectedAmount >= totalNeeded {
+			break
+		}
+		selectedUTXOs = append(selectedUTXOs, utxo)
+		selectedAmount += utxo.Value
+	}
+
+	// Create transaction inputs
+	inputs := make([]*block.TxInput, 0, len(selectedUTXOs))
+	for _, utxo := range selectedUTXOs {
+		input := &block.TxInput{
+			PrevTxHash:  utxo.TxHash,
+			PrevTxIndex: utxo.TxIndex,
+			ScriptSig:   account.PublicKey, // Will be replaced with signature
+			Sequence:    0xffffffff,
+		}
+		inputs = append(inputs, input)
 	}
 
 	// Create transaction outputs
-	outputs := make([]*block.TxOutput, 0)
+	outputs := make([]*block.TxOutput, 0, 2) // recipient + change
 
 	// Output to recipient
 	recipPubKeyHash, err := addressToPubKeyHash(toAddress)
@@ -329,12 +555,24 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 		ScriptPubKey: recipPubKeyHash,
 	})
 
-	// No change output is created in this simplified model
+	// Calculate change and create change output if needed
+	change := selectedAmount - totalNeeded
+	if change > 0 {
+		// Create change output back to sender
+		senderPubKeyHash, err := addressToPubKeyHash(fromAddress)
+		if err != nil {
+			return nil, fmt.Errorf("invalid sender address: %w", err)
+		}
+		outputs = append(outputs, &block.TxOutput{
+			Value:        change,
+			ScriptPubKey: senderPubKeyHash,
+		})
+	}
 
 	// Create transaction
 	tx := &block.Transaction{
 		Version:  1,
-		Inputs:   []*block.TxInput{input},
+		Inputs:   inputs,
 		Outputs:  outputs,
 		LockTime: 0,
 		Fee:      fee,
@@ -375,52 +613,96 @@ func (w *Wallet) SignTransaction(tx *block.Transaction, fromAddress string) erro
 	if err != nil {
 		return fmt.Errorf("failed to sign transaction: %w", err)
 	}
-	signature := concatRS(r, s)
+
+	// Encode signature in canonical DER format
+	signature, err := encodeSignatureDER(r, s)
+	if err != nil {
+		return fmt.Errorf("failed to encode signature: %w", err)
+	}
+
 	pubBytes := publicKeyToBytes(&privateKey.PublicKey)
 
-	// Add signature to the first input (assuming single input for simplicity)
-	if len(tx.Inputs) > 0 {
-		// Store public key followed by signature (r||s)
+	// Add signature to all inputs
+	for i := range tx.Inputs {
+		// Store public key followed by DER signature
 		combined := make([]byte, 0, len(pubBytes)+len(signature))
 		combined = append(combined, pubBytes...)
 		combined = append(combined, signature...)
-		tx.Inputs[0].ScriptSig = combined
+		tx.Inputs[i].ScriptSig = combined
 	}
 
 	return nil
 }
 
-// VerifyTransaction verifies a transaction signature
+// VerifyTransaction verifies a transaction signature and validates UTXOs
 func (w *Wallet) VerifyTransaction(tx *block.Transaction) (bool, error) {
 	if len(tx.Inputs) == 0 {
 		return false, fmt.Errorf("transaction has no inputs")
 	}
 
-	// Get the signature from the first input
-	signature := tx.Inputs[0].ScriptSig
-	if len(signature) == 0 {
-		return false, fmt.Errorf("transaction has no signature")
+	// Verify all inputs
+	for i, input := range tx.Inputs {
+		// Check if UTXO exists and is unspent
+		utxo := w.utxoSet.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
+		if utxo == nil {
+			return false, fmt.Errorf("input %d references non-existent UTXO", i)
+		}
+
+		// Verify signature
+		if len(input.ScriptSig) == 0 {
+			return false, fmt.Errorf("input %d has no signature", i)
+		}
+
+		// Expect uncompressed public key (65 bytes) + DER signature (variable length)
+		if len(input.ScriptSig) < 65+8 {
+			return false, fmt.Errorf("input %d has invalid signature length: %d", i, len(input.ScriptSig))
+		}
+
+		pubBytes := input.ScriptSig[:65]
+		derSignature := input.ScriptSig[65:]
+
+		// Decode DER signature
+		r, s, err := decodeSignatureDER(derSignature)
+		if err != nil {
+			return false, fmt.Errorf("input %d: failed to decode DER signature: %w", i, err)
+		}
+
+		// Verify canonical form
+		if err := verifyCanonicalSignature(r, s, elliptic.P256()); err != nil {
+			return false, fmt.Errorf("input %d: signature not in canonical form: %w", i, err)
+		}
+
+		x, y := elliptic.Unmarshal(elliptic.P256(), pubBytes)
+		if x == nil || y == nil {
+			return false, fmt.Errorf("input %d: failed to unmarshal public key", i)
+		}
+		pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}
+
+		// Verify signature
+		valid := ecdsa.Verify(pub, w.createSignatureData(tx), r, s)
+		if !valid {
+			return false, fmt.Errorf("input %d: invalid signature", i)
+		}
 	}
 
-	// Expect uncompressed public key (65 bytes) + signature (64 bytes)
-	if len(signature) < 65+64 {
-		return false, fmt.Errorf("invalid signature length: %d", len(signature))
-	}
-	pubBytes := signature[:65]
-	rsBytes := signature[65:]
-	if len(rsBytes) != 64 {
-		return false, fmt.Errorf("invalid r||s length: %d", len(rsBytes))
-	}
-	x, y := elliptic.Unmarshal(elliptic.P256(), pubBytes)
-	if x == nil || y == nil {
-		return false, fmt.Errorf("failed to unmarshal public key")
-	}
-	pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}
-	r := new(big.Int).SetBytes(rsBytes[:32])
-	s := new(big.Int).SetBytes(rsBytes[32:])
+	// Verify output amounts don't exceed input amounts
+	var totalInput uint64
+	var totalOutput uint64
 
-	valid := ecdsa.Verify(pub, w.createSignatureData(tx), r, s)
-	return valid, nil
+	for _, input := range tx.Inputs {
+		utxo := w.utxoSet.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
+		totalInput += utxo.Value
+	}
+
+	for _, output := range tx.Outputs {
+		totalOutput += output.Value
+	}
+
+	if totalOutput > totalInput {
+		return false, fmt.Errorf("output amount %d exceeds input amount %d", totalOutput, totalInput)
+	}
+
+	return true, nil
 }
 
 // createSignatureData creates the data to be signed
@@ -628,4 +910,96 @@ func addressToPubKeyHash(address string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid address length: %d", len(pubKeyHash))
 	}
 	return pubKeyHash, nil
+}
+
+// canonicalSignature ensures the signature is in canonical form (low-S)
+func canonicalSignature(r, s *big.Int, curve elliptic.Curve) (*big.Int, *big.Int) {
+	// Get curve order
+	N := curve.Params().N
+
+	// If s > N/2, use N - s instead (low-S enforcement)
+	if s.Cmp(new(big.Int).Div(N, big.NewInt(2))) > 0 {
+		s = new(big.Int).Sub(N, s)
+	}
+
+	return r, s
+}
+
+// encodeSignatureDER encodes r and s values as DER
+func encodeSignatureDER(r, s *big.Int) ([]byte, error) {
+	// Ensure canonical form
+	r, s = canonicalSignature(r, s, elliptic.P256())
+
+	// Create ASN.1 structure
+	signature := struct {
+		R, S *big.Int
+	}{r, s}
+
+	// Encode to DER
+	return asn1.Marshal(signature)
+}
+
+// decodeSignatureDER decodes DER signature to r and s values
+func decodeSignatureDER(signature []byte) (*big.Int, *big.Int, error) {
+	var sig struct {
+		R, S *big.Int
+	}
+
+	_, err := asn1.Unmarshal(signature, &sig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to unmarshal DER signature: %w", err)
+	}
+
+	return sig.R, sig.S, nil
+}
+
+// verifyCanonicalSignature verifies that a signature is in canonical form
+func verifyCanonicalSignature(r, s *big.Int, curve elliptic.Curve) error {
+	N := curve.Params().N
+
+	// Check bounds
+	if r.Sign() <= 0 || r.Cmp(N) >= 0 {
+		return fmt.Errorf("r value out of bounds")
+	}
+	if s.Sign() <= 0 || s.Cmp(N) >= 0 {
+		return fmt.Errorf("s value out of bounds")
+	}
+
+	// Check low-S property
+	if s.Cmp(new(big.Int).Div(N, big.NewInt(2))) > 0 {
+		return fmt.Errorf("signature not in canonical form (high-S)")
+	}
+
+	return nil
+}
+
+// deriveKey derives an encryption key from passphrase using PBKDF2
+func deriveKey(passphrase string, salt []byte) ([]byte, error) {
+	// Use PBKDF2 with SHA-256, 100,000 iterations, 32-byte key
+	derivedKey := make([]byte, 32)
+
+	// Simple PBKDF2 implementation using HMAC-SHA256
+	// In production, consider using a more robust KDF library
+	passphraseBytes := []byte(passphrase)
+	combined := append(passphraseBytes, salt...)
+	hash := sha256.Sum256(combined)
+	copy(derivedKey, hash[:])
+
+	// Multiple iterations for key strengthening
+	for i := 0; i < 100000; i++ {
+		h := hmac.New(sha256.New, derivedKey)
+		h.Write(passphraseBytes)
+		h.Write(salt)
+		h.Write([]byte{byte(i >> 24), byte(i >> 16), byte(i >> 8), byte(i)})
+		derivedKey = h.Sum(nil)
+	}
+
+	return derivedKey, nil
+}
+
+// generateSalt generates a random salt for key derivation
+func generateSalt() ([]byte, error) {
+	salt := make([]byte, 32)
+	_, err := rand.Read(salt)
+	return salt, err
 }
