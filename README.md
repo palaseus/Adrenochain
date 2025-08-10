@@ -24,6 +24,13 @@ A comprehensive, production-ready blockchain implementation written in Go. GoCha
 - **Mempool**: Transaction pool with fee-based eviction policies
 - **Blockchain Sync**: **Complete synchronization protocols** for multi-node operation
 
+### Monitoring & Observability ✅ **COMPLETE**
+- **Metrics Collection**: Real-time blockchain metrics (block height, transaction count, mempool size)
+- **Health Checks**: Comprehensive health monitoring for blockchain, mempool, and network components
+- **Prometheus Endpoint**: `/metrics` endpoint for Prometheus-compatible metrics scraping
+- **Health Endpoint**: `/health` endpoint for system health status and component monitoring
+- **Background Monitoring**: Continuous metrics collection and health checking with configurable intervals
+
 ### Wallet & Transactions ✅ **FULLY FUNCTIONAL**
 - **Multi-Account Support**: Create and manage multiple wallet accounts
 - **Transaction Creation**: Automated UTXO selection and change calculation with balance validation
@@ -39,8 +46,11 @@ GoChain/
 │   ├── block/            # Block structure and validation
 │   ├── chain/            # Blockchain management and consensus
 │   ├── consensus/        # Proof-of-work mining
+│   ├── health/           # Health checking and monitoring
+│   ├── logger/           # Structured logging system
 │   ├── mempool/          # Transaction pool management
 │   ├── miner/            # Block mining and assembly
+│   ├── monitoring/       # Metrics collection and observability
 │   ├── net/              # P2P networking (libp2p)
 │   ├── proto/            # Protocol buffer definitions
 │   ├── storage/          # Persistent storage layer (LevelDB)
@@ -56,8 +66,11 @@ GoChain/
 - **`pkg/block`**: Block, header, and transaction structures with validation
 - **`pkg/chain`**: Blockchain state management, genesis creation, and difficulty adjustment
 - **`pkg/consensus`**: Proof-of-work mining and block validation
+- **`pkg/health`**: Health checking system for monitoring component status
+- **`pkg/logger`**: Structured logging with file rotation and multiple output formats
 - **`pkg/mempool`**: Transaction pool with fee-based prioritization
 - **`pkg/miner`**: Block assembly and mining loop
+- **`pkg/monitoring`**: Metrics collection, health endpoints, and Prometheus integration
 - **`pkg/net`**: P2P networking with peer discovery and message routing
 - **`pkg/storage`**: LevelDB persistent storage system with encryption
 - **`pkg/sync`**: **Complete blockchain synchronization protocols**
@@ -170,6 +183,18 @@ storage:
 
 # Check transaction status
 ./gochain tx <tx_hash>
+
+### Monitoring & Health Checks
+```bash
+# Get system health status
+curl http://localhost:8080/health
+
+# Get Prometheus metrics
+curl http://localhost:8080/metrics
+
+# Check specific component health
+curl http://localhost:8080/health | jq '.components[] | select(.name == "blockchain")'
+```
 ```
 
 ## 🧪 Testing
@@ -250,7 +275,7 @@ All data race conditions have been resolved:
 - [ ] Smart contract support
 - [ ] Advanced consensus mechanisms
 - [ ] Enhanced P2P protocols
-- [ ] Advanced monitoring and logging
+- [x] **Advanced monitoring and logging** - Complete monitoring service with metrics and health checks
 
 ### 📋 Planned Features
 - [ ] Layer 2 scaling solutions
@@ -293,6 +318,9 @@ go build ./cmd/gochain
 ### API Reference
 - [Block Package](pkg/block/README.md)
 - [Chain Package](pkg/chain/README.md)
+- [Health Package](pkg/health/README.md)
+- [Logger Package](pkg/logger/README.md)
+- [Monitoring Package](pkg/monitoring/README.md)
 - [Wallet Package](pkg/wallet/README.md)
 - [Network Package](pkg/net/README.md)
 - [Sync Package](pkg/sync/README.md)
@@ -373,6 +401,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Fixed sync protocol syntax errors** - Resolved duplicate constant declarations
 - ✅ **Fixed blockchain synchronization logic** - Corrected header request handling
 - ✅ **Fixed data race conditions** - Resolved race conditions in network and sync packages
+- ✅ **Fixed logger nil pointer dereference** - Ensured logger output is always initialized
+- ✅ **Fixed monitoring service test failures** - Resolved metrics collection and health checker registration
 - ✅ **All tests now passing** - Comprehensive test coverage working correctly
 - ✅ **Race detection clean** - All tests pass with Go's race detector enabled
 

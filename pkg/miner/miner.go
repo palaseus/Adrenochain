@@ -26,6 +26,7 @@ type Miner struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	consensus    *consensus.Consensus
+	onBlockMined func(*block.Block) // Callback for when a block is successfully mined
 }
 
 // MinerConfig holds configuration for the miner
@@ -63,6 +64,13 @@ func NewMiner(chain *chain.Chain, mempool *mempool.Mempool, config *MinerConfig,
 		cancel:     cancel,
 		consensus:  consensus.NewConsensus(consensusConfig, chain),
 	}
+}
+
+// SetOnBlockMined sets the callback function for when a block is successfully mined
+func (m *Miner) SetOnBlockMined(callback func(*block.Block)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.onBlockMined = callback
 }
 
 // StartMining starts the mining process
@@ -147,6 +155,11 @@ func (m *Miner) mineNextBlock() error {
 	// Add the block to the chain
 	if err := m.chain.AddBlock(newBlock); err != nil {
 		return fmt.Errorf("failed to add block to chain: %w", err)
+	}
+
+	// Call the callback if set
+	if m.onBlockMined != nil {
+		m.onBlockMined(newBlock)
 	}
 
 	fmt.Printf("Mined new block: %s\n", newBlock.String())

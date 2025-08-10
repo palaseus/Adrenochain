@@ -46,6 +46,9 @@ logging:
   level: "info"  # debug, info, warn, error
   format: "text"  # text or json
   output: "stdout"  # stdout, stderr, or file path
+  log_file: "./logs/gochain.log"  # Path to log file (if using file output)
+  max_size: 104857600  # 100MB - maximum log file size before rotation
+  max_backups: 5  # Maximum number of backup log files to keep
 
 # API Configuration
 api:
@@ -54,8 +57,23 @@ api:
   cors_enabled: true
   rate_limit: 1000  # requests per minute
 
-# Metrics Configuration
-metrics:
-  enabled: false
-  listen_addr: "127.0.0.1:9090"
-  collect_interval: 15s 
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics:
+    enabled: true
+    listen_addr: "127.0.0.1:9090"
+    collect_interval: 15s
+    prometheus_enabled: true
+    prometheus_path: "/prometheus"
+  health:
+    enabled: true
+    listen_addr: "127.0.0.1:8081"
+    check_interval: 15s
+    health_path: "/health"
+  logging:
+    level: "info"
+    format: "json"
+    log_file: "./logs/monitoring.log"
+    max_size: 52428800  # 50MB
+    max_backups: 3 
