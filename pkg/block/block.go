@@ -65,11 +65,12 @@ func NewBlock(prevHash []byte, height uint64, difficulty uint64) *Block {
 			Timestamp:     time.Now(),
 			Difficulty:    difficulty,
 			Height:        height,
+			Nonce:         0,
 		},
 		Transactions: make([]*Transaction, 0),
 	}
 
-	// Initialize the Merkle root
+	// Initialize the Merkle root for empty block
 	block.Header.MerkleRoot = block.CalculateMerkleRoot()
 
 	return block
@@ -77,7 +78,14 @@ func NewBlock(prevHash []byte, height uint64, difficulty uint64) *Block {
 
 // AddTransaction adds a transaction to the block's list of transactions.
 func (b *Block) AddTransaction(tx *Transaction) {
+	// Calculate transaction hash if not already set
+	if tx.Hash == nil {
+		tx.Hash = tx.CalculateHash()
+	}
 	b.Transactions = append(b.Transactions, tx)
+
+	// Update Merkle root after adding transaction
+	b.Header.MerkleRoot = b.CalculateMerkleRoot()
 }
 
 // CalculateHash calculates the SHA256 hash of the block header.
@@ -115,6 +123,53 @@ func (b *Block) CalculateHash() []byte {
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, b.Header.Height)
 	data = append(data, heightBytes...)
+
+	hash := sha256.Sum256(data)
+	return hash[:]
+}
+
+// CalculateHash calculates the SHA256 hash of the transaction.
+func (tx *Transaction) CalculateHash() []byte {
+	data := make([]byte, 0)
+
+	// Version
+	versionBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(versionBytes, tx.Version)
+	data = append(data, versionBytes...)
+
+	// Inputs
+	for _, input := range tx.Inputs {
+		if input != nil {
+			data = append(data, input.PrevTxHash...)
+			inputIndexBytes := make([]byte, 4)
+			binary.BigEndian.PutUint32(inputIndexBytes, input.PrevTxIndex)
+			data = append(data, inputIndexBytes...)
+			data = append(data, input.ScriptSig...)
+			sequenceBytes := make([]byte, 4)
+			binary.BigEndian.PutUint32(sequenceBytes, input.Sequence)
+			data = append(data, sequenceBytes...)
+		}
+	}
+
+	// Outputs
+	for _, output := range tx.Outputs {
+		if output != nil {
+			valueBytes := make([]byte, 8)
+			binary.BigEndian.PutUint64(valueBytes, output.Value)
+			data = append(data, valueBytes...)
+			data = append(data, output.ScriptPubKey...)
+		}
+	}
+
+	// LockTime
+	lockTimeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(lockTimeBytes, tx.LockTime)
+	data = append(data, lockTimeBytes...)
+
+	// Fee
+	feeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(feeBytes, tx.Fee)
+	data = append(data, feeBytes...)
 
 	hash := sha256.Sum256(data)
 	return hash[:]
@@ -328,4 +383,498 @@ func bytesEqual(a, b []byte) bool {
 // HexHash returns the hexadecimal string representation of the block's hash.
 func (b *Block) HexHash() string {
 	return hex.EncodeToString(b.CalculateHash())
+}
+
+// Serialize converts the block to a byte array for network transmission
+func (b *Block) Serialize() ([]byte, error) {
+	// This is a simplified serialization implementation
+	// In a real implementation, you'd use a more efficient format like Protocol Buffers
+
+	data := make([]byte, 0)
+
+	// Serialize header
+	headerData, err := b.Header.Serialize()
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize header: %w", err)
+	}
+
+	// Add header length and data
+	headerLen := uint32(len(headerData))
+	headerLenBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(headerLenBytes, headerLen)
+	data = append(data, headerLenBytes...)
+	data = append(data, headerData...)
+
+	// Add transaction count
+	txCount := uint32(len(b.Transactions))
+	txCountBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(txCountBytes, txCount)
+	data = append(data, txCountBytes...)
+
+	// Serialize transactions
+	for _, tx := range b.Transactions {
+		txData, err := tx.Serialize()
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize transaction: %w", err)
+		}
+
+		// Add transaction length and data
+		txLen := uint32(len(txData))
+		txLenBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(txLenBytes, txLen)
+		data = append(data, txLenBytes...)
+		data = append(data, txData...)
+	}
+
+	return data, nil
+}
+
+// Deserialize reconstructs a block from a byte array
+func (b *Block) Deserialize(data []byte) error {
+	if len(data) < 8 {
+		return fmt.Errorf("insufficient data for block deserialization")
+	}
+
+	offset := 0
+
+	// Read header length
+	headerLen := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	if len(data) < offset+int(headerLen) {
+		return fmt.Errorf("insufficient data for header")
+	}
+
+	// Deserialize header
+	header := &Header{}
+	if err := header.Deserialize(data[offset : offset+int(headerLen)]); err != nil {
+		return fmt.Errorf("failed to deserialize header: %w", err)
+	}
+	b.Header = header
+	offset += int(headerLen)
+
+	// Read transaction count
+	if len(data) < offset+4 {
+		return fmt.Errorf("insufficient data for transaction count")
+	}
+	txCount := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Deserialize transactions
+	b.Transactions = make([]*Transaction, 0, txCount)
+	for i := uint32(0); i < txCount; i++ {
+		if len(data) < offset+4 {
+			return fmt.Errorf("insufficient data for transaction %d length", i)
+		}
+
+		txLen := binary.BigEndian.Uint32(data[offset : offset+4])
+		offset += 4
+
+		if len(data) < offset+int(txLen) {
+			return fmt.Errorf("insufficient data for transaction %d", i)
+		}
+
+		tx := &Transaction{}
+		if err := tx.Deserialize(data[offset : offset+int(txLen)]); err != nil {
+			return fmt.Errorf("failed to deserialize transaction %d: %w", i, err)
+		}
+		b.Transactions = append(b.Transactions, tx)
+		offset += int(txLen)
+	}
+
+	// Recalculate Merkle root
+	b.MerkleRoot = b.CalculateMerkleRoot()
+
+	return nil
+}
+
+// GetHeader returns the block header
+func (b *Block) GetHeader() interface{} {
+	return b.Header
+}
+
+// GetVersion returns the header version
+func (h *Header) GetVersion() uint32 {
+	return h.Version
+}
+
+// GetPrevBlockHash returns the previous block hash
+func (h *Header) GetPrevBlockHash() []byte {
+	return h.PrevBlockHash
+}
+
+// GetMerkleRoot returns the merkle root
+func (h *Header) GetMerkleRoot() []byte {
+	return h.MerkleRoot
+}
+
+// GetTimestamp returns the timestamp
+func (h *Header) GetTimestamp() time.Time {
+	return h.Timestamp
+}
+
+// GetDifficulty returns the difficulty
+func (h *Header) GetDifficulty() uint64 {
+	return h.Difficulty
+}
+
+// GetNonce returns the nonce
+func (h *Header) GetNonce() uint64 {
+	return h.Nonce
+}
+
+// GetHeight returns the height
+func (h *Header) GetHeight() uint64 {
+	return h.Height
+}
+
+// Serialize converts the header to a byte array
+func (h *Header) Serialize() ([]byte, error) {
+	data := make([]byte, 0)
+
+	// Version (4 bytes)
+	versionBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(versionBytes, h.Version)
+	data = append(data, versionBytes...)
+
+	// Previous block hash (32 bytes)
+	data = append(data, h.PrevBlockHash...)
+
+	// Merkle root (32 bytes)
+	data = append(data, h.MerkleRoot...)
+
+	// Timestamp (8 bytes)
+	timestampBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(timestampBytes, uint64(h.Timestamp.Unix()))
+	data = append(data, timestampBytes...)
+
+	// Difficulty (8 bytes)
+	difficultyBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(difficultyBytes, h.Difficulty)
+	data = append(data, difficultyBytes...)
+
+	// Nonce (8 bytes)
+	nonceBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(nonceBytes, h.Nonce)
+	data = append(data, nonceBytes...)
+
+	// Height (8 bytes)
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, h.Height)
+	data = append(data, heightBytes...)
+
+	return data, nil
+}
+
+// Deserialize reconstructs a header from a byte array
+func (h *Header) Deserialize(data []byte) error {
+	if len(data) < 100 { // 4+32+32+8+8+8+8 = 100 bytes
+		return fmt.Errorf("insufficient data for header deserialization")
+	}
+
+	offset := 0
+
+	// Version
+	h.Version = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Previous block hash
+	h.PrevBlockHash = make([]byte, 32)
+	copy(h.PrevBlockHash, data[offset:offset+32])
+	offset += 32
+
+	// Merkle root
+	h.MerkleRoot = make([]byte, 32)
+	copy(h.MerkleRoot, data[offset:offset+32])
+	offset += 32
+
+	// Timestamp
+	timestamp := binary.BigEndian.Uint64(data[offset : offset+8])
+	h.Timestamp = time.Unix(int64(timestamp), 0)
+	offset += 8
+
+	// Difficulty
+	h.Difficulty = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+
+	// Nonce
+	h.Nonce = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+
+	// Height
+	h.Height = binary.BigEndian.Uint64(data[offset : offset+8])
+
+	return nil
+}
+
+// Serialize converts the transaction to a byte array
+func (tx *Transaction) Serialize() ([]byte, error) {
+	data := make([]byte, 0)
+
+	// Version (4 bytes)
+	versionBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(versionBytes, tx.Version)
+	data = append(data, versionBytes...)
+
+	// Input count (4 bytes)
+	inputCount := uint32(len(tx.Inputs))
+	inputCountBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(inputCountBytes, inputCount)
+	data = append(data, inputCountBytes...)
+
+	// Serialize inputs
+	for _, input := range tx.Inputs {
+		inputData, err := input.Serialize()
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize input: %w", err)
+		}
+
+		// Add input length and data
+		inputLen := uint32(len(inputData))
+		inputLenBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(inputLenBytes, inputLen)
+		data = append(data, inputLenBytes...)
+		data = append(data, inputData...)
+	}
+
+	// Output count (4 bytes)
+	outputCount := uint32(len(tx.Outputs))
+	outputCountBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(outputCountBytes, outputCount)
+	data = append(data, outputCountBytes...)
+
+	// Serialize outputs
+	for _, output := range tx.Outputs {
+		outputData, err := output.Serialize()
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize output: %w", err)
+		}
+
+		// Add output length and data
+		outputLen := uint32(len(outputData))
+		outputLenBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(outputLenBytes, outputLen)
+		data = append(data, outputLenBytes...)
+		data = append(data, outputData...)
+	}
+
+	// Lock time (8 bytes)
+	lockTimeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(lockTimeBytes, tx.LockTime)
+	data = append(data, lockTimeBytes...)
+
+	// Fee (8 bytes)
+	feeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(feeBytes, tx.Fee)
+	data = append(data, feeBytes...)
+
+	// Hash (32 bytes)
+	data = append(data, tx.Hash...)
+
+	return data, nil
+}
+
+// Deserialize reconstructs a transaction from a byte array
+func (tx *Transaction) Deserialize(data []byte) error {
+	if len(data) < 60 { // Minimum size for a transaction
+		return fmt.Errorf("insufficient data for transaction deserialization")
+	}
+
+	offset := 0
+
+	// Version
+	tx.Version = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Input count
+	inputCount := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Deserialize inputs
+	tx.Inputs = make([]*TxInput, 0, inputCount)
+	for i := uint32(0); i < inputCount; i++ {
+		if len(data) < offset+4 {
+			return fmt.Errorf("insufficient data for input %d length", i)
+		}
+
+		inputLen := binary.BigEndian.Uint32(data[offset : offset+4])
+		offset += 4
+
+		if len(data) < offset+int(inputLen) {
+			return fmt.Errorf("insufficient data for input %d", i)
+		}
+
+		input := &TxInput{}
+		if err := input.Deserialize(data[offset : offset+int(inputLen)]); err != nil {
+			return fmt.Errorf("failed to deserialize input %d: %w", i, err)
+		}
+		tx.Inputs = append(tx.Inputs, input)
+		offset += int(inputLen)
+	}
+
+	// Output count
+	if len(data) < offset+4 {
+		return fmt.Errorf("insufficient data for output count")
+	}
+	outputCount := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Deserialize outputs
+	tx.Outputs = make([]*TxOutput, 0, outputCount)
+	for i := uint32(0); i < outputCount; i++ {
+		if len(data) < offset+4 {
+			return fmt.Errorf("insufficient data for output %d length", i)
+		}
+
+		outputLen := binary.BigEndian.Uint32(data[offset : offset+4])
+		offset += 4
+
+		if len(data) < offset+int(outputLen) {
+			return fmt.Errorf("insufficient data for output %d", i)
+		}
+
+		output := &TxOutput{}
+		if err := output.Deserialize(data[offset : offset+int(outputLen)]); err != nil {
+			return fmt.Errorf("failed to deserialize output %d: %w", i, err)
+		}
+		tx.Outputs = append(tx.Outputs, output)
+		offset += int(outputLen)
+	}
+
+	// Lock time
+	if len(data) < offset+8 {
+		return fmt.Errorf("insufficient data for lock time")
+	}
+	tx.LockTime = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+
+	// Fee
+	if len(data) < offset+8 {
+		return fmt.Errorf("insufficient data for fee")
+	}
+	tx.Fee = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+
+	// Hash
+	if len(data) < offset+32 {
+		return fmt.Errorf("insufficient data for hash")
+	}
+	tx.Hash = make([]byte, 32)
+	copy(tx.Hash, data[offset:offset+32])
+
+	return nil
+}
+
+// Serialize converts the transaction input to a byte array
+func (in *TxInput) Serialize() ([]byte, error) {
+	data := make([]byte, 0)
+
+	// Previous transaction hash (32 bytes)
+	data = append(data, in.PrevTxHash...)
+
+	// Previous transaction index (4 bytes)
+	prevTxIndexBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(prevTxIndexBytes, in.PrevTxIndex)
+	data = append(data, prevTxIndexBytes...)
+
+	// Script signature length (4 bytes)
+	scriptSigLen := uint32(len(in.ScriptSig))
+	scriptSigLenBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(scriptSigLenBytes, scriptSigLen)
+	data = append(data, scriptSigLenBytes...)
+
+	// Script signature
+	data = append(data, in.ScriptSig...)
+
+	// Sequence (4 bytes)
+	sequenceBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(sequenceBytes, in.Sequence)
+	data = append(data, sequenceBytes...)
+
+	return data, nil
+}
+
+// Deserialize reconstructs a transaction input from a byte array
+func (in *TxInput) Deserialize(data []byte) error {
+	if len(data) < 44 { // 32+4+4+4 = 44 bytes minimum
+		return fmt.Errorf("insufficient data for transaction input deserialization")
+	}
+
+	offset := 0
+
+	// Previous transaction hash
+	in.PrevTxHash = make([]byte, 32)
+	copy(in.PrevTxHash, data[offset:offset+32])
+	offset += 32
+
+	// Previous transaction index
+	in.PrevTxIndex = binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Script signature length
+	scriptSigLen := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Script signature
+	if len(data) < offset+int(scriptSigLen) {
+		return fmt.Errorf("insufficient data for script signature")
+	}
+	in.ScriptSig = make([]byte, scriptSigLen)
+	copy(in.ScriptSig, data[offset:offset+int(scriptSigLen)])
+	offset += int(scriptSigLen)
+
+	// Sequence
+	if len(data) < offset+4 {
+		return fmt.Errorf("insufficient data for sequence")
+	}
+	in.Sequence = binary.BigEndian.Uint32(data[offset : offset+4])
+
+	return nil
+}
+
+// Serialize converts the transaction output to a byte array
+func (out *TxOutput) Serialize() ([]byte, error) {
+	data := make([]byte, 0)
+
+	// Value (8 bytes)
+	valueBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(valueBytes, out.Value)
+	data = append(data, valueBytes...)
+
+	// Script public key length (4 bytes)
+	scriptPubKeyLen := uint32(len(out.ScriptPubKey))
+	scriptPubKeyLenBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(scriptPubKeyLenBytes, scriptPubKeyLen)
+	data = append(data, scriptPubKeyLenBytes...)
+
+	// Script public key
+	data = append(data, out.ScriptPubKey...)
+
+	return data, nil
+}
+
+// Deserialize reconstructs a transaction output from a byte array
+func (out *TxOutput) Deserialize(data []byte) error {
+	if len(data) < 12 { // 8+4 = 12 bytes minimum
+		return fmt.Errorf("insufficient data for transaction output deserialization")
+	}
+
+	offset := 0
+
+	// Value
+	out.Value = binary.BigEndian.Uint64(data[offset : offset+8])
+	offset += 8
+
+	// Script public key length
+	scriptPubKeyLen := binary.BigEndian.Uint32(data[offset : offset+4])
+	offset += 4
+
+	// Script public key
+	if len(data) < offset+int(scriptPubKeyLen) {
+		return fmt.Errorf("insufficient data for script public key")
+	}
+	out.ScriptPubKey = make([]byte, scriptPubKeyLen)
+	copy(out.ScriptPubKey, data[offset:offset+int(scriptPubKeyLen)])
+
+	return nil
 }

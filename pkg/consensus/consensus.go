@@ -15,10 +15,11 @@ type ChainReader interface {
 	GetHeight() uint64
 	GetBlockByHeight(height uint64) *block.Block
 	GetBlock(hash []byte) *block.Block
+	GetAccumulatedDifficulty(height uint64) (*big.Int, error)
 }
 
 // Consensus represents the blockchain consensus mechanism.
-// It manages difficulty adjustment, proof-of-work validation, and block mining.
+// It manages difficulty adjustment, proof-of-work validation, block mining, and finality rules.
 type Consensus struct {
 	mu             sync.RWMutex     // mu protects concurrent access to consensus fields.
 	config         *ConsensusConfig // config holds the consensus configuration parameters.
@@ -26,6 +27,10 @@ type Consensus struct {
 	lastAdjustment time.Time        // lastAdjustment records the time of the last difficulty adjustment.
 	blockTimes     []time.Duration  // blockTimes stores the durations of recent blocks for difficulty adjustment.
 	chain          ChainReader      // chain is a reference to the chain, used to query block information.
+	
+	// Finality-related fields
+	finalityDepth uint64           // finalityDepth is the number of blocks required for finality
+	checkpoints   map[uint64][]byte // checkpoints stores known good block hashes at specific heights
 }
 
 // ConsensusConfig holds configuration parameters for the consensus mechanism.
@@ -35,6 +40,8 @@ type ConsensusConfig struct {
 	MaxDifficulty                uint64        // MaxDifficulty is the maximum allowed difficulty.
 	MinDifficulty                uint64        // MinDifficulty is the minimum allowed difficulty.
 	DifficultyAdjustmentFactor   float64       // DifficultyAdjustmentFactor is used to dampen difficulty swings.
+	FinalityDepth                uint64        // FinalityDepth is the number of blocks required for finality
+	CheckpointInterval           uint64        // CheckpointInterval is the height interval for checkpoints
 }
 
 // DefaultConsensusConfig returns the default consensus configuration.
@@ -45,6 +52,8 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		MaxDifficulty:                256,
 		MinDifficulty:                1,
 		DifficultyAdjustmentFactor:   4.0,
+		FinalityDepth:                100,  // 100 blocks for finality
+		CheckpointInterval:           10000, // Checkpoint every 10,000 blocks
 	}
 }
 
@@ -57,7 +66,62 @@ func NewConsensus(config *ConsensusConfig, chain ChainReader) *Consensus {
 		lastAdjustment: time.Now(),
 		blockTimes:     make([]time.Duration, 0),
 		chain:          chain,
+		finalityDepth:  config.FinalityDepth,
+		checkpoints:    make(map[uint64][]byte),
 	}
+}
+
+// IsBlockFinal checks if a block at the given height is considered final.
+// A block is final if it's at least finalityDepth blocks behind the current tip.
+func (c *Consensus) IsBlockFinal(height uint64) bool {
+	currentHeight := c.chain.GetHeight()
+	return currentHeight >= height+c.finalityDepth
+}
+
+// GetFinalityDepth returns the current finality depth setting.
+func (c *Consensus) GetFinalityDepth() uint64 {
+	return c.finalityDepth
+}
+
+// AddCheckpoint adds a checkpoint at the given height.
+// Checkpoints are used to prevent long-range attacks and provide security guarantees.
+func (c *Consensus) AddCheckpoint(height uint64, hash []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.checkpoints[height] = hash
+}
+
+// ValidateCheckpoint validates that a block at the given height matches the expected checkpoint hash.
+func (c *Consensus) ValidateCheckpoint(height uint64, hash []byte) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	
+	if expectedHash, exists := c.checkpoints[height]; exists {
+		return string(expectedHash) == string(hash)
+	}
+	return true // No checkpoint at this height, consider it valid
+}
+
+// GetAccumulatedDifficulty calculates the accumulated difficulty from genesis to the given height.
+// This is used for fork choice and finality determination.
+func (c *Consensus) GetAccumulatedDifficulty(height uint64) (*big.Int, error) {
+	if height == 0 {
+		return big.NewInt(0), nil
+	}
+
+	accumulated := big.NewInt(0)
+	for h := uint64(1); h <= height; h++ {
+		block := c.chain.GetBlockByHeight(h)
+		if block == nil {
+			return nil, fmt.Errorf("block not found at height %d", h)
+		}
+		
+		// Add the difficulty of this block to accumulated difficulty
+		blockDiff := big.NewInt(int64(block.Header.Difficulty))
+		accumulated.Add(accumulated, blockDiff)
+	}
+	
+	return accumulated, nil
 }
 
 // calculateExpectedDifficulty calculates the expected difficulty for a given block height.
@@ -114,8 +178,13 @@ func (c *Consensus) calculateExpectedDifficulty(blockHeight uint64) (uint64, err
 }
 
 // ValidateBlock validates a block according to consensus rules.
-// It checks proof-of-work, timestamp, and difficulty.
+// This includes proof of work, timestamp validation, difficulty validation, and finality checks.
 func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) error {
+	// Check if block is nil
+	if block == nil {
+		return fmt.Errorf("block is nil")
+	}
+
 	// Basic block validation
 	if err := block.IsValid(); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
@@ -150,6 +219,11 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 	if block.Header.Difficulty != expectedDifficulty {
 		return fmt.Errorf("block difficulty %d does not match expected %d",
 			block.Header.Difficulty, expectedDifficulty)
+	}
+
+	// Validate checkpoint if this height has one
+	if !c.ValidateCheckpoint(block.Header.Height, block.CalculateHash()) {
+		return fmt.Errorf("block hash does not match checkpoint at height %d", block.Header.Height)
 	}
 
 	return nil

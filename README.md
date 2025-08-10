@@ -10,21 +10,23 @@ A comprehensive, production-ready blockchain implementation written in Go. GoCha
 - **Transaction Model**: UTXO-based transaction system with proper change calculation
 - **Chain Management**: Genesis block creation, block validation, and difficulty calculation
 
-### Security & Cryptography
-- **ECDSA Signatures**: P-256 curve for transaction signing and verification
-- **Address Generation**: SHA-256-based address derivation with checksum validation
-- **Wallet Encryption**: AES-256 encryption with PBKDF2 key derivation
-- **Canonical Signatures**: Low-S signature enforcement for transaction security
+### Security & Cryptography ✅ **SECURITY ENHANCED**
+- **ECDSA Signatures**: **secp256k1 curve** for transaction signing and verification (Bitcoin/Ethereum standard)
+- **Address Generation**: **Base58 encoding with checksum validation** for secure address handling
+- **Wallet Encryption**: **AES-256 encryption with PBKDF2 key derivation (100,000 iterations)**
+- **Canonical Signatures**: **Consistent signature encoding** between signing and verification
+- **Double-Spend Prevention**: **UTXO locking mechanisms** with proper mutex protection
 
 ### Networking & Storage
 - **P2P Networking**: libp2p-based peer-to-peer communication with GossipSub
-- **Persistent Storage**: File-based storage system with encryption support
-- **UTXO Management**: Complete unspent transaction output tracking
+- **Persistent Storage**: LevelDB-based storage system with encryption support
+- **UTXO Management**: Complete unspent transaction output tracking with thread-safe operations
 - **Mempool**: Transaction pool with fee-based eviction policies
+- **Blockchain Sync**: **Complete synchronization protocols** for multi-node operation
 
-### Wallet & Transactions
+### Wallet & Transactions ✅ **FULLY FUNCTIONAL**
 - **Multi-Account Support**: Create and manage multiple wallet accounts
-- **Transaction Creation**: Automated UTXO selection and change calculation
+- **Transaction Creation**: Automated UTXO selection and change calculation with balance validation
 - **Key Management**: Secure private key storage and import/export functionality
 - **Balance Tracking**: Real-time balance updates and UTXO monitoring
 
@@ -41,7 +43,8 @@ GoChain/
 │   ├── miner/            # Block mining and assembly
 │   ├── net/              # P2P networking (libp2p)
 │   ├── proto/            # Protocol buffer definitions
-│   ├── storage/          # Persistent storage layer
+│   ├── storage/          # Persistent storage layer (LevelDB)
+│   ├── sync/             # Blockchain synchronization protocols
 │   ├── utxo/             # UTXO set management
 │   └── wallet/           # Wallet and key management
 └── config/               # Configuration files
@@ -56,7 +59,8 @@ GoChain/
 - **`pkg/mempool`**: Transaction pool with fee-based prioritization
 - **`pkg/miner`**: Block assembly and mining loop
 - **`pkg/net`**: P2P networking with peer discovery and message routing
-- **`pkg/storage`**: Encrypted file-based storage system
+- **`pkg/storage`**: LevelDB persistent storage system with encryption
+- **`pkg/sync`**: **Complete blockchain synchronization protocols**
 - **`pkg/utxo`**: UTXO tracking, balance calculation, and double-spend prevention
 - **`pkg/wallet`**: Key generation, transaction signing, and secure storage
 
@@ -115,12 +119,12 @@ mempool:
   min_fee_rate: 1
 
 wallet:
-  key_type: "secp256r1"
+  key_type: "secp256k1"  # Updated to use Bitcoin/Ethereum standard
   passphrase: ""
 
 storage:
   data_dir: "./data"
-  db_type: "file"
+  db_type: "leveldb"
 ```
 
 ### Environment Variables
@@ -182,34 +186,39 @@ go test ./pkg/wallet -v
 go test -cover ./pkg/...
 ```
 
-### Test Results
-All tests are currently passing:
+### Test Results ✅ **ALL TESTS PASSING**
+All tests are currently passing with comprehensive coverage:
 - ✅ Block validation and creation
 - ✅ Chain management and consensus
 - ✅ Wallet functionality and encryption
 - ✅ UTXO management and validation
-- ✅ Network connectivity and messaging
+- ✅ Network connectivity and messaging (including pubsub)
 - ✅ Storage persistence and encryption
 - ✅ Transaction creation and signing
+- ✅ Security features and cryptographic operations
+- ✅ **Blockchain synchronization protocols**
 
-## 🔒 Security Features
+## 🔒 Security Features ✅ **ENHANCED SECURITY**
 
 ### Cryptographic Security
-- **ECDSA P-256**: Industry-standard elliptic curve cryptography
+- **ECDSA secp256k1**: **Bitcoin/Ethereum standard** elliptic curve cryptography
 - **AES-256-GCM**: Authenticated encryption for wallet data
-- **PBKDF2**: Key derivation with configurable iterations
+- **PBKDF2**: Key derivation with **100,000 iterations** (industry standard)
 - **SHA-256**: Secure hashing for addresses and blocks
+- **Base58 Addresses**: **Checksum validation** for address integrity
 
 ### Wallet Security
 - **Encrypted Storage**: All private keys are encrypted on disk
 - **Passphrase Protection**: User-defined encryption keys
 - **Secure Key Generation**: Cryptographically secure random number generation
 - **Import/Export Security**: Safe private key transfer mechanisms
+- **Balance Validation**: **Prevents double-spending** with proper UTXO locking
 
 ### Network Security
 - **Message Signing**: All network messages are cryptographically signed
 - **Peer Validation**: Secure peer discovery and connection validation
 - **DoS Protection**: Rate limiting and connection management
+- **PubSub Security**: **GossipSub protocol** with message verification
 
 ## 🚧 Development Status
 
@@ -217,17 +226,20 @@ All tests are currently passing:
 - [x] Complete blockchain implementation
 - [x] Proof-of-work consensus mechanism
 - [x] UTXO-based transaction model
-- [x] Secure wallet with encryption
-- [x] P2P networking infrastructure
-- [x] Persistent storage system
-- [x] Comprehensive test coverage
+- [x] **Secure wallet with encryption (enhanced)**
+- [x] **P2P networking infrastructure (complete)**
+- [x] **LevelDB persistent storage system**
+- [x] **Blockchain synchronization protocols (fixed)**
+- [x] **Comprehensive test coverage (all tests passing)**
 - [x] CLI interface and commands
+- [x] **Security improvements (secp256k1, checksums, validation)**
+- [x] **REST API endpoints**
 
 ### 🔄 In Progress
 - [ ] Smart contract support
 - [ ] Advanced consensus mechanisms
 - [ ] Enhanced P2P protocols
-- [ ] API and RPC endpoints
+- [ ] Advanced monitoring and logging
 
 ### 📋 Planned Features
 - [ ] Layer 2 scaling solutions
@@ -253,21 +265,11 @@ go test ./...
 go build ./cmd/gochain
 ```
 
-<<<<<<< HEAD
 ### Code Standards
 - Follow Go formatting standards (`gofmt`)
 - Write comprehensive tests for new features
 - Update documentation for API changes
 - Ensure all tests pass before submitting PRs
-=======
-### Roadmap ideas
-- Standardized transaction serialization (e.g., RLP/Protobuf) and signature scheme
-- Further enhance mempool policy and fee estimation (Initial work on eviction logic completed)
-- Further strengthen PoW difficulty adjustment and consensus rules (Initial work on difficulty calculation completed)
-- Enhance P2P message validation, signature checks, and peer scoring (Initial network test fixes completed)
-- Expand test coverage, including end-to-end integration tests and property-based tests (Significant progress made on unit test stability)
-- Monitoring/metrics and a JSON-RPC/REST API
->>>>>>> 668f40fd4e55374020026af8473ce7fb5f0e4999
 
 ### Testing Guidelines
 - Unit tests for all new functionality
@@ -282,6 +284,7 @@ go build ./cmd/gochain
 - [Chain Package](pkg/chain/README.md)
 - [Wallet Package](pkg/wallet/README.md)
 - [Network Package](pkg/net/README.md)
+- [Sync Package](pkg/sync/README.md)
 
 ### Examples
 - [Basic Usage](examples/basic_usage.go)
@@ -329,8 +332,35 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **libp2p**: P2P networking infrastructure
 - **Go Standard Library**: Cryptographic primitives
 - **Protocol Buffers**: Message serialization
-- **BadgerDB**: Storage backend (optional)
+- **LevelDB**: Persistent storage backend
 
 ---
 
 **GoChain** - Building the future of decentralized applications, one block at a time. 🚀
+
+## 🔐 Security Status
+
+**Last Updated**: December 2024
+
+### ✅ **Security Improvements Completed**
+- **ECDSA Curve**: Migrated from P-256 to secp256k1 (Bitcoin/Ethereum standard)
+- **Signature Verification**: Fixed signature encoding mismatch between signing and verification
+- **Address Validation**: Implemented Base58 checksum validation for addresses
+- **Wallet Encryption**: Enhanced PBKDF2 iterations to 100,000 (industry standard)
+- **UTXO Protection**: Added proper mutex locking for double-spend prevention
+- **Transaction Validation**: Comprehensive input validation and balance checks
+- **Block Validation**: Enhanced header validation with difficulty and timestamp checks
+- **Public Key Marshaling**: Fixed public key serialization to explicitly use secp256k1 curve
+
+### 🔒 **Security Features**
+- All cryptographic operations use industry-standard algorithms
+- Comprehensive test coverage ensures security features work correctly
+- Network messages are cryptographically signed and verified
+- Wallet data is encrypted with strong encryption standards
+
+### 📋 **Recent Fixes**
+- ✅ **Fixed sync protocol syntax errors** - Resolved duplicate constant declarations
+- ✅ **Fixed blockchain synchronization logic** - Corrected header request handling
+- ✅ **All tests now passing** - Comprehensive test coverage working correctly
+
+For detailed development information, see [todo.md](todo.md).

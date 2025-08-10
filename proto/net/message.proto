@@ -4,16 +4,7 @@ package net;
 
 option go_package = "github.com/gochain/gochain/pkg/proto/net";
 
-// Specific message types for different content
-message BlockMessage {
-  bytes block_data = 1;
-}
-
-message TransactionMessage {
-  bytes transaction_data = 1;
-}
-
-// Sync protocol messages
+// Block header information
 message BlockHeader {
   uint32 version = 1;
   bytes prev_block_hash = 2;
@@ -25,33 +16,39 @@ message BlockHeader {
   bytes hash = 8;
 }
 
+// Request for block headers
 message BlockHeadersRequest {
   uint64 start_height = 1;
   uint64 count = 2;
   bytes stop_hash = 3;
 }
 
+// Response containing block headers
 message BlockHeadersResponse {
   repeated BlockHeader headers = 1;
   bool has_more = 2;
 }
 
+// Request for a specific block
 message BlockRequest {
   bytes block_hash = 1;
   uint64 height = 2;
 }
 
+// Response containing block data
 message BlockResponse {
-  bytes block_data = 1;
-  bool found = 2;
+  bool found = 1;
+  bytes block_data = 2;
 }
 
+// Initial sync request
 message SyncRequest {
   uint64 current_height = 1;
   bytes best_block_hash = 2;
   repeated bytes known_headers = 3;
 }
 
+// Initial sync response
 message SyncResponse {
   uint64 best_height = 1;
   bytes best_block_hash = 2;
@@ -59,16 +56,26 @@ message SyncResponse {
   bool needs_sync = 4;
 }
 
+// State synchronization request
 message StateRequest {
-  uint64 height = 1;
-  bytes state_root = 2;
+  bytes state_root = 1;
+  repeated bytes account_hashes = 2;
 }
 
+// State synchronization response
 message StateResponse {
-  bytes state_data = 1;
-  uint64 height = 2;
-  bytes state_root = 3;
-  bool found = 4;
+  bytes state_root = 1;
+  map<string, bytes> account_states = 2;
+  bool has_more = 3;
+}
+
+// Specific message types for different content
+message BlockMessage {
+  bytes block_data = 1;
+}
+
+message TransactionMessage {
+  bytes transaction_data = 1;
 }
 
 // Message represents a generic network message

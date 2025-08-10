@@ -3,28 +3,30 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+        "context"
+        "encoding/json"
+        "fmt"
+        "os"
+        "os/signal"
+        "strconv"
+        "syscall"
+        "time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/chain"
-	"github.com/gochain/gochain/pkg/consensus"
-	"github.com/gochain/gochain/pkg/mempool"
-	"github.com/gochain/gochain/pkg/miner"
-	netpkg "github.com/gochain/gochain/pkg/net"
-	proto_net "github.com/gochain/gochain/pkg/proto/net"
-	"github.com/gochain/gochain/pkg/storage"
-	"github.com/gochain/gochain/pkg/utxo"
-	"github.com/gochain/gochain/pkg/wallet"
-	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"google.golang.org/protobuf/proto"
+        "github.com/gochain/gochain/pkg/api"
+        "github.com/gochain/gochain/pkg/block"
+        "github.com/gochain/gochain/pkg/chain"
+        "github.com/gochain/gochain/pkg/consensus"
+        "github.com/gochain/gochain/pkg/mempool"
+        "github.com/gochain/gochain/pkg/miner"
+        netpkg "github.com/gochain/gochain/pkg/net"
+        proto_net "github.com/gochain/gochain/pkg/proto/net"
+        "github.com/gochain/gochain/pkg/storage"
+        "github.com/gochain/gochain/pkg/utxo"
+        "github.com/gochain/gochain/pkg/wallet"
+        "github.com/libp2p/go-libp2p/core/peer"
+        "github.com/spf13/cobra"
+        "github.com/spf13/viper"
+        "google.golang.org/protobuf/proto"
 )
 
 var (
@@ -77,8 +79,22 @@ func runNode(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Mining: %t\n", mining)
 
 	// Create blockchain components
-	storageConfig := storage.DefaultStorageConfig().WithDataDir("./data")
-	nodeStorage, err := storage.NewStorage(storageConfig) // Renamed to nodeStorage to avoid conflict
+	storageFactory := storage.NewStorageFactory()
+
+	// Determine storage type from config or use default
+	storageType := storage.StorageTypeFile // Default to file storage
+	configDBType := viper.GetString("storage.db_type")
+
+	if configDBType == "leveldb" {
+		storageType = storage.StorageTypeLevelDB
+	}
+
+	dataDir := viper.GetString("storage.data_dir")
+	if dataDir == "" {
+		dataDir = "./data"
+	}
+
+	nodeStorage, err := storageFactory.CreateStorage(storageType, dataDir)
 	if err != nil {
 		return fmt.Errorf("failed to create storage: %w", err)
 	}
@@ -267,32 +283,77 @@ func runNode(cmd *cobra.Command, args []string) error {
 		fmt.Println("Mining started")
 	}
 
-	// Start periodic status updates
-	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
+	        // Start API server if enabled
+        var apiServer *api.Server
+        if viper.GetBool("api.enabled") {
+                apiAddr := viper.GetString("api.listen_addr")
+                apiPort := 8080 // Default port
+                
+                // Parse port from address string (e.g., "127.0.0.1:8080" -> 8080)
+                if apiAddr != "" && apiAddr != "127.0.0.1:8080" {
+                        // Extract port from address
+                        if len(apiAddr) > 0 {
+                                // Simple port extraction - in production you'd want more robust parsing
+                                for i := len(apiAddr) - 1; i >= 0; i-- {
+                                        if apiAddr[i] == ':' {
+                                                if portStr := apiAddr[i+1:]; portStr != "" {
+                                                        if port, err := strconv.Atoi(portStr); err == nil {
+                                                                apiPort = port
+                                                        }
+                                                }
+                                                break
+                                        }
+                                }
+                        }
+                }
+                
+                // Create a dummy wallet for API (in a real implementation, this would be the actual wallet)
+                dummyWallet := &wallet.Wallet{}
+                
+                apiConfig := &api.ServerConfig{
+                        Port:   apiPort,
+                        Chain:  chain,
+                        Wallet: dummyWallet,
+                }
+                
+                apiServer = api.NewServer(apiConfig)
+                
+                // Start API server in background
+                go func() {
+                        if err := apiServer.Start(); err != nil {
+                                fmt.Printf("API server error: %v\n", err)
+                        }
+                }()
+                
+                fmt.Printf("API server started on port %d\n", apiPort)
+        }
 
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				bestBlock := chain.GetBestBlock()
-				if bestBlock != nil {
-					fmt.Printf("Status: Height=%d, Hash=%x, Peers=%d, Mempool=%d\n",
-						chain.GetHeight(),
-						bestBlock.CalculateHash(),
-						len(net.GetPeers()),
-						mempool.GetTransactionCount())
-				} else {
-					fmt.Printf("Status: Height=%d, Peers=%d, Mempool=%d\n",
-						chain.GetHeight(),
-						len(net.GetPeers()),
-						mempool.GetTransactionCount())
-				}
-			}
-		}
-	}()
+        // Start periodic status updates
+        go func() {
+                ticker := time.NewTicker(30 * time.Second)
+                defer ticker.Stop()
+
+                for {
+                        select {
+                        case <-ctx.Done():
+                                return
+                        case <-ticker.C:
+                                bestBlock := chain.GetBestBlock()
+                                if bestBlock != nil {
+                                        fmt.Printf("Status: Height=%d, Hash=%x, Peers=%d, Mempool=%d\n",
+                                                chain.GetHeight(),
+                                                bestBlock.CalculateHash(),
+                                                len(net.GetPeers()),
+                                                mempool.GetTransactionCount())
+                                } else {
+                                        fmt.Printf("Status: Height=%d, Peers=%d, Mempool=%d\n",
+                                                chain.GetHeight(),
+                                                len(net.GetPeers()),
+                                                mempool.GetTransactionCount())
+                                }
+                        }
+                }
+        }()
 
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
@@ -304,12 +365,18 @@ func runNode(cmd *cobra.Command, args []string) error {
 	// Cancel context to stop all goroutines
 	cancel()
 
-	// Cleanup
-	if mining {
-		miner.StopMining()
-	}
-	miner.Close()
-	net.Close()
+	        // Cleanup
+        if mining {
+                miner.StopMining()
+        }
+        miner.Close()
+        net.Close()
+        
+        // Close API server if it was started
+        if apiServer != nil {
+                // Note: The API server doesn't have a Close method yet, but we could add one if needed
+                fmt.Println("API server stopped")
+        }
 
 	fmt.Println("GoChain node stopped")
 	return nil
@@ -476,16 +543,35 @@ func getBlockchainInfoCmd() *cobra.Command {
 		Use:   "info",
 		Short: "Get blockchain information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			storageConfig := storage.DefaultStorageConfig().WithDataDir("./data")
-			storage, err := storage.NewStorage(storageConfig)
+			// Load configuration to determine storage type
+			if err := loadConfig(); err != nil {
+				return fmt.Errorf("failed to load config: %w", err)
+			}
+
+			// Create storage using factory
+			storageFactory := storage.NewStorageFactory()
+
+			// Determine storage type from config or use default
+			storageType := storage.StorageTypeFile // Default to file storage
+			configDBType := viper.GetString("storage.db_type")
+			if configDBType == "leveldb" {
+				storageType = storage.StorageTypeLevelDB
+			}
+
+			dataDir := viper.GetString("storage.data_dir")
+			if dataDir == "" {
+				dataDir = "./data"
+			}
+
+			nodeStorage, err := storageFactory.CreateStorage(storageType, dataDir)
 			if err != nil {
 				return fmt.Errorf("failed to create storage: %w", err)
 			}
-			defer storage.Close()
+			defer nodeStorage.Close()
 
 			chainConfig := chain.DefaultChainConfig()
 			consensusConfig := consensus.DefaultConsensusConfig()
-			chain, err := chain.NewChain(chainConfig, consensusConfig, storage)
+			chain, err := chain.NewChain(chainConfig, consensusConfig, nodeStorage)
 			if err != nil {
 				return fmt.Errorf("failed to create chain: %w", err)
 			}

@@ -168,6 +168,23 @@ func (s *Storage) Delete(key []byte) error {
 	return nil
 }
 
+// Has checks if a key exists in storage.
+func (s *Storage) Has(key []byte) (bool, error) {
+	if key == nil || len(key) == 0 {
+		return false, fmt.Errorf("invalid key: cannot be nil or empty")
+	}
+
+	filename := filepath.Join(s.dataDir, hex.EncodeToString(key))
+	_, err := os.Stat(filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check if key exists: %w", err)
+	}
+	return true, nil
+}
+
 // Close is a no-op for file-based storage.
 func (s *Storage) Close() error {
 	return nil

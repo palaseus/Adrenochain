@@ -39,7 +39,7 @@ wallet:
 # Storage Configuration
 storage:
   data_dir: "./data"
-  db_type: "badger"  # badger or leveldb
+  db_type: "leveldb"  # file, leveldb, or badger
 
 # Logging Configuration
 logging:
@@ -49,7 +49,7 @@ logging:
 
 # API Configuration
 api:
-  enabled: false
+  enabled: true
   listen_addr: "127.0.0.1:8080"
   cors_enabled: true
   rate_limit: 1000  # requests per minute

@@ -110,6 +110,571 @@ func (x *TransactionMessage) GetTransactionData() []byte {
 	return nil
 }
 
+// Sync protocol messages
+type BlockHeader struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	PrevBlockHash []byte                 `protobuf:"bytes,2,opt,name=prev_block_hash,json=prevBlockHash,proto3" json:"prev_block_hash,omitempty"`
+	MerkleRoot    []byte                 `protobuf:"bytes,3,opt,name=merkle_root,json=merkleRoot,proto3" json:"merkle_root,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Difficulty    uint64                 `protobuf:"varint,5,opt,name=difficulty,proto3" json:"difficulty,omitempty"`
+	Nonce         uint64                 `protobuf:"varint,6,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Height        uint64                 `protobuf:"varint,7,opt,name=height,proto3" json:"height,omitempty"`
+	Hash          []byte                 `protobuf:"bytes,8,opt,name=hash,proto3" json:"hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockHeader) Reset() {
+	*x = BlockHeader{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockHeader) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockHeader) ProtoMessage() {}
+
+func (x *BlockHeader) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockHeader.ProtoReflect.Descriptor instead.
+func (*BlockHeader) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BlockHeader) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *BlockHeader) GetPrevBlockHash() []byte {
+	if x != nil {
+		return x.PrevBlockHash
+	}
+	return nil
+}
+
+func (x *BlockHeader) GetMerkleRoot() []byte {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return nil
+}
+
+func (x *BlockHeader) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
+}
+
+func (x *BlockHeader) GetDifficulty() uint64 {
+	if x != nil {
+		return x.Difficulty
+	}
+	return 0
+}
+
+func (x *BlockHeader) GetNonce() uint64 {
+	if x != nil {
+		return x.Nonce
+	}
+	return 0
+}
+
+func (x *BlockHeader) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *BlockHeader) GetHash() []byte {
+	if x != nil {
+		return x.Hash
+	}
+	return nil
+}
+
+type BlockHeadersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StartHeight   uint64                 `protobuf:"varint,1,opt,name=start_height,json=startHeight,proto3" json:"start_height,omitempty"`
+	Count         uint64                 `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	StopHash      []byte                 `protobuf:"bytes,3,opt,name=stop_hash,json=stopHash,proto3" json:"stop_hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockHeadersRequest) Reset() {
+	*x = BlockHeadersRequest{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockHeadersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockHeadersRequest) ProtoMessage() {}
+
+func (x *BlockHeadersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockHeadersRequest.ProtoReflect.Descriptor instead.
+func (*BlockHeadersRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BlockHeadersRequest) GetStartHeight() uint64 {
+	if x != nil {
+		return x.StartHeight
+	}
+	return 0
+}
+
+func (x *BlockHeadersRequest) GetCount() uint64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *BlockHeadersRequest) GetStopHash() []byte {
+	if x != nil {
+		return x.StopHash
+	}
+	return nil
+}
+
+type BlockHeadersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Headers       []*BlockHeader         `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty"`
+	HasMore       bool                   `protobuf:"varint,2,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockHeadersResponse) Reset() {
+	*x = BlockHeadersResponse{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockHeadersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockHeadersResponse) ProtoMessage() {}
+
+func (x *BlockHeadersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockHeadersResponse.ProtoReflect.Descriptor instead.
+func (*BlockHeadersResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BlockHeadersResponse) GetHeaders() []*BlockHeader {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *BlockHeadersResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
+type BlockRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BlockHash     []byte                 `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	Height        uint64                 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockRequest) Reset() {
+	*x = BlockRequest{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockRequest) ProtoMessage() {}
+
+func (x *BlockRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockRequest.ProtoReflect.Descriptor instead.
+func (*BlockRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *BlockRequest) GetBlockHash() []byte {
+	if x != nil {
+		return x.BlockHash
+	}
+	return nil
+}
+
+func (x *BlockRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+type BlockResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BlockData     []byte                 `protobuf:"bytes,1,opt,name=block_data,json=blockData,proto3" json:"block_data,omitempty"`
+	Found         bool                   `protobuf:"varint,2,opt,name=found,proto3" json:"found,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockResponse) Reset() {
+	*x = BlockResponse{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockResponse) ProtoMessage() {}
+
+func (x *BlockResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockResponse.ProtoReflect.Descriptor instead.
+func (*BlockResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *BlockResponse) GetBlockData() []byte {
+	if x != nil {
+		return x.BlockData
+	}
+	return nil
+}
+
+func (x *BlockResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+type SyncRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CurrentHeight uint64                 `protobuf:"varint,1,opt,name=current_height,json=currentHeight,proto3" json:"current_height,omitempty"`
+	BestBlockHash []byte                 `protobuf:"bytes,2,opt,name=best_block_hash,json=bestBlockHash,proto3" json:"best_block_hash,omitempty"`
+	KnownHeaders  [][]byte               `protobuf:"bytes,3,rep,name=known_headers,json=knownHeaders,proto3" json:"known_headers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncRequest) Reset() {
+	*x = SyncRequest{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncRequest) ProtoMessage() {}
+
+func (x *SyncRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncRequest.ProtoReflect.Descriptor instead.
+func (*SyncRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SyncRequest) GetCurrentHeight() uint64 {
+	if x != nil {
+		return x.CurrentHeight
+	}
+	return 0
+}
+
+func (x *SyncRequest) GetBestBlockHash() []byte {
+	if x != nil {
+		return x.BestBlockHash
+	}
+	return nil
+}
+
+func (x *SyncRequest) GetKnownHeaders() [][]byte {
+	if x != nil {
+		return x.KnownHeaders
+	}
+	return nil
+}
+
+type SyncResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BestHeight    uint64                 `protobuf:"varint,1,opt,name=best_height,json=bestHeight,proto3" json:"best_height,omitempty"`
+	BestBlockHash []byte                 `protobuf:"bytes,2,opt,name=best_block_hash,json=bestBlockHash,proto3" json:"best_block_hash,omitempty"`
+	Headers       []*BlockHeader         `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty"`
+	NeedsSync     bool                   `protobuf:"varint,4,opt,name=needs_sync,json=needsSync,proto3" json:"needs_sync,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncResponse) Reset() {
+	*x = SyncResponse{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncResponse) ProtoMessage() {}
+
+func (x *SyncResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncResponse.ProtoReflect.Descriptor instead.
+func (*SyncResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SyncResponse) GetBestHeight() uint64 {
+	if x != nil {
+		return x.BestHeight
+	}
+	return 0
+}
+
+func (x *SyncResponse) GetBestBlockHash() []byte {
+	if x != nil {
+		return x.BestBlockHash
+	}
+	return nil
+}
+
+func (x *SyncResponse) GetHeaders() []*BlockHeader {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+func (x *SyncResponse) GetNeedsSync() bool {
+	if x != nil {
+		return x.NeedsSync
+	}
+	return false
+}
+
+type StateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Height        uint64                 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	StateRoot     []byte                 `protobuf:"bytes,2,opt,name=state_root,json=stateRoot,proto3" json:"state_root,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StateRequest) Reset() {
+	*x = StateRequest{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateRequest) ProtoMessage() {}
+
+func (x *StateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StateRequest.ProtoReflect.Descriptor instead.
+func (*StateRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *StateRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *StateRequest) GetStateRoot() []byte {
+	if x != nil {
+		return x.StateRoot
+	}
+	return nil
+}
+
+type StateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StateData     []byte                 `protobuf:"bytes,1,opt,name=state_data,json=stateData,proto3" json:"state_data,omitempty"`
+	Height        uint64                 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	StateRoot     []byte                 `protobuf:"bytes,3,opt,name=state_root,json=stateRoot,proto3" json:"state_root,omitempty"`
+	Found         bool                   `protobuf:"varint,4,opt,name=found,proto3" json:"found,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StateResponse) Reset() {
+	*x = StateResponse{}
+	mi := &file_pkg_proto_net_message_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateResponse) ProtoMessage() {}
+
+func (x *StateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_net_message_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StateResponse.ProtoReflect.Descriptor instead.
+func (*StateResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *StateResponse) GetStateData() []byte {
+	if x != nil {
+		return x.StateData
+	}
+	return nil
+}
+
+func (x *StateResponse) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *StateResponse) GetStateRoot() []byte {
+	if x != nil {
+		return x.StateRoot
+	}
+	return nil
+}
+
+func (x *StateResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
 // Message represents a generic network message
 type Message struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
@@ -121,6 +686,14 @@ type Message struct {
 	//
 	//	*Message_BlockMessage
 	//	*Message_TransactionMessage
+	//	*Message_HeadersRequest
+	//	*Message_HeadersResponse
+	//	*Message_BlockRequest
+	//	*Message_BlockResponse
+	//	*Message_SyncRequest
+	//	*Message_SyncResponse
+	//	*Message_StateRequest
+	//	*Message_StateResponse
 	Content       isMessage_Content `protobuf_oneof:"content"`
 	Signature     []byte            `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -129,7 +702,7 @@ type Message struct {
 
 func (x *Message) Reset() {
 	*x = Message{}
-	mi := &file_pkg_proto_net_message_proto_msgTypes[2]
+	mi := &file_pkg_proto_net_message_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -141,7 +714,7 @@ func (x *Message) String() string {
 func (*Message) ProtoMessage() {}
 
 func (x *Message) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_net_message_proto_msgTypes[2]
+	mi := &file_pkg_proto_net_message_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -154,7 +727,7 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Message.ProtoReflect.Descriptor instead.
 func (*Message) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{2}
+	return file_pkg_proto_net_message_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Message) GetTimestampUnixNano() int64 {
@@ -196,6 +769,78 @@ func (x *Message) GetTransactionMessage() *TransactionMessage {
 	return nil
 }
 
+func (x *Message) GetHeadersRequest() *BlockHeadersRequest {
+	if x != nil {
+		if x, ok := x.Content.(*Message_HeadersRequest); ok {
+			return x.HeadersRequest
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetHeadersResponse() *BlockHeadersResponse {
+	if x != nil {
+		if x, ok := x.Content.(*Message_HeadersResponse); ok {
+			return x.HeadersResponse
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetBlockRequest() *BlockRequest {
+	if x != nil {
+		if x, ok := x.Content.(*Message_BlockRequest); ok {
+			return x.BlockRequest
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetBlockResponse() *BlockResponse {
+	if x != nil {
+		if x, ok := x.Content.(*Message_BlockResponse); ok {
+			return x.BlockResponse
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetSyncRequest() *SyncRequest {
+	if x != nil {
+		if x, ok := x.Content.(*Message_SyncRequest); ok {
+			return x.SyncRequest
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetSyncResponse() *SyncResponse {
+	if x != nil {
+		if x, ok := x.Content.(*Message_SyncResponse); ok {
+			return x.SyncResponse
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetStateRequest() *StateRequest {
+	if x != nil {
+		if x, ok := x.Content.(*Message_StateRequest); ok {
+			return x.StateRequest
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetStateResponse() *StateResponse {
+	if x != nil {
+		if x, ok := x.Content.(*Message_StateResponse); ok {
+			return x.StateResponse
+		}
+	}
+	return nil
+}
+
 func (x *Message) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
@@ -215,9 +860,57 @@ type Message_TransactionMessage struct {
 	TransactionMessage *TransactionMessage `protobuf:"bytes,4,opt,name=transaction_message,json=transactionMessage,proto3,oneof"`
 }
 
+type Message_HeadersRequest struct {
+	HeadersRequest *BlockHeadersRequest `protobuf:"bytes,10,opt,name=headers_request,json=headersRequest,proto3,oneof"`
+}
+
+type Message_HeadersResponse struct {
+	HeadersResponse *BlockHeadersResponse `protobuf:"bytes,11,opt,name=headers_response,json=headersResponse,proto3,oneof"`
+}
+
+type Message_BlockRequest struct {
+	BlockRequest *BlockRequest `protobuf:"bytes,12,opt,name=block_request,json=blockRequest,proto3,oneof"`
+}
+
+type Message_BlockResponse struct {
+	BlockResponse *BlockResponse `protobuf:"bytes,13,opt,name=block_response,json=blockResponse,proto3,oneof"`
+}
+
+type Message_SyncRequest struct {
+	SyncRequest *SyncRequest `protobuf:"bytes,14,opt,name=sync_request,json=syncRequest,proto3,oneof"`
+}
+
+type Message_SyncResponse struct {
+	SyncResponse *SyncResponse `protobuf:"bytes,15,opt,name=sync_response,json=syncResponse,proto3,oneof"`
+}
+
+type Message_StateRequest struct {
+	StateRequest *StateRequest `protobuf:"bytes,16,opt,name=state_request,json=stateRequest,proto3,oneof"`
+}
+
+type Message_StateResponse struct {
+	StateResponse *StateResponse `protobuf:"bytes,17,opt,name=state_response,json=stateResponse,proto3,oneof"`
+}
+
 func (*Message_BlockMessage) isMessage_Content() {}
 
 func (*Message_TransactionMessage) isMessage_Content() {}
+
+func (*Message_HeadersRequest) isMessage_Content() {}
+
+func (*Message_HeadersResponse) isMessage_Content() {}
+
+func (*Message_BlockRequest) isMessage_Content() {}
+
+func (*Message_BlockResponse) isMessage_Content() {}
+
+func (*Message_SyncRequest) isMessage_Content() {}
+
+func (*Message_SyncResponse) isMessage_Content() {}
+
+func (*Message_StateRequest) isMessage_Content() {}
+
+func (*Message_StateResponse) isMessage_Content() {}
 
 var File_pkg_proto_net_message_proto protoreflect.FileDescriptor
 
@@ -228,13 +921,71 @@ const file_pkg_proto_net_message_proto_rawDesc = "" +
 	"\n" +
 	"block_data\x18\x01 \x01(\fR\tblockData\"?\n" +
 	"\x12TransactionMessage\x12)\n" +
-	"\x10transaction_data\x18\x01 \x01(\fR\x0ftransactionData\"\x8a\x02\n" +
+	"\x10transaction_data\x18\x01 \x01(\fR\x0ftransactionData\"\xf0\x01\n" +
+	"\vBlockHeader\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\rR\aversion\x12&\n" +
+	"\x0fprev_block_hash\x18\x02 \x01(\fR\rprevBlockHash\x12\x1f\n" +
+	"\vmerkle_root\x18\x03 \x01(\fR\n" +
+	"merkleRoot\x12\x1c\n" +
+	"\ttimestamp\x18\x04 \x01(\x03R\ttimestamp\x12\x1e\n" +
+	"\n" +
+	"difficulty\x18\x05 \x01(\x04R\n" +
+	"difficulty\x12\x14\n" +
+	"\x05nonce\x18\x06 \x01(\x04R\x05nonce\x12\x16\n" +
+	"\x06height\x18\a \x01(\x04R\x06height\x12\x12\n" +
+	"\x04hash\x18\b \x01(\fR\x04hash\"k\n" +
+	"\x13BlockHeadersRequest\x12!\n" +
+	"\fstart_height\x18\x01 \x01(\x04R\vstartHeight\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x04R\x05count\x12\x1b\n" +
+	"\tstop_hash\x18\x03 \x01(\fR\bstopHash\"]\n" +
+	"\x14BlockHeadersResponse\x12*\n" +
+	"\aheaders\x18\x01 \x03(\v2\x10.net.BlockHeaderR\aheaders\x12\x19\n" +
+	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"E\n" +
+	"\fBlockRequest\x12\x1d\n" +
+	"\n" +
+	"block_hash\x18\x01 \x01(\fR\tblockHash\x12\x16\n" +
+	"\x06height\x18\x02 \x01(\x04R\x06height\"D\n" +
+	"\rBlockResponse\x12\x1d\n" +
+	"\n" +
+	"block_data\x18\x01 \x01(\fR\tblockData\x12\x14\n" +
+	"\x05found\x18\x02 \x01(\bR\x05found\"\x81\x01\n" +
+	"\vSyncRequest\x12%\n" +
+	"\x0ecurrent_height\x18\x01 \x01(\x04R\rcurrentHeight\x12&\n" +
+	"\x0fbest_block_hash\x18\x02 \x01(\fR\rbestBlockHash\x12#\n" +
+	"\rknown_headers\x18\x03 \x03(\fR\fknownHeaders\"\xa2\x01\n" +
+	"\fSyncResponse\x12\x1f\n" +
+	"\vbest_height\x18\x01 \x01(\x04R\n" +
+	"bestHeight\x12&\n" +
+	"\x0fbest_block_hash\x18\x02 \x01(\fR\rbestBlockHash\x12*\n" +
+	"\aheaders\x18\x03 \x03(\v2\x10.net.BlockHeaderR\aheaders\x12\x1d\n" +
+	"\n" +
+	"needs_sync\x18\x04 \x01(\bR\tneedsSync\"E\n" +
+	"\fStateRequest\x12\x16\n" +
+	"\x06height\x18\x01 \x01(\x04R\x06height\x12\x1d\n" +
+	"\n" +
+	"state_root\x18\x02 \x01(\fR\tstateRoot\"{\n" +
+	"\rStateResponse\x12\x1d\n" +
+	"\n" +
+	"state_data\x18\x01 \x01(\fR\tstateData\x12\x16\n" +
+	"\x06height\x18\x02 \x01(\x04R\x06height\x12\x1d\n" +
+	"\n" +
+	"state_root\x18\x03 \x01(\fR\tstateRoot\x12\x14\n" +
+	"\x05found\x18\x04 \x01(\bR\x05found\"\xf6\x05\n" +
 	"\aMessage\x12.\n" +
 	"\x13timestamp_unix_nano\x18\x01 \x01(\x03R\x11timestampUnixNano\x12 \n" +
 	"\ffrom_peer_id\x18\x02 \x01(\fR\n" +
 	"fromPeerId\x128\n" +
 	"\rblock_message\x18\x03 \x01(\v2\x11.net.BlockMessageH\x00R\fblockMessage\x12J\n" +
-	"\x13transaction_message\x18\x04 \x01(\v2\x17.net.TransactionMessageH\x00R\x12transactionMessage\x12\x1c\n" +
+	"\x13transaction_message\x18\x04 \x01(\v2\x17.net.TransactionMessageH\x00R\x12transactionMessage\x12C\n" +
+	"\x0fheaders_request\x18\n" +
+	" \x01(\v2\x18.net.BlockHeadersRequestH\x00R\x0eheadersRequest\x12F\n" +
+	"\x10headers_response\x18\v \x01(\v2\x19.net.BlockHeadersResponseH\x00R\x0fheadersResponse\x128\n" +
+	"\rblock_request\x18\f \x01(\v2\x11.net.BlockRequestH\x00R\fblockRequest\x12;\n" +
+	"\x0eblock_response\x18\r \x01(\v2\x12.net.BlockResponseH\x00R\rblockResponse\x125\n" +
+	"\fsync_request\x18\x0e \x01(\v2\x10.net.SyncRequestH\x00R\vsyncRequest\x128\n" +
+	"\rsync_response\x18\x0f \x01(\v2\x11.net.SyncResponseH\x00R\fsyncResponse\x128\n" +
+	"\rstate_request\x18\x10 \x01(\v2\x11.net.StateRequestH\x00R\fstateRequest\x12;\n" +
+	"\x0estate_response\x18\x11 \x01(\v2\x12.net.StateResponseH\x00R\rstateResponse\x12\x1c\n" +
 	"\tsignature\x18\x05 \x01(\fR\tsignatureB\t\n" +
 	"\acontentB*Z(github.com/gochain/gochain/pkg/proto/netb\x06proto3"
 
@@ -250,20 +1001,39 @@ func file_pkg_proto_net_message_proto_rawDescGZIP() []byte {
 	return file_pkg_proto_net_message_proto_rawDescData
 }
 
-var file_pkg_proto_net_message_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_pkg_proto_net_message_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_pkg_proto_net_message_proto_goTypes = []any{
-	(*BlockMessage)(nil),       // 0: net.BlockMessage
-	(*TransactionMessage)(nil), // 1: net.TransactionMessage
-	(*Message)(nil),            // 2: net.Message
+	(*BlockMessage)(nil),         // 0: net.BlockMessage
+	(*TransactionMessage)(nil),   // 1: net.TransactionMessage
+	(*BlockHeader)(nil),          // 2: net.BlockHeader
+	(*BlockHeadersRequest)(nil),  // 3: net.BlockHeadersRequest
+	(*BlockHeadersResponse)(nil), // 4: net.BlockHeadersResponse
+	(*BlockRequest)(nil),         // 5: net.BlockRequest
+	(*BlockResponse)(nil),        // 6: net.BlockResponse
+	(*SyncRequest)(nil),          // 7: net.SyncRequest
+	(*SyncResponse)(nil),         // 8: net.SyncResponse
+	(*StateRequest)(nil),         // 9: net.StateRequest
+	(*StateResponse)(nil),        // 10: net.StateResponse
+	(*Message)(nil),              // 11: net.Message
 }
 var file_pkg_proto_net_message_proto_depIdxs = []int32{
-	0, // 0: net.Message.block_message:type_name -> net.BlockMessage
-	1, // 1: net.Message.transaction_message:type_name -> net.TransactionMessage
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2,  // 0: net.BlockHeadersResponse.headers:type_name -> net.BlockHeader
+	2,  // 1: net.SyncResponse.headers:type_name -> net.BlockHeader
+	0,  // 2: net.Message.block_message:type_name -> net.BlockMessage
+	1,  // 3: net.Message.transaction_message:type_name -> net.TransactionMessage
+	3,  // 4: net.Message.headers_request:type_name -> net.BlockHeadersRequest
+	4,  // 5: net.Message.headers_response:type_name -> net.BlockHeadersResponse
+	5,  // 6: net.Message.block_request:type_name -> net.BlockRequest
+	6,  // 7: net.Message.block_response:type_name -> net.BlockResponse
+	7,  // 8: net.Message.sync_request:type_name -> net.SyncRequest
+	8,  // 9: net.Message.sync_response:type_name -> net.SyncResponse
+	9,  // 10: net.Message.state_request:type_name -> net.StateRequest
+	10, // 11: net.Message.state_response:type_name -> net.StateResponse
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_pkg_proto_net_message_proto_init() }
@@ -271,9 +1041,17 @@ func file_pkg_proto_net_message_proto_init() {
 	if File_pkg_proto_net_message_proto != nil {
 		return
 	}
-	file_pkg_proto_net_message_proto_msgTypes[2].OneofWrappers = []any{
+	file_pkg_proto_net_message_proto_msgTypes[11].OneofWrappers = []any{
 		(*Message_BlockMessage)(nil),
 		(*Message_TransactionMessage)(nil),
+		(*Message_HeadersRequest)(nil),
+		(*Message_HeadersResponse)(nil),
+		(*Message_BlockRequest)(nil),
+		(*Message_BlockResponse)(nil),
+		(*Message_SyncRequest)(nil),
+		(*Message_SyncResponse)(nil),
+		(*Message_StateRequest)(nil),
+		(*Message_StateResponse)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -281,7 +1059,7 @@ func file_pkg_proto_net_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_net_message_proto_rawDesc), len(file_pkg_proto_net_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

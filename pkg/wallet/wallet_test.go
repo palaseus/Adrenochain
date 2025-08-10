@@ -4,11 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"encoding/hex"
-
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/gochain/gochain/pkg/storage" // Added import
 	"github.com/gochain/gochain/pkg/utxo"
 	"github.com/stretchr/testify/assert" // Added import for assert
@@ -129,9 +125,9 @@ func TestCreateTransaction(t *testing.T) {
 	us.AddUTXO(testUTXO)
 
 	// Generate a valid recipient address
-	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	toPrivKey, err := btcec.NewPrivateKey()
 	assert.NoError(t, err)
-	toAddress := hex.EncodeToString(wallet.generateAddress(toPrivKey))
+	toAddress := wallet.generateChecksumAddress(toPrivKey.ToECDSA())
 	amount := uint64(1000)
 	fee := uint64(10)
 
@@ -168,9 +164,9 @@ func TestSignTransaction(t *testing.T) {
 	us.AddUTXO(testUTXO)
 
 	// Generate a valid recipient address
-	toPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	toPrivKey, err := btcec.NewPrivateKey()
 	assert.NoError(t, err)
-	toAddress := hex.EncodeToString(wallet.generateAddress(toPrivKey))
+	toAddress := wallet.generateChecksumAddress(toPrivKey.ToECDSA())
 	amount := uint64(1000)
 	fee := uint64(10)
 
@@ -289,6 +285,10 @@ func TestWalletPersistence(t *testing.T) {
 	assert.NotEmpty(t, wallet1.GetAllAccounts())
 	initialAccountAddress := wallet1.GetDefaultAccount().Address
 
+	// Save the wallet
+	err = wallet1.Save()
+	assert.NoError(t, err)
+
 	// 2. Load the wallet with the correct passphrase
 	config2 := DefaultWalletConfig()
 	config2.Passphrase = passphrase
@@ -297,6 +297,12 @@ func TestWalletPersistence(t *testing.T) {
 	wallet2, err := NewWallet(config2, us2, s)
 	assert.NoError(t, err)
 	assert.NotNil(t, wallet2)
+
+	// Load the saved wallet data
+	err = wallet2.Load()
+	assert.NoError(t, err)
+
+	// Check that the loaded wallet has the same accounts
 	assert.Equal(t, initialAccountAddress, wallet2.GetDefaultAccount().Address)
 	assert.Equal(t, len(wallet1.GetAllAccounts()), len(wallet2.GetAllAccounts()))
 
@@ -305,7 +311,11 @@ func TestWalletPersistence(t *testing.T) {
 	config3.Passphrase = "wrong_passphrase"
 	config3.WalletFile = walletFile
 	us3 := utxo.NewUTXOSet()
-	_, err = NewWallet(config3, us3, s)
+	wallet3, err := NewWallet(config3, us3, s)
+	assert.NoError(t, err)
+
+	// Try to load with wrong passphrase - this should fail decryption
+	err = wallet3.Load()
 	assert.Error(t, err) // Expect an error due to decryption failure
 }
 

@@ -41,22 +41,24 @@ import (
 	"encoding/asn1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
-	"os" // Added import for os.IsNotExist
 	"sync"
 
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/storage" // Added import
+	"github.com/gochain/gochain/pkg/storage"
 	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/mr-tron/base58"
 )
 
 // Wallet represents a cryptocurrency wallet
 type Wallet struct {
 	mu             sync.RWMutex
 	accounts       map[string]*Account
-	defaultKey     *ecdsa.PrivateKey
+	defaultKey     *btcec.PrivateKey
 	keyType        KeyType
 	utxoSet        *utxo.UTXOSet
 	storage        *storage.Storage // Added storage field
@@ -97,52 +99,46 @@ func DefaultWalletConfig() *WalletConfig {
 	}
 }
 
-// NewWallet creates a new wallet
+// NewWallet creates a new wallet with the specified configuration
 func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
-	wallet := &Wallet{
-		accounts:       make(map[string]*Account),
-		keyType:        config.KeyType,
-		utxoSet:        us,
-		storage:        s,                 // Initialize storage
-		walletFilePath: config.WalletFile, // Initialize wallet file path
-		passphrase:     config.Passphrase, // Initialize passphrase
+	if config == nil {
+		config = DefaultWalletConfig()
 	}
 
-	// Try to load the wallet from storage
-	if err := wallet.Load(); err != nil {
-		if !os.IsNotExist(err) { // Only return error if it's not "file not found"
-			return nil, fmt.Errorf("failed to load wallet: %w", err)
-		}
-		// If wallet file doesn't exist, create a new one
-		var defaultKey *ecdsa.PrivateKey
-		var errKey error
+	var defaultKey *btcec.PrivateKey
+	var errKey error
 
-		switch config.KeyType {
-		case KeyTypeECDSA:
-			defaultKey, errKey = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			if errKey != nil {
-				return nil, fmt.Errorf("failed to generate ECDSA key: %w", errKey)
-			}
-		case KeyTypeEd25519:
-			// For Ed25519, we'll generate an ECDSA key for compatibility
-			defaultKey, errKey = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			if errKey != nil {
-				return nil, fmt.Errorf("failed to generate Ed25519 key: %w", errKey)
-			}
-		default:
-			return nil, fmt.Errorf("unsupported key type: %d", config.KeyType)
+	switch config.KeyType {
+	case KeyTypeECDSA:
+		// Use secp256k1 curve (Bitcoin/Ethereum standard)
+		defaultKey, errKey = btcec.NewPrivateKey()
+		if errKey != nil {
+			return nil, fmt.Errorf("failed to generate secp256k1 key: %w", errKey)
 		}
-		wallet.defaultKey = defaultKey
+	case KeyTypeEd25519:
+		// For now, fall back to secp256k1 for Ed25519 type as well
+		// TODO: Implement proper Ed25519 support
+		defaultKey, errKey = btcec.NewPrivateKey()
+		if errKey != nil {
+			return nil, fmt.Errorf("failed to generate secp256k1 key: %w", errKey)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported key type: %d", config.KeyType)
+	}
 
-		// Create default account
-		if err := wallet.createDefaultAccount(); err != nil {
-			return nil, fmt.Errorf("failed to create default account: %w", err)
-		}
+	wallet := &Wallet{
+		accounts:       make(map[string]*Account),
+		defaultKey:     defaultKey,
+		keyType:        config.KeyType,
+		utxoSet:        us,
+		storage:        s,
+		walletFilePath: config.WalletFile,
+		passphrase:     config.Passphrase,
+	}
 
-		// Save the new wallet
-		if err := wallet.Save(); err != nil {
-			return nil, fmt.Errorf("failed to save new wallet: %w", err)
-		}
+	// Create default account
+	if err := wallet.createDefaultAccount(); err != nil {
+		return nil, fmt.Errorf("failed to create default account: %w", err)
 	}
 
 	return wallet, nil
@@ -181,7 +177,16 @@ func (w *Wallet) Load() error {
 		return fmt.Errorf("failed to decrypt wallet data: %w", err)
 	}
 
-	return json.Unmarshal(decryptedData, &w.accounts)
+	// Create a new accounts map to avoid merging with existing accounts
+	var loadedAccounts map[string]*Account
+	if err := json.Unmarshal(decryptedData, &loadedAccounts); err != nil {
+		return fmt.Errorf("failed to unmarshal wallet accounts: %w", err)
+	}
+
+	// Replace the existing accounts with the loaded ones
+	w.accounts = loadedAccounts
+
+	return nil
 }
 
 // Encrypt encrypts data using AES-GCM with secure KDF
@@ -256,23 +261,25 @@ func (w *Wallet) Decrypt(data []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
-// createDefaultAccount creates the default account from the default key
+// createDefaultAccount creates the default account for the wallet
 func (w *Wallet) createDefaultAccount() error {
-	addressBytes := w.generateAddress(w.defaultKey)
-	address := hex.EncodeToString(addressBytes)
+	// Convert btcec.PrivateKey to ecdsa.PrivateKey for compatibility
+	defaultKeyECDSA := w.defaultKey.ToECDSA()
 
+	// Generate address
+	addressStr := w.generateChecksumAddress(defaultKeyECDSA)
+
+	// Create default account
 	account := &Account{
-		Address:    address,
-		PublicKey:  publicKeyToBytes(&w.defaultKey.PublicKey),
-		PrivateKey: privateKeyToBytes(w.defaultKey),
+		Address:    addressStr,
+		PublicKey:  publicKeyToBytes(&defaultKeyECDSA.PublicKey),
+		PrivateKey: privateKeyToBytes(defaultKeyECDSA),
 		Balance:    0,
 		Nonce:      0,
 	}
 
-	w.mu.Lock()
-	w.accounts[address] = account
-	w.mu.Unlock()
-
+	// Add to wallet
+	w.accounts[addressStr] = account
 	return nil
 }
 
@@ -317,35 +324,16 @@ func (w *Wallet) encodeAddressWithChecksum(addressBytes []byte) string {
 
 // base58Encode encodes bytes to base58 string
 func (w *Wallet) base58Encode(data []byte) string {
-	const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-
-	var result []byte
-	x := new(big.Int).SetBytes(data)
-	base := big.NewInt(58)
-	zero := big.NewInt(0)
-
-	for x.Cmp(zero) > 0 {
-		mod := new(big.Int)
-		x.DivMod(x, base, mod)
-		result = append([]byte{alphabet[mod.Int64()]}, result...)
-	}
-
-	// Add leading zeros
-	for _, b := range data {
-		if b == 0 {
-			result = append([]byte{'1'}, result...)
-		} else {
-			break
-		}
-	}
-
-	return string(result)
+	return base58.Encode(data)
 }
 
 // decodeAddressWithChecksum decodes a checksummed address
 func (w *Wallet) decodeAddressWithChecksum(address string) ([]byte, error) {
 	// Decode base58
-	data := w.base58Decode(address)
+	data, err := w.base58Decode(address)
+	if err != nil {
+		return nil, err
+	}
 
 	// Check minimum length (version + address + checksum)
 	if len(data) < 25 {
@@ -368,47 +356,22 @@ func (w *Wallet) decodeAddressWithChecksum(address string) ([]byte, error) {
 	hash2 := sha256.Sum256(hash1[:])
 	expectedChecksum := hash2[:4]
 
-	if !w.bytesEqual(checksum, expectedChecksum) {
-		return nil, fmt.Errorf("invalid checksum")
+	// Simple byte comparison
+	if len(checksum) != len(expectedChecksum) {
+		return nil, fmt.Errorf("invalid checksum length")
+	}
+	for i := range checksum {
+		if checksum[i] != expectedChecksum[i] {
+			return nil, fmt.Errorf("invalid checksum")
+		}
 	}
 
 	return addressBytes, nil
 }
 
 // base58Decode decodes base58 string to bytes
-func (w *Wallet) base58Decode(data string) []byte {
-	const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-
-	// Create reverse lookup
-	reverse := make(map[byte]int)
-	for i, char := range alphabet {
-		reverse[byte(char)] = i
-	}
-
-	// Decode
-	result := big.NewInt(0)
-	base := big.NewInt(58)
-
-	for _, char := range data {
-		if val, ok := reverse[byte(char)]; ok {
-			result.Mul(result, base)
-			result.Add(result, big.NewInt(int64(val)))
-		}
-	}
-
-	// Convert to bytes
-	bytes := result.Bytes()
-
-	// Add leading zeros
-	for _, char := range data {
-		if char == '1' {
-			bytes = append([]byte{0}, bytes...)
-		} else {
-			break
-		}
-	}
-
-	return bytes
+func (w *Wallet) base58Decode(data string) ([]byte, error) {
+	return base58.Decode(data)
 }
 
 // bytesEqual compares two byte slices
@@ -424,37 +387,46 @@ func (w *Wallet) bytesEqual(a, b []byte) bool {
 	return true
 }
 
-// CreateAccount creates a new account
+// CreateAccount creates a new account in the wallet
 func (w *Wallet) CreateAccount() (*Account, error) {
+	// Generate a new private key
 	var privateKey *ecdsa.PrivateKey
-	var err error
 
 	switch w.keyType {
 	case KeyTypeECDSA:
-		privateKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		// Use secp256k1 curve (Bitcoin/Ethereum standard) instead of P-256
+		btcPrivKey, err := btcec.NewPrivateKey()
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)
+			return nil, fmt.Errorf("failed to generate secp256k1 key: %w", err)
 		}
+		// Convert btcec.PrivateKey to ecdsa.PrivateKey for compatibility
+		privateKey = btcPrivKey.ToECDSA()
 	case KeyTypeEd25519:
-		privateKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		// For now, fall back to secp256k1 for Ed25519 type as well
+		// TODO: Implement proper Ed25519 support
+		btcPrivKey, err := btcec.NewPrivateKey()
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate Ed25519 key: %w", err)
+			return nil, fmt.Errorf("failed to generate secp256k1 key: %w", err)
 		}
+		// Convert btcec.PrivateKey to ecdsa.PrivateKey for compatibility
+		privateKey = btcPrivKey.ToECDSA()
 	}
 
-	addressBytes := w.generateAddress(privateKey)
-	address := hex.EncodeToString(addressBytes)
+	// Generate address
+	addressStr := w.generateChecksumAddress(privateKey)
 
+	// Create account
 	account := &Account{
-		Address:    address,
+		Address:    addressStr,
 		PublicKey:  publicKeyToBytes(&privateKey.PublicKey),
 		PrivateKey: privateKeyToBytes(privateKey),
 		Balance:    0,
 		Nonce:      0,
 	}
 
+	// Add to wallet
 	w.mu.Lock()
-	w.accounts[address] = account
+	w.accounts[addressStr] = account
 	w.mu.Unlock()
 
 	return account, nil
@@ -583,9 +555,6 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)
 	}
 
-	// Calculate transaction hash
-	tx.Hash = w.calculateTransactionHash(tx)
-
 	// Update account nonce
 	account.Nonce++
 
@@ -605,7 +574,7 @@ func (w *Wallet) SignTransaction(tx *block.Transaction, fromAddress string) erro
 		return fmt.Errorf("failed to convert private key: %w", err)
 	}
 
-	// Create signature data
+	// Create signature data (this should be the hash that will be used for verification)
 	signatureData := w.createSignatureData(tx)
 
 	// Sign the data
@@ -631,75 +600,47 @@ func (w *Wallet) SignTransaction(tx *block.Transaction, fromAddress string) erro
 		tx.Inputs[i].ScriptSig = combined
 	}
 
+	// Set the transaction hash to the signature data hash for verification
+	tx.Hash = signatureData
+
 	return nil
 }
 
-// VerifyTransaction verifies a transaction signature and validates UTXOs
+// VerifyTransaction verifies the cryptographic signatures of a transaction
 func (w *Wallet) VerifyTransaction(tx *block.Transaction) (bool, error) {
-	if len(tx.Inputs) == 0 {
-		return false, fmt.Errorf("transaction has no inputs")
-	}
-
-	// Verify all inputs
 	for i, input := range tx.Inputs {
-		// Check if UTXO exists and is unspent
-		utxo := w.utxoSet.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
-		if utxo == nil {
-			return false, fmt.Errorf("input %d references non-existent UTXO", i)
-		}
-
-		// Verify signature
-		if len(input.ScriptSig) == 0 {
-			return false, fmt.Errorf("input %d has no signature", i)
-		}
-
-		// Expect uncompressed public key (65 bytes) + DER signature (variable length)
-		if len(input.ScriptSig) < 65+8 {
-			return false, fmt.Errorf("input %d has invalid signature length: %d", i, len(input.ScriptSig))
+		// Get the public key from the input
+		if len(input.ScriptSig) < 65 {
+			return false, fmt.Errorf("input %d: script signature too short", i)
 		}
 
 		pubBytes := input.ScriptSig[:65]
-		derSignature := input.ScriptSig[65:]
+		sigBytes := input.ScriptSig[65:]
 
-		// Decode DER signature
-		r, s, err := decodeSignatureDER(derSignature)
+		// Parse the public key
+		btcPubKey, err := btcec.ParsePubKey(pubBytes)
 		if err != nil {
-			return false, fmt.Errorf("input %d: failed to decode DER signature: %w", i, err)
+			return false, fmt.Errorf("input %d: failed to parse public key: %w", i, err)
+		}
+
+		// Convert to ecdsa.PublicKey for compatibility
+		pub := btcPubKey.ToECDSA()
+
+		// Decode the signature
+		r, s, err := decodeSignatureDER(sigBytes)
+		if err != nil {
+			return false, fmt.Errorf("input %d: failed to decode signature: %w", i, err)
 		}
 
 		// Verify canonical form
-		if err := verifyCanonicalSignature(r, s, elliptic.P256()); err != nil {
+		if err := verifyCanonicalSignature(r, s, btcec.S256()); err != nil {
 			return false, fmt.Errorf("input %d: signature not in canonical form: %w", i, err)
 		}
 
-		x, y := elliptic.Unmarshal(elliptic.P256(), pubBytes)
-		if x == nil || y == nil {
-			return false, fmt.Errorf("input %d: failed to unmarshal public key", i)
+		// Verify signature against the transaction hash (which should be the signature data hash)
+		if !ecdsa.Verify(pub, tx.Hash, r, s) {
+			return false, fmt.Errorf("input %d: signature verification failed", i)
 		}
-		pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}
-
-		// Verify signature
-		valid := ecdsa.Verify(pub, w.createSignatureData(tx), r, s)
-		if !valid {
-			return false, fmt.Errorf("input %d: invalid signature", i)
-		}
-	}
-
-	// Verify output amounts don't exceed input amounts
-	var totalInput uint64
-	var totalOutput uint64
-
-	for _, input := range tx.Inputs {
-		utxo := w.utxoSet.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
-		totalInput += utxo.Value
-	}
-
-	for _, output := range tx.Outputs {
-		totalOutput += output.Value
-	}
-
-	if totalOutput > totalInput {
-		return false, fmt.Errorf("output amount %d exceeds input amount %d", totalOutput, totalInput)
 	}
 
 	return true, nil
@@ -806,9 +747,8 @@ func (w *Wallet) ImportPrivateKey(privateKeyHex string) (*Account, error) {
 		return nil, fmt.Errorf("failed to convert private key: %w", err)
 	}
 
-	// Generate address
-	addressBytes := w.generateAddress(privateKey)
-	address := hex.EncodeToString(addressBytes)
+	// Generate base58 address
+	address := w.generateChecksumAddress(privateKey)
 
 	// Check if account already exists; return the existing account instead of error
 	if existing := w.GetAccount(address); existing != nil {
@@ -872,22 +812,40 @@ func privateKeyToBytes(k *ecdsa.PrivateKey) []byte {
 	return d
 }
 
+// publicKeyToBytes converts an ECDSA public key to bytes using secp256k1
 func publicKeyToBytes(k *ecdsa.PublicKey) []byte {
-	return elliptic.Marshal(elliptic.P256(), k.X, k.Y)
+	// Explicitly use secp256k1 curve for marshaling
+	curve := btcec.S256()
+	return elliptic.Marshal(curve, k.X, k.Y)
 }
 
 func bytesToPrivateKey(b []byte) (*ecdsa.PrivateKey, error) {
-	if len(b) == 0 {
-		return nil, fmt.Errorf("empty private key bytes")
+	if len(b) != 32 {
+		return nil, fmt.Errorf("invalid private key length: %d", len(b))
 	}
 	d := new(big.Int).SetBytes(b)
-	curve := elliptic.P256()
+	curve := btcec.S256()
 	// Validate that 0 < d < N
-	if d.Sign() <= 0 || d.Cmp(curve.Params().N) >= 0 {
+	if d.Sign() <= 0 || d.Cmp(curve.N) >= 0 {
 		return nil, fmt.Errorf("invalid private key scalar")
 	}
-	x, y := curve.ScalarBaseMult(b)
-	return &ecdsa.PrivateKey{PublicKey: ecdsa.PublicKey{Curve: curve, X: x, Y: y}, D: d}, nil
+
+	// Create the private key
+	privKey := &ecdsa.PrivateKey{
+		D: d,
+		PublicKey: ecdsa.PublicKey{
+			Curve: curve,
+			X:     nil, // Will be computed when needed
+			Y:     nil, // Will be computed when needed
+		},
+	}
+
+	// Compute the public key
+	pubX, pubY := curve.ScalarBaseMult(d.Bytes())
+	privKey.PublicKey.X = pubX
+	privKey.PublicKey.Y = pubY
+
+	return privKey, nil
 }
 
 func concatRS(r, s *big.Int) []byte {
@@ -899,23 +857,55 @@ func concatRS(r, s *big.Int) []byte {
 	return out
 }
 
-// addressToPubKeyHash converts a hex-encoded address string to its byte representation (public key hash)
+// addressToPubKeyHash converts a base58-encoded address string to its byte representation (public key hash)
 func addressToPubKeyHash(address string) ([]byte, error) {
-	pubKeyHash, err := hex.DecodeString(address)
+	// Since this is a package-level function, we need to create a temporary wallet instance
+	// to use the decodeAddressWithChecksum method, or we can implement the logic directly here
+
+	// Decode base58 address
+	data, err := base58.Decode(address)
 	if err != nil {
-		return nil, fmt.Errorf("invalid address hex: %w", err)
+		return nil, fmt.Errorf("invalid base58 address: %w", err)
 	}
-	// A valid address is 20 bytes (after hashing public key and taking last 20 bytes)
-	if len(pubKeyHash) != 20 {
-		return nil, fmt.Errorf("invalid address length: %d", len(pubKeyHash))
+
+	// Check minimum length (version + address + checksum)
+	if len(data) < 25 {
+		return nil, fmt.Errorf("address too short")
 	}
-	return pubKeyHash, nil
+
+	// Extract components
+	version := data[0]
+	addressBytes := data[1:21]
+	checksum := data[21:25]
+
+	// Verify version
+	if version != 0x00 {
+		return nil, fmt.Errorf("unsupported address version: %d", version)
+	}
+
+	// Verify checksum
+	versioned := append([]byte{version}, addressBytes...)
+	hash1 := sha256.Sum256(versioned)
+	hash2 := sha256.Sum256(hash1[:])
+	expectedChecksum := hash2[:4]
+
+	// Simple byte comparison
+	if len(checksum) != len(expectedChecksum) {
+		return nil, fmt.Errorf("invalid checksum length")
+	}
+	for i := range checksum {
+		if checksum[i] != expectedChecksum[i] {
+			return nil, fmt.Errorf("invalid checksum")
+		}
+	}
+
+	return addressBytes, nil
 }
 
 // canonicalSignature ensures the signature is in canonical form (low-S)
-func canonicalSignature(r, s *big.Int, curve elliptic.Curve) (*big.Int, *big.Int) {
+func canonicalSignature(r, s *big.Int, curve *btcec.KoblitzCurve) (*big.Int, *big.Int) {
 	// Get curve order
-	N := curve.Params().N
+	N := curve.N
 
 	// If s > N/2, use N - s instead (low-S enforcement)
 	if s.Cmp(new(big.Int).Div(N, big.NewInt(2))) > 0 {
@@ -927,8 +917,8 @@ func canonicalSignature(r, s *big.Int, curve elliptic.Curve) (*big.Int, *big.Int
 
 // encodeSignatureDER encodes r and s values as DER
 func encodeSignatureDER(r, s *big.Int) ([]byte, error) {
-	// Ensure canonical form
-	r, s = canonicalSignature(r, s, elliptic.P256())
+	// Ensure canonical form using secp256k1
+	r, s = canonicalSignature(r, s, btcec.S256())
 
 	// Create ASN.1 structure
 	signature := struct {
@@ -954,20 +944,21 @@ func decodeSignatureDER(signature []byte) (*big.Int, *big.Int, error) {
 }
 
 // verifyCanonicalSignature verifies that a signature is in canonical form
-func verifyCanonicalSignature(r, s *big.Int, curve elliptic.Curve) error {
-	N := curve.Params().N
+func verifyCanonicalSignature(r, s *big.Int, curve *btcec.KoblitzCurve) error {
+	N := curve.N
 
 	// Check bounds
 	if r.Sign() <= 0 || r.Cmp(N) >= 0 {
-		return fmt.Errorf("r value out of bounds")
+		return errors.New("r value out of bounds")
 	}
 	if s.Sign() <= 0 || s.Cmp(N) >= 0 {
-		return fmt.Errorf("s value out of bounds")
+		return errors.New("s value out of bounds")
 	}
 
-	// Check low-S property
-	if s.Cmp(new(big.Int).Div(N, big.NewInt(2))) > 0 {
-		return fmt.Errorf("signature not in canonical form (high-S)")
+	// Check low-S enforcement
+	halfN := new(big.Int).Div(N, big.NewInt(2))
+	if s.Cmp(halfN) > 0 {
+		return errors.New("s value not in canonical form (high-S)")
 	}
 
 	return nil

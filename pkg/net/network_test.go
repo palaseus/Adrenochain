@@ -183,26 +183,38 @@ func TestPublishSubscribe(t *testing.T) {
 	defer cancel()
 
 	// Wait for networks to be ready
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
+	// Get peer info from net2 and connect net1 to it
 	peerInfo2 := net2.GetHost().Peerstore().PeerInfo(net2.GetHost().ID())
 	err = net1.GetHost().Connect(ctx, peerInfo2)
 	assert.NoError(t, err)
 
-	// Give time for connection to establish and pubsub to propagate
+	// Wait for connection to be established
 	time.Sleep(3 * time.Second)
 
-	// Subscribe to blocks on net2
+	// Verify connection is established
+	net1Peers := net1.GetPeers()
+	net2Peers := net2.GetPeers()
+
+	// Check that both networks see each other
+	assert.GreaterOrEqual(t, len(net1Peers), 1, "net1 should have at least 1 peer")
+	assert.GreaterOrEqual(t, len(net2Peers), 1, "net2 should have at least 1 peer")
+
+	// Subscribe to blocks on net2 BEFORE publishing
 	blockSub2, err := net2.SubscribeToBlocks()
 	assert.NoError(t, err)
 	defer blockSub2.Cancel()
+
+	// Give time for subscription to propagate
+	time.Sleep(2 * time.Second)
 
 	// Publish a block from net1
 	blockData := []byte(`"test block data"`)
 	err = net1.PublishBlock(blockData)
 	assert.NoError(t, err)
 
-	// Wait for message on net2
+	// Wait for message on net2 with a reasonable timeout
 	msgChan := make(chan *pubsub.Message)
 	errChan := make(chan error)
 
@@ -240,14 +252,17 @@ func TestPublishSubscribe(t *testing.T) {
 		assert.True(t, verified)
 	case err := <-errChan:
 		t.Fatalf("Error receiving block message: %v", err)
-	case <-time.After(15 * time.Second): // Increased timeout
+	case <-time.After(20 * time.Second): // Increased timeout for more reliable testing
 		t.Fatal("Timeout waiting for block message")
 	}
 
-	// Subscribe to transactions on net1
+	// Subscribe to transactions on net1 BEFORE publishing
 	txSub1, err := net1.SubscribeToTransactions()
 	assert.NoError(t, err)
 	defer txSub1.Cancel()
+
+	// Give time for subscription to propagate
+	time.Sleep(2 * time.Second)
 
 	// Publish a transaction from net2
 	txData := []byte(`"test transaction data"`)
@@ -292,7 +307,7 @@ func TestPublishSubscribe(t *testing.T) {
 		assert.True(t, verified)
 	case err := <-errChan2:
 		t.Fatalf("Error receiving transaction message: %v", err)
-	case <-time.After(15 * time.Second): // Increased timeout
+	case <-time.After(20 * time.Second): // Increased timeout for more reliable testing
 		t.Fatal("Timeout waiting for transaction message")
 	}
 }

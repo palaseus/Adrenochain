@@ -2,13 +2,13 @@ package utxo
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sync"
 
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/gochain/gochain/pkg/block"
 )
 
@@ -156,67 +156,118 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 	return nil
 }
 
-// ValidateTransaction validates a transaction against the UTXO set
+// ValidateTransaction validates a transaction against the current UTXO set.
+// It performs comprehensive validation including signature verification, UTXO existence,
+// and proper fee calculation.
+// Note: This method treats transactions with no inputs as potentially valid (coinbase-like),
+// but for strict validation in block context, use ValidateTransactionInBlock.
 func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
-	// Coinbase transactions have no inputs, so skip input validation
+	// Transactions with no inputs are potentially coinbase transactions
 	if len(tx.Inputs) == 0 {
 		if len(tx.Outputs) == 0 {
-			return fmt.Errorf("coinbase transaction must have at least one output")
+			return fmt.Errorf("transaction with no inputs must have at least one output")
 		}
-		return nil // Coinbase transactions are valid if they have outputs
+		// Validate outputs
+		for i, output := range tx.Outputs {
+			if output.Value == 0 {
+				return fmt.Errorf("output %d has zero value", i)
+			}
+			if len(output.ScriptPubKey) == 0 {
+				return fmt.Errorf("output %d has empty script public key", i)
+			}
+		}
+		return nil // Transactions with no inputs are valid if they have valid outputs
 	}
 
-	// Regular transactions must have inputs and outputs
-	if len(tx.Inputs) == 0 {
-		return fmt.Errorf("transaction has no inputs")
-	}
+	// Regular transactions must have outputs
 	if len(tx.Outputs) == 0 {
 		return fmt.Errorf("transaction has no outputs")
 	}
 
+	// Check for duplicate inputs (double-spend prevention)
+	inputSet := make(map[string]bool)
+	for _, input := range tx.Inputs {
+		inputKey := fmt.Sprintf("%x:%d", input.PrevTxHash, input.PrevTxIndex)
+		if inputSet[inputKey] {
+			return fmt.Errorf("duplicate input: %s", inputKey)
+		}
+		inputSet[inputKey] = true
+	}
+
 	// Calculate total input value and verify signatures
 	totalInput := uint64(0)
-	for _, input := range tx.Inputs {
+	for i, input := range tx.Inputs {
+		// Validate input structure
+		if err := input.IsValid(); err != nil {
+			return fmt.Errorf("invalid input %d: %w", i, err)
+		}
+
+		// Check if UTXO exists and is not already spent
 		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
 		if utxo == nil {
 			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
 		}
 
-		// Verify signature
-		// The ScriptSig contains the public key (65 bytes) followed by the signature (64 bytes)
-		if len(input.ScriptSig) < 65+64 {
-			return fmt.Errorf("invalid scriptSig length: %d", len(input.ScriptSig))
+		// Check if UTXO is coinbase and has matured (if applicable)
+		if utxo.IsCoinbase {
+			// For now, we'll allow coinbase UTXOs to be spent immediately
+			// In a real implementation, you might want to enforce maturity requirements
 		}
+
+		// Verify signature length and structure
+		if len(input.ScriptSig) < 65+64 {
+			return fmt.Errorf("input %d: invalid scriptSig length: %d (expected >= 129)", i, len(input.ScriptSig))
+		}
+
+		// Extract public key and signature from ScriptSig
 		pubBytes := input.ScriptSig[:65]
 		rsBytes := input.ScriptSig[65:]
 
-		x, y := elliptic.Unmarshal(elliptic.P256(), pubBytes)
-		if x == nil || y == nil {
-			return fmt.Errorf("failed to unmarshal public key from scriptSig")
+		// Validate public key format
+		pubKey, err := btcec.ParsePubKey(pubBytes)
+		if err != nil {
+			return fmt.Errorf("input %d: failed to unmarshal public key from scriptSig: %v", i, err)
 		}
-		pub := &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}
+		pub := pubKey.ToECDSA()
 
-		// Check if the public key hash matches the ScriptPubKey of the UTXO
+		// Verify public key hash matches the UTXO's ScriptPubKey
 		pubKeyHash := sha256.Sum256(pubBytes)
-		if hex.EncodeToString(pubKeyHash[len(pubKeyHash)-20:]) != hex.EncodeToString(utxo.ScriptPubKey) {
-			return fmt.Errorf("public key hash in scriptSig does not match UTXO scriptPubKey")
+		expectedAddress := hex.EncodeToString(pubKeyHash[len(pubKeyHash)-20:])
+		utxoAddress := hex.EncodeToString(utxo.ScriptPubKey)
+
+		if expectedAddress != utxoAddress {
+			return fmt.Errorf("input %d: public key hash %s does not match UTXO scriptPubKey %s",
+				i, expectedAddress, utxoAddress)
 		}
 
+		// Extract R and S components from signature
+		if len(rsBytes) < 64 {
+			return fmt.Errorf("input %d: insufficient signature data", i)
+		}
 		r := new(big.Int).SetBytes(rsBytes[:32])
-		s := new(big.Int).SetBytes(rsBytes[32:])
+		s := new(big.Int).SetBytes(rsBytes[32:64])
 
+		// Validate signature components
+		if r.Sign() <= 0 || s.Sign() <= 0 {
+			return fmt.Errorf("input %d: invalid signature components (R or S <= 0)", i)
+		}
+
+		// Verify signature
 		signatureData := us.getTxSignatureData(tx)
 		verified := ecdsa.Verify(pub, signatureData, r, s)
 		if !verified {
-			return fmt.Errorf("invalid signature for input: %x:%d", input.PrevTxHash, input.PrevTxIndex)
+			return fmt.Errorf("input %d: invalid signature for UTXO %x:%d", i, input.PrevTxHash, input.PrevTxIndex)
 		}
 
 		totalInput += utxo.Value
 	}
 
-	// Calculate total output value
+	// Calculate total output value and validate outputs
 	totalOutput := uint64(0)
-	for _, output := range tx.Outputs {
+	for i, output := range tx.Outputs {
+		if err := output.IsValid(); err != nil {
+			return fmt.Errorf("invalid output %d: %w", i, err)
+		}
 		totalOutput += output.Value
 	}
 
@@ -229,6 +280,168 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 	fee := totalInput - totalOutput
 	if fee < tx.Fee {
 		return fmt.Errorf("actual fee %d is less than specified fee %d", fee, tx.Fee)
+	}
+
+	// Additional security checks
+	if fee > totalInput/2 {
+		return fmt.Errorf("fee %d is unreasonably high (more than 50%% of input value %d)", fee, totalInput)
+	}
+
+	// Check for dust outputs (very small outputs that are uneconomical)
+	const dustThreshold = 546 // Satoshis, equivalent to Bitcoin's dust threshold
+	for i, output := range tx.Outputs {
+		if output.Value < dustThreshold {
+			return fmt.Errorf("output %d value %d is below dust threshold %d", i, output.Value, dustThreshold)
+		}
+	}
+
+	return nil
+}
+
+// ValidateTransactionInBlock validates a transaction in the context of a block.
+// This method properly distinguishes between coinbase transactions (first transaction in block)
+// and regular transactions.
+func (us *UTXOSet) ValidateTransactionInBlock(tx *block.Transaction, block *block.Block, txIndex int) error {
+	// Check if this is a coinbase transaction (first transaction in block)
+	isCoinbase := txIndex == 0 && len(block.Transactions) > 0 && tx == block.Transactions[0]
+	
+	if isCoinbase {
+		// Coinbase transactions have no inputs
+		if len(tx.Inputs) != 0 {
+			return fmt.Errorf("coinbase transaction should have no inputs")
+		}
+		if len(tx.Outputs) == 0 {
+			return fmt.Errorf("coinbase transaction must have at least one output")
+		}
+		// Validate coinbase transaction outputs
+		for i, output := range tx.Outputs {
+			if output.Value == 0 {
+				return fmt.Errorf("coinbase output %d has zero value", i)
+			}
+			if len(output.ScriptPubKey) == 0 {
+				return fmt.Errorf("coinbase output %d has empty script public key", i)
+			}
+		}
+		return nil // Coinbase transactions are valid if they have valid outputs
+	}
+	
+	// Regular transactions must have inputs and outputs
+	if len(tx.Inputs) == 0 {
+		return fmt.Errorf("regular transaction must have inputs")
+	}
+	if len(tx.Outputs) == 0 {
+		return fmt.Errorf("regular transaction must have outputs")
+	}
+
+	// Check for duplicate inputs (double-spend prevention)
+	inputSet := make(map[string]bool)
+	for _, input := range tx.Inputs {
+		inputKey := fmt.Sprintf("%x:%d", input.PrevTxHash, input.PrevTxIndex)
+		if inputSet[inputKey] {
+			return fmt.Errorf("duplicate input: %s", inputKey)
+		}
+		inputSet[inputKey] = true
+	}
+
+	// Calculate total input value and verify signatures
+	totalInput := uint64(0)
+	for i, input := range tx.Inputs {
+		// Validate input structure
+		if err := input.IsValid(); err != nil {
+			return fmt.Errorf("invalid input %d: %w", i, err)
+		}
+
+		// Check if UTXO exists and is not already spent
+		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
+		if utxo == nil {
+			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
+		}
+
+		// Check if UTXO is coinbase and has matured (if applicable)
+		if utxo.IsCoinbase {
+			// For now, we'll allow coinbase UTXOs to be spent immediately
+			// In a real implementation, you might want to enforce maturity requirements
+		}
+
+		// Verify signature length and structure
+		if len(input.ScriptSig) < 65+64 {
+			return fmt.Errorf("input %d: invalid scriptSig length: %d (expected >= 129)", i, len(input.ScriptSig))
+		}
+
+		// Extract public key and signature from ScriptSig
+		pubBytes := input.ScriptSig[:65]
+		rsBytes := input.ScriptSig[65:]
+
+		// Validate public key format
+		pubKey, err := btcec.ParsePubKey(pubBytes)
+		if err != nil {
+			return fmt.Errorf("input %d: failed to unmarshal public key from scriptSig: %v", i, err)
+		}
+		pub := pubKey.ToECDSA()
+
+		// Verify public key hash matches the UTXO's ScriptPubKey
+		pubKeyHash := sha256.Sum256(pubBytes)
+		expectedAddress := hex.EncodeToString(pubKeyHash[len(pubKeyHash)-20:])
+		utxoAddress := hex.EncodeToString(utxo.ScriptPubKey)
+
+		if expectedAddress != utxoAddress {
+			return fmt.Errorf("input %d: public key hash %s does not match UTXO scriptPubKey %s",
+				i, expectedAddress, utxoAddress)
+		}
+
+		// Extract R and S components from signature
+		if len(rsBytes) < 64 {
+			return fmt.Errorf("input %d: insufficient signature data", i)
+		}
+		r := new(big.Int).SetBytes(rsBytes[:32])
+		s := new(big.Int).SetBytes(rsBytes[32:64])
+
+		// Validate signature components
+		if r.Sign() <= 0 || s.Sign() <= 0 {
+			return fmt.Errorf("input %d: invalid signature components (R or S <= 0)", i)
+		}
+
+		// Verify signature
+		signatureData := us.getTxSignatureData(tx)
+		verified := ecdsa.Verify(pub, signatureData, r, s)
+		if !verified {
+			return fmt.Errorf("input %d: invalid signature for UTXO %x:%d", i, input.PrevTxHash, input.PrevTxIndex)
+		}
+
+		totalInput += utxo.Value
+	}
+
+	// Calculate total output value and validate outputs
+	totalOutput := uint64(0)
+	for i, output := range tx.Outputs {
+		if err := output.IsValid(); err != nil {
+			return fmt.Errorf("invalid output %d: %w", i, err)
+		}
+		totalOutput += output.Value
+	}
+
+	// Check if outputs exceed inputs (including fees)
+	if totalOutput > totalInput {
+		return fmt.Errorf("output value %d exceeds input value %d", totalOutput, totalInput)
+	}
+
+	// Validate that the fee is reasonable
+	fee := totalInput - totalOutput
+	if fee < tx.Fee {
+		return fmt.Errorf("actual fee %d is less than specified fee %d", fee, tx.Fee)
+	}
+
+	// Additional security checks
+	if fee > totalInput/2 {
+		return fmt.Errorf("fee %d is unreasonably high (more than 50%% of input value %d)", fee, totalInput)
+	}
+
+	// Check for dust outputs (very small outputs that are uneconomical)
+	const dustThreshold = 546 // Satoshis, equivalent to Bitcoin's dust threshold
+	for i, output := range tx.Outputs {
+		if output.Value < dustThreshold {
+			return fmt.Errorf("output %d value %d is below dust threshold %d", i, output.Value, dustThreshold)
+		}
 	}
 
 	return nil
@@ -251,6 +464,116 @@ func (us *UTXOSet) GetStats() map[string]interface{} {
 	stats["total_value"] = totalValue
 
 	return stats
+}
+
+// IsDoubleSpend checks if a transaction attempts to spend UTXOs that are already spent
+func (us *UTXOSet) IsDoubleSpend(tx *block.Transaction) bool {
+	for _, input := range tx.Inputs {
+		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
+		if utxo == nil {
+			// UTXO doesn't exist, which means it's already spent or never existed
+			return true
+		}
+	}
+	return false
+}
+
+// CalculateFee calculates the transaction fee based on input and output values
+func (us *UTXOSet) CalculateFee(tx *block.Transaction) (uint64, error) {
+	if len(tx.Inputs) == 0 {
+		// Coinbase transaction has no fee
+		return 0, nil
+	}
+
+	totalInput := uint64(0)
+	for _, input := range tx.Inputs {
+		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
+		if utxo == nil {
+			return 0, fmt.Errorf("UTXO not found for input %x:%d", input.PrevTxHash, input.PrevTxIndex)
+		}
+		totalInput += utxo.Value
+	}
+
+	totalOutput := uint64(0)
+	for _, output := range tx.Outputs {
+		totalOutput += output.Value
+	}
+
+	if totalOutput > totalInput {
+		return 0, fmt.Errorf("output value %d exceeds input value %d", totalOutput, totalInput)
+	}
+
+	return totalInput - totalOutput, nil
+}
+
+// ValidateFeeRate validates that the transaction fee meets minimum requirements
+func (us *UTXOSet) ValidateFeeRate(tx *block.Transaction, minFeeRate uint64) error {
+	if len(tx.Inputs) == 0 {
+		// Coinbase transactions don't need fee validation
+		return nil
+	}
+
+	// Calculate actual transaction size by serializing the transaction
+	txSize := uint64(0)
+	
+	// Version (4 bytes)
+	txSize += 4
+	
+	// Input count (varint, but we'll use 1 byte for simplicity in tests)
+	txSize += 1
+	
+	// Inputs
+	for _, input := range tx.Inputs {
+		txSize += 32 // PrevTxHash
+		txSize += 4  // PrevTxIndex
+		txSize += uint64(len(input.ScriptSig)) // ScriptSig
+		txSize += 4  // Sequence
+	}
+	
+	// Output count (varint, but we'll use 1 byte for simplicity in tests)
+	txSize += 1
+	
+	// Outputs
+	for _, output := range tx.Outputs {
+		txSize += 8  // Value
+		txSize += uint64(len(output.ScriptPubKey)) // ScriptPubKey
+	}
+	
+	// LockTime (8 bytes)
+	txSize += 8
+	
+	// Fee (8 bytes)
+	txSize += 8
+
+	// Calculate minimum required fee
+	minFee := txSize * minFeeRate / 1000 // Fee rate is in satoshis per kilobyte
+
+	actualFee, err := us.CalculateFee(tx)
+	if err != nil {
+		return fmt.Errorf("failed to calculate fee: %w", err)
+	}
+
+	if actualFee < minFee {
+		return fmt.Errorf("fee %d is below minimum required fee %d (size: %d bytes, rate: %d sat/kilobyte)",
+			actualFee, minFee, txSize, minFeeRate)
+	}
+
+	return nil
+}
+
+// GetSpendableUTXOs returns all spendable UTXOs for a given address
+// This is useful for wallet implementations to find available funds
+func (us *UTXOSet) GetSpendableUTXOs(address string, minValue uint64) []*UTXO {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+
+	var spendableUTXOs []*UTXO
+	for _, utxo := range us.utxos {
+		if utxo.Address == address && utxo.Value >= minValue {
+			spendableUTXOs = append(spendableUTXOs, utxo)
+		}
+	}
+	return spendableUTXOs
 }
 
 // GetUTXOCount returns the total number of UTXOs
@@ -303,25 +626,6 @@ func (us *UTXOSet) getTxSignatureData(tx *block.Transaction) []byte {
 	// Hash the data
 	hash := sha256.Sum256(data)
 	return hash[:]
-}
-
-// Helpers (copied from wallet for now)
-func publicKeyToBytes(k *ecdsa.PublicKey) []byte {
-	return elliptic.Marshal(elliptic.P256(), k.X, k.Y)
-}
-
-func bytesToPrivateKey(b []byte) (*ecdsa.PrivateKey, error) {
-	if len(b) == 0 {
-		return nil, fmt.Errorf("empty private key bytes")
-	}
-	d := new(big.Int).SetBytes(b)
-	curve := elliptic.P256()
-	// Validate that 0 < d < N
-	if d.Sign() <= 0 || d.Cmp(curve.Params().N) >= 0 {
-		return nil, fmt.Errorf("invalid private key scalar")
-	}
-	x, y := curve.ScalarBaseMult(b)
-	return &ecdsa.PrivateKey{PublicKey: ecdsa.PublicKey{Curve: curve, X: x, Y: y}, D: d}, nil
 }
 
 func concatRS(r, s *big.Int) []byte {
