@@ -4,7 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	libp2p "github.com/libp2p/go-libp2p"
@@ -149,18 +152,24 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		return nil, fmt.Errorf("failed to generate key pair: %w", err)
 	}
 
-	// Create libp2p host
-	host, err := libp2p.New(
+	// Create libp2p host options
+	hostOpts := []libp2p.Option{
 		libp2p.Identity(priv),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", config.ListenPort)),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d/ws", config.ListenPort)),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Transport(websocket.New),
-
 		libp2p.EnableHolePunching(),
-		libp2p.NATPortMap(),
-	)
+	}
+
+	// Only enable NAT port mapping if not in test mode
+	if !isTestEnvironment() {
+		hostOpts = append(hostOpts, libp2p.NATPortMap())
+	}
+
+	// Create libp2p host
+	host, err := libp2p.New(hostOpts...)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create host: %w", err)
@@ -397,4 +406,11 @@ func (n *Network) PublishTransaction(txData []byte) error {
 	}
 
 	return n.pubsub.Publish("transactions", data)
+}
+
+// isTestEnvironment checks if the code is running in a test environment
+func isTestEnvironment() bool {
+	return strings.Contains(os.Args[0], "test") || 
+		   strings.Contains(os.Args[0], "_test") ||
+		   testing.Testing()
 }

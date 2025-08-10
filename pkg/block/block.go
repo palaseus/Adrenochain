@@ -76,6 +76,24 @@ func NewBlock(prevHash []byte, height uint64, difficulty uint64) *Block {
 	return block
 }
 
+// NewTransaction creates a new transaction with the given parameters.
+// It initializes the transaction with default values and calculates the hash.
+func NewTransaction(inputs []*TxInput, outputs []*TxOutput, fee uint64) *Transaction {
+	tx := &Transaction{
+		Version:  1,
+		Inputs:   inputs,
+		Outputs:  outputs,
+		LockTime: 0,
+		Fee:      fee,
+		Hash:     make([]byte, 32), // Initialize empty hash
+	}
+
+	// Calculate transaction hash
+	tx.Hash = tx.CalculateHash()
+
+	return tx
+}
+
 // AddTransaction adds a transaction to the block's list of transactions.
 func (b *Block) AddTransaction(tx *Transaction) {
 	// Calculate transaction hash if not already set

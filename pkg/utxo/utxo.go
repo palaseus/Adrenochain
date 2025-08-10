@@ -38,6 +38,19 @@ func NewUTXOSet() *UTXOSet {
 	}
 }
 
+// NewUTXO creates a new UTXO with the given parameters
+func NewUTXO(txHash []byte, txIndex uint32, value uint64, scriptPubKey []byte, address string, isCoinbase bool, height uint64) *UTXO {
+	return &UTXO{
+		TxHash:       txHash,
+		TxIndex:      txIndex,
+		Value:        value,
+		ScriptPubKey: scriptPubKey,
+		Address:      address,
+		IsCoinbase:   isCoinbase,
+		Height:       height,
+	}
+}
+
 // AddUTXO adds a UTXO to the set
 func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 	key := us.makeKey(utxo.TxHash, utxo.TxIndex)

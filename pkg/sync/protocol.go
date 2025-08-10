@@ -118,11 +118,11 @@ func (sp *SyncProtocol) StartSync(peerID peer.ID) error {
 func (sp *SyncProtocol) syncWithPeer(peerID peer.ID) {
 	defer func() {
 		sp.mu.Lock()
+		defer sp.mu.Unlock()
 		if state := sp.syncState[peerID]; state != nil {
 			state.IsSyncing = false
 			state.SyncEnd = time.Now()
 		}
-		sp.mu.Unlock()
 	}()
 
 	// Check if we're in a test environment
