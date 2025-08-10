@@ -410,7 +410,7 @@ func (n *Network) PublishTransaction(txData []byte) error {
 
 // isTestEnvironment checks if the code is running in a test environment
 func isTestEnvironment() bool {
-	return strings.Contains(os.Args[0], "test") || 
-		   strings.Contains(os.Args[0], "_test") ||
-		   testing.Testing()
+	return strings.Contains(os.Args[0], "test") ||
+		strings.Contains(os.Args[0], "_test") ||
+		testing.Testing()
 }

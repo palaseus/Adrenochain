@@ -27,9 +27,9 @@ type Consensus struct {
 	lastAdjustment time.Time        // lastAdjustment records the time of the last difficulty adjustment.
 	blockTimes     []time.Duration  // blockTimes stores the durations of recent blocks for difficulty adjustment.
 	chain          ChainReader      // chain is a reference to the chain, used to query block information.
-	
+
 	// Finality-related fields
-	finalityDepth uint64           // finalityDepth is the number of blocks required for finality
+	finalityDepth uint64            // finalityDepth is the number of blocks required for finality
 	checkpoints   map[uint64][]byte // checkpoints stores known good block hashes at specific heights
 }
 
@@ -52,7 +52,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		MaxDifficulty:                256,
 		MinDifficulty:                1,
 		DifficultyAdjustmentFactor:   4.0,
-		FinalityDepth:                100,  // 100 blocks for finality
+		FinalityDepth:                100,   // 100 blocks for finality
 		CheckpointInterval:           10000, // Checkpoint every 10,000 blocks
 	}
 }
@@ -91,15 +91,24 @@ func (c *Consensus) AddCheckpoint(height uint64, hash []byte) {
 	c.checkpoints[height] = hash
 }
 
+// hasCheckpoint checks if a checkpoint exists at the given height
+func (c *Consensus) hasCheckpoint(height uint64) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	_, exists := c.checkpoints[height]
+	return exists
+}
+
 // ValidateCheckpoint validates that a block at the given height matches the expected checkpoint hash.
+// This method is used for direct checkpoint validation and returns false for heights without checkpoints.
 func (c *Consensus) ValidateCheckpoint(height uint64, hash []byte) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	if expectedHash, exists := c.checkpoints[height]; exists {
 		return string(expectedHash) == string(hash)
 	}
-	return true // No checkpoint at this height, consider it valid
+	return false // No checkpoint at this height, cannot validate
 }
 
 // GetAccumulatedDifficulty calculates the accumulated difficulty from genesis to the given height.
@@ -115,12 +124,12 @@ func (c *Consensus) GetAccumulatedDifficulty(height uint64) (*big.Int, error) {
 		if block == nil {
 			return nil, fmt.Errorf("block not found at height %d", h)
 		}
-		
+
 		// Add the difficulty of this block to accumulated difficulty
 		blockDiff := big.NewInt(int64(block.Header.Difficulty))
 		accumulated.Add(accumulated, blockDiff)
 	}
-	
+
 	return accumulated, nil
 }
 
@@ -222,8 +231,10 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 	}
 
 	// Validate checkpoint if this height has one
-	if !c.ValidateCheckpoint(block.Header.Height, block.CalculateHash()) {
-		return fmt.Errorf("block hash does not match checkpoint at height %d", block.Header.Height)
+	if c.hasCheckpoint(block.Header.Height) {
+		if !c.ValidateCheckpoint(block.Header.Height, block.CalculateHash()) {
+			return fmt.Errorf("block hash does not match checkpoint at height %d", block.Header.Height)
+		}
 	}
 
 	return nil

@@ -44,14 +44,14 @@ type Metrics struct {
 	startTime     time.Time
 
 	// Additional blockchain metrics
-	utxoCount        int64
-	chainSize        int64 // in bytes
-	orphanedBlocks   int64
-	rejectedBlocks   int64
-	rejectedTxns     int64
-	avgBlockTime     int64 // in seconds
-	avgTxnPerBlock   float64
-	avgBlockSize     int64 // in bytes
+	utxoCount      int64
+	chainSize      int64 // in bytes
+	orphanedBlocks int64
+	rejectedBlocks int64
+	rejectedTxns   int64
+	avgBlockTime   int64 // in seconds
+	avgTxnPerBlock float64
+	avgBlockSize   int64 // in bytes
 }
 
 // NewMetrics creates a new metrics collector
@@ -215,20 +215,20 @@ func (m *Metrics) GetMetrics() map[string]interface{} {
 
 	return map[string]interface{}{
 		"blockchain": map[string]interface{}{
-			"block_height":         atomic.LoadInt64(&m.blockHeight),
-			"total_blocks":         atomic.LoadInt64(&m.totalBlocks),
-			"total_transactions":   atomic.LoadInt64(&m.totalTxns),
-			"pending_transactions": atomic.LoadInt64(&m.pendingTxns),
-			"chain_difficulty":     m.chainDifficulty,
-			"last_block_time":      m.lastBlockTime,
-			"utxo_count":           atomic.LoadInt64(&m.utxoCount),
-			"chain_size_bytes":     atomic.LoadInt64(&m.chainSize),
-			"orphaned_blocks":      atomic.LoadInt64(&m.orphanedBlocks),
-			"rejected_blocks":      atomic.LoadInt64(&m.rejectedBlocks),
-			"rejected_transactions": atomic.LoadInt64(&m.rejectedTxns),
+			"block_height":           atomic.LoadInt64(&m.blockHeight),
+			"total_blocks":           atomic.LoadInt64(&m.totalBlocks),
+			"total_transactions":     atomic.LoadInt64(&m.totalTxns),
+			"pending_transactions":   atomic.LoadInt64(&m.pendingTxns),
+			"chain_difficulty":       m.chainDifficulty,
+			"last_block_time":        m.lastBlockTime,
+			"utxo_count":             atomic.LoadInt64(&m.utxoCount),
+			"chain_size_bytes":       atomic.LoadInt64(&m.chainSize),
+			"orphaned_blocks":        atomic.LoadInt64(&m.orphanedBlocks),
+			"rejected_blocks":        atomic.LoadInt64(&m.rejectedBlocks),
+			"rejected_transactions":  atomic.LoadInt64(&m.rejectedTxns),
 			"avg_block_time_seconds": atomic.LoadInt64(&m.avgBlockTime),
-			"avg_txn_per_block":    m.avgTxnPerBlock,
-			"avg_block_size_bytes": atomic.LoadInt64(&m.avgBlockSize),
+			"avg_txn_per_block":      m.avgTxnPerBlock,
+			"avg_block_size_bytes":   atomic.LoadInt64(&m.avgBlockSize),
 		},
 		"network": map[string]interface{}{
 			"connected_peers": atomic.LoadInt64(&m.connectedPeers),

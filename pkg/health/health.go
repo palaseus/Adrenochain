@@ -56,10 +56,10 @@ func NewSystemHealth(version string) *SystemHealth {
 func (sh *SystemHealth) RegisterComponent(checker HealthChecker) {
 	sh.mu.Lock()
 	defer sh.mu.Unlock()
-	
+
 	// Store the checker
 	sh.checkers[checker.Name()] = checker
-	
+
 	// Perform initial check
 	component, _ := checker.Check()
 	sh.components[checker.Name()] = component
@@ -69,7 +69,7 @@ func (sh *SystemHealth) RegisterComponent(checker HealthChecker) {
 func (sh *SystemHealth) UnregisterComponent(name string) {
 	sh.mu.Lock()
 	defer sh.mu.Unlock()
-	
+
 	delete(sh.checkers, name)
 	delete(sh.components, name)
 }
@@ -78,7 +78,7 @@ func (sh *SystemHealth) UnregisterComponent(name string) {
 func (sh *SystemHealth) UpdateComponent(name string, status Status, message string, details map[string]interface{}) {
 	sh.mu.Lock()
 	defer sh.mu.Unlock()
-	
+
 	if component, exists := sh.components[name]; exists {
 		component.Status = status
 		component.Message = message
@@ -91,14 +91,14 @@ func (sh *SystemHealth) UpdateComponent(name string, status Status, message stri
 func (sh *SystemHealth) GetOverallStatus() Status {
 	sh.mu.RLock()
 	defer sh.mu.RUnlock()
-	
+
 	if len(sh.components) == 0 {
 		return StatusUnknown
 	}
-	
+
 	unhealthyCount := 0
 	degradedCount := 0
-	
+
 	for _, component := range sh.components {
 		switch component.Status {
 		case StatusUnhealthy:
@@ -107,15 +107,15 @@ func (sh *SystemHealth) GetOverallStatus() Status {
 			degradedCount++
 		}
 	}
-	
+
 	if unhealthyCount > 0 {
 		return StatusUnhealthy
 	}
-	
+
 	if degradedCount > 0 {
 		return StatusDegraded
 	}
-	
+
 	return StatusHealthy
 }
 
@@ -123,38 +123,38 @@ func (sh *SystemHealth) GetOverallStatus() Status {
 func (sh *SystemHealth) GetHealthReport() map[string]interface{} {
 	sh.mu.RLock()
 	defer sh.mu.RUnlock()
-	
+
 	uptime := time.Since(sh.startTime)
-	
+
 	// Get system metrics
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	report := map[string]interface{}{
-		"status":      sh.GetOverallStatus(),
-		"version":     sh.version,
-		"uptime":      uptime.String(),
-		"start_time":  sh.startTime,
-		"components":  make(map[string]*Component),
+		"status":     sh.GetOverallStatus(),
+		"version":    sh.version,
+		"uptime":     uptime.String(),
+		"start_time": sh.startTime,
+		"components": make(map[string]*Component),
 		"system": map[string]interface{}{
-			"go_version":    runtime.Version(),
-			"go_os":         runtime.GOOS,
-			"go_arch":       runtime.GOARCH,
+			"go_version":     runtime.Version(),
+			"go_os":          runtime.GOOS,
+			"go_arch":        runtime.GOARCH,
 			"num_goroutines": runtime.NumGoroutine(),
 			"memory": map[string]interface{}{
-				"alloc":      m.Alloc,
+				"alloc":       m.Alloc,
 				"total_alloc": m.TotalAlloc,
 				"sys":         m.Sys,
 				"num_gc":      m.NumGC,
 			},
 		},
 	}
-	
+
 	// Copy components
 	for name, component := range sh.components {
 		report["components"].(map[string]*Component)[name] = component
 	}
-	
+
 	return report
 }
 
@@ -166,7 +166,7 @@ func (sh *SystemHealth) RunHealthChecks() {
 		checkers = append(checkers, checker)
 	}
 	sh.mu.RUnlock()
-	
+
 	// Run checks in parallel
 	var wg sync.WaitGroup
 	for _, checker := range checkers {
@@ -184,15 +184,15 @@ func (sh *SystemHealth) runComponentCheck(checker HealthChecker) {
 	start := time.Now()
 	component, err := checker.Check()
 	checkTime := time.Since(start)
-	
+
 	if err != nil {
 		component.Status = StatusUnhealthy
 		component.Message = err.Error()
 	}
-	
+
 	component.LastCheck = time.Now()
 	component.CheckTime = checkTime
-	
+
 	sh.mu.Lock()
 	sh.components[checker.Name()] = component
 	sh.mu.Unlock()
@@ -213,7 +213,7 @@ func (sh *SystemHealth) IsHealthy() bool {
 func (sh *SystemHealth) GetComponentStatus(name string) (*Component, bool) {
 	sh.mu.RLock()
 	defer sh.mu.RUnlock()
-	
+
 	component, exists := sh.components[name]
 	return component, exists
 }
@@ -222,7 +222,7 @@ func (sh *SystemHealth) GetComponentStatus(name string) (*Component, bool) {
 func (sh *SystemHealth) GetRegisteredComponents() []string {
 	sh.mu.RLock()
 	defer sh.mu.RUnlock()
-	
+
 	components := make([]string, 0, len(sh.checkers))
 	for name := range sh.checkers {
 		components = append(components, name)
@@ -234,6 +234,6 @@ func (sh *SystemHealth) GetRegisteredComponents() []string {
 func (sh *SystemHealth) GetComponentCount() int {
 	sh.mu.RLock()
 	defer sh.mu.RUnlock()
-	
+
 	return len(sh.checkers)
 }

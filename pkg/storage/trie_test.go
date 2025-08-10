@@ -301,5 +301,3 @@ func TestStateTrieLargeData(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, largeValue, retrieved)
 }
-
- 

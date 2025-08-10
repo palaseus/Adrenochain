@@ -9,17 +9,17 @@ type StorageInterface interface {
 	// Block operations
 	StoreBlock(b *block.Block) error
 	GetBlock(hash []byte) (*block.Block, error)
-	
+
 	// Chain state operations
 	StoreChainState(state *ChainState) error
 	GetChainState() (*ChainState, error)
-	
+
 	// Key-value operations
 	Write(key []byte, value []byte) error
 	Read(key []byte) ([]byte, error)
 	Delete(key []byte) error
 	Has(key []byte) (bool, error)
-	
+
 	// Utility operations
 	Close() error
 }
@@ -28,7 +28,7 @@ type StorageInterface interface {
 type StorageType string
 
 const (
-	StorageTypeFile   StorageType = "file"
+	StorageTypeFile    StorageType = "file"
 	StorageTypeLevelDB StorageType = "leveldb"
 )
 
@@ -52,4 +52,4 @@ func (f *StorageFactory) CreateStorage(storageType StorageType, dataDir string) 
 		config := DefaultStorageConfig().WithDataDir(dataDir)
 		return NewStorage(config)
 	}
-} 
+}

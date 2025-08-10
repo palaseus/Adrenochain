@@ -317,7 +317,7 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 func (us *UTXOSet) ValidateTransactionInBlock(tx *block.Transaction, block *block.Block, txIndex int) error {
 	// Check if this is a coinbase transaction (first transaction in block)
 	isCoinbase := txIndex == 0 && len(block.Transactions) > 0 && tx == block.Transactions[0]
-	
+
 	if isCoinbase {
 		// Coinbase transactions have no inputs
 		if len(tx.Inputs) != 0 {
@@ -337,7 +337,7 @@ func (us *UTXOSet) ValidateTransactionInBlock(tx *block.Transaction, block *bloc
 		}
 		return nil // Coinbase transactions are valid if they have valid outputs
 	}
-	
+
 	// Regular transactions must have inputs and outputs
 	if len(tx.Inputs) == 0 {
 		return fmt.Errorf("regular transaction must have inputs")
@@ -528,33 +528,33 @@ func (us *UTXOSet) ValidateFeeRate(tx *block.Transaction, minFeeRate uint64) err
 
 	// Calculate actual transaction size by serializing the transaction
 	txSize := uint64(0)
-	
+
 	// Version (4 bytes)
 	txSize += 4
-	
+
 	// Input count (varint, but we'll use 1 byte for simplicity in tests)
 	txSize += 1
-	
+
 	// Inputs
 	for _, input := range tx.Inputs {
-		txSize += 32 // PrevTxHash
-		txSize += 4  // PrevTxIndex
+		txSize += 32                           // PrevTxHash
+		txSize += 4                            // PrevTxIndex
 		txSize += uint64(len(input.ScriptSig)) // ScriptSig
-		txSize += 4  // Sequence
+		txSize += 4                            // Sequence
 	}
-	
+
 	// Output count (varint, but we'll use 1 byte for simplicity in tests)
 	txSize += 1
-	
+
 	// Outputs
 	for _, output := range tx.Outputs {
-		txSize += 8  // Value
+		txSize += 8                                // Value
 		txSize += uint64(len(output.ScriptPubKey)) // ScriptPubKey
 	}
-	
+
 	// LockTime (8 bytes)
 	txSize += 8
-	
+
 	// Fee (8 bytes)
 	txSize += 8
 

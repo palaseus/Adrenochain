@@ -1,24 +1,24 @@
 package sync
 
 import (
-	"testing"
+	"fmt"
 
 	"github.com/gochain/gochain/pkg/chain"
 	"github.com/gochain/gochain/pkg/consensus"
 	"github.com/gochain/gochain/pkg/storage"
 	"github.com/libp2p/go-libp2p"
-	"github.com/stretchr/testify/assert"
 )
 
-// Example test that shows how to use the sync package
-func ExampleSyncManager_BasicUsage(t *testing.T) {
+// Example that shows how to use the sync package
+func ExampleSyncManager() {
 	// Create a test host
 	host, err := libp2p.New(
 		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/0"),
 		libp2p.DisableRelay(),
 	)
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("Failed to create host: %v\n", err)
+		return
 	}
 	defer host.Close()
 
@@ -26,7 +26,8 @@ func ExampleSyncManager_BasicUsage(t *testing.T) {
 	storageFactory := storage.NewStorageFactory()
 	nodeStorage, err := storageFactory.CreateStorage(storage.StorageTypeFile, "./test_data")
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("Failed to create storage: %v\n", err)
+		return
 	}
 
 	// Create chain
@@ -35,7 +36,8 @@ func ExampleSyncManager_BasicUsage(t *testing.T) {
 
 	blockchain, err := chain.NewChain(chainConfig, consensusConfig, nodeStorage)
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("Failed to create chain: %v\n", err)
+		return
 	}
 
 	// Create chain adapter to implement the required interfaces
@@ -46,20 +48,21 @@ func ExampleSyncManager_BasicUsage(t *testing.T) {
 	syncManager := NewSyncManager(chainAdapter, chainAdapter, nodeStorage, config, host)
 
 	// Verify sync manager was created
-	assert.NotNil(t, syncManager)
-	assert.Equal(t, chainAdapter, syncManager.chain)
-	assert.Equal(t, nodeStorage, syncManager.storage)
-	assert.Equal(t, config, syncManager.config)
-	assert.NotNil(t, syncManager.peers)
-	assert.False(t, syncManager.status.IsSyncing)
+	if syncManager == nil {
+		fmt.Println("Failed to create sync manager")
+		return
+	}
 
-	// Test basic operations
+	// Demonstrate basic operations
 	err = syncManager.StartSync()
-	assert.NoError(t, err)
-	assert.True(t, syncManager.status.IsSyncing)
+	if err != nil {
+		fmt.Printf("Failed to start sync: %v\n", err)
+		return
+	}
+	fmt.Println("Sync started successfully")
 
 	syncManager.StopSync()
-	assert.False(t, syncManager.status.IsSyncing)
+	fmt.Println("Sync stopped successfully")
 
 	// Clean up
 	syncManager.Close()

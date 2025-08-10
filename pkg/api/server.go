@@ -53,10 +53,10 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/api/v1/chain/height", s.getChainHeightHandler).Methods("GET")
 	s.router.HandleFunc("/api/v1/chain/status", s.getChainStatusHandler).Methods("GET")
 
-	        // Block operations
-        s.router.HandleFunc("/api/v1/blocks/latest", s.getLatestBlockHandler).Methods("GET")
-        s.router.HandleFunc("/api/v1/blocks/height/{height}", s.getBlockByHeightHandler).Methods("GET")
-        s.router.HandleFunc("/api/v1/blocks/{hash}", s.getBlockHandler).Methods("GET")
+	// Block operations
+	s.router.HandleFunc("/api/v1/blocks/latest", s.getLatestBlockHandler).Methods("GET")
+	s.router.HandleFunc("/api/v1/blocks/height/{height}", s.getBlockByHeightHandler).Methods("GET")
+	s.router.HandleFunc("/api/v1/blocks/{hash}", s.getBlockHandler).Methods("GET")
 
 	// Transaction operations
 	s.router.HandleFunc("/api/v1/transactions/{hash}", s.getTransactionHandler).Methods("GET")
@@ -190,47 +190,47 @@ func (s *Server) getBlockHandler(w http.ResponseWriter, r *http.Request) {
 
 // getBlockByHeightHandler returns a block by its height
 func (s *Server) getBlockByHeightHandler(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
-        vars := mux.Vars(r)
-        heightStr := vars["height"]
+	vars := mux.Vars(r)
+	heightStr := vars["height"]
 
-        height, err := strconv.ParseUint(heightStr, 10, 64)
-        if err != nil {
-                http.Error(w, "Invalid height format", http.StatusBadRequest)
-                return
-        }
+	height, err := strconv.ParseUint(heightStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid height format", http.StatusBadRequest)
+		return
+	}
 
-        block := s.chain.GetBlockByHeight(height)
-        if block == nil {
-                http.Error(w, "Block not found", http.StatusNotFound)
-                return
-        }
+	block := s.chain.GetBlockByHeight(height)
+	if block == nil {
+		http.Error(w, "Block not found", http.StatusNotFound)
+		return
+	}
 
-        // Return block data directly instead of redirecting
-        blockInfo := map[string]interface{}{
-                "hash":         fmt.Sprintf("%x", block.CalculateHash()),
-                "height":       block.Header.Height,
-                "version":      block.Header.Version,
-                "prev_hash":    fmt.Sprintf("%x", block.Header.PrevBlockHash),
-                "merkle_root":  fmt.Sprintf("%x", block.Header.MerkleRoot),
-                "timestamp":    block.Header.Timestamp.Format(time.RFC3339),
-                "difficulty":   block.Header.Difficulty,
-                "nonce":        block.Header.Nonce,
-                "tx_count":     len(block.Transactions),
-                "transactions": make([]map[string]interface{}, 0),
-        }
+	// Return block data directly instead of redirecting
+	blockInfo := map[string]interface{}{
+		"hash":         fmt.Sprintf("%x", block.CalculateHash()),
+		"height":       block.Header.Height,
+		"version":      block.Header.Version,
+		"prev_hash":    fmt.Sprintf("%x", block.Header.PrevBlockHash),
+		"merkle_root":  fmt.Sprintf("%x", block.Header.MerkleRoot),
+		"timestamp":    block.Header.Timestamp.Format(time.RFC3339),
+		"difficulty":   block.Header.Difficulty,
+		"nonce":        block.Header.Nonce,
+		"tx_count":     len(block.Transactions),
+		"transactions": make([]map[string]interface{}, 0),
+	}
 
-        // Add transaction hashes
-        for _, tx := range block.Transactions {
-                txInfo := map[string]interface{}{
-                        "hash": fmt.Sprintf("%x", tx.Hash),
-                        "type": "transaction",
-                }
-                blockInfo["transactions"] = append(blockInfo["transactions"].([]map[string]interface{}), txInfo)
-        }
+	// Add transaction hashes
+	for _, tx := range block.Transactions {
+		txInfo := map[string]interface{}{
+			"hash": fmt.Sprintf("%x", tx.Hash),
+			"type": "transaction",
+		}
+		blockInfo["transactions"] = append(blockInfo["transactions"].([]map[string]interface{}), txInfo)
+	}
 
-        json.NewEncoder(w).Encode(blockInfo)
+	json.NewEncoder(w).Encode(blockInfo)
 }
 
 // getLatestBlockHandler returns the latest block

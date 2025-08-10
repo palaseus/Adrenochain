@@ -159,7 +159,7 @@ func (s *Service) registerHealthCheckers() {
 	} else {
 		// For testing or when using mocks, create simple health checkers
 		s.logger.Debug("Skipping chain health checker registration (not a *chain.Chain)")
-		
+
 		// Create simple health checkers for testing
 		if s.chain != nil {
 			simpleChainChecker := &SimpleHealthChecker{
@@ -169,7 +169,7 @@ func (s *Service) registerHealthCheckers() {
 			s.systemHealth.RegisterComponent(simpleChainChecker)
 			s.checkers = append(s.checkers, simpleChainChecker)
 		}
-		
+
 		if s.mempool != nil {
 			simpleMempoolChecker := &SimpleHealthChecker{
 				name:   "mempool",
@@ -178,7 +178,7 @@ func (s *Service) registerHealthCheckers() {
 			s.systemHealth.RegisterComponent(simpleMempoolChecker)
 			s.checkers = append(s.checkers, simpleMempoolChecker)
 		}
-		
+
 		if s.network != nil {
 			simpleNetworkChecker := &SimpleHealthChecker{
 				name:   "network",

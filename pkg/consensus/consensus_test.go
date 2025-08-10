@@ -92,8 +92,8 @@ func TestAddAndValidateCheckpoint(t *testing.T) {
 	}
 
 	// Validate non-existent checkpoint
-	if !consensus.ValidateCheckpoint(9999, []byte("any_hash")) {
-		t.Error("non-existent checkpoint should be considered valid")
+	if consensus.ValidateCheckpoint(9999, []byte("any_hash")) {
+		t.Error("non-existent checkpoint should fail validation")
 	}
 }
 
@@ -137,7 +137,7 @@ func TestValidateBlockWithCheckpoint(t *testing.T) {
 	genesisBlock := block.NewBlock(make([]byte, 32), 0, 1)
 	genesisBlock.Header.Timestamp = time.Now().Add(-time.Hour) // Genesis block in the past
 	mockChain.blocks = map[uint64]*block.Block{0: genesisBlock}
-	
+
 	consensus := NewConsensus(config, mockChain)
 
 	// Create a block with all required fields

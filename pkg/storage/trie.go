@@ -466,7 +466,6 @@ func (t *StateTrie) VerifyProof(rootHash []byte, key []byte, value []byte, proof
 	return true
 }
 
-
 // GetStats returns statistics about the trie
 func (t *StateTrie) GetStats() map[string]interface{} {
 	t.mu.RLock()

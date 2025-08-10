@@ -546,7 +546,7 @@ func (sp *SyncProtocol) handleSyncRequest(stream network.Stream) {
 	syncResp := &net.SyncResponse{
 		BestHeight:    sp.chain.GetHeight(),
 		BestBlockHash: sp.chain.GetTipHash(),
-		Headers:       sp.getHeadersForSync(syncReq),
+		Headers:       sp.getHeadersForSync(&syncReq),
 		NeedsSync:     sp.chain.GetHeight() > syncReq.CurrentHeight,
 	}
 
@@ -686,7 +686,7 @@ func (sp *SyncProtocol) handleStateRequest(stream network.Stream) {
 }
 
 // getHeadersForSync returns headers needed for sync
-func (sp *SyncProtocol) getHeadersForSync(req net.SyncRequest) []*net.BlockHeader {
+func (sp *SyncProtocol) getHeadersForSync(req *net.SyncRequest) []*net.BlockHeader {
 	// If the peer is at a lower or same height, we don't need to send any headers
 	if req.CurrentHeight >= sp.chain.GetHeight() {
 		return []*net.BlockHeader{}
@@ -827,12 +827,12 @@ func isTestEnvironment() bool {
 	if os.Getenv("GO_TEST") == "1" || os.Getenv("TESTING") == "1" {
 		return true
 	}
-	
+
 	// Check if the executable name contains "test"
 	if strings.Contains(os.Args[0], "test") {
 		return true
 	}
-	
+
 	// Check if we're in a test by looking at the call stack
 	// This is a simple heuristic - in production, you might want to use
 	// environment variables or configuration flags
@@ -844,6 +844,6 @@ func isTestEnvironment() bool {
 			}
 		}
 	}
-	
+
 	return false
 }

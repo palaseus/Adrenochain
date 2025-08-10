@@ -79,7 +79,7 @@ func NewLogger(config *Config) *Logger {
 	if config == nil {
 		config = DefaultConfig()
 	}
-	
+
 	logger := &Logger{
 		level:    config.Level,
 		prefix:   config.Prefix,
@@ -164,7 +164,7 @@ func (l *Logger) rotateFile(config *Config) {
 	for i := config.MaxBackups - 1; i > 0; i-- {
 		oldName := fmt.Sprintf("%s.%d", l.filePath, i)
 		newName := fmt.Sprintf("%s.%d", l.filePath, i+1)
-		
+
 		if _, err := os.Stat(oldName); err == nil {
 			os.Rename(oldName, newName)
 		}
@@ -194,7 +194,7 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 
 	timestamp := time.Now().Format(l.timeFmt)
 	message := fmt.Sprintf(format, args...)
-	
+
 	if l.useJSON {
 		l.logJSON(level, timestamp, message)
 	} else {
@@ -204,7 +204,7 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 
 // logText writes a text-formatted log message
 func (l *Logger) logText(level Level, timestamp, message string) {
-	fmt.Fprintf(l.output, "[%s] %s [%s] %s: %s\n", 
+	fmt.Fprintf(l.output, "[%s] %s [%s] %s: %s\n",
 		timestamp, level.String(), l.prefix, level.String(), message)
 }
 

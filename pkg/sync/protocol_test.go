@@ -450,7 +450,7 @@ func TestSyncProtocol_GetHeadersForSync(t *testing.T) {
 	}
 
 	// Get headers for sync
-	headers := sp.getHeadersForSync(syncReq)
+	headers := sp.getHeadersForSync(&syncReq)
 
 	// Since the peer's height is higher than ours, no headers should be returned
 	assert.Empty(t, headers)
@@ -462,7 +462,7 @@ func TestSyncProtocol_GetHeadersForSync(t *testing.T) {
 		KnownHeaders:  [][]byte{},
 	}
 
-	headers2 := sp.getHeadersForSync(syncReq2)
+	headers2 := sp.getHeadersForSync(&syncReq2)
 	// Should return headers from height 51 to 100
 	assert.NotEmpty(t, headers2)
 	assert.Len(t, headers2, 50) // 51 to 100 inclusive
