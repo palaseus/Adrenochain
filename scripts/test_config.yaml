@@ -1,0 +1,174 @@
+# GoChain Test Suite Configuration
+# This file configures various aspects of the testing system
+
+# Test execution settings
+test:
+  # Timeout for individual test packages (Go duration format)
+  timeout: "300s"
+  
+  # Enable/disable various test types
+  race_detection: true
+  coverage_enabled: true
+  verbose_output: true
+  parallel_execution: true
+  fuzz_testing: true
+  benchmark_testing: true
+  
+  # Fuzz testing configuration
+  fuzz:
+    max_time: "30s"        # Maximum time per fuzz test
+    max_iterations: 1000   # Maximum iterations per fuzz test
+    seed_corpus: true      # Use existing seed corpus
+  
+  # Benchmark configuration
+  benchmark:
+    min_time: "1s"         # Minimum time per benchmark
+    max_time: "10s"        # Maximum time per benchmark
+    memory_profiling: true # Enable memory profiling
+  
+  # Coverage configuration
+  coverage:
+    mode: "atomic"         # Coverage mode: atomic, count, set
+    threshold: 80          # Minimum coverage percentage (0-100)
+    exclude_patterns:      # Patterns to exclude from coverage
+      - "**/*_test.go"
+      - "**/testdata/**"
+      - "**/cmd/**"
+      - "**/scripts/**"
+
+# Output and reporting
+output:
+  # Directory for test results
+  test_results_dir: "test_results"
+  
+  # Directory for coverage data
+  coverage_dir: "coverage"
+  
+  # Directory for analysis results
+  analysis_dir: "test_analysis"
+  
+  # Log file for the test suite
+  log_file: "test_suite.log"
+  
+  # Generate various report formats
+  reports:
+    json: true
+    html: true
+    markdown: true
+    csv: false
+  
+  # Visualization settings
+  visualizations:
+    charts: true
+    graphs: true
+    performance_plots: true
+
+# Performance and resource limits
+performance:
+  # Maximum memory usage (MB)
+  max_memory: 2048
+  
+  # Maximum CPU usage (percentage)
+  max_cpu: 80
+  
+  # Parallel test execution
+  max_workers: 4
+  
+  # Test execution profiling
+  profiling:
+    cpu: false
+    memory: false
+    goroutine: false
+
+# Security and validation
+security:
+  # Run security-focused tests
+  security_tests: true
+  
+  # Check for common vulnerabilities
+  vulnerability_scan: true
+  
+  # Validate cryptographic implementations
+  crypto_validation: true
+  
+  # Check for unsafe operations
+  unsafe_checks: true
+
+# Package-specific settings
+packages:
+  # Exclude specific packages from testing
+  exclude:
+    - "vendor/**"
+    - "third_party/**"
+    - "docs/**"
+  
+  # Include only specific packages
+  include: []  # Empty means all packages
+  
+  # Package-specific timeouts (overrides global timeout)
+  timeouts:
+    "pkg/mempool": "600s"      # Mempool tests need more time
+    "pkg/consensus": "300s"    # Consensus tests
+    "pkg/chain": "300s"        # Chain tests
+  
+  # Package-specific coverage thresholds
+  coverage_thresholds:
+    "pkg/mempool": 90          # High coverage for mempool
+    "pkg/consensus": 85        # Good coverage for consensus
+    "pkg/block": 80            # Standard coverage for block
+
+# CI/CD integration
+ci:
+  # Enable CI-specific features
+  enabled: false
+  
+  # Generate machine-readable output
+  machine_output: false
+  
+  # Exit codes for different failure levels
+  exit_codes:
+    tests_failed: 1
+    coverage_below_threshold: 2
+    security_issues: 3
+    performance_degraded: 4
+  
+  # Notifications
+  notifications:
+    slack: false
+    email: false
+    webhook: ""
+
+# Debugging and troubleshooting
+debug:
+  # Enable debug output
+  enabled: false
+  
+  # Log level (debug, info, warn, error)
+  log_level: "info"
+  
+  # Save intermediate files
+  save_intermediate: false
+  
+  # Generate stack traces on failures
+  stack_traces: false
+  
+  # Verbose error reporting
+  verbose_errors: false
+
+# Custom test commands
+custom:
+  # Pre-test commands to run
+  pre_test:
+    - "go mod tidy"
+    - "go mod download"
+  
+  # Post-test commands to run
+  post_test:
+    - "go clean -cache -testcache"
+  
+  # Custom test environment variables
+  environment:
+    GOOS: "linux"
+    GOARCH: "amd64"
+    CGO_ENABLED: "0"
+    GOFLAGS: "-mod=mod"

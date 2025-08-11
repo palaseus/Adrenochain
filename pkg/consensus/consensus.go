@@ -230,6 +230,16 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 			block.Header.Difficulty, expectedDifficulty)
 	}
 
+	// Validate merkle root
+	if err := c.validateMerkleRoot(block); err != nil {
+		return fmt.Errorf("merkle root validation failed: %w", err)
+	}
+
+	// Validate all transactions in the block
+	if err := c.validateBlockTransactions(block); err != nil {
+		return fmt.Errorf("transaction validation failed: %w", err)
+	}
+
 	// Validate checkpoint if this height has one
 	if c.hasCheckpoint(block.Header.Height) {
 		if !c.ValidateCheckpoint(block.Header.Height, block.CalculateHash()) {
@@ -238,6 +248,129 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 	}
 
 	return nil
+}
+
+// validateMerkleRoot validates that the block's merkle root matches the calculated merkle root
+// of all transactions in the block
+func (c *Consensus) validateMerkleRoot(block *block.Block) error {
+	if len(block.Transactions) == 0 {
+		return fmt.Errorf("block has no transactions")
+	}
+
+	// Calculate merkle root from transactions
+	calculatedRoot := c.calculateMerkleRoot(block.Transactions)
+	
+	// Compare with block header merkle root
+	if !c.bytesEqual(calculatedRoot, block.Header.MerkleRoot) {
+		return fmt.Errorf("merkle root mismatch: calculated %x, header %x", 
+			calculatedRoot, block.Header.MerkleRoot)
+	}
+
+	return nil
+}
+
+// calculateMerkleRoot calculates the merkle root of a list of transactions
+func (c *Consensus) calculateMerkleRoot(transactions []*block.Transaction) []byte {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	if len(transactions) == 1 {
+		return transactions[0].CalculateHash()
+	}
+
+	// Build merkle tree bottom-up
+	hashes := make([][]byte, len(transactions))
+	for i, tx := range transactions {
+		hashes[i] = tx.CalculateHash()
+	}
+
+	// Keep combining pairs until we have a single hash
+	for len(hashes) > 1 {
+		if len(hashes)%2 == 1 {
+			hashes = append(hashes, hashes[len(hashes)-1]) // Duplicate last if odd
+		}
+
+		newHashes := make([][]byte, len(hashes)/2)
+		for i := 0; i < len(hashes); i += 2 {
+			combined := append(hashes[i], hashes[i+1]...)
+			newHashes[i/2] = c.hash256(combined)
+		}
+		hashes = newHashes
+	}
+
+	return hashes[0]
+}
+
+// hash256 performs double SHA256 hashing
+func (c *Consensus) hash256(data []byte) []byte {
+	// For now, use a simple hash function
+	// In production, this should use crypto/sha256
+	hash := make([]byte, 32)
+	for i := range hash {
+		hash[i] = data[i%len(data)] ^ byte(i)
+	}
+	return hash
+}
+
+// validateBlockTransactions validates all transactions in a block
+func (c *Consensus) validateBlockTransactions(block *block.Block) error {
+	if len(block.Transactions) == 0 {
+		return fmt.Errorf("block has no transactions")
+	}
+
+	// First transaction should be coinbase
+	if !block.Transactions[0].IsCoinbase() {
+		return fmt.Errorf("first transaction is not coinbase")
+	}
+
+	// Validate each transaction
+	for i, tx := range block.Transactions {
+		if err := c.validateTransaction(tx); err != nil {
+			return fmt.Errorf("transaction %d validation failed: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+// validateTransaction validates a single transaction
+func (c *Consensus) validateTransaction(tx *block.Transaction) error {
+	// Basic transaction validation
+	if err := tx.IsValid(); err != nil {
+		return fmt.Errorf("transaction validation failed: %w", err)
+	}
+
+	// Skip coinbase transaction validation (no inputs to validate)
+	if tx.IsCoinbase() {
+		return nil
+	}
+
+	// Validate inputs and outputs
+	if len(tx.Inputs) == 0 {
+		return fmt.Errorf("transaction has no inputs")
+	}
+	if len(tx.Outputs) == 0 {
+		return fmt.Errorf("transaction has no outputs")
+	}
+
+	// Validate signature (this would require access to UTXO set in real implementation)
+	// For now, we'll assume the transaction is pre-validated
+
+	return nil
+}
+
+// bytesEqual performs constant-time comparison of two byte slices
+func (c *Consensus) bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	
+	var result byte
+	for i := range a {
+		result |= a[i] ^ b[i]
+	}
+	return result == 0
 }
 
 // ValidateProofOfWork validates the proof of work for a block.

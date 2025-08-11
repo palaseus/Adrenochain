@@ -155,7 +155,8 @@ func TestAddBlock(t *testing.T) {
 		},
 		Fee: 0, // Coinbase has no fee
 	}
-	tx.Hash = make([]byte, 32) // Set a dummy hash for validation
+	// Calculate the actual transaction hash
+	tx.Hash = tx.CalculateHash()
 	newBlock.AddTransaction(tx)
 	newBlock.Header.MerkleRoot = newBlock.CalculateMerkleRoot()
 
@@ -216,7 +217,8 @@ func TestBlockValidation(t *testing.T) {
 		Inputs:  []*block.TxInput{},
 		Outputs: []*block.TxOutput{{Value: 1, ScriptPubKey: []byte("dummy")}},
 	}
-	dummyTx.Hash = make([]byte, 32)
+	// Calculate the actual transaction hash
+	dummyTx.Hash = dummyTx.CalculateHash()
 	invalidBlock.AddTransaction(dummyTx)
 	invalidBlock.Header.MerkleRoot = invalidBlock.CalculateMerkleRoot()
 
@@ -247,7 +249,8 @@ func TestBlockValidation(t *testing.T) {
 		Inputs:  []*block.TxInput{},
 		Outputs: []*block.TxOutput{{Value: 1, ScriptPubKey: []byte("dummy")}},
 	}
-	dummyTx2.Hash = make([]byte, 32)
+	// Calculate the actual transaction hash
+	dummyTx2.Hash = dummyTx2.CalculateHash()
 	wrongHeightBlock.AddTransaction(dummyTx2)
 	wrongHeightBlock.Header.MerkleRoot = wrongHeightBlock.CalculateMerkleRoot()
 

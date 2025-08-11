@@ -1,0 +1,4 @@
+testing: will not fuzz, -fuzz matches more than one fuzz test: [FuzzBlockSerialization FuzzBlockValidation FuzzTransactionSerialization FuzzMerkleRootCalculation FuzzBlockHashCalculation FuzzHeaderValidation]
+FAIL
+exit status 1
+FAIL	github.com/gochain/gochain/pkg/block	0.003s

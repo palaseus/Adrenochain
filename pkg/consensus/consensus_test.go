@@ -145,6 +145,17 @@ func TestValidateBlockWithCheckpoint(t *testing.T) {
 	testBlock.Header.Timestamp = time.Now()
 	testBlock.Header.Nonce = 12345
 
+	// Add a coinbase transaction to the block
+	coinbaseTx := &block.Transaction{
+		Version:  1,
+		Inputs:   make([]*block.TxInput, 0), // Coinbase has no inputs
+		Outputs:  []*block.TxOutput{{Value: 1000000, ScriptPubKey: []byte("COINBASE_1")}},
+		LockTime: 0,
+		Fee:      0,
+	}
+	coinbaseTx.Hash = coinbaseTx.CalculateHash()
+	testBlock.AddTransaction(coinbaseTx)
+
 	// Mock the difficulty calculation
 	consensus.difficulty = 10
 
@@ -188,6 +199,17 @@ func TestMineAndValidateBlock(t *testing.T) {
 	testBlock := block.NewBlock(make([]byte, 32), 1, 1)
 	testBlock.Header.Timestamp = time.Now()
 	testBlock.Header.Nonce = 0
+
+	// Add a coinbase transaction to the block
+	coinbaseTx := &block.Transaction{
+		Version:  1,
+		Inputs:   make([]*block.TxInput, 0), // Coinbase has no inputs
+		Outputs:  []*block.TxOutput{{Value: 1000000, ScriptPubKey: []byte("COINBASE_1")}},
+		LockTime: 0,
+		Fee:      0,
+	}
+	coinbaseTx.Hash = coinbaseTx.CalculateHash()
+	testBlock.AddTransaction(coinbaseTx)
 
 	// Mine the block
 	stopChan := make(chan struct{})

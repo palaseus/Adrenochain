@@ -1,0 +1,63 @@
+=== RUN   TestNewWallet
+--- PASS: TestNewWallet (0.27s)
+=== RUN   TestDefaultWalletConfig
+--- PASS: TestDefaultWalletConfig (0.00s)
+=== RUN   TestCreateDefaultAccount
+--- PASS: TestCreateDefaultAccount (0.00s)
+=== RUN   TestCreateAccount
+--- PASS: TestCreateAccount (0.00s)
+=== RUN   TestGetAllAccounts
+--- PASS: TestGetAllAccounts (0.00s)
+=== RUN   TestCreateTransaction
+--- PASS: TestCreateTransaction (0.00s)
+=== RUN   TestSignTransaction
+--- PASS: TestSignTransaction (0.02s)
+=== RUN   TestUpdateBalance
+--- PASS: TestUpdateBalance (0.00s)
+=== RUN   TestImportPrivateKey
+--- PASS: TestImportPrivateKey (0.00s)
+=== RUN   TestExportPrivateKey
+--- PASS: TestExportPrivateKey (0.00s)
+=== RUN   TestWalletString
+--- PASS: TestWalletString (0.00s)
+=== RUN   TestAccountString
+--- PASS: TestAccountString (0.00s)
+=== RUN   TestWalletPersistence
+--- PASS: TestWalletPersistence (0.58s)
+=== RUN   TestWalletEncryptionDecryption
+--- PASS: TestWalletEncryptionDecryption (0.50s)
+=== RUN   FuzzAddressValidation
+=== RUN   FuzzAddressValidation/seed#0
+=== RUN   FuzzAddressValidation/seed#1
+--- PASS: FuzzAddressValidation (0.00s)
+    --- PASS: FuzzAddressValidation/seed#0 (0.00s)
+    --- PASS: FuzzAddressValidation/seed#1 (0.00s)
+=== RUN   FuzzPrivateKeyImport
+=== RUN   FuzzPrivateKeyImport/seed#0
+=== RUN   FuzzPrivateKeyImport/seed#1
+--- PASS: FuzzPrivateKeyImport (0.00s)
+    --- PASS: FuzzPrivateKeyImport/seed#0 (0.00s)
+    --- PASS: FuzzPrivateKeyImport/seed#1 (0.00s)
+=== RUN   FuzzEncryptionDecryption
+=== RUN   FuzzEncryptionDecryption/seed#0
+=== RUN   FuzzEncryptionDecryption/seed#1
+--- PASS: FuzzEncryptionDecryption (0.71s)
+    --- PASS: FuzzEncryptionDecryption/seed#0 (0.37s)
+    --- PASS: FuzzEncryptionDecryption/seed#1 (0.34s)
+=== RUN   FuzzSignatureValidation
+=== RUN   FuzzSignatureValidation/seed#0
+=== RUN   FuzzSignatureValidation/seed#1
+--- PASS: FuzzSignatureValidation (0.00s)
+    --- PASS: FuzzSignatureValidation/seed#0 (0.00s)
+    --- PASS: FuzzSignatureValidation/seed#1 (0.00s)
+=== RUN   FuzzBase58Encoding
+=== RUN   FuzzBase58Encoding/seed#0
+=== RUN   FuzzBase58Encoding/seed#1
+=== RUN   FuzzBase58Encoding/caf81e9797b19c76
+--- PASS: FuzzBase58Encoding (0.00s)
+    --- PASS: FuzzBase58Encoding/seed#0 (0.00s)
+    --- PASS: FuzzBase58Encoding/seed#1 (0.00s)
+    --- PASS: FuzzBase58Encoding/caf81e9797b19c76 (0.00s)
+PASS
+coverage: 73.1% of statements
+ok  	github.com/gochain/gochain/pkg/wallet	3.190s	coverage: 73.1% of statements

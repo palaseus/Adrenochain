@@ -1,0 +1,41 @@
+=== RUN   TestNewConsensus
+--- PASS: TestNewConsensus (0.00s)
+=== RUN   TestIsBlockFinal
+--- PASS: TestIsBlockFinal (0.00s)
+=== RUN   TestAddAndValidateCheckpoint
+--- PASS: TestAddAndValidateCheckpoint (0.00s)
+=== RUN   TestGetAccumulatedDifficulty
+--- PASS: TestGetAccumulatedDifficulty (0.00s)
+=== RUN   TestValidateBlockWithCheckpoint
+--- PASS: TestValidateBlockWithCheckpoint (0.00s)
+=== RUN   TestMineAndValidateBlock
+--- PASS: TestMineAndValidateBlock (0.00s)
+=== RUN   TestValidateInvalidBlock
+--- PASS: TestValidateInvalidBlock (0.00s)
+=== RUN   TestConsensusConfigDefaults
+--- PASS: TestConsensusConfigDefaults (0.00s)
+=== RUN   FuzzDifficultyCalculation
+=== RUN   FuzzDifficultyCalculation/seed#0
+=== RUN   FuzzDifficultyCalculation/seed#1
+=== RUN   FuzzDifficultyCalculation/seed#2
+--- PASS: FuzzDifficultyCalculation (0.00s)
+    --- PASS: FuzzDifficultyCalculation/seed#0 (0.00s)
+    --- PASS: FuzzDifficultyCalculation/seed#1 (0.00s)
+    --- PASS: FuzzDifficultyCalculation/seed#2 (0.00s)
+=== RUN   FuzzCheckpointValidation
+=== RUN   FuzzCheckpointValidation/seed#0
+=== RUN   FuzzCheckpointValidation/seed#1
+--- PASS: FuzzCheckpointValidation (0.00s)
+    --- PASS: FuzzCheckpointValidation/seed#0 (0.00s)
+    --- PASS: FuzzCheckpointValidation/seed#1 (0.00s)
+=== RUN   FuzzAccumulatedDifficulty
+=== RUN   FuzzAccumulatedDifficulty/seed#0
+=== RUN   FuzzAccumulatedDifficulty/seed#1
+=== RUN   FuzzAccumulatedDifficulty/seed#2
+--- PASS: FuzzAccumulatedDifficulty (0.00s)
+    --- PASS: FuzzAccumulatedDifficulty/seed#0 (0.00s)
+    --- PASS: FuzzAccumulatedDifficulty/seed#1 (0.00s)
+    --- PASS: FuzzAccumulatedDifficulty/seed#2 (0.00s)
+PASS
+coverage: 42.4% of statements
+ok  	github.com/gochain/gochain/pkg/consensus	1.036s	coverage: 42.4% of statements

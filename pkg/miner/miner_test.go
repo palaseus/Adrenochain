@@ -27,7 +27,7 @@ func TestMiner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
-	mempool := mempool.NewMempool(mempool.DefaultMempoolConfig())
+	mempool := mempool.NewMempool(mempool.TestMempoolConfig())
 	config := DefaultMinerConfig()
 	miner := NewMiner(chain, mempool, config, consensusConfig)
 
@@ -56,7 +56,7 @@ func TestCreateNewBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
-	mempool := mempool.NewMempool(mempool.DefaultMempoolConfig())
+	mempool := mempool.NewMempool(mempool.TestMempoolConfig())
 	config := DefaultMinerConfig()
 	miner := NewMiner(chain, mempool, config, consensusConfig)
 

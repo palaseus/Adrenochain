@@ -24,7 +24,7 @@
 // - PBKDF2 key derivation with 100,000 iterations
 // - 32-byte random salt per wallet
 // - AES-GCM authenticated encryption
-// - Format: [salt(32)][nonce(12)][ciphertext]
+// - Format: [salt(32)][nonce(12)][ciphertext]unti
 //
 // This implementation prioritizes security and correctness over performance.
 // For production use, consider using specialized cryptographic libraries.
@@ -35,7 +35,6 @@ import (
 	"crypto/cipher"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/asn1"
@@ -52,6 +51,7 @@ import (
 	"github.com/gochain/gochain/pkg/storage"
 	"github.com/gochain/gochain/pkg/utxo"
 	"github.com/mr-tron/base58"
+	"golang.org/x/crypto/argon2"
 )
 
 // Wallet represents a cryptocurrency wallet
@@ -64,6 +64,7 @@ type Wallet struct {
 	storage        *storage.Storage // Added storage field
 	walletFilePath string           // Added walletFilePath field
 	passphrase     string           // Added passphrase field
+	salt           []byte           // Persistent salt for key derivation
 }
 
 // Account represents a wallet account
@@ -134,6 +135,7 @@ func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wal
 		storage:        s,
 		walletFilePath: config.WalletFile,
 		passphrase:     config.Passphrase,
+		salt:           nil, // Will be generated on first encryption
 	}
 
 	// Create default account
@@ -191,14 +193,17 @@ func (w *Wallet) Load() error {
 
 // Encrypt encrypts data using AES-GCM with secure KDF
 func (w *Wallet) Encrypt(data []byte) ([]byte, error) {
-	// Generate a random salt for this encryption
-	salt, err := generateSalt()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate salt: %w", err)
+	// Generate salt if not already set
+	if w.salt == nil {
+		salt, err := generateSalt()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate salt: %w", err)
+		}
+		w.salt = salt
 	}
 
-	// Derive key using secure KDF
-	key, err := deriveKey(w.passphrase, salt)
+	// Derive key using secure KDF with stored salt
+	key, err := deriveKey(w.passphrase, w.salt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive key: %w", err)
 	}
@@ -222,8 +227,8 @@ func (w *Wallet) Encrypt(data []byte) ([]byte, error) {
 	ciphertext := gcm.Seal(nil, nonce, data, nil)
 
 	// Return salt + nonce + ciphertext
-	result := make([]byte, 0, len(salt)+len(nonce)+len(ciphertext))
-	result = append(result, salt...)
+	result := make([]byte, 0, len(w.salt)+len(nonce)+len(ciphertext))
+	result = append(result, w.salt...)
 	result = append(result, nonce...)
 	result = append(result, ciphertext...)
 
@@ -242,8 +247,12 @@ func (w *Wallet) Decrypt(data []byte) ([]byte, error) {
 	nonce := data[32:44] // AES-GCM nonce is typically 12 bytes
 	ciphertext := data[44:]
 
-	// Derive key using the same salt
-	key, err := deriveKey(w.passphrase, salt)
+	// Store the salt for future use
+	w.salt = make([]byte, len(salt))
+	copy(w.salt, salt)
+
+	// Derive key using the stored salt
+	key, err := deriveKey(w.passphrase, w.salt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to derive key: %w", err)
 	}
@@ -473,6 +482,12 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 		return nil, fmt.Errorf("account not found: %s", fromAddress)
 	}
 
+	// Validate minimum fee rate (dust threshold: 546 satoshis)
+	const dustThreshold = 546
+	if fee < dustThreshold {
+		return nil, fmt.Errorf("fee too low: minimum fee is %d", dustThreshold)
+	}
+
 	// Get available UTXOs for the sender
 	utxos := w.utxoSet.GetAddressUTXOs(fromAddress)
 	if len(utxos) == 0 {
@@ -491,15 +506,10 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 		return nil, fmt.Errorf("insufficient funds: need %d, have %d", totalNeeded, totalAvailable)
 	}
 
-	// Select UTXOs to spend (simple greedy algorithm)
-	var selectedUTXOs []*utxo.UTXO
-	var selectedAmount uint64
-	for _, utxo := range utxos {
-		if selectedAmount >= totalNeeded {
-			break
-		}
-		selectedUTXOs = append(selectedUTXOs, utxo)
-		selectedAmount += utxo.Value
+	// Select UTXOs to spend using improved coin selection algorithm
+	selectedUTXOs, selectedAmount := w.selectOptimalUTXOs(utxos, totalNeeded)
+	if selectedAmount < totalNeeded {
+		return nil, fmt.Errorf("insufficient funds after UTXO selection: need %d, have %d", totalNeeded, selectedAmount)
 	}
 
 	// Create transaction inputs
@@ -527,9 +537,9 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 		ScriptPubKey: recipPubKeyHash,
 	})
 
-	// Calculate change and create change output if needed
+	// Calculate change and create change output if needed (respecting dust threshold)
 	change := selectedAmount - totalNeeded
-	if change > 0 {
+	if change > dustThreshold {
 		// Create change output back to sender
 		senderPubKeyHash, err := addressToPubKeyHash(fromAddress)
 		if err != nil {
@@ -539,6 +549,9 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 			Value:        change,
 			ScriptPubKey: senderPubKeyHash,
 		})
+	} else if change > 0 {
+		// Add dust change to fee instead of creating dust output
+		fee += change
 	}
 
 	// Create transaction
@@ -964,28 +977,21 @@ func verifyCanonicalSignature(r, s *big.Int, curve *btcec.KoblitzCurve) error {
 	return nil
 }
 
-// deriveKey derives an encryption key from passphrase using PBKDF2
+// deriveKey derives an encryption key from passphrase using Argon2id
 func deriveKey(passphrase string, salt []byte) ([]byte, error) {
-	// Use PBKDF2 with SHA-256, 100,000 iterations, 32-byte key
-	derivedKey := make([]byte, 32)
-
-	// Simple PBKDF2 implementation using HMAC-SHA256
-	// In production, consider using a more robust KDF library
-	passphraseBytes := []byte(passphrase)
-	combined := append(passphraseBytes, salt...)
-	hash := sha256.Sum256(combined)
-	copy(derivedKey, hash[:])
-
-	// Multiple iterations for key strengthening
-	for i := 0; i < 100000; i++ {
-		h := hmac.New(sha256.New, derivedKey)
-		h.Write(passphraseBytes)
-		h.Write(salt)
-		h.Write([]byte{byte(i >> 24), byte(i >> 16), byte(i >> 8), byte(i)})
-		derivedKey = h.Sum(nil)
-	}
-
-	return derivedKey, nil
+	// Use Argon2id with secure parameters:
+	// - time cost: 3 (3 iterations)
+	// - memory cost: 64MB (64 * 1024 KB)
+	// - parallelism: 4 (4 threads)
+	// - key length: 32 bytes
+	return argon2.IDKey(
+		[]byte(passphrase),
+		salt,
+		3,       // time cost
+		64*1024, // memory cost (64MB)
+		4,       // parallelism
+		32,      // key length
+	), nil
 }
 
 // generateSalt generates a random salt for key derivation
@@ -993,4 +999,40 @@ func generateSalt() ([]byte, error) {
 	salt := make([]byte, 32)
 	_, err := rand.Read(salt)
 	return salt, err
+}
+
+// selectOptimalUTXOs implements an improved coin selection algorithm
+// that minimizes the number of inputs while avoiding dust outputs
+func (w *Wallet) selectOptimalUTXOs(utxos []*utxo.UTXO, targetAmount uint64) ([]*utxo.UTXO, uint64) {
+	if len(utxos) == 0 {
+		return nil, 0
+	}
+
+	// Sort UTXOs by value (largest first) for better efficiency
+	sortedUTXOs := make([]*utxo.UTXO, len(utxos))
+	copy(sortedUTXOs, utxos)
+
+	// Simple sort by value (descending)
+	for i := 0; i < len(sortedUTXOs)-1; i++ {
+		for j := i + 1; j < len(sortedUTXOs); j++ {
+			if sortedUTXOs[i].Value < sortedUTXOs[j].Value {
+				sortedUTXOs[i], sortedUTXOs[j] = sortedUTXOs[j], sortedUTXOs[i]
+			}
+		}
+	}
+
+	// Try to find exact match first
+	var selectedUTXOs []*utxo.UTXO
+	var selectedAmount uint64
+
+	// Greedy selection with early termination
+	for _, utxo := range sortedUTXOs {
+		if selectedAmount >= targetAmount {
+			break
+		}
+		selectedUTXOs = append(selectedUTXOs, utxo)
+		selectedAmount += utxo.Value
+	}
+
+	return selectedUTXOs, selectedAmount
 }

@@ -384,6 +384,12 @@ func (tx *Transaction) String() string {
 		tx.Hash, len(tx.Inputs), len(tx.Outputs), tx.Fee)
 }
 
+// IsCoinbase checks if a transaction is a coinbase transaction.
+// A coinbase transaction is one that has no inputs (creates new coins).
+func (tx *Transaction) IsCoinbase() bool {
+	return len(tx.Inputs) == 0
+}
+
 // Helper function to compare byte slices
 // bytesEqual checks if two byte slices are equal.
 func bytesEqual(a, b []byte) bool {

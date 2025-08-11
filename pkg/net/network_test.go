@@ -28,7 +28,7 @@ func TestNewNetwork(t *testing.T) {
 	dummyChain, err := chain.NewChain(dummyChainConfig, consensusConfig, dummyStorage)
 	assert.NoError(t, err)
 
-	dummyMempoolConfig := mempool.DefaultMempoolConfig()
+	dummyMempoolConfig := mempool.TestMempoolConfig()
 	dummyMempool := mempool.NewMempool(dummyMempoolConfig)
 
 	config := DefaultNetworkConfig()
@@ -50,7 +50,7 @@ func TestNetworkConnect(t *testing.T) {
 	dummyChain1, err := chain.NewChain(dummyChainConfig1, consensusConfig1, dummyStorage1)
 	assert.NoError(t, err)
 
-	dummyMempoolConfig1 := mempool.DefaultMempoolConfig()
+	dummyMempoolConfig1 := mempool.TestMempoolConfig()
 	dummyMempool1 := mempool.NewMempool(dummyMempoolConfig1)
 
 	dummyStorage2, err := storage.NewStorage(storage.DefaultStorageConfig().WithDataDir("./test_data_net_test_network_connect_2"))
@@ -62,7 +62,7 @@ func TestNetworkConnect(t *testing.T) {
 	dummyChain2, err := chain.NewChain(dummyChainConfig2, consensusConfig2, dummyStorage2)
 	assert.NoError(t, err)
 
-	dummyMempoolConfig2 := mempool.DefaultMempoolConfig()
+	dummyMempoolConfig2 := mempool.TestMempoolConfig()
 	dummyMempool2 := mempool.NewMempool(dummyMempoolConfig2)
 
 	config1 := DefaultNetworkConfig()
@@ -149,7 +149,7 @@ func TestPublishSubscribe(t *testing.T) {
 	dummyChain1, err := chain.NewChain(dummyChainConfig1, consensusConfig1, dummyStorage1)
 	assert.NoError(t, err)
 
-	dummyMempoolConfig1 := mempool.DefaultMempoolConfig()
+	dummyMempoolConfig1 := mempool.TestMempoolConfig()
 	dummyMempool1 := mempool.NewMempool(dummyMempoolConfig1)
 
 	dummyStorage2, err := storage.NewStorage(storage.DefaultStorageConfig().WithDataDir("./test_data_net_test_publish_subscribe_2"))
@@ -161,7 +161,7 @@ func TestPublishSubscribe(t *testing.T) {
 	dummyChain2, err := chain.NewChain(dummyChainConfig2, consensusConfig2, dummyStorage2)
 	assert.NoError(t, err)
 
-	dummyMempoolConfig2 := mempool.DefaultMempoolConfig()
+	dummyMempoolConfig2 := mempool.TestMempoolConfig()
 	dummyMempool2 := mempool.NewMempool(dummyMempoolConfig2)
 
 	config1 := DefaultNetworkConfig()

@@ -1,0 +1,57 @@
+=== RUN   TestLevelDBStorage
+=== RUN   TestLevelDBStorage/Store_and_retrieve_block
+=== RUN   TestLevelDBStorage/Store_and_retrieve_chain_state
+=== RUN   TestLevelDBStorage/Key-value_operations
+=== RUN   TestLevelDBStorage/Block_not_found
+=== RUN   TestLevelDBStorage/Invalid_operations
+=== RUN   TestLevelDBStorage/Database_compaction
+=== RUN   TestLevelDBStorage/Get_stats
+--- PASS: TestLevelDBStorage (0.06s)
+    --- PASS: TestLevelDBStorage/Store_and_retrieve_block (0.00s)
+    --- PASS: TestLevelDBStorage/Store_and_retrieve_chain_state (0.00s)
+    --- PASS: TestLevelDBStorage/Key-value_operations (0.00s)
+    --- PASS: TestLevelDBStorage/Block_not_found (0.00s)
+    --- PASS: TestLevelDBStorage/Invalid_operations (0.00s)
+    --- PASS: TestLevelDBStorage/Database_compaction (0.03s)
+    --- PASS: TestLevelDBStorage/Get_stats (0.00s)
+=== RUN   TestLevelDBStorageConfig
+=== RUN   TestLevelDBStorageConfig/Default_configuration
+=== RUN   TestLevelDBStorageConfig/Configuration_chaining
+--- PASS: TestLevelDBStorageConfig (0.00s)
+    --- PASS: TestLevelDBStorageConfig/Default_configuration (0.00s)
+    --- PASS: TestLevelDBStorageConfig/Configuration_chaining (0.00s)
+=== RUN   TestLevelDBStoragePersistence
+--- PASS: TestLevelDBStoragePersistence (0.11s)
+=== RUN   TestLevelDBStorageConcurrency
+--- PASS: TestLevelDBStorageConcurrency (0.06s)
+=== RUN   TestFileStorage
+--- PASS: TestFileStorage (0.00s)
+=== RUN   TestNewStateTrie
+--- PASS: TestNewStateTrie (0.00s)
+=== RUN   TestStateTriePutAndGet
+--- PASS: TestStateTriePutAndGet (0.00s)
+=== RUN   TestStateTrieDelete
+--- PASS: TestStateTrieDelete (0.00s)
+=== RUN   TestStateTrieMultipleKeys
+--- PASS: TestStateTrieMultipleKeys (0.00s)
+=== RUN   TestStateTrieRootHash
+--- PASS: TestStateTrieRootHash (0.00s)
+=== RUN   TestStateTrieCommit
+--- PASS: TestStateTrieCommit (0.00s)
+=== RUN   TestStateTrieGetProof
+--- PASS: TestStateTrieGetProof (0.00s)
+=== RUN   TestStateTrieStats
+--- PASS: TestStateTrieStats (0.00s)
+=== RUN   TestStateTrieConcurrentAccess
+--- PASS: TestStateTrieConcurrentAccess (0.00s)
+=== RUN   TestStateTrieNilKey
+--- PASS: TestStateTrieNilKey (0.00s)
+=== RUN   TestStateTrieEmptyKey
+--- PASS: TestStateTrieEmptyKey (0.00s)
+=== RUN   TestStateTrieNilValue
+--- PASS: TestStateTrieNilValue (0.00s)
+=== RUN   TestStateTrieLargeData
+--- PASS: TestStateTrieLargeData (0.00s)
+PASS
+coverage: 51.8% of statements
+ok  	github.com/gochain/gochain/pkg/storage	1.315s	coverage: 51.8% of statements

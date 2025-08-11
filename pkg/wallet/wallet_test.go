@@ -129,7 +129,7 @@ func TestCreateTransaction(t *testing.T) {
 	assert.NoError(t, err)
 	toAddress := wallet.generateChecksumAddress(toPrivKey.ToECDSA())
 	amount := uint64(1000)
-	fee := uint64(10)
+	fee := uint64(546) // Minimum fee to pass dust threshold
 
 	tx, err := wallet.CreateTransaction(fromAccount.Address, toAddress, amount, fee)
 	assert.NoError(t, err)
@@ -168,7 +168,7 @@ func TestSignTransaction(t *testing.T) {
 	assert.NoError(t, err)
 	toAddress := wallet.generateChecksumAddress(toPrivKey.ToECDSA())
 	amount := uint64(1000)
-	fee := uint64(10)
+	fee := uint64(546) // Minimum fee to pass dust threshold
 
 	tx, err := wallet.CreateTransaction(fromAccount.Address, toAddress, amount, fee)
 	assert.NoError(t, err)

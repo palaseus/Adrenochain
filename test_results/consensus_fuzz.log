@@ -1,0 +1,4 @@
+testing: will not fuzz, -fuzz matches more than one fuzz test: [FuzzDifficultyCalculation FuzzCheckpointValidation FuzzAccumulatedDifficulty]
+FAIL
+exit status 1
+FAIL	github.com/gochain/gochain/pkg/consensus	0.004s
