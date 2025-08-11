@@ -236,10 +236,15 @@ func (c *Chain) AddBlock(block *block.Block) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Validate the block
+	// Validate the block using consensus rules
 	prevBlock := c.GetBlock(block.Header.PrevBlockHash)
 	if err := c.consensus.ValidateBlock(block, prevBlock); err != nil {
-		return fmt.Errorf("block validation failed: %w", err)
+		return fmt.Errorf("consensus validation failed: %w", err)
+	}
+
+	// Validate the block using chain-specific rules (size, etc.)
+	if err := c.validateBlock(block); err != nil {
+		return fmt.Errorf("chain validation failed: %w", err)
 	}
 
 	// Check if block already exists
@@ -304,15 +309,18 @@ func (c *Chain) validateBlock(block *block.Block) error {
 		return fmt.Errorf("block header cannot be nil")
 	}
 
+
+
 	// Basic block validation
 	if err := block.IsValid(); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)
 	}
 
 	// Check block size
-	if c.getBlockSize(block) > c.config.MaxBlockSize {
+	blockSize := c.GetBlockSize(block)
+	if blockSize > c.config.MaxBlockSize {
 		return fmt.Errorf("block size %d exceeds maximum %d",
-			c.getBlockSize(block), c.config.MaxBlockSize)
+			blockSize, c.config.MaxBlockSize)
 	}
 
 	// Check if previous block exists (except for genesis)
@@ -350,9 +358,9 @@ func (c *Chain) validateBlock(block *block.Block) error {
 	return nil
 }
 
-// getBlockSize calculates the approximate size of a block
-// getBlockSize calculates the approximate size of a block in bytes.
-func (c *Chain) getBlockSize(block *block.Block) uint64 {
+// GetBlockSize calculates the approximate size of a block
+// GetBlockSize calculates the approximate size of a block in bytes.
+func (c *Chain) GetBlockSize(block *block.Block) uint64 {
 	size := uint64(0)
 
 	// Header size (fixed)
@@ -499,6 +507,11 @@ func (c *Chain) GetGenesisBlock() *block.Block {
 // This is delegated to the consensus module.
 func (c *Chain) CalculateNextDifficulty() uint64 {
 	return c.consensus.GetDifficulty()
+}
+
+// GetConsensus returns the consensus instance for testing purposes.
+func (c *Chain) GetConsensus() *consensus.Consensus {
+	return c.consensus
 }
 
 // GetAccumulatedDifficulty returns the accumulated difficulty up to the given height.

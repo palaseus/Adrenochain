@@ -1,4 +1,0 @@
-testing: will not fuzz, -fuzz matches more than one fuzz test: [FuzzAddressValidation FuzzPrivateKeyImport FuzzEncryptionDecryption FuzzSignatureValidation FuzzBase58Encoding]
-FAIL
-exit status 1
-FAIL	github.com/gochain/gochain/pkg/wallet	0.623s

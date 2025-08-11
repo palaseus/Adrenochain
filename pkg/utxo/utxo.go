@@ -60,6 +60,13 @@ func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 	us.balances[utxo.Address] += utxo.Value
 }
 
+// AddUTXOSafe adds a UTXO to the set with proper locking (for external use)
+func (us *UTXOSet) AddUTXOSafe(utxo *UTXO) {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	us.AddUTXO(utxo)
+}
+
 // RemoveUTXO removes a UTXO from the set
 func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
 	key := us.makeKey(txHash, txIndex)
@@ -78,8 +85,18 @@ func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
 	return utxo
 }
 
+// RemoveUTXOSafe removes a UTXO from the set with proper locking (for external use)
+func (us *UTXOSet) RemoveUTXOSafe(txHash []byte, txIndex uint32) *UTXO {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	return us.RemoveUTXO(txHash, txIndex)
+}
+
 // GetUTXO retrieves a UTXO by transaction hash and index
 func (us *UTXOSet) GetUTXO(txHash []byte, txIndex uint32) *UTXO {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+
 	key := us.makeKey(txHash, txIndex)
 	return us.utxos[key]
 }

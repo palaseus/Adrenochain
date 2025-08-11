@@ -9,24 +9,39 @@ import (
 	"time"
 
 	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/chain"
 	"github.com/gochain/gochain/pkg/wallet"
 	"github.com/gorilla/mux"
 )
 
+// ChainInterface defines the interface for blockchain operations
+type ChainInterface interface {
+	GetHeight() uint64
+	GetBestBlock() *block.Block
+	GetGenesisBlock() *block.Block
+	GetBlock(hash []byte) *block.Block
+	GetBlockByHeight(height uint64) *block.Block
+	CalculateNextDifficulty() uint64
+}
+
+// WalletInterface defines the interface for wallet operations
+type WalletInterface interface {
+	GetBalance(address string) uint64
+	GetAllAccounts() []*wallet.Account
+}
+
 // Server represents the HTTP API server
 type Server struct {
 	router *mux.Router
-	chain  *chain.Chain
-	wallet *wallet.Wallet
+	chain  ChainInterface
+	wallet WalletInterface
 	port   int
 }
 
 // ServerConfig holds configuration for the API server
 type ServerConfig struct {
 	Port   int
-	Chain  *chain.Chain
-	Wallet *wallet.Wallet
+	Chain  ChainInterface
+	Wallet WalletInterface
 }
 
 // NewServer creates a new API server
@@ -93,18 +108,30 @@ func (s *Server) getChainInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	bestBlock := s.chain.GetBestBlock()
-	if bestBlock == nil {
-		http.Error(w, "No blocks found", http.StatusNotFound)
-		return
-	}
+	genesisBlock := s.chain.GetGenesisBlock()
 
 	info := map[string]interface{}{
-		"height":             s.chain.GetHeight(),
-		"best_block_hash":    fmt.Sprintf("%x", bestBlock.CalculateHash()),
-		"genesis_block_hash": fmt.Sprintf("%x", s.chain.GetGenesisBlock().CalculateHash()),
-		"difficulty":         bestBlock.Header.Difficulty,
-		"next_difficulty":    s.chain.CalculateNextDifficulty(),
-		"timestamp":          time.Now().UTC().Format(time.RFC3339),
+		"height":    s.chain.GetHeight(),
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	// Add block-specific information if available
+	if bestBlock != nil {
+		info["best_block"] = fmt.Sprintf("%x", bestBlock.CalculateHash())
+		info["best_block_hash"] = fmt.Sprintf("%x", bestBlock.CalculateHash())
+		info["difficulty"] = bestBlock.Header.Difficulty
+		info["next_difficulty"] = s.chain.CalculateNextDifficulty()
+	} else {
+		info["best_block"] = ""
+		info["best_block_hash"] = ""
+		info["difficulty"] = uint64(0)
+		info["next_difficulty"] = uint64(0)
+	}
+
+	if genesisBlock != nil {
+		info["genesis_block_hash"] = fmt.Sprintf("%x", genesisBlock.CalculateHash())
+	} else {
+		info["genesis_block_hash"] = ""
 	}
 
 	json.NewEncoder(w).Encode(info)
@@ -123,20 +150,31 @@ func (s *Server) getChainStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	bestBlock := s.chain.GetBestBlock()
-	if bestBlock == nil {
-		http.Error(w, "No blocks found", http.StatusNotFound)
-		return
-	}
+	genesisBlock := s.chain.GetGenesisBlock()
 
 	status := map[string]interface{}{
-		"height":               s.chain.GetHeight(),
-		"best_block_hash":      fmt.Sprintf("%x", bestBlock.CalculateHash()),
-		"best_block_timestamp": bestBlock.Header.Timestamp.Format(time.RFC3339),
-		"difficulty":           bestBlock.Header.Difficulty,
-		"next_difficulty":      s.chain.CalculateNextDifficulty(),
-		"genesis_block_hash":   fmt.Sprintf("%x", s.chain.GetGenesisBlock().CalculateHash()),
-		"status":               "active",
-		"timestamp":            time.Now().UTC().Format(time.RFC3339),
+		"height":    s.chain.GetHeight(),
+		"status":    "active",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	// Add block-specific information if available
+	if bestBlock != nil {
+		status["best_block_hash"] = fmt.Sprintf("%x", bestBlock.CalculateHash())
+		status["best_block_timestamp"] = bestBlock.Header.Timestamp.Format(time.RFC3339)
+		status["difficulty"] = bestBlock.Header.Difficulty
+		status["next_difficulty"] = s.chain.CalculateNextDifficulty()
+	} else {
+		status["best_block_hash"] = ""
+		status["best_block_timestamp"] = ""
+		status["difficulty"] = uint64(0)
+		status["next_difficulty"] = uint64(0)
+	}
+
+	if genesisBlock != nil {
+		status["genesis_block_hash"] = fmt.Sprintf("%x", genesisBlock.CalculateHash())
+	} else {
+		status["genesis_block_hash"] = ""
 	}
 
 	json.NewEncoder(w).Encode(status)

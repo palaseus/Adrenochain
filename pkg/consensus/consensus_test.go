@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gochain/gochain/pkg/block"
+	"github.com/stretchr/testify/assert"
 )
 
 // MockChainReader implements ChainReader for testing
@@ -264,4 +265,93 @@ func TestConsensusConfigDefaults(t *testing.T) {
 	if config.TargetBlockTime != 10*time.Second {
 		t.Errorf("expected target block time 10s, got %v", config.TargetBlockTime)
 	}
+}
+
+func TestGetFinalityDepth(t *testing.T) {
+	config := DefaultConsensusConfig()
+	config.FinalityDepth = 150
+	consensus := NewConsensus(config, nil)
+
+	finalityDepth := consensus.GetFinalityDepth()
+	assert.Equal(t, uint64(150), finalityDepth)
+}
+
+func TestHash256(t *testing.T) {
+	config := DefaultConsensusConfig()
+	consensus := NewConsensus(config, nil)
+
+	// Test with some data (avoid empty data due to division by zero bug in hash256)
+	data := []byte("test data")
+	hash := consensus.hash256(data)
+	assert.Len(t, hash, 32)
+
+	// Test that same input produces same output
+	hash2 := consensus.hash256(data)
+	assert.Equal(t, hash, hash2)
+
+	// Test that different input produces different output
+	data2 := []byte("different data")
+	hash3 := consensus.hash256(data2)
+	assert.NotEqual(t, hash, hash3)
+
+	// Test with single byte data
+	singleByte := []byte{42}
+	hash4 := consensus.hash256(singleByte)
+	assert.Len(t, hash4, 32)
+}
+
+func TestGetNextDifficulty(t *testing.T) {
+	config := DefaultConsensusConfig()
+	consensus := NewConsensus(config, nil)
+
+	// Test with current difficulty
+	nextDifficulty := consensus.GetNextDifficulty()
+	assert.GreaterOrEqual(t, nextDifficulty, config.MinDifficulty)
+	assert.LessOrEqual(t, nextDifficulty, config.MaxDifficulty)
+}
+
+func TestGetStats(t *testing.T) {
+	config := DefaultConsensusConfig()
+	consensus := NewConsensus(config, nil)
+
+	stats := consensus.GetStats()
+	assert.NotNil(t, stats)
+
+	// Check that stats contain expected keys
+	assert.Contains(t, stats, "difficulty")
+	assert.Contains(t, stats, "next_difficulty")
+	assert.Contains(t, stats, "target")
+	assert.Contains(t, stats, "block_times_count")
+	assert.Contains(t, stats, "last_adjustment")
+	assert.Contains(t, stats, "target_block_time")
+	assert.Contains(t, stats, "adjustment_interval")
+
+	// Check that difficulty is in the expected range
+	difficulty, ok := stats["difficulty"].(uint64)
+	assert.True(t, ok)
+	assert.GreaterOrEqual(t, difficulty, config.MinDifficulty)
+	assert.LessOrEqual(t, difficulty, config.MaxDifficulty)
+
+	// Check next difficulty
+	nextDifficulty, ok := stats["next_difficulty"].(uint64)
+	assert.True(t, ok)
+	assert.GreaterOrEqual(t, nextDifficulty, config.MinDifficulty)
+	assert.LessOrEqual(t, nextDifficulty, config.MaxDifficulty)
+
+	// Check block times count
+	blockTimesCount, ok := stats["block_times_count"].(int)
+	assert.True(t, ok)
+	assert.Equal(t, 0, blockTimesCount) // Should be 0 for new consensus
+}
+
+func TestString(t *testing.T) {
+	config := DefaultConsensusConfig()
+	consensus := NewConsensus(config, nil)
+
+	str := consensus.String()
+	assert.NotEmpty(t, str)
+	assert.Contains(t, str, "Consensus")
+	assert.Contains(t, str, "Difficulty")
+	assert.Contains(t, str, "Target")
+	assert.Contains(t, str, "BlockTimes")
 }

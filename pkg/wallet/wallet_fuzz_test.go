@@ -3,6 +3,7 @@
 package wallet
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/gochain/gochain/pkg/storage"
@@ -104,7 +105,8 @@ func FuzzPrivateKeyImport(f *testing.F) {
 			return
 		}
 
-		if exportedKey != privateKeyHex {
+		// Compare case-insensitively since hex encoding might produce different case
+		if strings.ToLower(exportedKey) != strings.ToLower(privateKeyHex) {
 			t.Errorf("Private key export mismatch: %s != %s", exportedKey, privateKeyHex)
 		}
 	})

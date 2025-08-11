@@ -267,12 +267,25 @@ run_fuzz_tests() {
         local package_name=$(basename "$pkg")
         echo -e "   🧪 $pkg"
         
-        # Run fuzz tests with limited iterations
-        if go test -fuzz=Fuzz -fuzztime=10s "$pkg" 2>&1 | tee "$TEST_RESULTS_DIR/${package_name}_fuzz.log"; then
-            echo -e "${GREEN}✅ Fuzz tests for $package_name completed${NC}"
-        else
-            echo -e "${YELLOW}⚠️  Fuzz tests for $package_name had issues${NC}"
+        # Find all fuzz test functions in the package
+        local fuzz_functions=($(grep -h "func Fuzz[A-Za-z]*(" "$pkg"/*_fuzz_test.go | sed 's/func //' | sed 's/(.*//'))
+        
+        if [[ ${#fuzz_functions[@]} -eq 0 ]]; then
+            echo -e "   ⚠️  No fuzz functions found in $pkg"
+            continue
         fi
+        
+        # Run each fuzz test function separately
+        for fuzz_func in "${fuzz_functions[@]}"; do
+            echo -e "      🧪 Running $fuzz_func..."
+            if go test -fuzz="$fuzz_func" -fuzztime=5s "$pkg" 2>&1 | tee -a "$TEST_RESULTS_DIR/${package_name}_fuzz.log"; then
+                echo -e "      ✅ $fuzz_func completed successfully"
+            else
+                echo -e "      ⚠️  $fuzz_func had issues"
+            fi
+        done
+        
+        echo -e "   ✅ Fuzz tests for $package_name completed"
     done
     
     echo
@@ -287,7 +300,15 @@ run_benchmark_tests() {
     echo -e "${BLUE}📊 Running benchmark tests...${NC}"
     
     # Find packages with benchmark tests
-    local bench_packages=($(find ./pkg -name "*_test.go" -exec grep -l "Benchmark" {} \; | xargs dirname | sort -u))
+    local bench_packages=()
+    while IFS= read -r -d '' file; do
+        if grep -q "Benchmark" "$file"; then
+            local dir=$(dirname "$file")
+            if [[ ! " ${bench_packages[@]} " =~ " ${dir} " ]]; then
+                bench_packages+=("$dir")
+            fi
+        fi
+    done < <(find ./pkg -name "*_test.go" -print0)
     
     if [[ ${#bench_packages[@]} -eq 0 ]]; then
         echo -e "${YELLOW}⚠️  No benchmark tests found${NC}"

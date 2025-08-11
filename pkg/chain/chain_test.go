@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"bytes"
+	"math/big"
 	"os"
 	"testing"
 	"time"
@@ -15,15 +17,15 @@ func TestNewChain(t *testing.T) {
 	dataDir := "./test_chain_data_new_chain"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -53,15 +55,15 @@ func TestGenesisBlock(t *testing.T) {
 	dataDir := "./test_chain_data_genesis_block"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -113,15 +115,15 @@ func TestAddBlock(t *testing.T) {
 	dataDir := "./test_chain_data_add_block"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -184,15 +186,15 @@ func TestBlockValidation(t *testing.T) {
 	dataDir := "./test_chain_data_block_validation"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -263,15 +265,15 @@ func TestGetBlock(t *testing.T) {
 	dataDir := "./test_chain_data_get_block"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -304,15 +306,15 @@ func TestChainState(t *testing.T) {
 	dataDir := "./test_chain_data_chain_state"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -342,15 +344,15 @@ func TestDifficultyCalculation(t *testing.T) {
 	dataDir := "./test_chain_data_difficulty_calculation"
 	defer os.RemoveAll(dataDir)
 
-	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
 		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
@@ -382,51 +384,555 @@ func TestBlockSizeValidation(t *testing.T) {
 	dataDir := "./test_chain_data_block_size_validation"
 	defer os.RemoveAll(dataDir)
 
-	storage, storageErr := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
-	if storageErr != nil {
-		t.Fatalf("Failed to create storage: %v", storageErr)
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
 	}
-	defer storage.Close()
+	defer storageInstance.Close()
 
 	config := DefaultChainConfig()
 	consensusConfig := consensus.DefaultConsensusConfig()
-	chain, err := NewChain(config, consensusConfig, storage)
+	chain, err := NewChain(config, consensusConfig, storageInstance)
 	if err != nil {
 		t.Fatalf("NewChain returned error: %v", err)
 	}
 
-	// Create a block that exceeds max size
-	prevBlock := chain.GetBestBlock()
-	prevHash := prevBlock.CalculateHash()
+	// Test with block within size limit
+	validBlock := &block.Block{
+		Header: &block.Header{
+			Version:       1,
+			PrevBlockHash: chain.GetTipHash(),
+			MerkleRoot:    nil, // Will be calculated
+			Timestamp:     time.Now(),
+			Difficulty:    1,
+			Nonce:         0,
+			Height:        1,
+		},
+		Transactions: []*block.Transaction{
+			{
+				Version: 1,
+				Inputs:  []*block.TxInput{},
+				Outputs: []*block.TxOutput{
+					{
+						Value:        1000000,
+						ScriptPubKey: []byte("script"),
+					},
+				},
+				LockTime: 0,
+			},
+		},
+	}
 
+	// Calculate transaction hashes first
+	for _, tx := range validBlock.Transactions {
+		tx.Hash = tx.CalculateHash()
+	}
+
+	// Calculate merkle root
+	validBlock.Header.MerkleRoot = validBlock.CalculateMerkleRoot()
+
+	// Mine the block to satisfy proof of work
+	err = chain.GetConsensus().MineBlock(validBlock, nil)
+	if err != nil {
+		t.Fatalf("Failed to mine block: %v", err)
+	}
+
+	err = chain.AddBlock(validBlock)
+	if err != nil {
+		t.Errorf("Expected valid block to be added, got error: %v", err)
+	}
+
+	// Test with block exceeding size limit
 	largeBlock := &block.Block{
 		Header: &block.Header{
 			Version:       1,
-			PrevBlockHash: prevHash,
+			PrevBlockHash: chain.GetTipHash(),
+			MerkleRoot:    nil, // Will be calculated
+			Timestamp:     time.Now(),
+			Difficulty:    1,
+			Nonce:         0,
+			Height:        2,
+		},
+		Transactions: []*block.Transaction{
+			{
+				Version: 1,
+				Inputs:  []*block.TxInput{},
+				Outputs: []*block.TxOutput{
+					{
+						Value:        1000000,
+						ScriptPubKey: make([]byte, config.MaxBlockSize+1), // Exceed max size
+					},
+				},
+				LockTime: 0,
+			},
+		},
+	}
+
+	// Calculate transaction hashes first
+	for _, tx := range largeBlock.Transactions {
+		tx.Hash = tx.CalculateHash()
+	}
+
+	// Calculate merkle root
+	largeBlock.Header.MerkleRoot = largeBlock.CalculateMerkleRoot()
+
+	// Mine the large block to satisfy proof of work (this should succeed)
+	err = chain.GetConsensus().MineBlock(largeBlock, nil)
+	if err != nil {
+		t.Fatalf("Failed to mine large block: %v", err)
+	}
+
+	// Debug: Print the actual block size vs max block size
+	actualSize := chain.GetBlockSize(largeBlock)
+	maxSize := chain.config.MaxBlockSize
+	t.Logf("Large block size: %d, Max block size: %d", actualSize, maxSize)
+
+	err = chain.AddBlock(largeBlock)
+	if err == nil {
+		t.Error("Expected error for block exceeding size limit")
+	}
+}
+
+func TestGetBlockByHeight(t *testing.T) {
+	dataDir := "./test_chain_data_get_block_by_height"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	// Test getting genesis block by height
+	genesisBlock := chain.GetBlockByHeight(0)
+	if genesisBlock == nil {
+		t.Fatal("Expected genesis block at height 0")
+	}
+	if genesisBlock.Header.Height != 0 {
+		t.Errorf("Expected height 0, got %d", genesisBlock.Header.Height)
+	}
+
+	// Test getting non-existent height
+	nonExistentBlock := chain.GetBlockByHeight(999)
+	if nonExistentBlock != nil {
+		t.Error("Expected nil for non-existent height")
+	}
+}
+
+func TestGetBestBlock(t *testing.T) {
+	dataDir := "./test_chain_data_get_best_block"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	bestBlock := chain.GetBestBlock()
+	if bestBlock == nil {
+		t.Fatal("Expected best block to be non-nil")
+	}
+	if bestBlock.Header.Height != 0 {
+		t.Errorf("Expected height 0, got %d", bestBlock.Header.Height)
+	}
+}
+
+func TestGetHeight(t *testing.T) {
+	dataDir := "./test_chain_data_get_height"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	height := chain.GetHeight()
+	if height != 0 {
+		t.Errorf("Expected height 0, got %d", height)
+	}
+}
+
+func TestGetTipHash(t *testing.T) {
+	dataDir := "./test_chain_data_get_tip_hash"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	tipHash := chain.GetTipHash()
+	if tipHash == nil {
+		t.Fatal("Expected tip hash to be non-nil")
+	}
+	if len(tipHash) != 32 {
+		t.Errorf("Expected tip hash length 32, got %d", len(tipHash))
+	}
+}
+
+func TestGetGenesisBlock(t *testing.T) {
+	dataDir := "./test_chain_data_get_genesis_block"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	genesisBlock := chain.GetGenesisBlock()
+	if genesisBlock == nil {
+		t.Fatal("Expected genesis block to be non-nil")
+	}
+	if genesisBlock.Header.Height != 0 {
+		t.Errorf("Expected genesis height 0, got %d", genesisBlock.Header.Height)
+	}
+}
+
+func TestCalculateNextDifficulty(t *testing.T) {
+	dataDir := "./test_chain_data_calculate_next_difficulty"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	difficulty := chain.CalculateNextDifficulty()
+	if difficulty == 0 {
+		t.Error("Expected non-zero difficulty")
+	}
+}
+
+func TestGetAccumulatedDifficulty(t *testing.T) {
+	dataDir := "./test_chain_data_get_accumulated_difficulty"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	// Test getting accumulated difficulty for genesis
+	accDiff, err := chain.GetAccumulatedDifficulty(0)
+	if err != nil {
+		t.Errorf("Expected no error for genesis height, got: %v", err)
+	}
+	if accDiff == nil {
+		t.Error("Expected non-nil accumulated difficulty")
+	}
+	if accDiff.Cmp(big.NewInt(0)) != 0 {
+		t.Error("Expected genesis accumulated difficulty to be 0")
+	}
+
+	// Test getting accumulated difficulty for non-existent height
+	_, err = chain.GetAccumulatedDifficulty(999)
+	if err == nil {
+		t.Error("Expected error for non-existent height")
+	}
+}
+
+func TestForkChoice(t *testing.T) {
+	dataDir := "./test_chain_data_fork_choice"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	// Test fork choice with nil block
+	err = chain.ForkChoice(nil)
+	if err == nil {
+		t.Error("Expected error for nil block")
+	}
+
+	// Test fork choice with valid block
+	validBlock := &block.Block{
+		Header: &block.Header{
+			Version:       1,
+			PrevBlockHash: chain.GetTipHash(),
+			MerkleRoot:    nil, // Will be calculated
+			Timestamp:     time.Now(),
+			Difficulty:    1,
+			Nonce:         0,
+			Height:        1,
+		},
+		Transactions: []*block.Transaction{
+			{
+				Version: 1,
+				Inputs:  []*block.TxInput{},
+				Outputs: []*block.TxOutput{
+					{
+						Value:        1000000,
+						ScriptPubKey: []byte("script"),
+					},
+				},
+				LockTime: 0,
+			},
+		},
+	}
+
+	// Calculate transaction hashes first
+	for _, tx := range validBlock.Transactions {
+		tx.Hash = tx.CalculateHash()
+	}
+
+	// Calculate merkle root
+	validBlock.Header.MerkleRoot = validBlock.CalculateMerkleRoot()
+
+	// Mine the block to find a valid nonce
+	err = chain.GetConsensus().MineBlock(validBlock, nil)
+	if err != nil {
+		t.Fatalf("Failed to mine block: %v", err)
+	}
+
+	err = chain.ForkChoice(validBlock)
+	if err != nil {
+		t.Errorf("Expected no error for valid fork choice, got: %v", err)
+	}
+}
+
+func TestClose(t *testing.T) {
+	dataDir := "./test_chain_data_close"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	err = chain.Close()
+	if err != nil {
+		t.Errorf("Expected no error on close, got: %v", err)
+	}
+}
+
+func TestString(t *testing.T) {
+	dataDir := "./test_chain_data_string"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	str := chain.String()
+	if str == "" {
+		t.Error("Expected non-empty string representation")
+	}
+}
+
+func TestChainConcurrency(t *testing.T) {
+	dataDir := "./test_chain_data_concurrency"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	// Test concurrent access to chain methods
+	done := make(chan bool, 10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer func() { done <- true }()
+
+			// Concurrent reads
+			chain.GetHeight()
+			chain.GetTipHash()
+			chain.GetBestBlock()
+			chain.GetGenesisBlock()
+
+			// Concurrent writes (should be safe due to mutex)
+			chain.CalculateNextDifficulty()
+		}()
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+}
+
+func TestChainErrorHandling(t *testing.T) {
+	dataDir := "./test_chain_data_error_handling"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storageInstance.Close()
+
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	// Test with invalid block (nil header)
+	invalidBlock := &block.Block{
+		Header:       nil,
+		Transactions: []*block.Transaction{},
+	}
+
+	err = chain.AddBlock(invalidBlock)
+	if err == nil {
+		t.Error("Expected error for block with nil header")
+	}
+
+	// Test with block having invalid height
+	invalidHeightBlock := &block.Block{
+		Header: &block.Header{
+			Version:       1,
+			PrevBlockHash: chain.GetTipHash(),
 			MerkleRoot:    []byte("merkle_root"),
 			Timestamp:     time.Now(),
-			Difficulty:    chain.CalculateNextDifficulty(),
-			Nonce:         42,
-			Height:        1,
+			Difficulty:    1,
+			Nonce:         0,
+			Height:        999, // Invalid height
 		},
 		Transactions: []*block.Transaction{},
 	}
 
-	// Add many large transactions to exceed block size limit
-	for i := 0; i < 1000; i++ {
-		tx := &block.Transaction{
-			Version: 1,
-			Inputs:  []*block.TxInput{},
-			Outputs: []*block.TxOutput{},
-			Fee:     10,
-		}
-		largeBlock.AddTransaction(tx)
+	err = chain.AddBlock(invalidHeightBlock)
+	if err == nil {
+		t.Error("Expected error for block with invalid height")
+	}
+}
+
+func TestChainStatePersistence(t *testing.T) {
+	dataDir := "./test_chain_data_persistence"
+	defer os.RemoveAll(dataDir)
+
+	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
 	}
 
-	largeBlock.Header.MerkleRoot = largeBlock.CalculateMerkleRoot()
+	config := DefaultChainConfig()
+	consensusConfig := consensus.DefaultConsensusConfig()
+	chain, err := NewChain(config, consensusConfig, storageInstance)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
 
-	// This should fail due to block size validation
-	if err := chain.AddBlock(largeBlock); err == nil {
-		t.Error("Should fail to add block that exceeds max size")
+	// Get initial state
+	initialHeight := chain.GetHeight()
+	initialTipHash := chain.GetTipHash()
+
+	// Close the chain
+	err = chain.Close()
+	if err != nil {
+		t.Errorf("Expected no error on close, got: %v", err)
+	}
+
+	// Reopen storage and create new chain
+	storage2, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
+	if err != nil {
+		t.Fatalf("Failed to create storage: %v", err)
+	}
+	defer storage2.Close()
+
+	chain2, err := NewChain(config, consensusConfig, storage2)
+	if err != nil {
+		t.Fatalf("NewChain returned error: %v", err)
+	}
+
+	// Verify state was persisted
+	if chain2.GetHeight() != initialHeight {
+		t.Errorf("Expected height %d, got %d", initialHeight, chain2.GetHeight())
+	}
+
+	if !bytes.Equal(chain2.GetTipHash(), initialTipHash) {
+		t.Error("Expected tip hash to be persisted")
 	}
 }
