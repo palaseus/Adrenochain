@@ -95,10 +95,10 @@ func (h *WebHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 // BlockListHandler handles the blocks list page
 func (h *WebHandler) BlockListHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	// Parse pagination parameters
 	limit, offset := h.parsePaginationParams(r)
-	
+
 	blocks, err := h.explorerService.GetBlocks(ctx, limit, offset)
 	if err != nil {
 		h.renderError(w, "Failed to load blocks", err)
@@ -151,10 +151,10 @@ func (h *WebHandler) BlockDetailHandler(w http.ResponseWriter, r *http.Request) 
 // TransactionListHandler handles the transactions list page
 func (h *WebHandler) TransactionListHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	// Parse pagination parameters
 	limit, offset := h.parsePaginationParams(r)
-	
+
 	transactions, err := h.explorerService.GetTransactions(ctx, limit, offset)
 	if err != nil {
 		h.renderError(w, "Failed to load transactions", err)
@@ -263,8 +263,8 @@ func (h *WebHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Title":       "Search Results - GoChain Explorer",
-		"Query":       query,
+		"Title":        "Search Results - GoChain Explorer",
+		"Query":        query,
 		"SearchResult": searchResult,
 	}
 
@@ -291,7 +291,7 @@ func (h *WebHandler) renderError(w http.ResponseWriter, message string, err erro
 		"Message": message,
 		"Error":   err,
 	}
-	
+
 	w.WriteHeader(http.StatusInternalServerError)
 	h.templates.Render(w, "error.html", data)
 }
@@ -299,37 +299,37 @@ func (h *WebHandler) renderError(w http.ResponseWriter, message string, err erro
 func (h *WebHandler) parsePaginationParams(r *http.Request) (limit, offset int) {
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
-	
+
 	limit = 20 // Default limit
 	offset = 0 // Default offset
-	
+
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 			limit = l
 		}
 	}
-	
+
 	if offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
 			offset = o
 		}
 	}
-	
+
 	return limit, offset
 }
 
 func (h *WebHandler) createPagination(limit, offset, total int) map[string]interface{} {
 	totalPages := (total + limit - 1) / limit
 	currentPage := (offset / limit) + 1
-	
+
 	hasPrev := currentPage > 1
 	hasNext := currentPage < totalPages
-	
+
 	prevOffset := offset - limit
 	if prevOffset < 0 {
 		prevOffset = 0
 	}
-	
+
 	nextOffset := offset + limit
 	if nextOffset >= total {
 		nextOffset = total - limit
@@ -337,19 +337,19 @@ func (h *WebHandler) createPagination(limit, offset, total int) map[string]inter
 			nextOffset = 0
 		}
 	}
-	
+
 	return map[string]interface{}{
-		"CurrentPage":  currentPage,
-		"TotalPages":   totalPages,
-		"TotalItems":   total,
-		"Limit":        limit,
-		"Offset":       offset,
-		"HasPrev":      hasPrev,
-		"HasNext":      hasNext,
-		"PrevOffset":   prevOffset,
-		"NextOffset":   nextOffset,
-		"PrevPage":     currentPage - 1,
-		"NextPage":     currentPage + 1,
+		"CurrentPage": currentPage,
+		"TotalPages":  totalPages,
+		"TotalItems":  total,
+		"Limit":       limit,
+		"Offset":      offset,
+		"HasPrev":     hasPrev,
+		"HasNext":     hasNext,
+		"PrevOffset":  prevOffset,
+		"NextOffset":  nextOffset,
+		"PrevPage":    currentPage - 1,
+		"NextPage":    currentPage + 1,
 	}
 }
 
@@ -370,16 +370,16 @@ func (h *WebHandler) getClientIP(r *http.Request) string {
 func (h *WebHandler) isValidSearchQuery(query string) bool {
 	// Block hash validation (64 hex characters)
 	blockHashRegex := `^[a-fA-F0-9]{64}$`
-	
+
 	// Transaction hash validation (64 hex characters)
 	txHashRegex := `^[a-fA-F0-9]{64}$`
-	
+
 	// Address validation (26-35 characters, alphanumeric)
 	addressRegex := `^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$`
-	
+
 	// Check if query matches any of the patterns
-	return strings.Contains(query, blockHashRegex) || 
-		   strings.Contains(query, txHashRegex) || 
-		   strings.Contains(query, addressRegex) ||
-		   len(query) >= 10 // Allow longer text searches
+	return strings.Contains(query, blockHashRegex) ||
+		strings.Contains(query, txHashRegex) ||
+		strings.Contains(query, addressRegex) ||
+		len(query) >= 10 // Allow longer text searches
 }

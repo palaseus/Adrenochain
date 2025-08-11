@@ -451,10 +451,10 @@ func TestSyncResponse(t *testing.T) {
 			{Version: 1, Height: 101},
 		}
 		resp := &SyncResponse{
-			BestHeight:   200,
+			BestHeight:    200,
 			BestBlockHash: []byte("best_hash"),
-			Headers:      headers,
-			NeedsSync:    true,
+			Headers:       headers,
+			NeedsSync:     true,
 		}
 
 		assert.Equal(t, uint64(200), resp.GetBestHeight())
@@ -466,10 +466,10 @@ func TestSyncResponse(t *testing.T) {
 	t.Run("SyncResponseReset", func(t *testing.T) {
 		headers := []*BlockHeader{{Version: 1}}
 		resp := &SyncResponse{
-			BestHeight:   200,
+			BestHeight:    200,
 			BestBlockHash: []byte("best_hash"),
-			Headers:      headers,
-			NeedsSync:    true,
+			Headers:       headers,
+			NeedsSync:     true,
 		}
 		resp.Reset()
 		assert.Equal(t, uint64(0), resp.BestHeight)

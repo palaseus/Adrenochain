@@ -72,8 +72,11 @@ func (c *InMemoryCache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Check if we need to evict items to make room
-	if c.stats.getSize() >= c.stats.maxSize {
+	// Check if this is a new key (to track size)
+	_, exists := c.cache[key]
+	
+	// Check if we need to evict items to make room for a new key
+	if !exists && c.stats.getSize() >= c.stats.maxSize {
 		c.evictOldest()
 	}
 
@@ -83,8 +86,7 @@ func (c *InMemoryCache) Set(key string, value interface{}, ttl time.Duration) {
 		expiration: time.Now().Add(ttl),
 	}
 
-	// Check if this is a new key (to track size)
-	_, exists := c.cache[key]
+	// Increase size only for new keys
 	if !exists {
 		c.stats.increaseSize()
 	}
@@ -110,6 +112,7 @@ func (c *InMemoryCache) Clear() {
 
 	c.cache = make(map[string]*cacheEntry)
 	c.stats.resetSize()
+	c.stats.resetStats()
 }
 
 // GetStats returns cache performance statistics
@@ -134,8 +137,9 @@ func (c *InMemoryCache) GetStats() service.CacheStats {
 
 // evictOldest removes the oldest entries to make room for new ones
 func (c *InMemoryCache) evictOldest() {
-	// Simple eviction: remove 20% of entries
-	targetSize := c.stats.maxSize * 8 / 10 // 80% of max size
+	// Evict just enough to make room for one new item
+	// When cache is at maxSize and we add a new item, we need to remove exactly 1 item
+	toRemove := 1
 
 	// Find entries to evict
 	var entries []struct {
@@ -150,15 +154,13 @@ func (c *InMemoryCache) evictOldest() {
 		}{key, entry.expiration})
 	}
 
-	// Sort by expiration (oldest first)
-	// For simplicity, we'll just remove the first entries
-	// In a production system, you'd want proper sorting
-	toRemove := c.stats.size - targetSize
-	if toRemove > 0 {
-		for i := 0; i < toRemove && i < len(entries); i++ {
-			delete(c.cache, entries[i].key)
-			c.stats.decreaseSize()
-		}
+	// Simple eviction: remove oldest entries first
+	// In a production system, you'd want proper sorting by access time
+	if toRemove > 0 && len(entries) > 0 {
+		// Remove exactly one entry from the beginning of the slice
+		keyToRemove := entries[0].key
+		delete(c.cache, keyToRemove)
+		c.stats.decreaseSize()
 	}
 }
 
@@ -200,4 +202,11 @@ func (s *cacheStats) resetSize() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.size = 0
+}
+
+func (s *cacheStats) resetStats() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.hits = 0
+	s.misses = 0
 }

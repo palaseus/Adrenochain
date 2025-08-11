@@ -244,6 +244,11 @@ func (sm *SyncManager) GetStatus() SyncStatus {
 
 // AddPeer adds a peer for synchronization.
 func (sm *SyncManager) AddPeer(id, address string, height uint64) {
+	// Don't add peers with empty IDs
+	if id == "" {
+		return
+	}
+	
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -310,6 +315,11 @@ func (sm *SyncManager) performSync() {
 func (sm *SyncManager) findBestPeer() *PeerInfo {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
+
+	// Return nil if no peers exist
+	if len(sm.peers) == 0 {
+		return nil
+	}
 
 	var bestPeer *PeerInfo
 	var bestHeight uint64

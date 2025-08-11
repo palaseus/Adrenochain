@@ -195,8 +195,9 @@ func (p *BlockchainProvider) GetAddressTransactions(address string, limit, offse
 	}
 
 	// Loop from startHeight down to endHeight (inclusive)
-	for h := startHeight; h >= endHeight; h-- {
-		block, err := p.GetBlockByHeight(h)
+	// Fix: Use a signed counter to avoid uint64 underflow
+	for h := int64(startHeight); h >= int64(endHeight); h-- {
+		block, err := p.GetBlockByHeight(uint64(h))
 		if err != nil || block == nil {
 			continue
 		}
@@ -332,7 +333,7 @@ func (p *BlockchainProvider) transactionInvolvesAddress(tx *block.Transaction, a
 	// Check inputs
 	for _, input := range tx.Inputs {
 		// This would need proper script parsing
-		if string(input.ScriptSig) == address {
+		if input.ScriptSig != nil && string(input.ScriptSig) == address {
 			return true
 		}
 	}
@@ -340,7 +341,7 @@ func (p *BlockchainProvider) transactionInvolvesAddress(tx *block.Transaction, a
 	// Check outputs
 	for _, output := range tx.Outputs {
 		// This would need proper script parsing
-		if string(output.ScriptPubKey) == address {
+		if output.ScriptPubKey != nil && string(output.ScriptPubKey) == address {
 			return true
 		}
 	}

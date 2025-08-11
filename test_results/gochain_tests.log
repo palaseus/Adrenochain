@@ -1,0 +1,12 @@
+=== RUN   TestRunNode
+Starting GoChain node...
+Network: testnet
+Port: 0
+Mining: false
+[] INFO [gochain] INFO: Shutting down GoChain node...
+[] INFO [gochain] INFO: GoChain node stopped
+TestRunNode completed successfully for dataDir: /tmp/gochain_test_data_3607527960
+--- PASS: TestRunNode (2.01s)
+PASS
+coverage: 21.5% of statements
+ok  	github.com/gochain/gochain/cmd/gochain	3.094s	coverage: 21.5% of statements

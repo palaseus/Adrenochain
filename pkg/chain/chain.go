@@ -309,8 +309,6 @@ func (c *Chain) validateBlock(block *block.Block) error {
 		return fmt.Errorf("block header cannot be nil")
 	}
 
-
-
 	// Basic block validation
 	if err := block.IsValid(); err != nil {
 		return fmt.Errorf("block validation failed: %w", err)

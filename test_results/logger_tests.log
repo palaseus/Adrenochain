@@ -1,0 +1,50 @@
+=== RUN   TestLevel_String
+--- PASS: TestLevel_String (0.00s)
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+=== RUN   TestNewLogger_WithNilConfig
+--- PASS: TestNewLogger_WithNilConfig (0.00s)
+=== RUN   TestNewLogger_WithCustomConfig
+--- PASS: TestNewLogger_WithCustomConfig (0.00s)
+=== RUN   TestNewLogger_WithNilOutput
+--- PASS: TestNewLogger_WithNilOutput (0.00s)
+=== RUN   TestNewLogger_WithFileLogging
+--- PASS: TestNewLogger_WithFileLogging (0.00s)
+=== RUN   TestNewLogger_WithFileLoggingFailure
+--- PASS: TestNewLogger_WithFileLoggingFailure (0.00s)
+=== RUN   TestLogger_LogLevels
+--- PASS: TestLogger_LogLevels (0.00s)
+=== RUN   TestLogger_TextFormatting
+--- PASS: TestLogger_TextFormatting (0.00s)
+=== RUN   TestLogger_JSONFormatting
+--- PASS: TestLogger_JSONFormatting (0.00s)
+=== RUN   TestLogger_WithFields
+--- PASS: TestLogger_WithFields (0.00s)
+=== RUN   TestLogger_SetLevel
+--- PASS: TestLogger_SetLevel (0.00s)
+=== RUN   TestLogger_SetOutput
+--- PASS: TestLogger_SetOutput (0.00s)
+=== RUN   TestLogger_SetJSON
+--- PASS: TestLogger_SetJSON (0.00s)
+=== RUN   TestLogger_Close
+    logger_test.go:351: Second close returned error (expected): close /tmp/TestLogger_Close2887607481/001/test.log: file already closed
+--- PASS: TestLogger_Close (0.00s)
+=== RUN   TestLogger_Close_NoFile
+--- PASS: TestLogger_Close_NoFile (0.00s)
+=== RUN   TestLogger_GetLogFile
+--- PASS: TestLogger_GetLogFile (0.00s)
+=== RUN   TestLogger_GetLogFile_NoFile
+--- PASS: TestLogger_GetLogFile_NoFile (0.00s)
+=== RUN   TestLogger_FileRotation
+--- PASS: TestLogger_FileRotation (0.20s)
+=== RUN   TestLogger_Fatal
+--- PASS: TestLogger_Fatal (0.00s)
+=== RUN   TestLogger_AllLogLevels
+--- PASS: TestLogger_AllLogLevels (0.00s)
+=== RUN   TestLogger_MessageFormatting
+--- PASS: TestLogger_MessageFormatting (0.00s)
+=== RUN   TestLogger_EmptyMessage
+--- PASS: TestLogger_EmptyMessage (0.00s)
+PASS
+coverage: 66.7% of statements
+ok  	github.com/gochain/gochain/pkg/logger	1.247s	coverage: 66.7% of statements

@@ -1,0 +1,97 @@
+=== RUN   TestNewSyncProtocol
+--- PASS: TestNewSyncProtocol (0.05s)
+=== RUN   TestSyncProtocol_StartSync
+--- PASS: TestSyncProtocol_StartSync (0.03s)
+=== RUN   TestSyncProtocol_GetSyncProgress
+--- PASS: TestSyncProtocol_GetSyncProgress (0.03s)
+=== RUN   TestSyncProtocol_GetPeerStates
+--- PASS: TestSyncProtocol_GetPeerStates (0.03s)
+=== RUN   TestSyncProtocol_GetPeerState
+--- PASS: TestSyncProtocol_GetPeerState (0.03s)
+=== RUN   TestSyncProtocol_SetupHandlers
+--- PASS: TestSyncProtocol_SetupHandlers (0.03s)
+=== RUN   TestSyncProtocol_ExchangeSyncInfo
+--- PASS: TestSyncProtocol_ExchangeSyncInfo (10.04s)
+=== RUN   TestSyncProtocol_ProcessHeader
+--- PASS: TestSyncProtocol_ProcessHeader (0.11s)
+=== RUN   TestSyncProtocol_ProcessBlock
+Received block data of size 108 bytes
+--- PASS: TestSyncProtocol_ProcessBlock (0.03s)
+=== RUN   TestSyncProtocol_GetHeaders
+--- PASS: TestSyncProtocol_GetHeaders (0.03s)
+=== RUN   TestSyncProtocol_GetHeadersForSync
+--- PASS: TestSyncProtocol_GetHeadersForSync (0.03s)
+=== RUN   TestSyncProtocol_ContextCancellation
+--- PASS: TestSyncProtocol_ContextCancellation (0.02s)
+=== RUN   TestSyncProtocol_ConcurrentAccess
+--- PASS: TestSyncProtocol_ConcurrentAccess (0.02s)
+=== RUN   TestNewSyncManager
+--- PASS: TestNewSyncManager (0.02s)
+=== RUN   TestSyncConfigDefaults
+--- PASS: TestSyncConfigDefaults (0.00s)
+=== RUN   TestStartAndStopSync
+--- PASS: TestStartAndStopSync (0.03s)
+=== RUN   TestAddAndRemovePeer
+--- PASS: TestAddAndRemovePeer (0.03s)
+=== RUN   TestFindBestPeer
+--- PASS: TestFindBestPeer (0.03s)
+=== RUN   TestSyncStatus
+--- PASS: TestSyncStatus (0.02s)
+=== RUN   TestValidateCheckpoint
+--- PASS: TestValidateCheckpoint (0.03s)
+=== RUN   TestGetSyncProgress
+--- PASS: TestGetSyncProgress (0.22s)
+=== RUN   TestSyncManagerClose
+--- PASS: TestSyncManagerClose (0.07s)
+=== RUN   TestSyncManagerConcurrency
+--- PASS: TestSyncManagerConcurrency (0.06s)
+=== RUN   TestSyncManagerWithRealChain
+--- PASS: TestSyncManagerWithRealChain (0.07s)
+=== RUN   TestChainAdapter
+=== RUN   TestChainAdapter/MockChainInterface
+=== RUN   TestChainAdapter/MockChainAddBlock
+--- PASS: TestChainAdapter (0.00s)
+    --- PASS: TestChainAdapter/MockChainInterface (0.00s)
+    --- PASS: TestChainAdapter/MockChainAddBlock (0.00s)
+=== RUN   TestSyncManagerEdgeCases
+=== RUN   TestSyncManagerEdgeCases/StartSyncWithPeer
+    sync_test.go:340: Sync protocol was initialized successfully
+=== RUN   TestSyncManagerEdgeCases/GetSyncProgressWithInvalidPeer
+=== RUN   TestSyncManagerEdgeCases/AddPeerWithEmptyID
+=== RUN   TestSyncManagerEdgeCases/RemoveNonExistentPeer
+=== RUN   TestSyncManagerEdgeCases/FindBestPeerWithNoPeers
+=== RUN   TestSyncManagerEdgeCases/FindBestPeerWithMultiplePeers
+--- PASS: TestSyncManagerEdgeCases (0.06s)
+    --- PASS: TestSyncManagerEdgeCases/StartSyncWithPeer (0.00s)
+    --- PASS: TestSyncManagerEdgeCases/GetSyncProgressWithInvalidPeer (0.00s)
+    --- PASS: TestSyncManagerEdgeCases/AddPeerWithEmptyID (0.00s)
+    --- PASS: TestSyncManagerEdgeCases/RemoveNonExistentPeer (0.00s)
+    --- PASS: TestSyncManagerEdgeCases/FindBestPeerWithNoPeers (0.00s)
+    --- PASS: TestSyncManagerEdgeCases/FindBestPeerWithMultiplePeers (0.00s)
+=== RUN   TestSyncManagerPerformance
+=== RUN   TestSyncManagerPerformance/FastSyncSimulation
+=== RUN   TestSyncManagerPerformance/BlockDownloadSimulation
+--- PASS: TestSyncManagerPerformance (0.05s)
+    --- PASS: TestSyncManagerPerformance/FastSyncSimulation (0.00s)
+    --- PASS: TestSyncManagerPerformance/BlockDownloadSimulation (0.00s)
+=== RUN   TestSyncManagerConcurrencyAdvanced
+=== RUN   TestSyncManagerConcurrencyAdvanced/ConcurrentPeerOperations
+=== RUN   TestSyncManagerConcurrencyAdvanced/ConcurrentSyncOperations
+--- PASS: TestSyncManagerConcurrencyAdvanced (0.07s)
+    --- PASS: TestSyncManagerConcurrencyAdvanced/ConcurrentPeerOperations (0.01s)
+    --- PASS: TestSyncManagerConcurrencyAdvanced/ConcurrentSyncOperations (0.01s)
+=== RUN   TestSyncManagerValidation
+=== RUN   TestSyncManagerValidation/ValidateCheckpoint
+=== RUN   TestSyncManagerValidation/SyncStatusConsistency
+--- PASS: TestSyncManagerValidation (0.07s)
+    --- PASS: TestSyncManagerValidation/ValidateCheckpoint (0.00s)
+    --- PASS: TestSyncManagerValidation/SyncStatusConsistency (0.00s)
+=== RUN   TestSyncManagerNetworkIntegration
+=== RUN   TestSyncManagerNetworkIntegration/PeerConnectionStates
+=== RUN   TestSyncManagerNetworkIntegration/PeerHeightTracking
+--- PASS: TestSyncManagerNetworkIntegration (0.04s)
+    --- PASS: TestSyncManagerNetworkIntegration/PeerConnectionStates (0.00s)
+    --- PASS: TestSyncManagerNetworkIntegration/PeerHeightTracking (0.00s)
+PASS
+coverage: 39.1% of statements
+ok  	github.com/gochain/gochain/pkg/sync	12.406s	coverage: 39.1% of statements

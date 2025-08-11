@@ -259,10 +259,10 @@ func (c *Consensus) validateMerkleRoot(block *block.Block) error {
 
 	// Calculate merkle root from transactions
 	calculatedRoot := c.calculateMerkleRoot(block.Transactions)
-	
+
 	// Compare with block header merkle root
 	if !c.bytesEqual(calculatedRoot, block.Header.MerkleRoot) {
-		return fmt.Errorf("merkle root mismatch: calculated %x, header %x", 
+		return fmt.Errorf("merkle root mismatch: calculated %x, header %x",
 			calculatedRoot, block.Header.MerkleRoot)
 	}
 
@@ -365,7 +365,7 @@ func (c *Consensus) bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	var result byte
 	for i := range a {
 		result |= a[i] ^ b[i]

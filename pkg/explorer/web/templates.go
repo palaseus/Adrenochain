@@ -18,16 +18,16 @@ func NewTemplates() *Templates {
 	t := &Templates{
 		templates: make(map[string]*template.Template),
 		funcMap: template.FuncMap{
-			"formatHash":      formatHash,
-			"formatAddress":   formatAddress,
-			"formatAmount":    formatAmount,
-			"formatTime":      formatTime,
+			"formatHash":       formatHash,
+			"formatAddress":    formatAddress,
+			"formatAmount":     formatAmount,
+			"formatTime":       formatTime,
 			"formatDifficulty": formatDifficulty,
-			"add":             add,
-			"sub":             sub,
-			"mul":             mul,
-			"div":             div,
-			"mod":             mod,
+			"add":              add,
+			"sub":              sub,
+			"mul":              mul,
+			"div":              div,
+			"mod":              mod,
 		},
 	}
 
@@ -81,19 +81,19 @@ func (t *Templates) loadTemplate(filename string) {
 	if filename != "base.html" {
 		baseContent := t.getTemplateContent("base.html")
 		contentContent := t.getTemplateContent(filename)
-		
+
 		// Parse base template first
 		tmpl, err := template.New("base").Funcs(t.funcMap).Parse(baseContent)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to parse base template: %v", err))
 		}
-		
+
 		// Parse content template into the same template
 		_, err = tmpl.Parse(contentContent)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to parse content template %s: %v", filename, err))
 		}
-		
+
 		t.templates[filename] = tmpl
 	} else {
 		// Base template is loaded separately for reference
@@ -158,7 +158,7 @@ func formatAmount(amount uint64) string {
 	if amount == 0 {
 		return "0"
 	}
-	
+
 	// Assuming 8 decimal places (like Bitcoin)
 	satoshis := float64(amount) / 100000000.0
 	return fmt.Sprintf("%.8f", satoshis)
@@ -180,7 +180,7 @@ func formatDifficulty(difficulty uint64) string {
 	if difficulty == 0 {
 		return "0"
 	}
-	
+
 	// Format difficulty in a human-readable way
 	if difficulty >= 1000000000 {
 		return fmt.Sprintf("%.2f G", float64(difficulty)/1000000000.0)

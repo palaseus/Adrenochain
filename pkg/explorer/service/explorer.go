@@ -152,20 +152,20 @@ func (s *explorerService) GetBlockDetails(ctx context.Context, hash []byte) (*Bl
 
 	// Create block validation info
 	validation := &BlockValidation{
-		IsValid:      true, // Assuming blocks in the chain are valid
+		IsValid:       true, // Assuming blocks in the chain are valid
 		Confirmations: s.calculateConfirmations(block.Header.Height),
-		Finality:     s.determineFinality(block.Header.Height),
+		Finality:      s.determineFinality(block.Header.Height),
 	}
 
 	blockDetails := &BlockDetails{
-		BlockSummary:  blockSummary,
-		PrevHash:      prevHash,
-		NextHash:      nextHash,
-		MerkleRoot:    block.Header.MerkleRoot,
-		Nonce:         block.Header.Nonce,
-		Version:       block.Header.Version,
-		Transactions:  txSummaries,
-		Validation:    validation,
+		BlockSummary: blockSummary,
+		PrevHash:     prevHash,
+		NextHash:     nextHash,
+		MerkleRoot:   block.Header.MerkleRoot,
+		Nonce:        block.Header.Nonce,
+		Version:      block.Header.Version,
+		Transactions: txSummaries,
+		Validation:   validation,
 	}
 
 	// Cache the result
@@ -226,12 +226,12 @@ func (s *explorerService) GetTransactionDetails(ctx context.Context, hash []byte
 	var outputDetails []*OutputDetail
 	for i, output := range tx.Outputs {
 		outputDetail := &OutputDetail{
-			Index:     uint32(i),
-			Script:    output.ScriptPubKey,
-			Address:   s.extractAddressFromScript(output.ScriptPubKey),
-			Amount:    output.Value,
-			Spent:     false, // Would need to check if this output has been spent
-			SpentBy:   nil,   // Would need to track spending transactions
+			Index:   uint32(i),
+			Script:  output.ScriptPubKey,
+			Address: s.extractAddressFromScript(output.ScriptPubKey),
+			Amount:  output.Value,
+			Spent:   false, // Would need to check if this output has been spent
+			SpentBy: nil,   // Would need to track spending transactions
 		}
 		outputDetails = append(outputDetails, outputDetail)
 	}
@@ -249,10 +249,10 @@ func (s *explorerService) GetTransactionDetails(ctx context.Context, hash []byte
 
 	txDetails := &TransactionDetails{
 		TransactionSummary: txSummary,
-		RawTx:             tx,
-		InputDetails:      inputDetails,
-		OutputDetails:     outputDetails,
-		BlockInfo:         blockInfo,
+		RawTx:              tx,
+		InputDetails:       inputDetails,
+		OutputDetails:      outputDetails,
+		BlockInfo:          blockInfo,
 	}
 
 	// Cache the result
@@ -324,19 +324,19 @@ func (s *explorerService) GetAddressDetails(ctx context.Context, address string)
 	totalSent := uint64(0) // Would need more complex logic to calculate this
 
 	addressSummary := &AddressSummary{
-		Address:     address,
-		Balance:     balance,
-		TxCount:    len(txSummaries),
-		FirstSeen:  firstSeen,
-		LastSeen:   lastSeen,
+		Address:   address,
+		Balance:   balance,
+		TxCount:   len(txSummaries),
+		FirstSeen: firstSeen,
+		LastSeen:  lastSeen,
 	}
 
 	addressDetails := &AddressDetails{
 		AddressSummary: addressSummary,
-		UTXOs:         utxos,
-		Transactions:  txSummaries,
-		TotalReceived: totalReceived,
-		TotalSent:     totalSent,
+		UTXOs:          utxos,
+		Transactions:   txSummaries,
+		TotalReceived:  totalReceived,
+		TotalSent:      totalSent,
 	}
 
 	// Cache the result
@@ -475,10 +475,10 @@ func (s *explorerService) GetStatistics(ctx context.Context) (*Statistics, error
 	}
 
 	statistics := &Statistics{
-		Blockchain: blockchainStats,
-		Network:    networkInfo,
+		Blockchain:  blockchainStats,
+		Network:     networkInfo,
 		Performance: performanceStats,
-		LastUpdate: time.Now(),
+		LastUpdate:  time.Now(),
 	}
 
 	return statistics, nil
@@ -522,7 +522,7 @@ func (s *explorerService) findTransactionBlock(txHash []byte) (*block.Block, err
 	// This is a simplified implementation
 	// In a real system, you'd have a transaction index
 	height := s.dataProvider.GetBlockHeight()
-	
+
 	for h := uint64(0); h <= height; h++ {
 		block, err := s.dataProvider.GetBlockByHeight(h)
 		if err != nil || block == nil {
@@ -546,7 +546,7 @@ func (s *explorerService) extractAddressFromScript(script []byte) string {
 	if len(script) == 0 {
 		return "unknown"
 	}
-	
+
 	// For now, just return a hex representation
 	return hex.EncodeToString(script[:min(len(script), 8)])
 }

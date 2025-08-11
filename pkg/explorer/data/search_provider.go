@@ -279,16 +279,40 @@ func (s *SimpleSearchProvider) findTransactionBlock(txHash []byte) (*block.Block
 
 // blockMatchesQuery checks if a block matches the search query
 func (s *SimpleSearchProvider) blockMatchesQuery(block *block.Block, query string) bool {
+	// Empty query matches all blocks
+	if query == "" {
+		return true
+	}
 	// Check if query appears in block hash
 	hashHex := hex.EncodeToString(block.CalculateHash())
-	return strings.Contains(strings.ToLower(hashHex), strings.ToLower(query))
+	if strings.Contains(strings.ToLower(hashHex), strings.ToLower(query)) {
+		return true
+	}
+	// Check if query matches block height
+	heightStr := fmt.Sprintf("%d", block.Header.Height)
+	if strings.Contains(heightStr, query) {
+		return true
+	}
+	return false
 }
 
 // transactionMatchesQuery checks if a transaction matches the search query
 func (s *SimpleSearchProvider) transactionMatchesQuery(tx *block.Transaction, query string) bool {
-	// Check if query appears in transaction hash
+	// Empty query matches all transactions
+	if query == "" {
+		return true
+	}
+	// Check if query appears in transaction hash (hex representation)
 	hashHex := hex.EncodeToString(tx.Hash)
-	return strings.Contains(strings.ToLower(hashHex), strings.ToLower(query))
+	if strings.Contains(strings.ToLower(hashHex), strings.ToLower(query)) {
+		return true
+	}
+	// Check if query appears in transaction hash (string representation)
+	hashStr := string(tx.Hash)
+	if strings.Contains(strings.ToLower(hashStr), strings.ToLower(query)) {
+		return true
+	}
+	return false
 }
 
 // generateSuggestions generates search suggestions
@@ -301,6 +325,11 @@ func (s *SimpleSearchProvider) generateSuggestions(query string) []string {
 		"- Block height (number)",
 	}
 
+	// Add the query to suggestions if it's not empty
+	if query != "" {
+		suggestions = append(suggestions, query)
+	}
+
 	return suggestions
 }
 
@@ -308,6 +337,9 @@ func (s *SimpleSearchProvider) generateSuggestions(query string) []string {
 
 // isHexString checks if a string contains only hex characters
 func isHexString(s string) bool {
+	if s == "" {
+		return false
+	}
 	for _, r := range s {
 		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
 			return false
@@ -318,6 +350,9 @@ func isHexString(s string) bool {
 
 // isBase58String checks if a string contains only base58 characters
 func isBase58String(s string) bool {
+	if s == "" {
+		return false
+	}
 	base58Chars := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	for _, r := range s {
 		if !strings.ContainsRune(base58Chars, r) {
@@ -329,6 +364,9 @@ func isBase58String(s string) bool {
 
 // isNumericString checks if a string contains only numeric characters
 func isNumericString(s string) bool {
+	if s == "" {
+		return false
+	}
 	for _, r := range s {
 		if r < '0' || r > '9' {
 			return false
@@ -339,8 +377,14 @@ func isNumericString(s string) bool {
 
 // parseUint64 parses a string to uint64
 func parseUint64(s string) (uint64, error) {
+	if s == "" {
+		return 0, fmt.Errorf("empty string cannot be parsed as uint64")
+	}
 	var result uint64
 	for _, r := range s {
+		if r < '0' || r > '9' {
+			return 0, fmt.Errorf("non-numeric character in string: %c", r)
+		}
 		result = result*10 + uint64(r-'0')
 	}
 	return result, nil

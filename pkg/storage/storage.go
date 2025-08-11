@@ -27,8 +27,10 @@ func DefaultStorageConfig() *StorageConfig {
 
 // WithDataDir sets the data directory for the storage config.
 func (c *StorageConfig) WithDataDir(dataDir string) *StorageConfig {
-	c.DataDir = dataDir
-	return c
+	newConfig := &StorageConfig{
+		DataDir: dataDir,
+	}
+	return newConfig
 }
 
 // NewStorage creates a new file-based storage.

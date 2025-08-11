@@ -1,0 +1,39 @@
+=== RUN   TestUTXOSet
+--- PASS: TestUTXOSet (0.00s)
+=== RUN   TestProcessBlock
+--- PASS: TestProcessBlock (0.00s)
+=== RUN   TestValidateTransaction_Enhanced
+--- PASS: TestValidateTransaction_Enhanced (0.21s)
+=== RUN   TestIsDoubleSpend
+--- PASS: TestIsDoubleSpend (0.01s)
+=== RUN   TestCalculateFee
+--- PASS: TestCalculateFee (0.01s)
+=== RUN   TestValidateFeeRate
+--- PASS: TestValidateFeeRate (0.01s)
+=== RUN   TestGetSpendableUTXOs
+--- PASS: TestGetSpendableUTXOs (0.00s)
+=== RUN   TestNewUTXO
+--- PASS: TestNewUTXO (0.00s)
+=== RUN   TestGetAddressUTXOs
+--- PASS: TestGetAddressUTXOs (0.00s)
+=== RUN   TestValidateTransaction
+--- PASS: TestValidateTransaction (0.00s)
+=== RUN   TestGetStats
+--- PASS: TestGetStats (0.00s)
+=== RUN   TestGetAddressCount
+--- PASS: TestGetAddressCount (0.00s)
+=== RUN   TestString
+--- PASS: TestString (0.00s)
+=== RUN   TestGetTxSignatureData
+--- PASS: TestGetTxSignatureData (0.00s)
+=== RUN   TestConcatRS
+--- PASS: TestConcatRS (0.00s)
+=== RUN   TestUTXOSetConcurrency
+--- PASS: TestUTXOSetConcurrency (0.00s)
+=== RUN   TestUTXOSetEdgeCases
+--- PASS: TestUTXOSetEdgeCases (0.00s)
+=== RUN   TestUTXOSetBalanceUpdates
+--- PASS: TestUTXOSetBalanceUpdates (0.00s)
+PASS
+coverage: 58.9% of statements
+ok  	github.com/gochain/gochain/pkg/utxo	1.284s	coverage: 58.9% of statements

@@ -1,0 +1,223 @@
+=== RUN   TestNewBlockchainProvider
+--- PASS: TestNewBlockchainProvider (0.00s)
+=== RUN   TestBlockchainProvider_GetBlock
+--- PASS: TestBlockchainProvider_GetBlock (0.00s)
+=== RUN   TestBlockchainProvider_GetLatestBlock
+--- PASS: TestBlockchainProvider_GetLatestBlock (0.00s)
+=== RUN   TestBlockchainProvider_GetLatestBlock_NoBlocks
+--- PASS: TestBlockchainProvider_GetLatestBlock_NoBlocks (0.00s)
+=== RUN   TestBlockchainProvider_GetBlockByHeight
+    blockchain_provider_test.go:277: Serialized block data length: 108
+    blockchain_provider_test.go:285: Stored data length: 108
+--- PASS: TestBlockchainProvider_GetBlockByHeight (0.00s)
+=== RUN   TestBlockchainProvider_GetTransaction
+--- PASS: TestBlockchainProvider_GetTransaction (0.00s)
+=== RUN   TestBlockchainProvider_GetTransactionsByBlock
+--- PASS: TestBlockchainProvider_GetTransactionsByBlock (0.00s)
+=== RUN   TestBlockchainProvider_GetAddressBalance
+--- PASS: TestBlockchainProvider_GetAddressBalance (0.00s)
+=== RUN   TestBlockchainProvider_GetAddressTransactions
+--- PASS: TestBlockchainProvider_GetAddressTransactions (0.00s)
+=== RUN   TestBlockchainProvider_GetAddressUTXOs
+--- PASS: TestBlockchainProvider_GetAddressUTXOs (0.00s)
+=== RUN   TestBlockchainProvider_GetBlockchainStats
+--- PASS: TestBlockchainProvider_GetBlockchainStats (0.00s)
+=== RUN   TestBlockchainProvider_GetNetworkInfo
+--- PASS: TestBlockchainProvider_GetNetworkInfo (0.00s)
+=== RUN   TestBlockchainProvider_HelperMethods
+--- PASS: TestBlockchainProvider_HelperMethods (0.00s)
+=== RUN   TestBlockchainProvider_GetPendingTransactions
+--- PASS: TestBlockchainProvider_GetPendingTransactions (0.00s)
+=== RUN   TestBlockchainProvider_TransactionInvolvesAddress
+=== RUN   TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_input_address
+=== RUN   TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_only_output_address
+=== RUN   TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_no_addresses
+=== RUN   TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_nil_inputs/outputs
+=== RUN   TestBlockchainProvider_TransactionInvolvesAddress/case_sensitive_address_matching
+--- PASS: TestBlockchainProvider_TransactionInvolvesAddress (0.00s)
+    --- PASS: TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_input_address (0.00s)
+    --- PASS: TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_only_output_address (0.00s)
+    --- PASS: TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_no_addresses (0.00s)
+    --- PASS: TestBlockchainProvider_TransactionInvolvesAddress/transaction_with_nil_inputs/outputs (0.00s)
+    --- PASS: TestBlockchainProvider_TransactionInvolvesAddress/case_sensitive_address_matching (0.00s)
+=== RUN   TestBlockchainProvider_AddressBalanceWithUTXOStore
+=== RUN   TestBlockchainProvider_AddressBalanceWithUTXOStore/get_balance_for_address_with_UTXOs
+=== RUN   TestBlockchainProvider_AddressBalanceWithUTXOStore/get_balance_for_address_with_single_UTXO
+=== RUN   TestBlockchainProvider_AddressBalanceWithUTXOStore/get_balance_for_address_without_UTXOs
+--- PASS: TestBlockchainProvider_AddressBalanceWithUTXOStore (0.00s)
+    --- PASS: TestBlockchainProvider_AddressBalanceWithUTXOStore/get_balance_for_address_with_UTXOs (0.00s)
+    --- PASS: TestBlockchainProvider_AddressBalanceWithUTXOStore/get_balance_for_address_with_single_UTXO (0.00s)
+    --- PASS: TestBlockchainProvider_AddressBalanceWithUTXOStore/get_balance_for_address_without_UTXOs (0.00s)
+=== RUN   TestBlockchainProvider_AddressBalanceWithoutUTXOStore
+=== RUN   TestBlockchainProvider_AddressBalanceWithoutUTXOStore/get_balance_without_UTXO_store
+--- PASS: TestBlockchainProvider_AddressBalanceWithoutUTXOStore (0.00s)
+    --- PASS: TestBlockchainProvider_AddressBalanceWithoutUTXOStore/get_balance_without_UTXO_store (0.00s)
+=== RUN   TestNewInMemoryCache
+=== RUN   TestNewInMemoryCache/zero_size
+=== RUN   TestNewInMemoryCache/positive_size
+=== RUN   TestNewInMemoryCache/large_size
+--- PASS: TestNewInMemoryCache (0.00s)
+    --- PASS: TestNewInMemoryCache/zero_size (0.00s)
+    --- PASS: TestNewInMemoryCache/positive_size (0.00s)
+    --- PASS: TestNewInMemoryCache/large_size (0.00s)
+=== RUN   TestInMemoryCache_Get
+=== RUN   TestInMemoryCache_Get/get_non-existent_key
+=== RUN   TestInMemoryCache_Get/get_existing_key
+=== RUN   TestInMemoryCache_Get/get_expired_key
+=== RUN   TestInMemoryCache_Get/get_key_with_short_TTL
+--- PASS: TestInMemoryCache_Get (0.02s)
+    --- PASS: TestInMemoryCache_Get/get_non-existent_key (0.00s)
+    --- PASS: TestInMemoryCache_Get/get_existing_key (0.00s)
+    --- PASS: TestInMemoryCache_Get/get_expired_key (0.00s)
+    --- PASS: TestInMemoryCache_Get/get_key_with_short_TTL (0.02s)
+=== RUN   TestInMemoryCache_Set
+=== RUN   TestInMemoryCache_Set/set_new_key
+=== RUN   TestInMemoryCache_Set/set_existing_key
+=== RUN   TestInMemoryCache_Set/set_multiple_keys
+=== RUN   TestInMemoryCache_Set/eviction_when_full
+=== RUN   TestInMemoryCache_Set/set_with_zero_TTL
+--- PASS: TestInMemoryCache_Set (0.00s)
+    --- PASS: TestInMemoryCache_Set/set_new_key (0.00s)
+    --- PASS: TestInMemoryCache_Set/set_existing_key (0.00s)
+    --- PASS: TestInMemoryCache_Set/set_multiple_keys (0.00s)
+    --- PASS: TestInMemoryCache_Set/eviction_when_full (0.00s)
+    --- PASS: TestInMemoryCache_Set/set_with_zero_TTL (0.00s)
+=== RUN   TestInMemoryCache_Delete
+=== RUN   TestInMemoryCache_Delete/delete_non-existent_key
+=== RUN   TestInMemoryCache_Delete/delete_existing_key
+=== RUN   TestInMemoryCache_Delete/delete_multiple_keys
+--- PASS: TestInMemoryCache_Delete (0.00s)
+    --- PASS: TestInMemoryCache_Delete/delete_non-existent_key (0.00s)
+    --- PASS: TestInMemoryCache_Delete/delete_existing_key (0.00s)
+    --- PASS: TestInMemoryCache_Delete/delete_multiple_keys (0.00s)
+=== RUN   TestInMemoryCache_Clear
+=== RUN   TestInMemoryCache_Clear/clear_empty_cache
+=== RUN   TestInMemoryCache_Clear/clear_populated_cache
+--- PASS: TestInMemoryCache_Clear (0.00s)
+    --- PASS: TestInMemoryCache_Clear/clear_empty_cache (0.00s)
+    --- PASS: TestInMemoryCache_Clear/clear_populated_cache (0.00s)
+=== RUN   TestInMemoryCache_GetStats
+=== RUN   TestInMemoryCache_GetStats/initial_stats
+=== RUN   TestInMemoryCache_GetStats/stats_after_operations
+=== RUN   TestInMemoryCache_GetStats/stats_after_clear
+--- PASS: TestInMemoryCache_GetStats (0.00s)
+    --- PASS: TestInMemoryCache_GetStats/initial_stats (0.00s)
+    --- PASS: TestInMemoryCache_GetStats/stats_after_operations (0.00s)
+    --- PASS: TestInMemoryCache_GetStats/stats_after_clear (0.00s)
+=== RUN   TestInMemoryCache_Eviction
+=== RUN   TestInMemoryCache_Eviction/eviction_order
+=== RUN   TestInMemoryCache_Eviction/eviction_with_expired_items
+--- PASS: TestInMemoryCache_Eviction (0.00s)
+    --- PASS: TestInMemoryCache_Eviction/eviction_order (0.00s)
+    --- PASS: TestInMemoryCache_Eviction/eviction_with_expired_items (0.00s)
+=== RUN   TestInMemoryCache_Concurrency
+--- PASS: TestInMemoryCache_Concurrency (0.02s)
+=== RUN   TestInMemoryCache_EdgeCases
+=== RUN   TestInMemoryCache_EdgeCases/nil_value
+=== RUN   TestInMemoryCache_EdgeCases/empty_string_key
+=== RUN   TestInMemoryCache_EdgeCases/very_long_key
+=== RUN   TestInMemoryCache_EdgeCases/negative_max_size
+--- PASS: TestInMemoryCache_EdgeCases (0.00s)
+    --- PASS: TestInMemoryCache_EdgeCases/nil_value (0.00s)
+    --- PASS: TestInMemoryCache_EdgeCases/empty_string_key (0.00s)
+    --- PASS: TestInMemoryCache_EdgeCases/very_long_key (0.00s)
+    --- PASS: TestInMemoryCache_EdgeCases/negative_max_size (0.00s)
+=== RUN   TestCacheStats_Methods
+=== RUN   TestCacheStats_Methods/size_operations
+=== RUN   TestCacheStats_Methods/hit/miss_recording
+=== RUN   TestCacheStats_Methods/reset_size
+--- PASS: TestCacheStats_Methods (0.00s)
+    --- PASS: TestCacheStats_Methods/size_operations (0.00s)
+    --- PASS: TestCacheStats_Methods/hit/miss_recording (0.00s)
+    --- PASS: TestCacheStats_Methods/reset_size (0.00s)
+=== RUN   TestInMemoryCache_Performance
+    cache_provider_test.go:445: Performance: Set 10k items in 85.722008ms, Get 10k items in 48.882485ms
+--- PASS: TestInMemoryCache_Performance (0.13s)
+=== RUN   TestNewSimpleSearchProvider
+--- PASS: TestNewSimpleSearchProvider (0.00s)
+=== RUN   TestSimpleSearchProvider_Search
+=== RUN   TestSimpleSearchProvider_Search/empty_query
+=== RUN   TestSimpleSearchProvider_Search/whitespace_only_query
+=== RUN   TestSimpleSearchProvider_Search/block_hash_search
+=== RUN   TestSimpleSearchProvider_Search/transaction_hash_search
+    search_provider_test.go:240: Storing transaction with hash: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+    search_provider_test.go:241: Transaction hash bytes: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+    search_provider_test.go:242: Mock provider transactions: map[abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890:Transaction{Hash: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890, Inputs: 0, Outputs: 0, Fee: 100} ´ÕÔ4Vxê´ÕÔ4Vxê´ÕÔ4Vxê´ÕÔ4Vxê:Transaction{Hash: abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890, Inputs: 0, Outputs: 0, Fee: 100}]
+    search_provider_test.go:243: Mock provider blocks: map["ﬁØY7x√åsk∂”DïªV ùSlëN+:Block{Height: 100, Hash: 22de01af1f59371e1078c38c736bb603d34495bb1156ca9d0153166c914e2bf0, Transactions: 2} 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef:Block{Height: 100, Hash: 22de01af1f59371e1078c38c736bb603d34495bb1156ca9d0153166c914e2bf0, Transactions: 2} blockhash1234567890abcdef1234567890abcdef1234567890abcdef1234567890:Block{Height: 200, Hash: 67fde7de8316becc1b18107d6ee9beabfdfc68982c6403141848b443b40983fd, Transactions: 1} g˝ÁﬁÉæÃ}nÈæ´˝¸hò,dH¥C¥	É˝:Block{Height: 200, Hash: 67fde7de8316becc1b18107d6ee9beabfdfc68982c6403141848b443b40983fd, Transactions: 1} height_100:Block{Height: 100, Hash: 22de01af1f59371e1078c38c736bb603d34495bb1156ca9d0153166c914e2bf0, Transactions: 2} height_200:Block{Height: 200, Hash: 67fde7de8316becc1b18107d6ee9beabfdfc68982c6403141848b443b40983fd, Transactions: 1}]
+=== RUN   TestSimpleSearchProvider_Search/address_search
+=== RUN   TestSimpleSearchProvider_Search/numeric_query
+=== RUN   TestSimpleSearchProvider_Search/no_results_found
+--- PASS: TestSimpleSearchProvider_Search (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/empty_query (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/whitespace_only_query (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/block_hash_search (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/transaction_hash_search (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/address_search (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/numeric_query (0.00s)
+    --- PASS: TestSimpleSearchProvider_Search/no_results_found (0.00s)
+=== RUN   TestSimpleSearchProvider_SearchBlocks
+=== RUN   TestSimpleSearchProvider_SearchBlocks/search_all_blocks
+=== RUN   TestSimpleSearchProvider_SearchBlocks/search_with_limit
+=== RUN   TestSimpleSearchProvider_SearchBlocks/search_with_offset
+=== RUN   TestSimpleSearchProvider_SearchBlocks/search_with_query
+--- PASS: TestSimpleSearchProvider_SearchBlocks (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchBlocks/search_all_blocks (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchBlocks/search_with_limit (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchBlocks/search_with_offset (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchBlocks/search_with_query (0.00s)
+=== RUN   TestSimpleSearchProvider_SearchTransactions
+=== RUN   TestSimpleSearchProvider_SearchTransactions/search_all_transactions
+=== RUN   TestSimpleSearchProvider_SearchTransactions/search_with_limit
+=== RUN   TestSimpleSearchProvider_SearchTransactions/search_with_offset
+=== RUN   TestSimpleSearchProvider_SearchTransactions/search_with_query
+--- PASS: TestSimpleSearchProvider_SearchTransactions (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchTransactions/search_all_transactions (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchTransactions/search_with_limit (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchTransactions/search_with_offset (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchTransactions/search_with_query (0.00s)
+=== RUN   TestSimpleSearchProvider_SearchAddresses
+=== RUN   TestSimpleSearchProvider_SearchAddresses/search_all_addresses
+=== RUN   TestSimpleSearchProvider_SearchAddresses/search_with_limit
+=== RUN   TestSimpleSearchProvider_SearchAddresses/search_with_offset
+=== RUN   TestSimpleSearchProvider_SearchAddresses/search_with_query
+--- PASS: TestSimpleSearchProvider_SearchAddresses (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchAddresses/search_all_addresses (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchAddresses/search_with_limit (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchAddresses/search_with_offset (0.00s)
+    --- PASS: TestSimpleSearchProvider_SearchAddresses/search_with_query (0.00s)
+=== RUN   TestSimpleSearchProvider_HelperMethods
+=== RUN   TestSimpleSearchProvider_HelperMethods/findTransactionBlock
+=== RUN   TestSimpleSearchProvider_HelperMethods/blockMatchesQuery
+=== RUN   TestSimpleSearchProvider_HelperMethods/transactionMatchesQuery
+=== RUN   TestSimpleSearchProvider_HelperMethods/generateSuggestions
+--- PASS: TestSimpleSearchProvider_HelperMethods (0.00s)
+    --- PASS: TestSimpleSearchProvider_HelperMethods/findTransactionBlock (0.00s)
+    --- PASS: TestSimpleSearchProvider_HelperMethods/blockMatchesQuery (0.00s)
+    --- PASS: TestSimpleSearchProvider_HelperMethods/transactionMatchesQuery (0.00s)
+    --- PASS: TestSimpleSearchProvider_HelperMethods/generateSuggestions (0.00s)
+=== RUN   TestUtilityFunctions
+=== RUN   TestUtilityFunctions/isHexString
+=== RUN   TestUtilityFunctions/isBase58String
+=== RUN   TestUtilityFunctions/isNumericString
+=== RUN   TestUtilityFunctions/parseUint64
+--- PASS: TestUtilityFunctions (0.00s)
+    --- PASS: TestUtilityFunctions/isHexString (0.00s)
+    --- PASS: TestUtilityFunctions/isBase58String (0.00s)
+    --- PASS: TestUtilityFunctions/isNumericString (0.00s)
+    --- PASS: TestUtilityFunctions/parseUint64 (0.00s)
+=== RUN   TestSimpleSearchProvider_EdgeCases
+=== RUN   TestSimpleSearchProvider_EdgeCases/invalid_hex_string
+=== RUN   TestSimpleSearchProvider_EdgeCases/very_long_query
+=== RUN   TestSimpleSearchProvider_EdgeCases/special_characters_in_query
+=== RUN   TestSimpleSearchProvider_EdgeCases/unicode_characters_in_query
+--- PASS: TestSimpleSearchProvider_EdgeCases (0.00s)
+    --- PASS: TestSimpleSearchProvider_EdgeCases/invalid_hex_string (0.00s)
+    --- PASS: TestSimpleSearchProvider_EdgeCases/very_long_query (0.00s)
+    --- PASS: TestSimpleSearchProvider_EdgeCases/special_characters_in_query (0.00s)
+    --- PASS: TestSimpleSearchProvider_EdgeCases/unicode_characters_in_query (0.00s)
+=== RUN   TestSimpleSearchProvider_Performance
+    search_provider_test.go:670: Performance: Searched 1000 blocks in 10.287061ms
+--- PASS: TestSimpleSearchProvider_Performance (0.02s)
+PASS
+coverage: 92.1% of statements
+ok  	github.com/gochain/gochain/pkg/explorer/data	1.242s	coverage: 92.1% of statements

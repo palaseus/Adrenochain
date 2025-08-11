@@ -1,0 +1,25 @@
+=== RUN   TestNewSystemHealth
+--- PASS: TestNewSystemHealth (0.00s)
+=== RUN   TestRegisterComponent
+--- PASS: TestRegisterComponent (0.00s)
+=== RUN   TestUnregisterComponent
+--- PASS: TestUnregisterComponent (0.00s)
+=== RUN   TestUpdateComponent
+--- PASS: TestUpdateComponent (0.00s)
+=== RUN   TestGetOverallStatus
+--- PASS: TestGetOverallStatus (0.00s)
+=== RUN   TestRunHealthChecks
+--- PASS: TestRunHealthChecks (0.20s)
+=== RUN   TestGetHealthReport
+--- PASS: TestGetHealthReport (0.00s)
+=== RUN   TestGetHealthJSON
+--- PASS: TestGetHealthJSON (0.00s)
+=== RUN   TestComponentStatus
+--- PASS: TestComponentStatus (0.00s)
+=== RUN   TestStatusConstants
+--- PASS: TestStatusConstants (0.00s)
+=== RUN   TestComponentFields
+--- PASS: TestComponentFields (0.00s)
+PASS
+coverage: 76.5% of statements
+ok  	github.com/gochain/gochain/pkg/health	1.239s	coverage: 76.5% of statements

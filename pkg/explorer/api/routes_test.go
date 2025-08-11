@@ -14,9 +14,9 @@ import (
 func TestSetupRoutes(t *testing.T) {
 	handler := &ExplorerHandler{}
 	router := SetupRoutes(handler)
-	
+
 	assert.NotNil(t, router)
-	
+
 	// Test that the router is properly configured
 	assert.IsType(t, &mux.Router{}, router)
 }
@@ -24,13 +24,13 @@ func TestSetupRoutes(t *testing.T) {
 func TestCorsMiddleware(t *testing.T) {
 	handler := &ExplorerHandler{}
 	router := SetupRoutes(handler)
-	
+
 	// Test CORS headers are set on a simple route that doesn't require service
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
-	
+
 	router.ServeHTTP(w, req)
-	
+
 	// Check CORS headers - note that writeJSONResponse also sets some CORS headers
 	assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 	assert.Equal(t, "GET, POST, OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))
@@ -42,16 +42,16 @@ func TestCorsMiddleware(t *testing.T) {
 func TestCorsPreflightRequest(t *testing.T) {
 	handler := &ExplorerHandler{}
 	router := SetupRoutes(handler)
-	
+
 	// Test OPTIONS preflight request
 	req := httptest.NewRequest("OPTIONS", "/health", nil)
 	w := httptest.NewRecorder()
-	
+
 	router.ServeHTTP(w, req)
-	
+
 	// Should return 200 OK for preflight
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	// Check CORS headers are set
 	assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 	assert.Equal(t, "GET, POST, OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))
@@ -63,12 +63,12 @@ func TestResponseWriterWrapper(t *testing.T) {
 	// Test the responseWriter wrapper functionality
 	original := httptest.NewRecorder()
 	wrapped := &responseWriter{ResponseWriter: original, statusCode: http.StatusOK}
-	
+
 	// Test WriteHeader
 	wrapped.WriteHeader(http.StatusNotFound)
 	assert.Equal(t, http.StatusNotFound, wrapped.statusCode)
 	assert.Equal(t, http.StatusNotFound, original.Code)
-	
+
 	// Test Write
 	testData := []byte("test data")
 	n, err := wrapped.Write(testData)
@@ -82,7 +82,7 @@ func TestRouteRegistration(t *testing.T) {
 	mockService := &MockExplorerService{}
 	handler := NewExplorerHandler(mockService)
 	router := SetupRoutes(handler)
-	
+
 	// Test that all expected routes are registered
 	expectedRoutes := []string{
 		"/health",
@@ -92,11 +92,11 @@ func TestRouteRegistration(t *testing.T) {
 		"/api/v1/search",
 		"/api/v1/statistics",
 	}
-	
+
 	for _, route := range expectedRoutes {
 		req := httptest.NewRequest("GET", route, nil)
 		w := httptest.NewRecorder()
-		
+
 		// Set up mock expectations for routes that require service
 		if route != "/health" {
 			switch route {
@@ -118,9 +118,9 @@ func TestRouteRegistration(t *testing.T) {
 				mockService.On("GetStatistics", mock.Anything).Return(nil, fmt.Errorf("mock error"))
 			}
 		}
-		
+
 		router.ServeHTTP(w, req)
-		
+
 		// Route should exist (even if handler returns error)
 		// We're just checking that the route is registered, not that it works
 		// For routes that require service, we expect 500 error, not 404
@@ -130,20 +130,20 @@ func TestRouteRegistration(t *testing.T) {
 			assert.NotEqual(t, http.StatusNotFound, w.Code, "Route %s not found", route)
 		}
 	}
-	
+
 	mockService.AssertExpectations(t)
 }
 
 func TestMiddlewareOrder(t *testing.T) {
 	handler := &ExplorerHandler{}
 	router := SetupRoutes(handler)
-	
+
 	// Test that middleware is applied in correct order
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
-	
+
 	router.ServeHTTP(w, req)
-	
+
 	// Both CORS and logging middleware should be applied
 	assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 	// Note: logging middleware doesn't modify headers, so we can't easily test it
@@ -155,27 +155,27 @@ func TestRouterSubrouter(t *testing.T) {
 	mockService := &MockExplorerService{}
 	handler := NewExplorerHandler(mockService)
 	router := SetupRoutes(handler)
-	
+
 	// Test that API v1 subrouter is properly configured
 	req := httptest.NewRequest("GET", "/api/v1/dashboard", nil)
 	w := httptest.NewRecorder()
-	
+
 	// Set up mock expectation
 	mockService.On("GetDashboard", mock.Anything).Return(nil, fmt.Errorf("mock error"))
-	
+
 	router.ServeHTTP(w, req)
-	
+
 	// Should not return 404 (route exists)
 	assert.NotEqual(t, http.StatusNotFound, w.Code)
-	
+
 	// Test that non-API routes still work
 	req = httptest.NewRequest("GET", "/health", nil)
 	w = httptest.NewRecorder()
-	
+
 	router.ServeHTTP(w, req)
-	
+
 	// Health route should work
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	mockService.AssertExpectations(t)
 }

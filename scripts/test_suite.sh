@@ -187,8 +187,8 @@ run_package_tests() {
         echo -e "${GREEN}✅ Package $package_name tests passed (${duration}s)${NC}"
         PASSED_PACKAGES=$((PASSED_PACKAGES + 1))
         
-        # Count tests from output
-        local test_count=$(grep -c "^=== RUN\|^--- PASS\|^--- FAIL\|^--- SKIP" "$test_file" 2>/dev/null | tr -d '\n' || echo "0")
+        # Count tests from output (only actual test results, not test function names)
+        local test_count=$(grep -c "^--- PASS\|^--- FAIL\|^--- SKIP" "$test_file" 2>/dev/null | tr -d '\n' || echo "0")
         test_count=${test_count:-0}
         TOTAL_TESTS=$((TOTAL_TESTS + test_count))
         
@@ -215,8 +215,8 @@ run_package_tests() {
         FAILED_PACKAGES=$((FAILED_PACKAGES + 1))
         exit_code=1
         
-        # Count tests from output
-        local test_count=$(grep -c "^=== RUN\|^--- PASS\|^--- FAIL\|^--- SKIP" "$test_file" 2>/dev/null | tr -d '\n' || echo "0")
+        # Count tests from output (only actual test results, not test function names)
+        local test_count=$(grep -c "^--- PASS\|^--- FAIL\|^--- SKIP" "$test_file" 2>/dev/null | tr -d '\n' || echo "0")
         test_count=${test_count:-0}
         TOTAL_TESTS=$((TOTAL_TESTS + test_count))
         

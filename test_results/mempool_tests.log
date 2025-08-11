@@ -1,0 +1,38 @@
+=== RUN   TestMempool
+--- PASS: TestMempool (0.23s)
+=== RUN   TestMempoolEviction
+--- PASS: TestMempoolEviction (0.02s)
+=== RUN   TestTransactionValidation
+--- PASS: TestTransactionValidation (0.00s)
+=== RUN   TestFeeRateValidation
+--- PASS: TestFeeRateValidation (0.00s)
+=== RUN   TestTransactionSizeLimits
+--- PASS: TestTransactionSizeLimits (0.00s)
+=== RUN   TestUTXOValidation
+--- PASS: TestUTXOValidation (0.00s)
+=== RUN   TestDoSProtection
+    mempool_test.go:377: Added 600 transactions out of 600 attempts, failed: 0
+    mempool_test.go:378: Current mempool size: 126600, transaction count: 600
+--- PASS: TestDoSProtection (0.58s)
+=== RUN   TestMempoolStats
+--- PASS: TestMempoolStats (0.00s)
+=== RUN   TestConcurrentAccess
+--- PASS: TestConcurrentAccess (0.00s)
+=== RUN   TestEnhancedTransactionValidation
+--- PASS: TestEnhancedTransactionValidation (0.00s)
+=== RUN   TestEnhancedFeeRateValidation
+--- PASS: TestEnhancedFeeRateValidation (0.00s)
+=== RUN   TestTransactionSecurityValidation
+--- PASS: TestTransactionSecurityValidation (0.00s)
+=== RUN   TestUTXOSpentInMempool
+--- PASS: TestUTXOSpentInMempool (0.00s)
+=== RUN   TestDynamicFeeRateValidation
+--- PASS: TestDynamicFeeRateValidation (0.04s)
+=== RUN   TestMempoolDoSProtection
+    mempool_test.go:696: Added 600 transactions out of 600 attempts
+--- PASS: TestMempoolDoSProtection (0.59s)
+=== RUN   TestConcurrentSecurityValidation
+--- PASS: TestConcurrentSecurityValidation (0.00s)
+PASS
+coverage: 71.5% of statements
+ok  	github.com/gochain/gochain/pkg/mempool	2.516s	coverage: 71.5% of statements

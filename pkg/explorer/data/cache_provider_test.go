@@ -2,294 +2,445 @@ package data
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// MockCacheProvider implements CacheProvider interface for testing
-type MockCacheProvider struct {
-	cache map[string]interface{}
-	ttl   map[string]time.Time
-	mu    sync.RWMutex
-}
-
-func NewMockCacheProvider() *MockCacheProvider {
-	return &MockCacheProvider{
-		cache: make(map[string]interface{}),
-		ttl:   make(map[string]time.Time),
+// getCacheKeys is a helper function to get all keys in the cache for debugging
+func getCacheKeys(cache *InMemoryCache) []string {
+	keys := make([]string, 0, len(cache.cache))
+	for key := range cache.cache {
+		keys = append(keys, key)
 	}
+	return keys
 }
 
-func (mcp *MockCacheProvider) Get(key string) (interface{}, bool) {
-	mcp.mu.RLock()
-	defer mcp.mu.RUnlock()
-	
-	if value, exists := mcp.cache[key]; exists {
-		if ttl, hasTTL := mcp.ttl[key]; hasTTL && time.Now().After(ttl) {
-			delete(mcp.cache, key)
-			delete(mcp.ttl, key)
-			return nil, false
-		}
-		return value, true
+func TestNewInMemoryCache(t *testing.T) {
+	tests := []struct {
+		name     string
+		maxSize  int
+		expected int
+	}{
+		{"zero size", 0, 0},
+		{"positive size", 100, 100},
+		{"large size", 10000, 10000},
 	}
-	return nil, false
-}
 
-func (mcp *MockCacheProvider) Set(key string, value interface{}, ttl time.Duration) {
-	mcp.mu.Lock()
-	defer mcp.mu.Unlock()
-	
-	mcp.cache[key] = value
-	if ttl > 0 {
-		mcp.ttl[key] = time.Now().Add(ttl)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := NewInMemoryCache(tt.maxSize)
+			require.NotNil(t, cache)
+			assert.Equal(t, tt.expected, cache.stats.maxSize)
+			assert.Equal(t, 0, cache.stats.getSize())
+			assert.Equal(t, int64(0), cache.stats.hits)
+			assert.Equal(t, int64(0), cache.stats.misses)
+		})
 	}
 }
 
-func (mcp *MockCacheProvider) Delete(key string) {
-	mcp.mu.Lock()
-	defer mcp.mu.Unlock()
-	
-	delete(mcp.cache, key)
-	delete(mcp.ttl, key)
+func TestInMemoryCache_Get(t *testing.T) {
+	cache := NewInMemoryCache(10)
+
+	t.Run("get non-existent key", func(t *testing.T) {
+		value, exists := cache.Get("nonexistent")
+		assert.Nil(t, value)
+		assert.False(t, exists)
+		assert.Equal(t, int64(1), cache.stats.misses)
+	})
+
+	t.Run("get existing key", func(t *testing.T) {
+		testValue := "test value"
+		cache.Set("test", testValue, time.Hour)
+
+		value, exists := cache.Get("test")
+		assert.Equal(t, testValue, value)
+		assert.True(t, exists)
+		assert.Equal(t, int64(1), cache.stats.hits)
+	})
+
+	t.Run("get expired key", func(t *testing.T) {
+		cache.Set("expired", "expired value", -time.Hour) // Already expired
+
+		value, exists := cache.Get("expired")
+		assert.Nil(t, value)
+		assert.False(t, exists)
+		// Should be removed and counted as miss
+		assert.Equal(t, int64(2), cache.stats.misses)
+	})
+
+	t.Run("get key with short TTL", func(t *testing.T) {
+		cache.Set("short", "short value", 10*time.Millisecond)
+
+		// Get immediately
+		value, exists := cache.Get("short")
+		assert.Equal(t, "short value", value)
+		assert.True(t, exists)
+
+		// Wait for expiration
+		time.Sleep(20 * time.Millisecond)
+
+		value, exists = cache.Get("short")
+		assert.Nil(t, value)
+		assert.False(t, exists)
+	})
 }
 
-func (mcp *MockCacheProvider) Clear() {
-	mcp.mu.Lock()
-	defer mcp.mu.Unlock()
-	
-	mcp.cache = make(map[string]interface{})
-	mcp.ttl = make(map[string]time.Time)
+func TestInMemoryCache_Set(t *testing.T) {
+	cache := NewInMemoryCache(3)
+
+	t.Run("set new key", func(t *testing.T) {
+		cache.Set("key1", "value1", time.Hour)
+		assert.Equal(t, 1, cache.stats.getSize())
+
+		value, exists := cache.Get("key1")
+		assert.Equal(t, "value1", value)
+		assert.True(t, exists)
+	})
+
+	t.Run("set existing key", func(t *testing.T) {
+		cache.Set("key1", "new value", time.Hour)
+		assert.Equal(t, 1, cache.stats.getSize()) // Size shouldn't change
+
+		value, exists := cache.Get("key1")
+		assert.Equal(t, "new value", value)
+		assert.True(t, exists)
+	})
+
+	t.Run("set multiple keys", func(t *testing.T) {
+		cache.Set("key2", "value2", time.Hour)
+		cache.Set("key3", "value3", time.Hour)
+		assert.Equal(t, 3, cache.stats.getSize())
+	})
+
+	t.Run("eviction when full", func(t *testing.T) {
+		// Cache is now full (3 items: key1, key2, key3)
+		// Adding key4 should trigger eviction of one item
+		cache.Set("key4", "value4", time.Hour)
+
+		// One of the existing keys should be evicted (implementation dependent)
+		// Since key1 was updated, it might not be the one evicted
+		// Let's check that we have exactly 3 items total
+		assert.Equal(t, 3, cache.stats.getSize())
+
+		// New item should exist
+		value, exists := cache.Get("key4")
+		assert.Equal(t, "value4", value)
+		assert.True(t, exists)
+
+		// Verify we have exactly 3 items
+		assert.Equal(t, 3, cache.stats.getSize())
+	})
+
+	t.Run("set with zero TTL", func(t *testing.T) {
+		cache.Set("zero", "zero value", 0)
+
+		value, exists := cache.Get("zero")
+		assert.Nil(t, value)
+		assert.False(t, exists)
+	})
 }
 
-func (mcp *MockCacheProvider) GetStats() map[string]interface{} {
-	return map[string]interface{}{
-		"total_keys": len(mcp.cache),
-		"total_ttl":  len(mcp.ttl),
-	}
+func TestInMemoryCache_Delete(t *testing.T) {
+	cache := NewInMemoryCache(10)
+
+	t.Run("delete non-existent key", func(t *testing.T) {
+		cache.Delete("nonexistent")
+		assert.Equal(t, 0, cache.stats.getSize())
+	})
+
+	t.Run("delete existing key", func(t *testing.T) {
+		cache.Set("delete", "delete value", time.Hour)
+		assert.Equal(t, 1, cache.stats.getSize())
+
+		cache.Delete("delete")
+		assert.Equal(t, 0, cache.stats.getSize())
+
+		value, exists := cache.Get("delete")
+		assert.Nil(t, value)
+		assert.False(t, exists)
+	})
+
+	t.Run("delete multiple keys", func(t *testing.T) {
+		cache.Set("key1", "value1", time.Hour)
+		cache.Set("key2", "value2", time.Hour)
+		cache.Set("key3", "value3", time.Hour)
+		assert.Equal(t, 3, cache.stats.getSize())
+
+		cache.Delete("key1")
+		cache.Delete("key3")
+		assert.Equal(t, 1, cache.stats.getSize())
+
+		value, exists := cache.Get("key2")
+		assert.Equal(t, "value2", value)
+		assert.True(t, exists)
+	})
 }
 
-func TestCacheProvider_Get(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Test getting non-existent key
-	value, exists := cache.Get("non-existent")
-	if exists {
-		t.Error("Expected key to not exist")
-	}
-	if value != nil {
-		t.Error("Expected value to be nil")
-	}
-	
-	// Test getting existing key
-	expectedValue := "test-value"
-	cache.Set("test-key", expectedValue, 0)
-	
-	value, exists = cache.Get("test-key")
-	if !exists {
-		t.Error("Expected key to exist")
-	}
-	if value != expectedValue {
-		t.Errorf("Expected value %v, got %v", expectedValue, value)
-	}
+func TestInMemoryCache_Clear(t *testing.T) {
+	cache := NewInMemoryCache(10)
+
+	t.Run("clear empty cache", func(t *testing.T) {
+		cache.Clear()
+		assert.Equal(t, 0, cache.stats.getSize())
+		assert.Equal(t, int64(0), cache.stats.hits)
+		assert.Equal(t, int64(0), cache.stats.misses)
+	})
+
+	t.Run("clear populated cache", func(t *testing.T) {
+		cache.Set("key1", "value1", time.Hour)
+		cache.Set("key2", "value2", time.Hour)
+		assert.Equal(t, 2, cache.stats.getSize())
+
+		cache.Clear()
+		assert.Equal(t, 0, cache.stats.getSize())
+
+		value, exists := cache.Get("key1")
+		assert.Nil(t, value)
+		assert.False(t, exists)
+	})
 }
 
-func TestCacheProvider_Set(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Test setting value without TTL
-	testValue := "test-value"
-	cache.Set("test-key", testValue, 0)
-	
-	value, exists := cache.Get("test-key")
-	if !exists {
-		t.Error("Expected key to exist after setting")
-	}
-	if value != testValue {
-		t.Errorf("Expected value %v, got %v", testValue, value)
-	}
-	
-	// Test setting value with TTL
-	cache.Set("ttl-key", "ttl-value", 100*time.Millisecond)
-	
-	value, exists = cache.Get("ttl-key")
-	if !exists {
-		t.Error("Expected key to exist immediately after setting")
-	}
-	
-	// Wait for TTL to expire
-	time.Sleep(150 * time.Millisecond)
-	
-	value, exists = cache.Get("ttl-key")
-	if exists {
-		t.Error("Expected key to not exist after TTL expiration")
-	}
+func TestInMemoryCache_GetStats(t *testing.T) {
+	cache := NewInMemoryCache(100)
+
+	t.Run("initial stats", func(t *testing.T) {
+		stats := cache.GetStats()
+		assert.Equal(t, int64(0), stats.Hits)
+		assert.Equal(t, int64(0), stats.Misses)
+		assert.Equal(t, 0, stats.Size)
+		assert.Equal(t, 100, stats.MaxSize)
+		assert.Equal(t, 0.0, stats.HitRate)
+	})
+
+	t.Run("stats after operations", func(t *testing.T) {
+		// Add some data
+		cache.Set("key1", "value1", time.Hour)
+		cache.Set("key2", "value2", time.Hour)
+
+		// Get some hits
+		cache.Get("key1")
+		cache.Get("key2")
+
+		// Get some misses
+		cache.Get("nonexistent1")
+		cache.Get("nonexistent2")
+
+		stats := cache.GetStats()
+		assert.Equal(t, int64(2), stats.Hits)
+		assert.Equal(t, int64(2), stats.Misses)
+		assert.Equal(t, 2, stats.Size)
+		assert.Equal(t, 100, stats.MaxSize)
+		assert.Equal(t, 0.5, stats.HitRate) // 2 hits / 4 total = 0.5
+	})
+
+	t.Run("stats after clear", func(t *testing.T) {
+		cache.Clear()
+
+		stats := cache.GetStats()
+		assert.Equal(t, int64(0), stats.Hits)
+		assert.Equal(t, int64(0), stats.Misses)
+		assert.Equal(t, 0, stats.Size)
+		assert.Equal(t, 100, stats.MaxSize)
+		assert.Equal(t, 0.0, stats.HitRate)
+	})
 }
 
-func TestCacheProvider_Delete(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Set a value
-	cache.Set("test-key", "test-value", 0)
-	
-	// Verify it exists
-	value, exists := cache.Get("test-key")
-	if !exists {
-		t.Error("Expected key to exist before deletion")
-	}
-	
-	// Delete the key
-	cache.Delete("test-key")
-	
-	// Verify it no longer exists
-	value, exists = cache.Get("test-key")
-	if exists {
-		t.Error("Expected key to not exist after deletion")
-	}
-	if value != nil {
-		t.Error("Expected value to be nil after deletion")
-	}
+func TestInMemoryCache_Eviction(t *testing.T) {
+	cache := NewInMemoryCache(3)
+
+	t.Run("eviction order", func(t *testing.T) {
+		// Fill cache
+		cache.Set("key1", "value1", time.Hour)
+		cache.Set("key2", "value2", time.Hour)
+		cache.Set("key3", "value3", time.Hour)
+		assert.Equal(t, 3, cache.stats.getSize())
+
+		// Add new item, should evict some items
+		cache.Set("key4", "value4", time.Hour)
+
+		// After eviction, size should be reduced
+		assert.True(t, cache.stats.getSize() <= 3, "Cache size should be reduced after eviction")
+
+		// At least one of the original keys should be evicted
+		_, key1Exists := cache.Get("key1")
+		_, key2Exists := cache.Get("key2")
+		_, key3Exists := cache.Get("key3")
+
+		// Not all original keys should exist
+		assert.False(t, key1Exists && key2Exists && key3Exists, "At least one key should be evicted")
+
+		// New key should exist
+		value, exists := cache.Get("key4")
+		assert.Equal(t, "value4", value)
+		assert.True(t, exists)
+	})
+
+	t.Run("eviction with expired items", func(t *testing.T) {
+		cache.Clear()
+
+		// Add items with different TTLs
+		cache.Set("expired1", "expired1", -time.Hour)
+		cache.Set("expired2", "expired2", -time.Hour)
+		cache.Set("valid", "valid", time.Hour)
+
+		// Try to get expired items (should be removed)
+		cache.Get("expired1")
+		cache.Get("expired2")
+
+		// Size should be 1 (only valid item)
+		assert.Equal(t, 1, cache.stats.getSize())
+
+		// Valid item should exist
+		value, exists := cache.Get("valid")
+		assert.Equal(t, "valid", value)
+		assert.True(t, exists)
+	})
 }
 
-func TestCacheProvider_Clear(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Set multiple values
-	cache.Set("key1", "value1", 0)
-	cache.Set("key2", "value2", 0)
-	cache.Set("key3", "value3", 0)
-	
-	// Verify they exist
-	if len(cache.cache) != 3 {
-		t.Errorf("Expected 3 keys, got %d", len(cache.cache))
-	}
-	
-	// Clear the cache
-	cache.Clear()
-	
-	// Verify all keys are gone
-	if len(cache.cache) != 0 {
-		t.Errorf("Expected 0 keys after clear, got %d", len(cache.cache))
-	}
-	
-	// Verify individual keys are gone
-	value, exists := cache.Get("key1")
-	if exists {
-		t.Error("Expected key1 to not exist after clear")
-	}
-	if value != nil {
-		t.Error("Expected value to be nil after clear")
-	}
-}
-
-func TestCacheProvider_GetStats(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Get initial stats
-	stats := cache.GetStats()
-	if stats["total_keys"] != 0 {
-		t.Errorf("Expected 0 total keys, got %v", stats["total_keys"])
-	}
-	
-	// Set some values
-	cache.Set("key1", "value1", 0)
-	cache.Set("key2", "value2", 100*time.Millisecond)
-	
-	// Get updated stats
-	stats = cache.GetStats()
-	if stats["total_keys"] != 2 {
-		t.Errorf("Expected 2 total keys, got %v", stats["total_keys"])
-	}
-	if stats["total_ttl"] != 1 {
-		t.Errorf("Expected 1 total TTL entries, got %v", stats["total_ttl"])
-	}
-}
-
-func TestCacheProvider_TTLExpiration(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Set value with very short TTL
-	cache.Set("short-ttl", "value", 10*time.Millisecond)
-	
-	// Verify it exists immediately
-	value, exists := cache.Get("short-ttl")
-	if !exists {
-		t.Error("Expected key to exist immediately")
-	}
-	
-	// Wait for TTL to expire
-	time.Sleep(20 * time.Millisecond)
-	
-	// Verify it's gone
-	value, exists = cache.Get("short-ttl")
-	if exists {
-		t.Error("Expected key to not exist after TTL expiration")
-	}
-	if value != nil {
-		t.Error("Expected value to be nil after TTL expiration")
-	}
-}
-
-func TestCacheProvider_ConcurrentAccess(t *testing.T) {
-	cache := NewMockCacheProvider()
+func TestInMemoryCache_Concurrency(t *testing.T) {
+	cache := NewInMemoryCache(1000)
 	done := make(chan bool)
-	
+
 	// Start multiple goroutines
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			for j := 0; j < 100; j++ {
-				key := fmt.Sprintf("key-%d-%d", id, j)
-				cache.Set(key, fmt.Sprintf("value-%d-%d", id, j), 0)
+				key := fmt.Sprintf("key_%d_%d", id, j)
+				value := fmt.Sprintf("value_%d_%d", id, j)
+
+				cache.Set(key, value, time.Hour)
 				cache.Get(key)
+				cache.Delete(key)
 			}
 			done <- true
 		}(i)
 	}
-	
+
 	// Wait for all goroutines to complete
 	for i := 0; i < 10; i++ {
 		<-done
 	}
-	
-	// Verify final state
+
+	// Cache should still be functional
 	stats := cache.GetStats()
-	expectedKeys := 1000 // 10 goroutines * 100 keys each
-	if stats["total_keys"] != expectedKeys {
-		t.Errorf("Expected %d total keys, got %v", expectedKeys, stats["total_keys"])
-	}
+	assert.True(t, stats.Size >= 0)
+	assert.True(t, stats.Size <= 1000)
 }
 
-func TestCacheProvider_EdgeCases(t *testing.T) {
-	cache := NewMockCacheProvider()
-	
-	// Test setting nil value
-	cache.Set("nil-key", nil, 0)
-	value, exists := cache.Get("nil-key")
-	if !exists {
-		t.Error("Expected nil key to exist")
+func TestInMemoryCache_EdgeCases(t *testing.T) {
+	cache := NewInMemoryCache(1)
+
+	t.Run("nil value", func(t *testing.T) {
+		cache.Set("nil", nil, time.Hour)
+		value, exists := cache.Get("nil")
+		assert.Nil(t, value)
+		assert.True(t, exists)
+	})
+
+	t.Run("empty string key", func(t *testing.T) {
+		cache.Set("", "empty key value", time.Hour)
+		value, exists := cache.Get("")
+		assert.Equal(t, "empty key value", value)
+		assert.True(t, exists)
+	})
+
+	t.Run("very long key", func(t *testing.T) {
+		longKey := string(make([]byte, 10000))
+		cache.Set(longKey, "long key value", time.Hour)
+		value, exists := cache.Get(longKey)
+		assert.Equal(t, "long key value", value)
+		assert.True(t, exists)
+	})
+
+	t.Run("negative max size", func(t *testing.T) {
+		negativeCache := NewInMemoryCache(-1)
+		negativeCache.Set("test", "value", time.Hour)
+
+		// Should handle gracefully
+		stats := negativeCache.GetStats()
+		assert.Equal(t, -1, stats.MaxSize)
+	})
+}
+
+func TestCacheStats_Methods(t *testing.T) {
+	stats := &cacheStats{maxSize: 100}
+
+	t.Run("size operations", func(t *testing.T) {
+		assert.Equal(t, 0, stats.getSize())
+
+		stats.increaseSize()
+		assert.Equal(t, 1, stats.getSize())
+
+		stats.increaseSize()
+		assert.Equal(t, 2, stats.getSize())
+
+		stats.decreaseSize()
+		assert.Equal(t, 1, stats.getSize())
+
+		stats.decreaseSize()
+		assert.Equal(t, 0, stats.getSize())
+
+		// Should not go below 0
+		stats.decreaseSize()
+		assert.Equal(t, 0, stats.getSize())
+	})
+
+	t.Run("hit/miss recording", func(t *testing.T) {
+		stats.resetSize()
+
+		stats.recordHit()
+		assert.Equal(t, int64(1), stats.hits)
+
+		stats.recordHit()
+		assert.Equal(t, int64(2), stats.hits)
+
+		stats.recordMiss()
+		assert.Equal(t, int64(1), stats.misses)
+
+		stats.recordMiss()
+		assert.Equal(t, int64(2), stats.misses)
+	})
+
+	t.Run("reset size", func(t *testing.T) {
+		stats.increaseSize()
+		stats.increaseSize()
+		assert.Equal(t, 2, stats.getSize())
+
+		stats.resetSize()
+		assert.Equal(t, 0, stats.getSize())
+	})
+}
+
+func TestInMemoryCache_Performance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping performance test in short mode")
 	}
-	if value != nil {
-		t.Error("Expected value to be nil")
+
+	cache := NewInMemoryCache(10000)
+
+	// Benchmark set operations
+	start := time.Now()
+	for i := 0; i < 10000; i++ {
+		key := fmt.Sprintf("perf_key_%d", i)
+		value := fmt.Sprintf("perf_value_%d", i)
+		cache.Set(key, value, time.Hour)
 	}
-	
-	// Test setting empty string key
-	cache.Set("", "empty-key-value", 0)
-	value, exists = cache.Get("")
-	if !exists {
-		t.Error("Expected empty key to exist")
+	setDuration := time.Since(start)
+
+	// Benchmark get operations
+	start = time.Now()
+	for i := 0; i < 10000; i++ {
+		key := fmt.Sprintf("perf_key_%d", i)
+		cache.Get(key)
 	}
-	if value != "empty-key-value" {
-		t.Errorf("Expected value 'empty-key-value', got %v", value)
-	}
-	
-	// Test setting very long key
-	longKey := string(make([]byte, 1000))
-	cache.Set(longKey, "long-key-value", 0)
-	value, exists = cache.Get(longKey)
-	if !exists {
-		t.Error("Expected long key to exist")
-	}
-	if value != "long-key-value" {
-		t.Errorf("Expected value 'long-key-value', got %v", value)
-	}
+	getDuration := time.Since(start)
+
+	// Performance assertions - use more realistic thresholds
+	assert.True(t, setDuration < 200*time.Millisecond, "Set operations took too long: %v", setDuration)
+	assert.True(t, getDuration < 100*time.Millisecond, "Get operations took too long: %v", getDuration)
+
+	t.Logf("Performance: Set 10k items in %v, Get 10k items in %v", setDuration, getDuration)
 }

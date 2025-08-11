@@ -1,0 +1,110 @@
+=== RUN   TestLevelDBStorage
+=== RUN   TestLevelDBStorage/Store_and_retrieve_block
+=== RUN   TestLevelDBStorage/Store_and_retrieve_chain_state
+=== RUN   TestLevelDBStorage/Key-value_operations
+=== RUN   TestLevelDBStorage/Block_not_found
+=== RUN   TestLevelDBStorage/Invalid_operations
+=== RUN   TestLevelDBStorage/Database_compaction
+=== RUN   TestLevelDBStorage/Get_stats
+--- PASS: TestLevelDBStorage (0.05s)
+    --- PASS: TestLevelDBStorage/Store_and_retrieve_block (0.00s)
+    --- PASS: TestLevelDBStorage/Store_and_retrieve_chain_state (0.00s)
+    --- PASS: TestLevelDBStorage/Key-value_operations (0.00s)
+    --- PASS: TestLevelDBStorage/Block_not_found (0.00s)
+    --- PASS: TestLevelDBStorage/Invalid_operations (0.00s)
+    --- PASS: TestLevelDBStorage/Database_compaction (0.03s)
+    --- PASS: TestLevelDBStorage/Get_stats (0.00s)
+=== RUN   TestLevelDBStorageConfig
+=== RUN   TestLevelDBStorageConfig/Default_configuration
+=== RUN   TestLevelDBStorageConfig/Configuration_chaining
+--- PASS: TestLevelDBStorageConfig (0.00s)
+    --- PASS: TestLevelDBStorageConfig/Default_configuration (0.00s)
+    --- PASS: TestLevelDBStorageConfig/Configuration_chaining (0.00s)
+=== RUN   TestLevelDBStoragePersistence
+--- PASS: TestLevelDBStoragePersistence (0.11s)
+=== RUN   TestLevelDBStorageConcurrency
+--- PASS: TestLevelDBStorageConcurrency (0.08s)
+=== RUN   TestFileStorage
+--- PASS: TestFileStorage (0.00s)
+=== RUN   TestStorageErrorHandling
+=== RUN   TestStorageErrorHandling/InvalidDataDirectory
+=== RUN   TestStorageErrorHandling/StoreNilBlock
+=== RUN   TestStorageErrorHandling/StoreNilChainState
+=== RUN   TestStorageErrorHandling/GetBlockWithInvalidHash
+=== RUN   TestStorageErrorHandling/InvalidKeyValueOperations
+--- PASS: TestStorageErrorHandling (0.00s)
+    --- PASS: TestStorageErrorHandling/InvalidDataDirectory (0.00s)
+    --- PASS: TestStorageErrorHandling/StoreNilBlock (0.00s)
+    --- PASS: TestStorageErrorHandling/StoreNilChainState (0.00s)
+    --- PASS: TestStorageErrorHandling/GetBlockWithInvalidHash (0.00s)
+    --- PASS: TestStorageErrorHandling/InvalidKeyValueOperations (0.00s)
+=== RUN   TestStorageEdgeCases
+=== RUN   TestStorageEdgeCases/EmptyDataDirectory
+=== RUN   TestStorageEdgeCases/VeryLongKeys
+=== RUN   TestStorageEdgeCases/VeryLargeValues
+=== RUN   TestStorageEdgeCases/SpecialCharactersInKeys
+--- PASS: TestStorageEdgeCases (0.03s)
+    --- PASS: TestStorageEdgeCases/EmptyDataDirectory (0.00s)
+    --- PASS: TestStorageEdgeCases/VeryLongKeys (0.00s)
+    --- PASS: TestStorageEdgeCases/VeryLargeValues (0.02s)
+    --- PASS: TestStorageEdgeCases/SpecialCharactersInKeys (0.00s)
+=== RUN   TestStorageConcurrencyAdvanced
+=== RUN   TestStorageConcurrencyAdvanced/ConcurrentBlockOperations
+=== RUN   TestStorageConcurrencyAdvanced/ConcurrentKeyValueOperations
+--- PASS: TestStorageConcurrencyAdvanced (0.21s)
+    --- PASS: TestStorageConcurrencyAdvanced/ConcurrentBlockOperations (0.15s)
+    --- PASS: TestStorageConcurrencyAdvanced/ConcurrentKeyValueOperations (0.07s)
+=== RUN   TestStoragePerformance
+=== RUN   TestStoragePerformance/BulkBlockStorage
+    storage_test.go:364: Stored 100 blocks in 14.755757ms
+    storage_test.go:378: Retrieved 100 blocks in 14.717844ms
+=== RUN   TestStoragePerformance/BulkKeyValueOperations
+    storage_test.go:399: Wrote 5000 key-value pairs in 356.097798ms
+    storage_test.go:413: Read 5000 key-value pairs in 230.844304ms
+--- PASS: TestStoragePerformance (0.71s)
+    --- PASS: TestStoragePerformance/BulkBlockStorage (0.03s)
+    --- PASS: TestStoragePerformance/BulkKeyValueOperations (0.67s)
+=== RUN   TestStorageRecovery
+=== RUN   TestStorageRecovery/CorruptedBlockFile
+=== RUN   TestStorageRecovery/CorruptedChainStateFile
+=== RUN   TestStorageRecovery/MissingDataDirectory
+--- PASS: TestStorageRecovery (0.00s)
+    --- PASS: TestStorageRecovery/CorruptedBlockFile (0.00s)
+    --- PASS: TestStorageRecovery/CorruptedChainStateFile (0.00s)
+    --- PASS: TestStorageRecovery/MissingDataDirectory (0.00s)
+=== RUN   TestStorageInterfaceCompliance
+--- PASS: TestStorageInterfaceCompliance (0.00s)
+=== RUN   TestStorageMetrics
+=== RUN   TestStorageMetrics/StorageSizeCalculation
+    storage_test.go:549: Stored 100 items with total approximate size: 1380 bytes
+--- PASS: TestStorageMetrics (0.01s)
+    --- PASS: TestStorageMetrics/StorageSizeCalculation (0.01s)
+=== RUN   TestNewStateTrie
+--- PASS: TestNewStateTrie (0.00s)
+=== RUN   TestStateTriePutAndGet
+--- PASS: TestStateTriePutAndGet (0.00s)
+=== RUN   TestStateTrieDelete
+--- PASS: TestStateTrieDelete (0.00s)
+=== RUN   TestStateTrieMultipleKeys
+--- PASS: TestStateTrieMultipleKeys (0.00s)
+=== RUN   TestStateTrieRootHash
+--- PASS: TestStateTrieRootHash (0.00s)
+=== RUN   TestStateTrieCommit
+--- PASS: TestStateTrieCommit (0.00s)
+=== RUN   TestStateTrieGetProof
+--- PASS: TestStateTrieGetProof (0.00s)
+=== RUN   TestStateTrieStats
+--- PASS: TestStateTrieStats (0.00s)
+=== RUN   TestStateTrieConcurrentAccess
+--- PASS: TestStateTrieConcurrentAccess (0.00s)
+=== RUN   TestStateTrieNilKey
+--- PASS: TestStateTrieNilKey (0.00s)
+=== RUN   TestStateTrieEmptyKey
+--- PASS: TestStateTrieEmptyKey (0.00s)
+=== RUN   TestStateTrieNilValue
+--- PASS: TestStateTrieNilValue (0.00s)
+=== RUN   TestStateTrieLargeData
+--- PASS: TestStateTrieLargeData (0.00s)
+PASS
+coverage: 58.2% of statements
+ok  	github.com/gochain/gochain/pkg/storage	2.308s	coverage: 58.2% of statements

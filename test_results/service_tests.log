@@ -1,0 +1,35 @@
+=== RUN   TestNewExplorerService
+--- PASS: TestNewExplorerService (0.00s)
+=== RUN   TestExplorerService_GetDashboard
+--- PASS: TestExplorerService_GetDashboard (0.00s)
+=== RUN   TestExplorerService_GetBlockDetails
+--- PASS: TestExplorerService_GetBlockDetails (0.00s)
+=== RUN   TestExplorerService_GetBlockDetails_BlockNotFound
+--- PASS: TestExplorerService_GetBlockDetails_BlockNotFound (0.00s)
+=== RUN   TestExplorerService_GetTransactionDetails
+--- PASS: TestExplorerService_GetTransactionDetails (0.18s)
+=== RUN   TestExplorerService_GetTransactionDetails_TransactionNotFound
+--- PASS: TestExplorerService_GetTransactionDetails_TransactionNotFound (0.00s)
+=== RUN   TestExplorerService_GetAddressDetails
+--- PASS: TestExplorerService_GetAddressDetails (0.24s)
+=== RUN   TestExplorerService_GetBlocks
+--- PASS: TestExplorerService_GetBlocks (0.00s)
+=== RUN   TestExplorerService_GetTransactions
+--- PASS: TestExplorerService_GetTransactions (0.00s)
+=== RUN   TestExplorerService_Search
+--- PASS: TestExplorerService_Search (0.00s)
+=== RUN   TestExplorerService_GetStatistics
+--- PASS: TestExplorerService_GetStatistics (0.00s)
+=== RUN   TestExplorerService_WithCache
+--- PASS: TestExplorerService_WithCache (0.00s)
+=== RUN   TestExplorerService_ErrorHandling
+=== RUN   TestExplorerService_ErrorHandling/GetBlockchainStats_Error
+=== RUN   TestExplorerService_ErrorHandling/GetNetworkInfo_Error
+=== RUN   TestExplorerService_ErrorHandling/GetLatestBlock_Error
+--- PASS: TestExplorerService_ErrorHandling (0.00s)
+    --- PASS: TestExplorerService_ErrorHandling/GetBlockchainStats_Error (0.00s)
+    --- PASS: TestExplorerService_ErrorHandling/GetNetworkInfo_Error (0.00s)
+    --- PASS: TestExplorerService_ErrorHandling/GetLatestBlock_Error (0.00s)
+PASS
+coverage: 83.0% of statements
+ok  	github.com/gochain/gochain/pkg/explorer/service	1.472s	coverage: 83.0% of statements
