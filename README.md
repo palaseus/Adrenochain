@@ -276,13 +276,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 - **LevelDB** - Persistent storage backend
 - **Academic researchers** - Continuous blockchain research and improvements
 
-## 📞 **Support & Community**
-
-- **Issues**: [GitHub Issues](https://github.com/palaseus/gochain/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/palaseus/gochain/discussions)
-- **Security**: [Security Policy](SECURITY.md)
-- **Testing**: [Test Infrastructure](scripts/)
-
 ---
 
 **GoChain**: Advancing blockchain technology through rigorous research, comprehensive testing, and academic exploration. 🚀🔬🧪
