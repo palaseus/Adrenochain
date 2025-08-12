@@ -79,7 +79,18 @@ func (m *Miner) StartMining() error {
 	defer m.mu.Unlock()
 
 	if m.isMining {
-		return fmt.Errorf("mining already in progress")
+		// Stop current mining first
+		m.isMining = false
+		if m.stopMining != nil {
+			select {
+			case <-m.stopMining:
+				// Channel already closed
+			default:
+				close(m.stopMining)
+			}
+		}
+		// Wait for the goroutine to stop
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	m.isMining = true
@@ -102,6 +113,26 @@ func (m *Miner) StopMining() {
 
 	m.isMining = false
 	close(m.stopMining)
+}
+
+// Cleanup ensures the miner is properly stopped and cleaned up
+func (m *Miner) Cleanup() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.isMining {
+		m.isMining = false
+		if m.stopMining != nil {
+			select {
+			case <-m.stopMining:
+				// Channel already closed
+			default:
+				close(m.stopMining)
+			}
+		}
+		// Wait for goroutine to stop
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 // IsMining returns whether the miner is currently mining
@@ -186,7 +217,10 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 		Transactions: make([]*block.Transaction, 0),
 	}
 
+	// Protect currentBlock access with mutex
+	m.mu.Lock()
 	m.currentBlock = newBlock
+	m.mu.Unlock()
 
 	// Create coinbase transaction
 	coinbaseTx := m.createCoinbaseTransaction(prevBlock.Header.Height + 1)
@@ -209,11 +243,15 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 	// Calculate total fees from transactions
 	totalFees := uint64(0)
+
+	// Protect currentBlock access with mutex
+	m.mu.RLock()
 	for _, tx := range m.currentBlock.Transactions {
 		if tx != nil {
 			totalFees += tx.Fee
 		}
 	}
+	m.mu.RUnlock()
 
 	// Create coinbase output
 	out := &block.TxOutput{

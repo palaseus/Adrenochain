@@ -26,11 +26,11 @@ func (m *MockStorage) Close() error                                    { return 
 // MockChain implements chain.Chain for testing
 type MockChain struct{}
 
-func (m *MockChain) GetHeight() uint64                    { return 100 }
-func (m *MockChain) GetTipHash() []byte                   { return make([]byte, 32) }
+func (m *MockChain) GetHeight() uint64                           { return 100 }
+func (m *MockChain) GetTipHash() []byte                          { return make([]byte, 32) }
 func (m *MockChain) GetBlockByHeight(height uint64) *block.Block { return nil }
-func (m *MockChain) GetBlock(hash []byte) *block.Block    { return nil }
-func (m *MockChain) AddBlock(block interface{}) error    { return nil }
+func (m *MockChain) GetBlock(hash []byte) *block.Block           { return nil }
+func (m *MockChain) AddBlock(block interface{}) error            { return nil }
 
 // Create a mock chain that can be used with the benchmark suite
 func createMockChain() *chain.Chain {

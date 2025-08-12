@@ -248,7 +248,7 @@ func (sm *SyncManager) AddPeer(id, address string, height uint64) {
 	if id == "" {
 		return
 	}
-	
+
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 

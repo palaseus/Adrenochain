@@ -11,6 +11,7 @@ import (
 
 	"github.com/gochain/gochain/pkg/explorer/service"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 )
 
 // MockExplorerService implements service.ExplorerService for testing
@@ -519,4 +520,182 @@ func TestWebServer(t *testing.T) {
 	if webServer.GetTemplates() == nil {
 		t.Error("Expected templates to be accessible")
 	}
+}
+
+// TestAPIHandler tests the API handler redirect functionality
+func TestAPIHandler(t *testing.T) {
+	handler := &WebHandler{
+		templates: NewTemplates(),
+	}
+
+	req := httptest.NewRequest("GET", "/api/v1/blocks", nil)
+	w := httptest.NewRecorder()
+
+	handler.APIHandler(w, req)
+
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+	assert.Contains(t, w.Header().Get("Location"), "/api/v1/api/v1/blocks")
+}
+
+// TestStaticFileHandler tests static file serving
+func TestStaticFileHandler(t *testing.T) {
+	handler := &WebHandler{
+		templates: NewTemplates(),
+	}
+
+	req := httptest.NewRequest("GET", "/static/css/style.css", nil)
+	w := httptest.NewRecorder()
+
+	handler.StaticFileHandler(w, req)
+
+	// Should serve the file or return 404 if file doesn't exist
+	assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusNotFound)
+}
+
+// TestGetClientIP tests client IP extraction from various headers
+func TestGetClientIP(t *testing.T) {
+	handler := &WebHandler{
+		templates: NewTemplates(),
+	}
+
+	// Test X-Forwarded-For header
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-For", "192.168.1.1,10.0.0.1")
+	ip := handler.getClientIP(req)
+	assert.Equal(t, "192.168.1.1", ip)
+
+	// Test X-Real-IP header
+	req = httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Real-IP", "203.0.113.1")
+	ip = handler.getClientIP(req)
+	assert.Equal(t, "203.0.113.1", ip)
+
+	// Test X-Client-IP header
+	req = httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Client-IP", "198.51.100.1")
+	ip = handler.getClientIP(req)
+	assert.Equal(t, "198.51.100.1", ip)
+
+	// Test fallback to RemoteAddr
+	req = httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
+	ip = handler.getClientIP(req)
+	assert.Equal(t, "127.0.0.1:12345", ip)
+}
+
+// TestCreatePaginationEdgeCases tests pagination edge cases
+func TestCreatePaginationEdgeCases(t *testing.T) {
+	handler := &WebHandler{
+		templates: NewTemplates(),
+	}
+
+	// Test with zero total items
+	pagination := handler.createPagination(20, 0, 0)
+	assert.Equal(t, 0, pagination["TotalPages"])
+	assert.Equal(t, 1, pagination["CurrentPage"])
+	assert.False(t, pagination["HasNext"].(bool))
+	assert.False(t, pagination["HasPrev"].(bool))
+
+	// Test with single page
+	pagination = handler.createPagination(20, 0, 15)
+	assert.Equal(t, 1, pagination["TotalPages"])
+	assert.Equal(t, 1, pagination["CurrentPage"])
+	assert.False(t, pagination["HasNext"].(bool))
+	assert.False(t, pagination["HasPrev"].(bool))
+
+	// Test with large offset
+	pagination = handler.createPagination(20, 100, 200)
+	assert.Equal(t, 10, pagination["TotalPages"])
+	assert.Equal(t, 6, pagination["CurrentPage"])
+	assert.True(t, pagination["HasNext"].(bool))
+	assert.True(t, pagination["HasPrev"].(bool))
+
+	// Test boundary conditions
+	pagination = handler.createPagination(20, 180, 200)
+	assert.Equal(t, 10, pagination["TotalPages"])
+	assert.Equal(t, 10, pagination["CurrentPage"])
+	assert.False(t, pagination["HasNext"].(bool))
+	assert.True(t, pagination["HasPrev"].(bool))
+}
+
+// TestParsePaginationParamsEdgeCases tests pagination parameter parsing edge cases
+func TestParsePaginationParamsEdgeCases(t *testing.T) {
+	handler := &WebHandler{
+		templates: NewTemplates(),
+	}
+
+	// Test with invalid limit (negative)
+	req := httptest.NewRequest("GET", "/?limit=-5", nil)
+	limit, offset := handler.parsePaginationParams(req)
+	assert.Equal(t, 20, limit) // Should use default
+	assert.Equal(t, 0, offset)
+
+	// Test with invalid limit (too large)
+	req = httptest.NewRequest("GET", "/?limit=1000", nil)
+	limit, offset = handler.parsePaginationParams(req)
+	assert.Equal(t, 20, limit) // Should use default
+	assert.Equal(t, 0, offset)
+
+	// Test with invalid offset (negative)
+	req = httptest.NewRequest("GET", "/?offset=-10", nil)
+	limit, offset = handler.parsePaginationParams(req)
+	assert.Equal(t, 20, limit)
+	assert.Equal(t, 0, offset) // Should use default
+
+	// Test with valid parameters
+	req = httptest.NewRequest("GET", "/?limit=50&offset=100", nil)
+	limit, offset = handler.parsePaginationParams(req)
+	assert.Equal(t, 50, limit)
+	assert.Equal(t, 100, offset)
+
+	// Test with non-numeric parameters
+	req = httptest.NewRequest("GET", "/?limit=abc&offset=xyz", nil)
+	limit, offset = handler.parsePaginationParams(req)
+	assert.Equal(t, 20, limit) // Should use default
+	assert.Equal(t, 0, offset) // Should use default
+}
+
+// TestIsValidSearchQueryEdgeCases tests search query validation edge cases
+func TestIsValidSearchQueryEdgeCases(t *testing.T) {
+	handler := &WebHandler{
+		templates: NewTemplates(),
+	}
+
+	// Test with very short query (should be false for queries < 10 chars)
+	result := handler.isValidSearchQuery("ab")
+	t.Logf("isValidSearchQuery('ab') returned: %v", result)
+	assert.False(t, result)
+
+	// Test with very long query
+	longQuery := strings.Repeat("a", 200)
+	result = handler.isValidSearchQuery(longQuery)
+	t.Logf("isValidSearchQuery(longQuery) returned: %v", result)
+	assert.False(t, result)
+
+	// Test with special characters
+	result = handler.isValidSearchQuery("block#123")
+	t.Logf("isValidSearchQuery('block#123') returned: %v", result)
+	assert.True(t, result)
+	
+	result = handler.isValidSearchQuery("tx@hash")
+	t.Logf("isValidSearchQuery('tx@hash') returned: %v", result)
+	assert.True(t, result)
+
+	// Test with mixed case
+	result = handler.isValidSearchQuery("BlockHash123")
+	t.Logf("isValidSearchQuery('BlockHash123') returned: %v", result)
+	assert.True(t, result)
+	
+	result = handler.isValidSearchQuery("TRANSACTION_HASH")
+	t.Logf("isValidSearchQuery('TRANSACTION_HASH') returned: %v", result)
+	assert.True(t, result)
+
+	// Test with numbers only
+	result = handler.isValidSearchQuery("123456789")
+	t.Logf("isValidSearchQuery('123456789') returned: %v", result)
+	assert.True(t, result)
+	
+	result = handler.isValidSearchQuery("0xabcdef123456")
+	t.Logf("isValidSearchQuery('0xabcdef123456') returned: %v", result)
+	assert.True(t, result)
 }

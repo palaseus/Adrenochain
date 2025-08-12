@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/hex"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -369,17 +370,32 @@ func (h *WebHandler) getClientIP(r *http.Request) string {
 
 func (h *WebHandler) isValidSearchQuery(query string) bool {
 	// Block hash validation (64 hex characters)
-	blockHashRegex := `^[a-fA-F0-9]{64}$`
+	blockHashRegex := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
 
 	// Transaction hash validation (64 hex characters)
-	txHashRegex := `^[a-fA-F0-9]{64}$`
+	txHashRegex := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
 
 	// Address validation (26-35 characters, alphanumeric)
-	addressRegex := `^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$`
+	addressRegex := regexp.MustCompile(`^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$`)
 
-	// Check if query matches any of the patterns
-	return strings.Contains(query, blockHashRegex) ||
-		strings.Contains(query, txHashRegex) ||
-		strings.Contains(query, addressRegex) ||
-		len(query) >= 10 // Allow longer text searches
+	// Check if query matches any of the specific patterns first
+	if blockHashRegex.MatchString(query) ||
+		txHashRegex.MatchString(query) ||
+		addressRegex.MatchString(query) {
+		return true
+	}
+
+	// For non-pattern matches, check length and content
+	if len(query) < 7 || len(query) > 100 {
+		return false
+	}
+
+	// Must contain at least some alphanumeric content
+	for _, char := range query {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') {
+			return true
+		}
+	}
+
+	return false
 }

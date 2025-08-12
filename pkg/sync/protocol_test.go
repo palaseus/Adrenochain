@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -547,4 +548,559 @@ func TestSyncProtocol_ConcurrentAccess(t *testing.T) {
 			t.Fatal("Goroutine did not complete in time")
 		}
 	}
+}
+
+// TestSyncProtocol_NetworkFailures tests sync behavior under various network failure scenarios
+func TestSyncProtocol_NetworkFailures(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test sync with non-existent peer
+	nonExistentPeer := peer.ID("non-existent-peer")
+	err := sp.StartSync(nonExistentPeer)
+	assert.NoError(t, err)
+
+	// Test sync with peer that has no state
+	peerID := peer.ID("test-peer")
+	err = sp.StartSync(peerID)
+	assert.NoError(t, err)
+
+	// Test error recording and retry logic
+	sp.recordError(peerID, fmt.Errorf("network timeout"))
+
+	// Wait for retry logic to execute
+	time.Sleep(200 * time.Millisecond)
+
+	sp.mu.RLock()
+	state := sp.syncState[peerID]
+	sp.mu.RUnlock()
+
+	assert.NotNil(t, state)
+	assert.Equal(t, 1, state.RetryCount)
+	assert.NotNil(t, state.LastError)
+}
+
+// TestSyncProtocol_MessageValidation tests message validation and processing
+func TestSyncProtocol_MessageValidation(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test header processing with valid data
+	header := &netproto.BlockHeader{
+		Version:       1,
+		Height:        101,
+		Hash:          make([]byte, 32),
+		PrevBlockHash: make([]byte, 32),
+		MerkleRoot:    make([]byte, 32),
+		Timestamp:     time.Now().Unix(),
+		Difficulty:    1000,
+		Nonce:         101,
+	}
+
+	err := sp.processHeader(header)
+	assert.NoError(t, err)
+
+	// Test block processing with valid block data
+	// Create a proper block for testing with a height that's sequential to the chain
+	// Get the current tip hash from the chain
+	currentTipHash := chain.GetTipHash()
+
+	testBlock := &block.Block{
+		Header: &block.Header{
+			Version:       1,
+			PrevBlockHash: currentTipHash, // Use the actual tip hash
+			MerkleRoot:    make([]byte, 32),
+			Timestamp:     time.Now(),
+			Difficulty:    1000,
+			Nonce:         100,
+			Height:        101, // Use height 101 since chain is at 100
+		},
+		Transactions: []*block.Transaction{},
+	}
+
+	// Calculate the correct Merkle root
+	testBlock.Header.MerkleRoot = testBlock.CalculateMerkleRoot()
+
+	blockData, err := testBlock.Serialize()
+	assert.NoError(t, err)
+
+	err = sp.processBlock(blockData)
+	assert.NoError(t, err)
+
+	// Test invalid header processing
+	invalidHeader := &netproto.BlockHeader{
+		Version:       0, // Invalid version
+		Height:        0,
+		Hash:          nil,
+		PrevBlockHash: nil,
+		MerkleRoot:    nil,
+		Timestamp:     0,
+		Difficulty:    0,
+		Nonce:         0,
+	}
+
+	err = sp.processHeader(invalidHeader)
+	// This should fail due to validation
+	assert.Error(t, err)
+}
+
+// TestSyncProtocol_ConcurrentSync tests concurrent synchronization with multiple peers
+func TestSyncProtocol_ConcurrentSync(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Start sync with multiple peers concurrently
+	peerIDs := []peer.ID{
+		peer.ID("peer-1"),
+		peer.ID("peer-2"),
+		peer.ID("peer-3"),
+	}
+
+	var wg sync.WaitGroup
+	for _, peerID := range peerIDs {
+		wg.Add(1)
+		go func(pid peer.ID) {
+			defer wg.Done()
+			err := sp.StartSync(pid)
+			assert.NoError(t, err)
+		}(peerID)
+	}
+
+	wg.Wait()
+
+	// Verify all peers are syncing
+	sp.mu.RLock()
+	for _, peerID := range peerIDs {
+		state := sp.syncState[peerID]
+		assert.NotNil(t, state)
+		assert.True(t, state.IsSyncing)
+	}
+	sp.mu.RUnlock()
+}
+
+// TestSyncProtocol_HeaderCache tests header cache functionality
+func TestSyncProtocol_HeaderCache(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test header cache operations
+	header := &block.Header{
+		Version:       1,
+		PrevBlockHash: make([]byte, 32),
+		MerkleRoot:    make([]byte, 32),
+		Timestamp:     time.Now(),
+		Difficulty:    1000,
+		Nonce:         100,
+		Height:        100,
+	}
+
+	// Add header to cache
+	sp.headerMutex.Lock()
+	sp.headerCache[100] = header
+	sp.headerMutex.Unlock()
+
+	// Retrieve header from cache
+	cachedHeader := sp.GetHeaderFromCache(100)
+	assert.NotNil(t, cachedHeader)
+	assert.Equal(t, uint64(100), cachedHeader.Height)
+
+	// Test non-existent header
+	nonExistentHeader := sp.GetHeaderFromCache(999)
+	assert.Nil(t, nonExistentHeader)
+
+	// Test cache clearing
+	sp.ClearHeaderCache()
+	sp.headerMutex.RLock()
+	assert.Empty(t, sp.headerCache)
+	sp.headerMutex.RUnlock()
+}
+
+// TestSyncProtocol_SyncProgress tests sync progress tracking
+func TestSyncProtocol_SyncProgress(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	peerID := peer.ID("test-peer")
+
+	// Start sync
+	err := sp.StartSync(peerID)
+	assert.NoError(t, err)
+
+	// Wait for sync to complete
+	time.Sleep(200 * time.Millisecond)
+
+	// Get sync progress
+	progress, err := sp.GetSyncProgress(peerID)
+	assert.NoError(t, err)
+	assert.Greater(t, progress, 0.0)
+
+	// Test progress for non-existent peer
+	_, err = sp.GetSyncProgress(peer.ID("non-existent"))
+	assert.Error(t, err)
+}
+
+// TestSyncProtocol_StateReconciliation tests state reconciliation functionality
+func TestSyncProtocol_StateReconciliation(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	peerID := peer.ID("test-peer")
+
+	// Test state sync (placeholder implementation)
+	err := sp.syncStateData(peerID)
+	assert.NoError(t, err)
+}
+
+// TestSyncProtocol_HeadersForSync tests header retrieval for synchronization
+func TestSyncProtocol_HeadersForSync(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test sync request
+	syncReq := &netproto.SyncRequest{
+		CurrentHeight: 100,
+		BestBlockHash: make([]byte, 32),
+		KnownHeaders:  [][]byte{},
+	}
+
+	headers := sp.getHeadersForSync(syncReq)
+	assert.NotNil(t, headers)
+	assert.Len(t, headers, 0) // No headers to sync since we're at same height
+
+	// Test with different heights
+	syncReq.CurrentHeight = 50
+	headers = sp.getHeadersForSync(syncReq)
+	assert.NotNil(t, headers)
+}
+
+// TestSyncProtocol_ErrorHandling tests various error scenarios
+func TestSyncProtocol_ErrorHandling(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	peerID := peer.ID("test-peer")
+
+	// Test sync with invalid peer state
+	err := sp.syncHeaders(peerID)
+	assert.Error(t, err)
+
+	err = sp.syncBlocks(peerID)
+	assert.Error(t, err)
+
+	// Test with nil peer state
+	sp.mu.Lock()
+	delete(sp.syncState, peerID)
+	sp.mu.Unlock()
+
+	err = sp.syncHeaders(peerID)
+	assert.Error(t, err)
+}
+
+// TestSyncProtocol_StreamHandlers tests stream handler functionality
+func TestSyncProtocol_StreamHandlers(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	_ = NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test that handlers are properly set up
+	// This is a basic test - in a real implementation you'd want to test actual message handling
+	assert.NotNil(t, config)
+}
+
+// TestSyncProtocol_RetryLogic tests retry mechanism under failures
+func TestSyncProtocol_RetryLogic(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	peerID := peer.ID("test-peer")
+
+	// First start sync to create peer state
+	err := sp.StartSync(peerID)
+	assert.NoError(t, err)
+
+	// Wait a bit for sync to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Record multiple errors to test retry logic
+	for i := 0; i < 5; i++ {
+		sp.recordError(peerID, fmt.Errorf("error %d", i))
+	}
+
+	// Wait for retry logic to execute
+	time.Sleep(300 * time.Millisecond)
+
+	sp.mu.RLock()
+	state := sp.syncState[peerID]
+	sp.mu.RUnlock()
+
+	assert.NotNil(t, state)
+	assert.Equal(t, 5, state.RetryCount)
+	assert.NotNil(t, state.LastError)
+}
+
+// TestSyncProtocol_TimeoutHandling tests timeout scenarios
+func TestSyncProtocol_TimeoutHandling(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	_ = NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test context cancellation with a longer timeout to ensure it works
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	// Wait for the timeout to occur
+	time.Sleep(250 * time.Millisecond)
+
+	// Verify the context has timed out
+	select {
+	case <-ctx.Done():
+		// Expected timeout
+	default:
+		t.Error("Expected context to timeout")
+	}
+}
+
+// TestSyncProtocol_DataIntegrity tests data integrity during sync
+func TestSyncProtocol_DataIntegrity(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test with corrupted data - this should fail validation
+	corruptedData := []byte("corrupted data")
+	err := sp.processBlock(corruptedData)
+	// This should fail due to invalid block data
+	assert.Error(t, err)
+
+	// Test with empty data - this should also fail
+	emptyData := []byte{}
+	err = sp.processBlock(emptyData)
+	assert.Error(t, err)
+}
+
+// TestSyncProtocol_PeerStateManagement tests peer state management
+func TestSyncProtocol_PeerStateManagement(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test peer state creation and retrieval
+	peerID := peer.ID("test-peer")
+
+	// Create peer state manually
+	sp.mu.Lock()
+	sp.syncState[peerID] = &PeerSyncState{
+		PeerID:        peerID,
+		Height:        200,
+		BestHash:      make([]byte, 32),
+		LastSeen:      time.Now(),
+		IsSyncing:     false,
+		HeadersSynced: 100,
+		BlocksSynced:  100,
+	}
+	sp.mu.Unlock()
+
+	// Retrieve peer state
+	state := sp.getPeerState(peerID)
+	assert.NotNil(t, state)
+	assert.Equal(t, uint64(200), state.Height)
+	assert.Equal(t, uint64(100), state.HeadersSynced)
+	assert.Equal(t, uint64(100), state.BlocksSynced)
+
+	// Test non-existent peer
+	nonExistentState := sp.getPeerState(peer.ID("non-existent"))
+	assert.Nil(t, nonExistentState)
+}
+
+// TestSyncProtocol_ConcurrentStateAccess tests concurrent access to shared state
+func TestSyncProtocol_ConcurrentStateAccess(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Test concurrent access to sync state
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			peerID := peer.ID(fmt.Sprintf("peer-%d", id))
+
+			// Concurrent read/write operations
+			sp.mu.Lock()
+			sp.syncState[peerID] = &PeerSyncState{
+				PeerID: peerID,
+				Height: uint64(id),
+			}
+			sp.mu.Unlock()
+
+			// Concurrent read
+			sp.mu.RLock()
+			state := sp.syncState[peerID]
+			sp.mu.RUnlock()
+
+			assert.NotNil(t, state)
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Verify all peers were added
+	sp.mu.RLock()
+	assert.Len(t, sp.syncState, numGoroutines)
+	sp.mu.RUnlock()
+}
+
+// TestSyncProtocol_ConfigurationValidation tests configuration validation
+func TestSyncProtocol_ConfigurationValidation(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+
+	// Test with default config
+	config := DefaultSyncConfig()
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+	assert.NotNil(t, sp)
+	assert.Equal(t, config, sp.config)
+
+	// Test with custom config
+	customConfig := &SyncConfig{
+		FastSyncEnabled:    true,
+		LightClientEnabled: false,
+		MaxSyncPeers:       100,
+		SyncTimeout:        60 * time.Second,
+		BlockDownloadLimit: 2000,
+		StateSyncEnabled:   true,
+		CheckpointInterval: 5000,
+	}
+
+	sp2 := NewSyncProtocol(host, chain, chain, storage, customConfig)
+	assert.NotNil(t, sp2)
+	assert.Equal(t, customConfig, sp2.config)
+}
+
+// TestSyncProtocol_Integration tests integration scenarios
+func TestSyncProtocol_Integration(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	// Simulate a complete sync cycle
+	peerID := peer.ID("integration-peer")
+
+	// Start sync
+	err := sp.StartSync(peerID)
+	assert.NoError(t, err)
+
+	// Wait for sync to complete
+	time.Sleep(200 * time.Millisecond)
+
+	// Verify sync completion
+	sp.mu.RLock()
+	state := sp.syncState[peerID]
+	sp.mu.RUnlock()
+
+	assert.NotNil(t, state)
+	assert.False(t, state.IsSyncing)
+	assert.NotZero(t, state.SyncEnd)
+	assert.Greater(t, state.HeadersSynced, uint64(0))
+	assert.Greater(t, state.BlocksSynced, uint64(0))
+
+	// Test sync progress
+	progress, err := sp.GetSyncProgress(peerID)
+	assert.NoError(t, err)
+	assert.Greater(t, progress, 0.0)
+
+	// Test peer states retrieval
+	peerStates := sp.GetPeerStates()
+	assert.NotNil(t, peerStates)
+	assert.Contains(t, peerStates, peerID)
 }

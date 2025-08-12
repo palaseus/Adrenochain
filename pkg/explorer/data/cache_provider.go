@@ -74,7 +74,7 @@ func (c *InMemoryCache) Set(key string, value interface{}, ttl time.Duration) {
 
 	// Check if this is a new key (to track size)
 	_, exists := c.cache[key]
-	
+
 	// Check if we need to evict items to make room for a new key
 	if !exists && c.stats.getSize() >= c.stats.maxSize {
 		c.evictOldest()

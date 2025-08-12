@@ -268,22 +268,22 @@ func TestSyncManagerWithRealChain(t *testing.T) {
 func TestChainAdapter(t *testing.T) {
 	// Create a mock chain for testing using the proper constructor
 	mockChain := NewMockChain()
-	
+
 	// Test that MockChain implements ChainReader interface
 	var _ ChainReader = mockChain
 
 	t.Run("MockChainInterface", func(t *testing.T) {
 		height := mockChain.GetHeight()
 		assert.Equal(t, uint64(100), height)
-		
+
 		hash := mockChain.GetTipHash()
 		assert.NotNil(t, hash)
 		assert.Len(t, hash, 32) // SHA256 hash length
-		
+
 		block := mockChain.GetBlockByHeight(50)
 		assert.NotNil(t, block)
 		assert.Equal(t, uint64(50), block.Header.Height)
-		
+
 		// Test getting block by hash
 		testHash := []byte("test_hash_123456789012345678901234")
 		block = mockChain.GetBlock(testHash)
@@ -295,9 +295,9 @@ func TestChainAdapter(t *testing.T) {
 		// Test adding a valid block
 		testBlock := &block.Block{
 			Header: &block.Header{
-				Version:       1, // Use valid version
+				Version:       1,                      // Use valid version
 				PrevBlockHash: mockChain.GetTipHash(), // Use proper previous hash
-				MerkleRoot:    make([]byte, 32), // Will be calculated properly
+				MerkleRoot:    make([]byte, 32),       // Will be calculated properly
 				Height:        101,
 				Timestamp:     time.Now(),
 				Difficulty:    1000,
@@ -348,9 +348,9 @@ func TestSyncManagerEdgeCases(t *testing.T) {
 		// Check if we got an error (expected for invalid peer)
 		assert.Error(t, err)
 		// The error should be either "sync protocol not initialized" or "peer not found"
-		assert.True(t, 
-			strings.Contains(err.Error(), "sync protocol not initialized") || 
-			strings.Contains(err.Error(), "peer not found"),
+		assert.True(t,
+			strings.Contains(err.Error(), "sync protocol not initialized") ||
+				strings.Contains(err.Error(), "peer not found"),
 			"Expected error about sync protocol or peer not found, got: %s", err.Error())
 		assert.Equal(t, 0.0, progress)
 	})

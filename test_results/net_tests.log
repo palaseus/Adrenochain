@@ -1,6 +1,0 @@
-=== RUN   TestMessage
-    message_test.go:9: TestMessage placeholder executed.
---- PASS: TestMessage (0.00s)
-PASS
-coverage: 2.6% of statements
-ok  	github.com/gochain/gochain/proto/net	1.031s	coverage: 2.6% of statements

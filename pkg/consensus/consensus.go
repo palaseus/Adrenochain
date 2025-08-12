@@ -307,6 +307,13 @@ func (c *Consensus) hash256(data []byte) []byte {
 	// For now, use a simple hash function
 	// In production, this should use crypto/sha256
 	hash := make([]byte, 32)
+	if len(data) == 0 {
+		// Return a default hash for empty data
+		for i := range hash {
+			hash[i] = byte(i)
+		}
+		return hash
+	}
 	for i := range hash {
 		hash[i] = data[i%len(data)] ^ byte(i)
 	}
@@ -385,6 +392,14 @@ func (c *Consensus) ValidateProofOfWork(block *block.Block) bool {
 // calculateTarget calculates the target hash for a given difficulty.
 // The target is a 32-byte array that the block's hash must be less than or equal to.
 func (c *Consensus) calculateTarget(difficulty uint64) []byte {
+	// Ensure difficulty is within valid range
+	if difficulty > 256 {
+		difficulty = 256
+	}
+	if difficulty == 0 {
+		difficulty = 1
+	}
+
 	// Target = 2^(256-difficulty)
 	target := new(big.Int)
 	target.SetBit(target, int(256-difficulty), 1)
@@ -405,6 +420,11 @@ func (c *Consensus) calculateTarget(difficulty uint64) []byte {
 // hashLessThan checks if hash1 is lexicographically less than hash2.
 // This is used to determine if a block's hash meets the target difficulty.
 func (c *Consensus) hashLessThan(hash1, hash2 []byte) bool {
+	// Ensure both hashes have the same length for comparison
+	if len(hash1) != len(hash2) {
+		return false
+	}
+	
 	for i := 0; i < len(hash1); i++ {
 		if hash1[i] < hash2[i] {
 			return true
@@ -548,25 +568,29 @@ func (c *Consensus) GetNextDifficulty() uint64 {
 
 	// If we have enough block times, calculate what the next difficulty would be
 	if len(c.blockTimes) == int(c.config.DifficultyAdjustmentInterval) {
-		// Calculate what the difficulty would be after adjustment
+		// Calculate what the difficulty would be after adjustment using the same logic as adjustDifficulty
 		totalTime := time.Duration(0)
 		for _, blockTime := range c.blockTimes {
 			totalTime += blockTime
 		}
 		averageTime := totalTime / time.Duration(len(c.blockTimes))
 
-		targetTime := c.config.TargetBlockTime * time.Duration(c.config.DifficultyAdjustmentInterval)
-		nextDifficulty := c.difficulty
+		// Calculate expected time for the last DifficultyAdjustmentInterval blocks
+		expectedTime := time.Duration(c.config.DifficultyAdjustmentInterval) * c.config.TargetBlockTime
 
-		if averageTime < targetTime/4 {
-			nextDifficulty = uint64(float64(nextDifficulty) * c.config.DifficultyAdjustmentFactor)
-		} else if averageTime < targetTime/2 {
-			nextDifficulty = uint64(float64(nextDifficulty) * 2)
-		} else if averageTime > targetTime*4 {
-			nextDifficulty = uint64(float64(nextDifficulty) / c.config.DifficultyAdjustmentFactor)
-		} else if averageTime > targetTime*2 {
-			nextDifficulty = uint64(float64(nextDifficulty) / 2)
+		// Calculate adjustment factor (same as adjustDifficulty)
+		adjustmentFactor := float64(averageTime) / float64(expectedTime)
+
+		// Apply damping to prevent large swings (same as adjustDifficulty)
+		if adjustmentFactor < 1.0/c.config.DifficultyAdjustmentFactor {
+			adjustmentFactor = 1.0 / c.config.DifficultyAdjustmentFactor
 		}
+		if adjustmentFactor > c.config.DifficultyAdjustmentFactor {
+			adjustmentFactor = c.config.DifficultyAdjustmentFactor
+		}
+
+		// Calculate next difficulty (same as adjustDifficulty)
+		nextDifficulty := uint64(float64(c.difficulty) * adjustmentFactor)
 
 		// Ensure difficulty is within bounds
 		if nextDifficulty < c.config.MinDifficulty {

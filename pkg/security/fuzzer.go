@@ -98,7 +98,7 @@ func NewFuzzer(chain *chain.Chain, storage storage.StorageInterface) *Fuzzer {
 func (f *Fuzzer) StartFuzzing(config *FuzzConfig) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	
+
 	if f.isRunning {
 		return fmt.Errorf("fuzzer is already running")
 	}
@@ -139,11 +139,14 @@ func (f *Fuzzer) runFuzzing() {
 	var wg sync.WaitGroup
 	results := make(chan *FuzzResult, f.config.Concurrency)
 
+	// Create a done channel to signal workers to stop
+	done := make(chan struct{})
+
 	for i := 0; i < f.config.Concurrency; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			f.workerLoop(workerID, results)
+			f.workerLoop(workerID, results, done)
 		}(i)
 	}
 
@@ -175,9 +178,14 @@ func (f *Fuzzer) runFuzzing() {
 		// Max iterations reached
 	}
 
-	// Stop all workers
-	close(results)
+	// Signal workers to stop
+	close(done)
+
+	// Wait for workers to finish
 	wg.Wait()
+
+	// Close results channel after all workers are done
+	close(results)
 
 	f.mu.Lock()
 	f.isRunning = false
@@ -185,7 +193,7 @@ func (f *Fuzzer) runFuzzing() {
 }
 
 // workerLoop runs the main fuzzing logic for a worker
-func (f *Fuzzer) workerLoop(workerID int, results chan<- *FuzzResult) {
+func (f *Fuzzer) workerLoop(workerID int, results chan<- *FuzzResult, done <-chan struct{}) {
 	iterations := int64(0)
 	crashCount := int64(0)
 	timeoutCount := int64(0)
@@ -200,6 +208,8 @@ func (f *Fuzzer) workerLoop(workerID int, results chan<- *FuzzResult) {
 	for {
 		select {
 		case <-f.stopChan:
+			return
+		case <-done:
 			return
 		default:
 			// Continue fuzzing
@@ -230,6 +240,8 @@ func (f *Fuzzer) workerLoop(workerID int, results chan<- *FuzzResult) {
 		// Send result periodically
 		if iterations%100 == 0 {
 			select {
+			case <-done:
+				return
 			case results <- &FuzzResult{
 				Name:         fmt.Sprintf("Worker_%d", workerID),
 				Duration:     time.Since(time.Now()),

@@ -1,7 +1,0 @@
-=== RUN   TestMiner
---- PASS: TestMiner (0.00s)
-=== RUN   TestCreateNewBlock
---- PASS: TestCreateNewBlock (0.00s)
-PASS
-coverage: 51.9% of statements
-ok  	github.com/gochain/gochain/pkg/miner	1.036s	coverage: 51.9% of statements
