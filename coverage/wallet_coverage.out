@@ -184,7 +184,7 @@ github.com/gochain/gochain/pkg/wallet/wallet.go:909.26,910.41 1 16
 github.com/gochain/gochain/pkg/wallet/wallet.go:910.41,912.4 1 0
 github.com/gochain/gochain/pkg/wallet/wallet.go:915.2,915.26 1 4
 github.com/gochain/gochain/pkg/wallet/wallet.go:919.88,924.51 2 4
-github.com/gochain/gochain/pkg/wallet/wallet.go:924.51,926.3 1 1
+github.com/gochain/gochain/pkg/wallet/wallet.go:924.51,926.3 1 2
 github.com/gochain/gochain/pkg/wallet/wallet.go:928.2,928.13 1 4
 github.com/gochain/gochain/pkg/wallet/wallet.go:932.56,943.2 3 4
 github.com/gochain/gochain/pkg/wallet/wallet.go:946.71,952.16 3 4

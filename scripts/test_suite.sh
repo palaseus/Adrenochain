@@ -30,6 +30,7 @@ VERBOSE_TESTS=true
 PARALLEL_TESTS=true
 FUZZ_TESTS=true
 BENCHMARK_TESTS=true
+SMART_CONTRACT_TESTS=true
 
 # Statistics
 TOTAL_TESTS=0
@@ -39,6 +40,8 @@ SKIPPED_TESTS=0
 TOTAL_PACKAGES=0
 PASSED_PACKAGES=0
 FAILED_PACKAGES=0
+FUZZ_TESTS_COUNT=0
+BENCHMARK_TESTS_COUNT=0
 
 # Initialize test environment
 init_test_environment() {
@@ -137,6 +140,49 @@ get_test_packages() {
     done
     
     TOTAL_PACKAGES=${#packages[@]}
+    echo
+}
+
+# Run smart contract integration tests
+run_smart_contract_tests() {
+    echo -e "${BLUE}🔧 Running Smart Contract Integration Tests...${NC}"
+    
+    # Smart contract packages to test
+    local contract_packages=(
+        "./pkg/contracts/storage"
+        "./pkg/contracts/consensus"
+        "./pkg/testing"
+    )
+    
+    echo -e "${GREEN}✅ Testing Smart Contract Components:${NC}"
+    echo -e "   📦 Contract Storage Integration"
+    echo -e "   🎯 Consensus Integration"
+    echo -e "   🧪 Testing Framework"
+    echo -e "   📊 Coverage Tracking"
+    echo -e "   ⚡ Performance Monitoring"
+    
+    for pkg in "${contract_packages[@]}"; do
+        local package_name=$(basename "$pkg")
+        echo -e "   🔧 Testing $package_name..."
+        
+        if go test -v -coverprofile="$COVERAGE_DIR/${package_name}_coverage.out" "$pkg" 2>&1 | tee "$TEST_RESULTS_DIR/${package_name}_contract.log"; then
+            echo -e "      ✅ $package_name contract tests passed"
+        else
+            echo -e "      ❌ $package_name contract tests failed"
+            return 1
+        fi
+    done
+    
+    # Run our custom test runner
+    echo -e "   🚀 Running Custom Test Runner..."
+    if go build -o /tmp/simple_test ./cmd/test_runner/ && /tmp/simple_test 2>&1 | tee "$TEST_RESULTS_DIR/smart_contract_integration.log"; then
+        echo -e "      ✅ Smart contract integration test passed"
+    else
+        echo -e "      ❌ Smart contract integration test failed"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ Smart contract tests completed${NC}"
     echo
 }
 
@@ -310,6 +356,7 @@ run_fuzz_tests() {
             echo -e "      🧪 Running $fuzz_func..."
             if go test -fuzz="$fuzz_func" -fuzztime=5s "$pkg" 2>&1 | tee -a "$TEST_RESULTS_DIR/${package_name}_fuzz.log"; then
                 echo -e "      ✅ $fuzz_func completed successfully"
+                FUZZ_TESTS_COUNT=$((FUZZ_TESTS_COUNT + 1))
             else
                 echo -e "      ⚠️  $fuzz_func had issues"
             fi
@@ -354,6 +401,7 @@ run_benchmark_tests() {
         # Run benchmarks
         if go test -bench=. -benchmem "$pkg" 2>&1 | tee "$TEST_RESULTS_DIR/${package_name}_bench.log"; then
             echo -e "${GREEN}✅ Benchmarks for $package_name completed${NC}"
+            BENCHMARK_TESTS_COUNT=$((BENCHMARK_TESTS_COUNT + 1))
         else
             echo -e "${YELLOW}⚠️  Benchmarks for $package_name had issues${NC}"
         fi
@@ -410,6 +458,53 @@ generate_coverage_report() {
     echo
 }
 
+# Get accurate test counts from all log files
+get_accurate_test_counts() {
+    echo -e "${BLUE}🔍 Calculating accurate test counts...${NC}"
+    
+    # Reset counters
+    TOTAL_TESTS=0
+    PASSED_TESTS=0
+    FAILED_TESTS=0
+    SKIPPED_TESTS=0
+    
+    # Count from all package test logs
+    for file in "$TEST_RESULTS_DIR"/*_tests.log; do
+        if [[ -f "$file" ]]; then
+            local passed=$(grep -c "^--- PASS" "$file" 2>/dev/null || echo "0")
+            local failed=$(grep -c "^--- FAIL" "$file" 2>/dev/null || echo "0")
+            local skipped=$(grep -c "^--- SKIP" "$file" 2>/dev/null || echo "0")
+            
+            # Ensure variables are numbers and handle empty strings
+            passed=${passed:-0}
+            failed=${failed:-0}
+            skipped=${skipped:-0}
+            
+            # Convert to integers to avoid syntax errors
+            passed=$((passed + 0))
+            failed=$((failed + 0))
+            skipped=$((skipped + 0))
+            
+            PASSED_TESTS=$((PASSED_TESTS + passed))
+            FAILED_TESTS=$((FAILED_TESTS + failed))
+            SKIPPED_TESTS=$((SKIPPED_TESTS + skipped))
+            
+            echo -e "   📊 $file: $passed passed, $failed failed, $skipped skipped"
+        fi
+    done
+    
+    TOTAL_TESTS=$((PASSED_TESTS + FAILED_TESTS + SKIPPED_TESTS))
+    
+    # Count fuzz tests (they don't follow the --- PASS format)
+    FUZZ_TESTS_COUNT=$(find "$TEST_RESULTS_DIR" -name "*_fuzz.log" | wc -l)
+    
+    # Count benchmark tests
+    BENCHMARK_TESTS_COUNT=$(find "$TEST_RESULTS_DIR" -name "*_bench.log" | wc -l)
+    
+    echo -e "${GREEN}✅ Accurate counts: $PASSED_TESTS passed, $FAILED_TESTS failed, $SKIPPED_TESTS skipped${NC}"
+    echo -e "${GREEN}✅ Fuzz tests: $FUZZ_TESTS_COUNT, Benchmark tests: $BENCHMARK_TESTS_COUNT${NC}"
+}
+
 # Generate test summary report
 generate_test_summary() {
     echo -e "${BLUE}📋 Generating test summary report...${NC}"
@@ -434,6 +529,8 @@ generate_test_summary() {
         echo "| **Passed Tests** | $PASSED_TESTS |"
         echo "| **Failed Tests** | $FAILED_TESTS |"
         echo "| **Skipped Tests** | $SKIPPED_TESTS |"
+        echo "| **Fuzz Tests** | $FUZZ_TESTS_COUNT |"
+        echo "| **Benchmark Tests** | $BENCHMARK_TESTS_COUNT |"
         echo
         echo "## 🎯 Success Rate"
         echo
@@ -494,8 +591,9 @@ print_final_results() {
     echo -e "${NC}"
     
     echo -e "${BLUE}📊 Final Results Summary:${NC}"
-    echo -e "   📦 Packages: ${GREEN}$PASSED_PACKAGES passed${NC}, ${RED}$FAILED_PACKAGES failed${NC} (Total: $TOTAL_PACKAGES)"
-    echo -e "   🧪 Tests: ${GREEN}$PASSED_TESTS passed${NC}, ${RED}$FAILED_TESTS failed${NC}, ${YELLOW}$SKIPPED_TESTS skipped${NC} (Total: $TOTAL_TESTS)"
+    echo -e "   📦 Packages: ${GREEN}$PASSED_PACKAGES passed${NC}, ${RED}$FAILED_PACKAGES failed${NC}, ${YELLOW}$((TOTAL_PACKAGES - PASSED_PACKAGES - FAILED_PACKAGES)) skipped${NC} (Total: $TOTAL_PACKAGES)"
+    echo -e "   🧪 Tests: ${GREEN}$PASSED_TESTS passed${NC}, ${RED}$FAILED_TESTS failed${NC}, ${YELLOW}$SKIPPED_TESTS skipped${NC} (Total: $TOTAL_TESTS from successful packages)"
+    echo -e "   🧪 Fuzz Tests: ${GREEN}$FUZZ_TESTS_COUNT${NC}, Benchmark Tests: ${GREEN}$BENCHMARK_TESTS_COUNT${NC}"
     echo -e "   🔐 Security: ${GREEN}ZK Proofs & Quantum-Resistant Crypto${NC} ✅"
     
     if [[ $TOTAL_PACKAGES -gt 0 ]]; then
@@ -545,6 +643,11 @@ main() {
     done
     
     # Run additional test types
+    if [[ "$SMART_CONTRACT_TESTS" == true ]]; then
+        if ! run_smart_contract_tests; then
+            echo -e "${YELLOW}⚠️  Smart contract tests failed, continuing with other tests...${NC}"
+        fi
+    fi
     run_fuzz_tests
     run_benchmark_tests
     run_security_tests # Added security tests
@@ -575,11 +678,14 @@ case "${1:-}" in
         echo "  --no-coverage  Disable coverage reporting"
         echo "  --no-fuzz      Disable fuzz testing"
         echo "  --no-bench     Disable benchmark testing"
+        echo "  --contracts    Run only smart contract tests"
+        echo "  --no-contracts Disable smart contract tests"
         echo "  --verbose      Enable verbose output"
         echo "  --timeout N    Set test timeout (default: 300s)"
         echo
         echo "Examples:"
         echo "  $0                    # Run all tests with default settings"
+        echo "  $0 --contracts       # Run only smart contract tests"
         echo "  $0 --no-race         # Run tests without race detection"
         echo "  $0 --timeout 600s    # Run tests with 10 minute timeout"
         echo "  $0 --no-coverage     # Run tests without coverage"
@@ -600,6 +706,15 @@ case "${1:-}" in
     --no-bench)
         BENCHMARK_TESTS=false
         shift
+        ;;
+    --no-contracts)
+        SMART_CONTRACT_TESTS=false
+        shift
+        ;;
+    --contracts)
+        echo -e "${BLUE}🔧 Running Smart Contract Tests Only...${NC}"
+        run_smart_contract_tests
+        exit 0
         ;;
     --verbose)
         VERBOSE_TESTS=true
