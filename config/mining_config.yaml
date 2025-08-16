@@ -1,0 +1,79 @@
+# GoChain Mining Configuration File
+
+# Network Configuration
+network:
+  listen_port: 0  # 0 for random port
+  bootstrap_peers: []
+  enable_mdns: true
+  enable_relay: false
+  max_peers: 50
+  connection_timeout: 30s
+
+# Blockchain Configuration
+blockchain:
+  genesis_block_reward: 1000000000  # 1 billion units
+  block_time: 10s
+  difficulty_adjustment_interval: 2016
+  target_block_time: 10s
+  max_block_size: 1000000  # 1MB
+
+# Mining Configuration
+mining:
+  enabled: true  # Enable mining
+  mining_threads: 4  # Use 4 threads
+  block_time: 10s
+  max_block_size: 1000000
+  coinbase_address: "miner_reward"
+  coinbase_reward: 1000000000
+
+# Mempool Configuration
+mempool:
+  max_size: 100000  # 100KB
+  min_fee_rate: 1   # 1 unit per byte
+
+# Wallet Configuration
+wallet:
+  key_type: "ecdsa"  # ecdsa or ed25519
+  passphrase: ""
+
+# Storage Configuration
+storage:
+  data_dir: "./mining_data"
+  db_type: "leveldb"  # file, leveldb, or badger
+
+# Logging Configuration
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "text"  # text or json
+  output: "stdout"  # stdout, stderr, or file path
+  log_file: "./logs/mining_gochain.log"  # Path to log file
+  max_size: 104857600  # 100MB
+  max_backups: 5
+
+# API Configuration
+api:
+  enabled: true
+  listen_addr: "127.0.0.1:8082"  # Different port
+  cors_enabled: true
+  rate_limit: 1000  # requests per minute
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics:
+    enabled: true
+    listen_addr: "127.0.0.1:9091"  # Different port
+    collect_interval: 15s
+    prometheus_enabled: true
+    prometheus_path: "/prometheus"
+  health:
+    enabled: true
+    listen_addr: "127.0.0.1:8083"  # Different port
+    check_interval: 15s
+    health_path: "/health"
+  logging:
+    level: "info"
+    format: "json"
+    log_file: "./logs/mining_monitoring.log"
+    max_size: 52428800  # 50MB
+    max_backups: 3

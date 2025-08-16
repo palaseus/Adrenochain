@@ -1,0 +1,60 @@
+# GoChain Fresh Mining Configuration
+# This config uses completely separate storage to avoid conflicts
+
+network:
+  type: "testnet"
+  port: 30303
+  bootstrap_peers: []
+  discovery_enabled: true
+
+blockchain:
+  genesis_file: "genesis.json"
+  difficulty: 1
+  block_time: 10s
+  max_block_size: 1000000
+
+mining:
+  enabled: true
+  mining_threads: 4
+  block_time: 10s
+  max_block_size: 1000000
+  coinbase_address: "miner_reward"
+  coinbase_reward: 1000000000
+
+mempool:
+  max_size: 10000
+  transaction_timeout: 300s
+
+wallet:
+  enabled: true
+  wallet_file: "./fresh_data/wallet.dat"
+  passphrase: ""
+
+storage:
+  data_dir: "./fresh_data"
+  db_type: "leveldb"
+  max_open_files: 1000
+
+logging:
+  level: "info"
+  log_file: "./fresh_logs/gochain.log"
+  max_size: 100
+  max_backups: 3
+  max_age: 28
+
+api:
+  enabled: true
+  listen_addr: "127.0.0.1:8082"
+  cors_enabled: true
+  rate_limit: 1000
+
+monitoring:
+  enabled: true
+  metrics:
+    enabled: true
+    listen_addr: "127.0.0.1:9091"
+  health:
+    enabled: true
+    listen_addr: "127.0.0.1:8083"
+  logging:
+    log_file: "./fresh_logs/monitoring.log"
