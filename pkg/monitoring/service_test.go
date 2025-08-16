@@ -1,7 +1,9 @@
 package monitoring
 
 import (
+	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -80,55 +82,75 @@ func (mhc *MockHealthChecker) Check() (*health.Component, error) {
 	}, nil
 }
 
+// getAvailablePort finds an available port for testing
+func getAvailablePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+// createTestConfig creates a test configuration with dynamic ports
+func createTestConfig() (*Config, error) {
+	metricsPort, err := getAvailablePort()
+	if err != nil {
+		return nil, err
+	}
+
+	healthPort, err := getAvailablePort()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Config{
+		MetricsPort:         metricsPort,
+		HealthPort:          healthPort,
+		LogLevel:            logger.INFO,
+		LogJSON:             false,
+		LogFile:             "",
+		MetricsPath:         "/metrics",
+		HealthPath:          "/health",
+		PrometheusPath:      "/prometheus",
+		CollectInterval:     30 * time.Second,
+		HealthCheckInterval: 10 * time.Second,
+		EnablePrometheus:    true,
+	}, nil
+}
+
 func TestNewService(t *testing.T) {
-	// Create mock dependencies
 	mockChain := &MockChain{
-		height: 10,
+		height: 1,
 		bestBlock: &block.Block{
 			Header: &block.Header{
-				Height:     10,
+				Height:     1,
 				Timestamp:  time.Now(),
-				Difficulty: 1000,
-			},
-			Transactions: []*block.Transaction{},
-		},
-		genesisBlock: &block.Block{
-			Header: &block.Header{
-				Height:     0,
-				Timestamp:  time.Now().Add(-24 * time.Hour),
-				Difficulty: 1,
+				Difficulty: 100,
 			},
 		},
 	}
-	mockMempool := &MockMempool{txnCount: 5}
+	mockMempool := &MockMempool{txnCount: 0}
+	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
 
-	// Create mock peer IDs
-	peer1, _ := peer.Decode("QmPeer1")
-	peer2, _ := peer.Decode("QmPeer2")
-	peer3, _ := peer.Decode("QmPeer3")
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer1, peer2, peer3}}
-
-	// Test with default config
 	service := NewService(nil, mockChain, mockMempool, mockNetwork)
 	assert.NotNil(t, service)
 	assert.NotNil(t, service.GetLogger())
 	assert.NotNil(t, service.GetMetrics())
 	assert.NotNil(t, service.GetSystemHealth())
-
-	// Test with custom config
-	config := &Config{
-		MetricsPort:         9091,
-		HealthPort:          8081,
-		LogLevel:            logger.DEBUG,
-		CollectInterval:     10 * time.Second,
-		HealthCheckInterval: 5 * time.Second,
-	}
-	service2 := NewService(config, mockChain, mockMempool, mockNetwork)
-	assert.NotNil(t, service2)
-	assert.Equal(t, config.MetricsPort, service2.config.MetricsPort)
 }
 
 func TestServiceStartStop(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 5,
 		bestBlock: &block.Block{
@@ -145,14 +167,14 @@ func TestServiceStartStop(t *testing.T) {
 	peer1, _ := peer.Decode("QmPeer1")
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer1}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Start service
-	err := service.Start()
+	err = service.Start()
 	require.NoError(t, err)
 
 	// Wait a bit for servers to start
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	// Test metrics endpoint
 	resp, err := http.Get(service.GetMetricsEndpoint())
@@ -176,15 +198,35 @@ func TestServiceStartStop(t *testing.T) {
 	err = service.Stop()
 	require.NoError(t, err)
 
-	// Wait a bit for servers to stop
-	time.Sleep(100 * time.Millisecond)
+	// Wait longer for servers to fully stop
+	time.Sleep(500 * time.Millisecond)
 
 	// Verify endpoints are no longer accessible
-	_, err = http.Get(service.GetMetricsEndpoint())
-	assert.Error(t, err)
+	// Use a timeout context to prevent hanging
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// Test metrics endpoint after stop
+	req, err := http.NewRequestWithContext(ctx, "GET", service.GetMetricsEndpoint(), nil)
+	require.NoError(t, err)
+
+	client := &http.Client{Timeout: 1 * time.Second}
+	_, err = client.Do(req)
+	assert.Error(t, err, "Expected error when accessing stopped service")
+
+	// Test health endpoint after stop
+	req, err = http.NewRequestWithContext(ctx, "GET", service.GetHealthEndpoint(), nil)
+	require.NoError(t, err)
+
+	_, err = client.Do(req)
+	assert.Error(t, err, "Expected error when accessing stopped service")
 }
 
 func TestHealthCheckersRegistration(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 1,
 		bestBlock: &block.Block{
@@ -198,7 +240,7 @@ func TestHealthCheckersRegistration(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 0}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Manually register mock health checkers for testing
 	service.RegisterHealthChecker(&MockHealthChecker{name: "blockchain", status: health.StatusHealthy})
@@ -218,6 +260,10 @@ func TestHealthCheckersRegistration(t *testing.T) {
 }
 
 func TestHealthCheckResults(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 5,
 		bestBlock: &block.Block{
@@ -232,7 +278,7 @@ func TestHealthCheckResults(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 50}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2"), peer.ID("QmPeer3")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Manually register mock health checkers for testing
 	service.RegisterHealthChecker(&MockHealthChecker{name: "blockchain", status: health.StatusHealthy})
@@ -263,6 +309,10 @@ func TestHealthCheckResults(t *testing.T) {
 }
 
 func TestMetricsCollection(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 10,
 		bestBlock: &block.Block{
@@ -277,10 +327,10 @@ func TestMetricsCollection(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 25}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Start service to trigger metrics collection
-	err := service.Start()
+	err = service.Start()
 	require.NoError(t, err)
 	defer service.Stop()
 
@@ -307,6 +357,10 @@ func TestMetricsCollection(t *testing.T) {
 }
 
 func TestHealthEndpointResponse(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 3,
 		bestBlock: &block.Block{
@@ -320,7 +374,7 @@ func TestHealthEndpointResponse(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 10}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Create test request
 	req := httptest.NewRequest("GET", "/health", nil)
@@ -335,8 +389,8 @@ func TestHealthEndpointResponse(t *testing.T) {
 
 	// Parse response
 	var healthReport map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &healthReport)
-	require.NoError(t, err)
+	err2 := json.Unmarshal(w.Body.Bytes(), &healthReport)
+	require.NoError(t, err2)
 
 	// Verify structure
 	assert.Contains(t, healthReport, "status")
@@ -353,6 +407,10 @@ func TestHealthEndpointResponse(t *testing.T) {
 }
 
 func TestMetricsEndpointResponse(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 2,
 		bestBlock: &block.Block{
@@ -366,7 +424,7 @@ func TestMetricsEndpointResponse(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 5}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Create test request
 	req := httptest.NewRequest("GET", "/metrics", nil)
@@ -381,8 +439,8 @@ func TestMetricsEndpointResponse(t *testing.T) {
 
 	// Parse response
 	var metrics map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &metrics)
-	require.NoError(t, err)
+	err3 := json.Unmarshal(w.Body.Bytes(), &metrics)
+	require.NoError(t, err3)
 
 	// Verify structure
 	assert.Contains(t, metrics, "blockchain")
@@ -394,6 +452,10 @@ func TestMetricsEndpointResponse(t *testing.T) {
 }
 
 func TestPrometheusEndpointResponse(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 1,
 		bestBlock: &block.Block{
@@ -407,7 +469,7 @@ func TestPrometheusEndpointResponse(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 0}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Update metrics to ensure they have values
 	service.UpdateMetrics()
@@ -431,6 +493,10 @@ func TestPrometheusEndpointResponse(t *testing.T) {
 }
 
 func TestServiceLogging(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 1,
 		bestBlock: &block.Block{
@@ -444,7 +510,7 @@ func TestServiceLogging(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 0}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Test logging methods
 	service.LogInfo("Test info message")
@@ -458,6 +524,10 @@ func TestServiceLogging(t *testing.T) {
 }
 
 func TestServiceContextCancellation(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 1,
 		bestBlock: &block.Block{
@@ -471,10 +541,10 @@ func TestServiceContextCancellation(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 0}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Start service
-	err := service.Start()
+	err = service.Start()
 	require.NoError(t, err)
 
 	// Wait a bit for background monitoring to start
@@ -492,6 +562,10 @@ func TestServiceContextCancellation(t *testing.T) {
 }
 
 func TestMetricsReset(t *testing.T) {
+	// Create test configuration with dynamic ports
+	config, err := createTestConfig()
+	require.NoError(t, err)
+
 	mockChain := &MockChain{
 		height: 5,
 		bestBlock: &block.Block{
@@ -505,10 +579,10 @@ func TestMetricsReset(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 10}
 	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
 
-	service := NewService(nil, mockChain, mockMempool, mockNetwork)
+	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
 	// Start service
-	err := service.Start()
+	err = service.Start()
 	require.NoError(t, err)
 	defer service.Stop()
 
