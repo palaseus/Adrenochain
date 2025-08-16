@@ -39,7 +39,7 @@ wallet:
 # Storage Configuration
 storage:
   data_dir: "./data"
-  db_type: "leveldb"  # file, leveldb, or badger
+  db_type: "file"  # Changed from "leveldb" to "file"
 
 # Logging Configuration
 logging:

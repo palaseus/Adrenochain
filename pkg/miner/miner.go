@@ -112,7 +112,16 @@ func (m *Miner) StopMining() {
 	}
 
 	m.isMining = false
-	close(m.stopMining)
+	
+	// Signal the mining goroutine to stop
+	if m.stopMining != nil {
+		select {
+		case <-m.stopMining:
+			// Channel already closed
+		default:
+			close(m.stopMining)
+		}
+	}
 }
 
 // Cleanup ensures the miner is properly stopped and cleaned up
@@ -143,10 +152,21 @@ func (m *Miner) IsMining() bool {
 	return m.isMining
 }
 
+// shouldContinueMining checks if the miner should continue mining
+func (m *Miner) shouldContinueMining() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.isMining
+}
+
 // mineBlocks continuously mines new blocks
 func (m *Miner) mineBlocks() {
 	ticker := time.NewTicker(m.config.BlockTime)
 	defer ticker.Stop()
+
+	// Track if we're currently mining to prevent overlapping operations
+	var isCurrentlyMining bool
+	var miningMutex sync.Mutex
 
 	for {
 		select {
@@ -155,11 +175,30 @@ func (m *Miner) mineBlocks() {
 		case <-m.stopMining:
 			return
 		case <-ticker.C:
+			// Check if we should still be mining
+			if !m.shouldContinueMining() {
+				return
+			}
+
+			// Check if we're already mining to prevent overlapping operations
+			miningMutex.Lock()
+			if isCurrentlyMining {
+				miningMutex.Unlock()
+				continue // Skip this tick if we're already mining
+			}
+			isCurrentlyMining = true
+			miningMutex.Unlock()
+
 			// Try to mine a new block
 			if err := m.mineNextBlock(); err != nil {
 				// Log error but continue mining
 				fmt.Printf("Mining error: %v\n", err)
 			}
+
+			// Mark mining as complete
+			miningMutex.Lock()
+			isCurrentlyMining = false
+			miningMutex.Unlock()
 		}
 	}
 }
@@ -172,6 +211,12 @@ func (m *Miner) mineNextBlock() error {
 		return fmt.Errorf("no best block available")
 	}
 
+	// Check if the next block height already exists to prevent duplicate mining
+	nextHeight := bestBlock.Header.Height + 1
+	if existingBlock := m.chain.GetBlockByHeight(nextHeight); existingBlock != nil {
+		return fmt.Errorf("block at height %d already exists", nextHeight)
+	}
+
 	// Create a new block
 	newBlock := m.createNewBlock(bestBlock)
 	if newBlock == nil {
@@ -180,11 +225,20 @@ func (m *Miner) mineNextBlock() error {
 
 	// Mine the block
 	if err := m.mineBlock(newBlock); err != nil {
+		if err.Error() == "mining stopped" {
+			// This is expected when stopping mining, don't log as error
+			return err
+		}
 		return fmt.Errorf("failed to mine block: %w", err)
 	}
 
 	// Add the block to the chain
 	if err := m.chain.AddBlock(newBlock); err != nil {
+		if err.Error() == "block already exists" {
+			// This can happen due to race conditions, log but don't treat as critical error
+			fmt.Printf("Block already exists (race condition): %v\n", err)
+			return err
+		}
 		return fmt.Errorf("failed to add block to chain: %w", err)
 	}
 
@@ -259,13 +313,13 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 	if scriptPubKey == "" {
 		scriptPubKey = "coinbase" // Default fallback
 	}
-	
+
 	// Ensure we have a valid value (cannot be zero)
 	value := m.config.CoinbaseReward + totalFees
 	if value == 0 {
 		value = 1 // Minimum valid value
 	}
-	
+
 	out := &block.TxOutput{
 		Value:        value,
 		ScriptPubKey: []byte(scriptPubKey),
@@ -350,8 +404,25 @@ func (m *Miner) GetMiningStats() map[string]interface{} {
 	stats := make(map[string]interface{})
 	stats["isMining"] = m.isMining
 	stats["currentBlock"] = m.currentBlock
-	stats["difficulty"] = m.chain.GetBestBlock().Header.Difficulty
-	stats["height"] = m.chain.GetHeight()
+	
+	// Safely get chain information
+	if bestBlock := m.chain.GetBestBlock(); bestBlock != nil {
+		stats["difficulty"] = bestBlock.Header.Difficulty
+		stats["height"] = bestBlock.Header.Height
+		stats["bestBlockHash"] = fmt.Sprintf("%x", bestBlock.CalculateHash())
+	} else {
+		stats["difficulty"] = 0
+		stats["height"] = 0
+		stats["bestBlockHash"] = "none"
+	}
+	
+	stats["config"] = map[string]interface{}{
+		"miningEnabled":   m.config.MiningEnabled,
+		"miningThreads":   m.config.MiningThreads,
+		"blockTime":       m.config.BlockTime.String(),
+		"maxBlockSize":    m.config.MaxBlockSize,
+		"coinbaseReward":  m.config.CoinbaseReward,
+	}
 
 	return stats
 }
