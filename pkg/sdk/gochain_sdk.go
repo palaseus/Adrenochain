@@ -473,7 +473,11 @@ func (sdk *GoChainSDK) GetPrice(
 
 func (sdk *GoChainSDK) generateAddress() engine.Address {
 	// In real implementation, this would generate a proper address
-	return engine.Address{}
+	// For now, create a unique address based on operation count
+	var addr engine.Address
+	addr[0] = byte(sdk.TotalOperations + 1)
+	addr[1] = byte(sdk.TotalOperations + 2)
+	return addr
 }
 
 func (sdk *GoChainSDK) calculateLPTokens(amountA, amountB *big.Int) *big.Int {

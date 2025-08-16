@@ -414,6 +414,11 @@ func (b *Block) Serialize() ([]byte, error) {
 	// This is a simplified serialization implementation
 	// In a real implementation, you'd use a more efficient format like Protocol Buffers
 
+	// Check if header exists
+	if b.Header == nil {
+		return nil, fmt.Errorf("cannot serialize block with nil header")
+	}
+
 	data := make([]byte, 0)
 
 	// Serialize header
@@ -633,6 +638,11 @@ func (h *Header) Deserialize(data []byte) error {
 
 // Serialize converts the transaction to a byte array
 func (tx *Transaction) Serialize() ([]byte, error) {
+	// Check if hash exists
+	if tx.Hash == nil {
+		return nil, fmt.Errorf("cannot serialize transaction with nil hash")
+	}
+
 	data := make([]byte, 0)
 
 	// Version (4 bytes)
@@ -791,6 +801,11 @@ func (tx *Transaction) Deserialize(data []byte) error {
 
 // Serialize converts the transaction input to a byte array
 func (in *TxInput) Serialize() ([]byte, error) {
+	// Check if required fields exist
+	if in.PrevTxHash == nil {
+		return nil, fmt.Errorf("cannot serialize input with nil previous transaction hash")
+	}
+
 	data := make([]byte, 0)
 
 	// Previous transaction hash (32 bytes)
@@ -858,6 +873,11 @@ func (in *TxInput) Deserialize(data []byte) error {
 
 // Serialize converts the transaction output to a byte array
 func (out *TxOutput) Serialize() ([]byte, error) {
+	// Check if required fields exist
+	if out.ScriptPubKey == nil {
+		return nil, fmt.Errorf("cannot serialize output with nil script public key")
+	}
+
 	data := make([]byte, 0)
 
 	// Value (8 bytes)

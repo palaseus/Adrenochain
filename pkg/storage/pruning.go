@@ -63,10 +63,17 @@ func NewPruningManager(config *PruningConfig, storage StorageInterface) *Pruning
 		config = DefaultPruningConfig()
 	}
 
+	// Initialize stats map with required keys
+	stats := make(map[string]interface{})
+	stats["prune_operations"] = uint64(0)
+	stats["archive_operations"] = uint64(0)
+
 	return &PruningManager{
-		config:  config,
-		storage: storage,
-		stats:   make(map[string]interface{}),
+		config:          config,
+		storage:         storage,
+		stats:           stats,
+		lastPruneTime:   time.Now(),
+		lastArchiveTime: time.Now(),
 	}
 }
 

@@ -365,6 +365,10 @@ func (api *ContractAPI) validateDeployInput(
 		return ErrContractTooLarge
 	}
 
+	if gasLimit > api.Config.MaxGasLimit {
+		return ErrGasLimitExceeded
+	}
+
 	if gasPrice != nil && gasPrice.Sign() <= 0 {
 		return ErrInvalidGasPrice
 	}
@@ -414,14 +418,33 @@ func (api *ContractAPI) registerContract(
 	constructorArgs []interface{},
 ) error {
 	// This would integrate with the actual contract registry
-	// For now, we just track the deployment
+	// For now, we just track the deployment and register in appropriate maps
+
+	// Register based on contract type for tracking purposes
+	switch contractType {
+	case ContractTypeERC20:
+		// Create a placeholder ERC20 token for tracking
+		token := tokens.NewERC20Token("", "", 0, big.NewInt(0), engine.Address{}, tokens.DefaultTokenConfig())
+		api.ERC20Tokens[contractAddress] = token
+	case ContractTypeERC721:
+		// Create a placeholder ERC721 token for tracking
+		token := tokens.NewERC721Token("", "", "", engine.Address{}, tokens.DefaultERC721TokenConfig())
+		api.ERC721Tokens[contractAddress] = token
+	case ContractTypeERC1155:
+		// Create a placeholder ERC1155 token for tracking
+		token := tokens.NewERC1155Token("", engine.Address{}, tokens.DefaultERC1155TokenConfig())
+		api.ERC1155Tokens[contractAddress] = token
+	}
+
 	return nil
 }
 
 func (api *ContractAPI) generateContractAddress() engine.Address {
 	// In a real implementation, this would generate a proper address
-	// For now, return a placeholder
-	return engine.Address{}
+	// For now, return a unique placeholder address
+	var addr engine.Address
+	addr[0] = byte(api.TotalContracts + 1) // Make it unique
+	return addr
 }
 
 func (api *ContractAPI) getCurrentTimestamp() int64 {

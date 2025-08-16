@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"sync"
 	"time"
@@ -10,14 +11,22 @@ import (
 	"github.com/gochain/gochain/pkg/contracts/storage"
 )
 
+// StateManager interface is defined in state_transitions.go
+
+// StateTransitionManagerInterface defines the interface for state transition operations
+type StateTransitionManagerInterface interface {
+	RollbackBlock(blockNumber uint64) error
+	ExecuteTransaction(tx *ConsensusTransaction, consensusRound uint64) error
+}
+
 // ConsensusIntegration integrates contract execution with hybrid consensus
 type ConsensusIntegration struct {
 	mu sync.RWMutex
 
 	// Core components
 	contractEngine engine.ContractEngine
-	stateManager   *storage.ContractStateManager
-	stateTransitions *StateTransitionManager
+	stateManager   StateManager
+	stateTransitions StateTransitionManagerInterface
 	
 	// Consensus integration
 	consensusEngine interface{} // Will integrate with pkg/consensus/hybrid_consensus.go
@@ -207,13 +216,13 @@ type PendingTransaction struct {
 // NewConsensusIntegration creates a new consensus integration
 func NewConsensusIntegration(
 	contractEngine engine.ContractEngine,
-	stateManager *storage.ContractStateManager,
+	stateManager StateManager,
 	config ConsensusIntegrationConfig,
 ) *ConsensusIntegration {
-	return &ConsensusIntegration{
+	ci := &ConsensusIntegration{
 		contractEngine:    contractEngine,
 		stateManager:      stateManager,
-		stateTransitions:  NewStateTransitionManager(contractEngine, stateManager, StateTransitionConfig{}),
+		stateTransitions:  nil, // Will be set separately to avoid circular dependency
 		consensusEngine:   nil, // Will be initialized separately
 		blockValidator:    NewBlockValidator(BlockValidationConfig{}),
 		gasAccounting:     NewGasAccounting(config.MaxGasPerBlock, config.MaxGasPerContract),
@@ -225,6 +234,11 @@ func NewConsensusIntegration(
 		TotalGasUsed: 0,
 		LastBlockTime: time.Time{},
 	}
+	
+	// Initialize state transition manager
+	ci.stateTransitions = NewStateTransitionManager(contractEngine, stateManager, StateTransitionConfig{})
+	
+	return ci
 }
 
 // InitializeConsensusEngine initializes the consensus engine
@@ -234,6 +248,8 @@ func (ci *ConsensusIntegration) InitializeConsensusEngine(consensusEngine interf
 	
 	ci.consensusEngine = consensusEngine
 }
+
+// SetStateTransitionManager method removed - no longer needed
 
 // ProcessBlock processes a block with contract execution
 func (ci *ConsensusIntegration) ProcessBlock(
@@ -365,6 +381,11 @@ func (ci *ConsensusIntegration) executeTransaction(
 	tx *PendingTransaction,
 	blockNumber uint64,
 ) error {
+	// Check for nil transaction
+	if tx == nil {
+		return errors.New("transaction cannot be nil")
+	}
+	
 	// Update transaction status
 	tx.Status = TransactionStatusExecuting
 	

@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/gochain/gochain/pkg/block"
@@ -257,4 +258,304 @@ func TestLevelDBStorageConcurrency(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		<-done
 	}
+}
+
+// TestLevelDBStorageEdgeCases tests edge cases and error conditions
+func TestLevelDBStorageEdgeCases(t *testing.T) {
+	t.Run("GetBlockEdgeCases", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+
+		// Test getting block with nil hash
+		block, err := storage.GetBlock(nil)
+		assert.Error(t, err)
+		assert.Nil(t, block)
+		assert.Contains(t, err.Error(), "invalid hash: cannot be nil or empty")
+
+		// Test getting block with empty hash
+		block, err = storage.GetBlock([]byte{})
+		assert.Error(t, err)
+		assert.Nil(t, block)
+		assert.Contains(t, err.Error(), "invalid hash: cannot be nil or empty")
+
+		// Test getting block with zero hash
+		zeroHash := make([]byte, 32)
+		block, err = storage.GetBlock(zeroHash)
+		assert.Error(t, err)
+		assert.Nil(t, block)
+		assert.Contains(t, err.Error(), "block not found")
+
+		// Test getting block with invalid hash length
+		invalidHash := []byte{1, 2, 3} // Too short
+		block, err = storage.GetBlock(invalidHash)
+		assert.Error(t, err)
+		assert.Nil(t, block)
+	})
+
+	t.Run("GetChainStateEdgeCases", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+
+		// Test getting chain state when none exists
+		state, err := storage.GetChainState()
+		assert.NoError(t, err)
+		assert.NotNil(t, state)
+		// Returns empty ChainState when none exists
+
+		// Test getting chain state after storing invalid state
+		invalidState := &ChainState{
+			BestBlockHash: []byte{1, 2, 3}, // Invalid hash
+			Height:        0,               // Invalid height
+		}
+		err = storage.StoreChainState(invalidState)
+		assert.NoError(t, err)
+
+		// Should still be able to retrieve it
+		retrievedState, err := storage.GetChainState()
+		assert.NoError(t, err)
+		assert.NotNil(t, retrievedState)
+		assert.Equal(t, invalidState.Height, retrievedState.Height)
+	})
+
+	t.Run("ReadWriteEdgeCases", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+
+		// Test writing nil key
+		err = storage.Write(nil, []byte("value"))
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test writing nil value
+		err = storage.Write([]byte("key"), nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid value: cannot be nil")
+
+		// Test writing empty key
+		err = storage.Write([]byte{}, []byte("value"))
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test reading nil key
+		value, err := storage.Read(nil)
+		assert.Error(t, err)
+		assert.Nil(t, value)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test reading empty key
+		value, err = storage.Read([]byte{})
+		assert.Error(t, err)
+		assert.Nil(t, value)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test reading non-existent key
+		value, err = storage.Read([]byte("nonexistent"))
+		assert.Error(t, err)
+		assert.Nil(t, value)
+		// Returns leveldb.ErrNotFound
+
+		// Test Has with nil key
+		exists, err := storage.Has(nil)
+		assert.Error(t, err)
+		assert.False(t, exists)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test Has with empty key
+		exists, err = storage.Has([]byte{})
+		assert.Error(t, err)
+		assert.False(t, exists)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+	})
+
+	t.Run("DeleteEdgeCases", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+
+		// Test deleting nil key
+		err = storage.Delete(nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test deleting empty key
+		err = storage.Delete([]byte{})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid key: cannot be nil or empty")
+
+		// Test deleting non-existent key
+		err = storage.Delete([]byte("nonexistent"))
+		assert.NoError(t, err) // Deleting non-existent key should not error
+
+		// Test deleting after writing
+		err = storage.Write([]byte("test"), []byte("value"))
+		assert.NoError(t, err)
+
+		// Verify it exists
+		exists, err := storage.Has([]byte("test"))
+		assert.NoError(t, err)
+		assert.True(t, exists)
+
+		// Delete it
+		err = storage.Delete([]byte("test"))
+		assert.NoError(t, err)
+
+		// Verify it's gone
+		exists, err = storage.Has([]byte("test"))
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("CompactEdgeCases", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+
+		// Test compacting empty database
+		err = storage.Compact()
+		assert.NoError(t, err)
+
+		// Test compacting after some operations
+		for i := 0; i < 100; i++ {
+			key := []byte(fmt.Sprintf("key%d", i))
+			value := []byte(fmt.Sprintf("value%d", i))
+			err = storage.Write(key, value)
+			assert.NoError(t, err)
+		}
+
+		// Delete some keys to create fragmentation
+		for i := 0; i < 50; i++ {
+			key := []byte(fmt.Sprintf("key%d", i))
+			err = storage.Delete(key)
+			assert.NoError(t, err)
+		}
+
+		// Compact the database
+		err = storage.Compact()
+		assert.NoError(t, err)
+
+		// Verify remaining keys are still accessible
+		for i := 50; i < 100; i++ {
+			key := []byte(fmt.Sprintf("key%d", i))
+			value, err := storage.Read(key)
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf("value%d", i), string(value))
+		}
+	})
+
+
+
+	t.Run("ConcurrentAccessEdgeCases", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+		defer storage.Close()
+
+		// Test concurrent writes
+		var wg sync.WaitGroup
+		concurrency := 10
+		operations := 100
+
+		for i := 0; i < concurrency; i++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+				for j := 0; j < operations; j++ {
+					key := []byte(fmt.Sprintf("key_%d_%d", id, j))
+					value := []byte(fmt.Sprintf("value_%d_%d", id, j))
+					err := storage.Write(key, value)
+					assert.NoError(t, err)
+				}
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Verify all operations were successful
+		for i := 0; i < concurrency; i++ {
+			for j := 0; j < operations; j++ {
+				key := []byte(fmt.Sprintf("key_%d_%d", i, j))
+				value, err := storage.Read(key)
+				assert.NoError(t, err)
+				assert.Equal(t, fmt.Sprintf("value_%d_%d", i, j), string(value))
+			}
+		}
+	})
+
+	t.Run("LargeDataHandling", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+		defer storage.Close()
+
+		// Test with large values
+		largeValue := make([]byte, 1024*1024) // 1MB
+		for i := range largeValue {
+			largeValue[i] = byte(i % 256)
+		}
+
+		err = storage.Write([]byte("large_key"), largeValue)
+		assert.NoError(t, err)
+
+		// Read it back
+		retrievedValue, err := storage.Read([]byte("large_key"))
+		assert.NoError(t, err)
+		assert.Equal(t, largeValue, retrievedValue)
+
+		// Test with many small keys
+		for i := 0; i < 1000; i++ {
+			key := []byte(fmt.Sprintf("small_key_%d", i))
+			value := []byte(fmt.Sprintf("small_value_%d", i))
+			err = storage.Write(key, value)
+			assert.NoError(t, err)
+		}
+
+		// Verify all small keys
+		for i := 0; i < 1000; i++ {
+			key := []byte(fmt.Sprintf("small_key_%d", i))
+			value, err := storage.Read(key)
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf("small_value_%d", i), string(value))
+		}
+	})
+
+	t.Run("RecoveryAfterErrors", func(t *testing.T) {
+		tempDir := t.TempDir()
+		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)
+		storage, err := NewLevelDBStorage(config)
+		require.NoError(t, err)
+		defer storage.Close()
+
+		// Write some data
+		err = storage.Write([]byte("recovery_key"), []byte("recovery_value"))
+		assert.NoError(t, err)
+
+		// Simulate some operations that might fail
+		// Test with invalid operations that should be handled gracefully
+		err = storage.Write([]byte(""), []byte("value")) // Empty key
+		assert.Error(t, err)
+
+		// Verify the database is still functional
+		value, err := storage.Read([]byte("recovery_key"))
+		assert.NoError(t, err)
+		assert.Equal(t, "recovery_value", string(value))
+
+		// Test that we can still write new data
+		err = storage.Write([]byte("new_key"), []byte("new_value"))
+		assert.NoError(t, err)
+
+		// Verify new data
+		value, err = storage.Read([]byte("new_key"))
+		assert.NoError(t, err)
+		assert.Equal(t, "new_value", string(value))
+	})
 }

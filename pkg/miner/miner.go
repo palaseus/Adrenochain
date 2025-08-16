@@ -254,9 +254,21 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 	m.mu.RUnlock()
 
 	// Create coinbase output
+	// Ensure we have a valid script public key (cannot be empty)
+	scriptPubKey := m.config.CoinbaseAddress
+	if scriptPubKey == "" {
+		scriptPubKey = "coinbase" // Default fallback
+	}
+	
+	// Ensure we have a valid value (cannot be zero)
+	value := m.config.CoinbaseReward + totalFees
+	if value == 0 {
+		value = 1 // Minimum valid value
+	}
+	
 	out := &block.TxOutput{
-		Value:        m.config.CoinbaseReward + totalFees,
-		ScriptPubKey: []byte(m.config.CoinbaseAddress),
+		Value:        value,
+		ScriptPubKey: []byte(scriptPubKey),
 	}
 
 	// Create transaction

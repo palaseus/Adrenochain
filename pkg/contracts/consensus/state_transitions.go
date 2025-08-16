@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"errors"
 	"math/big"
 	"sync"
 	"time"
@@ -9,13 +10,21 @@ import (
 	"github.com/gochain/gochain/pkg/contracts/storage"
 )
 
+// StateManager defines the interface for state management operations
+type StateManager interface {
+	RollbackBlock(blockNumber uint64) error
+	CreateContract(address engine.Address, code []byte, creator engine.Address) error
+	GetContractState(address engine.Address) *storage.ContractState
+	UpdateContractState(address engine.Address, changes []storage.StateChange) error
+}
+
 // StateTransitionManager manages atomic contract execution within consensus
 type StateTransitionManager struct {
 	mu sync.RWMutex
 
 	// Core components
 	contractEngine engine.ContractEngine
-	stateManager   *storage.ContractStateManager
+	stateManager   StateManager
 
 	// Consensus integration
 	consensusEngine interface{} // Placeholder for consensus.ConsensusEngine
@@ -113,7 +122,7 @@ type StateTransitionConfig struct {
 // NewStateTransitionManager creates a new state transition manager
 func NewStateTransitionManager(
 	contractEngine engine.ContractEngine,
-	stateManager *storage.ContractStateManager,
+	stateManager StateManager,
 	config StateTransitionConfig,
 ) *StateTransitionManager {
 	return &StateTransitionManager{
@@ -339,6 +348,10 @@ func (stm *StateTransitionManager) GetStatistics() *StateTransitionStats {
 
 // Helper functions
 func (stm *StateTransitionManager) validateTransaction(tx *ConsensusTransaction) error {
+	if tx == nil {
+		return errors.New("transaction cannot be nil")
+	}
+	
 	if tx.Contract == (engine.Address{}) {
 		return ErrInvalidContractAddress
 	}
