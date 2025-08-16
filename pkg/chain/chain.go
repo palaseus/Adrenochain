@@ -53,6 +53,16 @@ func DefaultChainConfig() *ChainConfig {
 // NewChain creates a new blockchain instance.
 // It initializes the chain from storage or creates a new genesis block if no chain state is found.
 func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s storage.StorageInterface) (*Chain, error) {
+	if config == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+	if consensusConfig == nil {
+		return nil, fmt.Errorf("consensusConfig cannot be nil")
+	}
+	if s == nil {
+		return nil, fmt.Errorf("storage cannot be nil")
+	}
+	
 	chain := &Chain{
 		blocks:                make(map[string]*block.Block),
 		blockByHeight:         make(map[uint64]*block.Block),
@@ -110,7 +120,7 @@ func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s
 			chain.accumulatedDifficulty[0] = big.NewInt(0)
 			return chain, nil
 		}
-		
+
 		chain.bestBlock = bestBlock
 		chain.tipHash = chainState.BestBlockHash
 		chain.height = chainState.Height
@@ -202,6 +212,10 @@ func (c *Chain) createCoinbaseTransaction(height uint64, reward uint64) *block.T
 // calculateTransactionHash calculates the SHA256 hash of a transaction.
 // This hash serves as the transaction's unique identifier.
 func (c *Chain) calculateTransactionHash(tx *block.Transaction) []byte {
+	if tx == nil {
+		return nil
+	}
+
 	data := make([]byte, 0)
 
 	// Version
@@ -379,6 +393,10 @@ func (c *Chain) validateBlock(block *block.Block) error {
 // GetBlockSize calculates the approximate size of a block
 // GetBlockSize calculates the approximate size of a block in bytes.
 func (c *Chain) GetBlockSize(block *block.Block) uint64 {
+	if block == nil {
+		return 0
+	}
+	
 	size := uint64(0)
 
 	// Header size (fixed)
@@ -398,6 +416,10 @@ func (c *Chain) GetBlockSize(block *block.Block) uint64 {
 // getTransactionSize calculates the approximate size of a transaction
 // getTransactionSize calculates the approximate size of a transaction in bytes.
 func (c *Chain) getTransactionSize(tx *block.Transaction) uint64 {
+	if tx == nil {
+		return 0
+	}
+	
 	size := uint64(0)
 
 	// Version + LockTime + Fee
@@ -456,6 +478,10 @@ func (c *Chain) isBetterChain(block *block.Block) bool {
 // GetBlock returns a block by its hash.
 // It first checks the in-memory cache, then loads from storage if not found.
 func (c *Chain) GetBlock(hash []byte) *block.Block {
+	if hash == nil {
+		return nil
+	}
+	
 	// Try to get from in-memory cache first
 	if block, exists := c.blocks[string(hash)]; exists {
 		return block
@@ -584,7 +610,7 @@ func (c *Chain) rebuildAccumulatedDifficulty() error {
 				// This can happen if the chain state is inconsistent
 				continue
 			}
-			
+
 			// Calculate accumulated difficulty up to this height
 			accumulated := big.NewInt(0)
 			for height := uint64(1); height <= h; height++ {
@@ -610,24 +636,28 @@ func (c *Chain) loadBlocksFromStorage() error {
 		c.blocks[string(c.genesisBlock.CalculateHash())] = c.genesisBlock
 		c.blockByHeight[0] = c.genesisBlock
 	}
-	
+
 	// For now, we'll just ensure the chain state is correct
 	// The actual block loading can be done lazily when needed
 	// This prevents the "block not found" errors during initialization
-	
+
 	// If we have a best block, make sure it's in our caches
 	if c.bestBlock != nil {
 		bestHash := c.bestBlock.CalculateHash()
 		c.blocks[string(bestHash)] = c.bestBlock
 		c.blockByHeight[c.bestBlock.Header.Height] = c.bestBlock
 	}
-	
+
 	return nil
 }
 
 // updateAccumulatedDifficulty updates the accumulated difficulty cache when a new block is added.
 // This method assumes the caller already holds the lock.
 func (c *Chain) updateAccumulatedDifficulty(block *block.Block) {
+	if block == nil || block.Header == nil {
+		return
+	}
+	
 	height := block.Header.Height
 	if height == 0 {
 		c.accumulatedDifficulty[0] = big.NewInt(0)
@@ -649,6 +679,10 @@ func (c *Chain) updateAccumulatedDifficulty(block *block.Block) {
 // ForkChoice implements the fork choice rules to determine the canonical chain.
 // It uses accumulated difficulty to choose the best chain.
 func (c *Chain) ForkChoice(newBlock *block.Block) error {
+	if newBlock == nil {
+		return fmt.Errorf("cannot perform fork choice on nil block")
+	}
+	
 	// Check if this block creates a better chain
 	if c.isBetterChain(newBlock) {
 		return c.AddBlock(newBlock)

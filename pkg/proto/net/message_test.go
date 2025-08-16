@@ -822,6 +822,294 @@ func TestMessage(t *testing.T) {
 	})
 }
 
+func TestMessageGetters(t *testing.T) {
+	t.Run("BlockHeaderGetters", func(t *testing.T) {
+		header := &BlockHeader{
+			Version:       1,
+			PrevBlockHash: []byte("prev_hash"),
+			MerkleRoot:    []byte("merkle_root"),
+			Timestamp:     1234567890,
+			Difficulty:    1000,
+			Nonce:         42,
+			Height:        100,
+			Hash:          []byte("block_hash"),
+		}
+
+		assert.Equal(t, uint32(1), header.GetVersion())
+		assert.Equal(t, []byte("prev_hash"), header.GetPrevBlockHash())
+		assert.Equal(t, []byte("merkle_root"), header.GetMerkleRoot())
+		assert.Equal(t, int64(1234567890), header.GetTimestamp())
+		assert.Equal(t, uint64(1000), header.GetDifficulty())
+		assert.Equal(t, uint64(42), header.GetNonce())
+		assert.Equal(t, uint64(100), header.GetHeight())
+		assert.Equal(t, []byte("block_hash"), header.GetHash())
+	})
+
+	t.Run("HeadersRequestGetters", func(t *testing.T) {
+		req := &BlockHeadersRequest{
+			StartHeight: 100,
+			Count:       50,
+			StopHash:    []byte("stop_hash"),
+		}
+
+		assert.Equal(t, uint64(100), req.GetStartHeight())
+		assert.Equal(t, uint64(50), req.GetCount())
+		assert.Equal(t, []byte("stop_hash"), req.GetStopHash())
+	})
+
+	t.Run("HeadersResponseGetters", func(t *testing.T) {
+		resp := &BlockHeadersResponse{
+			Headers: []*BlockHeader{
+				{Height: 100, Hash: []byte("hash1")},
+				{Height: 101, Hash: []byte("hash2")},
+			},
+			HasMore: true,
+		}
+
+		assert.Equal(t, 2, len(resp.GetHeaders()))
+		assert.True(t, resp.GetHasMore())
+	})
+
+	t.Run("BlockRequestGetters", func(t *testing.T) {
+		req := &BlockRequest{
+			BlockHash: []byte("block_hash"),
+			Height:    100,
+		}
+
+		assert.Equal(t, []byte("block_hash"), req.GetBlockHash())
+		assert.Equal(t, uint64(100), req.GetHeight())
+	})
+
+	t.Run("BlockResponseGetters", func(t *testing.T) {
+		resp := &BlockResponse{
+			BlockData: []byte("block_data"),
+			Found:     true,
+		}
+
+		assert.Equal(t, []byte("block_data"), resp.GetBlockData())
+		assert.True(t, resp.GetFound())
+	})
+
+	t.Run("SyncRequestGetters", func(t *testing.T) {
+		req := &SyncRequest{
+			CurrentHeight: 100,
+			BestBlockHash: []byte("best_hash"),
+			KnownHeaders:  [][]byte{[]byte("header1"), []byte("header2")},
+		}
+
+		assert.Equal(t, uint64(100), req.GetCurrentHeight())
+		assert.Equal(t, []byte("best_hash"), req.GetBestBlockHash())
+		assert.Equal(t, 2, len(req.GetKnownHeaders()))
+	})
+
+	t.Run("SyncResponseGetters", func(t *testing.T) {
+		resp := &SyncResponse{
+			BestHeight:    200,
+			BestBlockHash: []byte("best_hash"),
+			Headers: []*BlockHeader{
+				{Height: 100, Hash: []byte("hash1")},
+				{Height: 101, Hash: []byte("hash2")},
+			},
+			NeedsSync: true,
+		}
+
+		assert.Equal(t, uint64(200), resp.GetBestHeight())
+		assert.Equal(t, []byte("best_hash"), resp.GetBestBlockHash())
+		assert.Equal(t, 2, len(resp.GetHeaders()))
+		assert.True(t, resp.GetNeedsSync())
+	})
+
+	t.Run("StateRequestGetters", func(t *testing.T) {
+		req := &StateRequest{
+			Height:    100,
+			StateRoot: []byte("state_root"),
+		}
+
+		assert.Equal(t, uint64(100), req.GetHeight())
+		assert.Equal(t, []byte("state_root"), req.GetStateRoot())
+	})
+
+	t.Run("StateResponseGetters", func(t *testing.T) {
+		resp := &StateResponse{
+			StateData: []byte("state_data"),
+			Height:    100,
+			StateRoot: []byte("state_root"),
+			Found:     true,
+		}
+
+		assert.Equal(t, []byte("state_data"), resp.GetStateData())
+		assert.Equal(t, uint64(100), resp.GetHeight())
+		assert.Equal(t, []byte("state_root"), resp.GetStateRoot())
+		assert.True(t, resp.GetFound())
+	})
+
+	t.Run("MessageGetters", func(t *testing.T) {
+		msg := &Message{
+			TimestampUnixNano: 1234567890,
+			FromPeerId:        []byte("peer123"),
+			Signature:         []byte("signature"),
+		}
+
+		assert.Equal(t, int64(1234567890), msg.GetTimestampUnixNano())
+		assert.Equal(t, []byte("peer123"), msg.GetFromPeerId())
+		assert.Equal(t, []byte("signature"), msg.GetSignature())
+	})
+}
+
+func TestMessageContentTypes(t *testing.T) {
+	t.Run("MessageWithBlockMessage", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_BlockMessage{
+				BlockMessage: &BlockMessage{
+					BlockData: []byte("block_data"),
+				},
+			},
+		}
+
+		blockMsg := msg.GetBlockMessage()
+		assert.NotNil(t, blockMsg)
+		assert.Equal(t, []byte("block_data"), blockMsg.GetBlockData())
+
+		// Test other content types return nil
+		assert.Nil(t, msg.GetTransactionMessage())
+		assert.Nil(t, msg.GetHeadersRequest())
+		assert.Nil(t, msg.GetHeadersResponse())
+		assert.Nil(t, msg.GetBlockRequest())
+		assert.Nil(t, msg.GetBlockResponse())
+		assert.Nil(t, msg.GetSyncRequest())
+		assert.Nil(t, msg.GetSyncResponse())
+		assert.Nil(t, msg.GetStateRequest())
+		assert.Nil(t, msg.GetStateResponse())
+	})
+
+	t.Run("MessageWithTransactionMessage", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_TransactionMessage{
+				TransactionMessage: &TransactionMessage{
+					TransactionData: []byte("tx_data"),
+				},
+			},
+		}
+
+		txMsg := msg.GetTransactionMessage()
+		assert.NotNil(t, txMsg)
+		assert.Equal(t, []byte("tx_data"), txMsg.GetTransactionData())
+	})
+
+	t.Run("MessageWithHeadersRequest", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_HeadersRequest{
+				HeadersRequest: &BlockHeadersRequest{
+					StartHeight: 100,
+					Count:       50,
+				},
+			},
+		}
+
+		headersReq := msg.GetHeadersRequest()
+		assert.NotNil(t, headersReq)
+		assert.Equal(t, uint64(100), headersReq.GetStartHeight())
+	})
+
+	t.Run("MessageWithHeadersResponse", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_HeadersResponse{
+				HeadersResponse: &BlockHeadersResponse{
+					Headers: []*BlockHeader{{Height: 100}},
+				},
+			},
+		}
+
+		headersResp := msg.GetHeadersResponse()
+		assert.NotNil(t, headersResp)
+		assert.Equal(t, 1, len(headersResp.GetHeaders()))
+	})
+
+	t.Run("MessageWithBlockRequest", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_BlockRequest{
+				BlockRequest: &BlockRequest{
+					Height: 100,
+				},
+			},
+		}
+
+		blockReq := msg.GetBlockRequest()
+		assert.NotNil(t, blockReq)
+		assert.Equal(t, uint64(100), blockReq.GetHeight())
+	})
+
+	t.Run("MessageWithBlockResponse", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_BlockResponse{
+				BlockResponse: &BlockResponse{
+					Found: true,
+				},
+			},
+		}
+
+		blockResp := msg.GetBlockResponse()
+		assert.NotNil(t, blockResp)
+		assert.True(t, blockResp.GetFound())
+	})
+
+	t.Run("MessageWithSyncRequest", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_SyncRequest{
+				SyncRequest: &SyncRequest{
+					CurrentHeight: 100,
+				},
+			},
+		}
+
+		syncReq := msg.GetSyncRequest()
+		assert.NotNil(t, syncReq)
+		assert.Equal(t, uint64(100), syncReq.GetCurrentHeight())
+	})
+
+	t.Run("MessageWithSyncResponse", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_SyncResponse{
+				SyncResponse: &SyncResponse{
+					BestHeight: 200,
+				},
+			},
+		}
+
+		syncResp := msg.GetSyncResponse()
+		assert.NotNil(t, syncResp)
+		assert.Equal(t, uint64(200), syncResp.GetBestHeight())
+	})
+
+	t.Run("MessageWithStateRequest", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_StateRequest{
+				StateRequest: &StateRequest{
+					Height: 100,
+				},
+			},
+		}
+
+		stateReq := msg.GetStateRequest()
+		assert.NotNil(t, stateReq)
+		assert.Equal(t, uint64(100), stateReq.GetHeight())
+	})
+
+	t.Run("MessageWithStateResponse", func(t *testing.T) {
+		msg := &Message{
+			Content: &Message_StateResponse{
+				StateResponse: &StateResponse{
+					Height: 100,
+				},
+			},
+		}
+
+		stateResp := msg.GetStateResponse()
+		assert.NotNil(t, stateResp)
+		assert.Equal(t, uint64(100), stateResp.GetHeight())
+	})
+}
+
 func TestMessageContentInterface(t *testing.T) {
 	t.Run("BlockMessageIsContent", func(t *testing.T) {
 		content := &Message_BlockMessage{
@@ -976,5 +1264,271 @@ func TestProtoSerialization(t *testing.T) {
 		assert.Equal(t, original.Signature, unmarshaled.Signature)
 		assert.NotNil(t, unmarshaled.GetBlockMessage())
 		assert.Equal(t, original.GetBlockMessage().BlockData, unmarshaled.GetBlockMessage().BlockData)
+	})
+}
+
+func TestProtoMessageMethods(t *testing.T) {
+	t.Run("BlockMessageProtoMessage", func(t *testing.T) {
+		blockMsg := &BlockMessage{
+			BlockData: []byte("test_data"),
+		}
+
+		// Test ProtoMessage method
+		blockMsg.ProtoMessage() // ProtoMessage returns void
+	})
+
+	t.Run("TransactionMessageProtoMessage", func(t *testing.T) {
+		txMsg := &TransactionMessage{
+			TransactionData: []byte("test_tx_data"),
+		}
+
+		// Test ProtoMessage method
+		txMsg.ProtoMessage() // ProtoMessage returns void
+	})
+
+	t.Run("BlockHeaderProtoMessage", func(t *testing.T) {
+		header := &BlockHeader{
+			Version:       1,
+			Height:        100,
+			Hash:          []byte("test_hash"),
+			PrevBlockHash: []byte("prev_hash"),
+			MerkleRoot:    []byte("merkle_root"),
+			Timestamp:     1234567890,
+			Difficulty:    1000,
+			Nonce:         42,
+		}
+
+		// Test ProtoMessage method
+		header.ProtoMessage() // ProtoMessage returns void
+	})
+}
+
+func TestGetBlockDataEdgeCases(t *testing.T) {
+	t.Run("GetBlockDataWithNil", func(t *testing.T) {
+		var blockMsg *BlockMessage
+		if blockMsg != nil {
+			data := blockMsg.GetBlockData()
+			_ = data
+		}
+		// Test passes if no panic occurs
+	})
+
+	t.Run("GetBlockDataWithEmpty", func(t *testing.T) {
+		blockMsg := &BlockMessage{
+			BlockData: []byte{},
+		}
+
+		data := blockMsg.GetBlockData()
+		assert.NotNil(t, data)
+		assert.Equal(t, 0, len(data))
+	})
+}
+
+func TestGetTransactionDataEdgeCases(t *testing.T) {
+	t.Run("GetTransactionDataWithNil", func(t *testing.T) {
+		var txMsg *TransactionMessage
+		if txMsg != nil {
+			data := txMsg.GetTransactionData()
+			_ = data
+		}
+		// Test passes if no panic occurs
+	})
+
+	t.Run("GetTransactionDataWithEmpty", func(t *testing.T) {
+		txMsg := &TransactionMessage{
+			TransactionData: []byte{},
+		}
+
+		data := txMsg.GetTransactionData()
+		assert.NotNil(t, data)
+		assert.Equal(t, 0, len(data))
+	})
+}
+
+func TestBlockHeaderGettersEdgeCases(t *testing.T) {
+	t.Run("GetVersionEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			Version: 0,
+		}
+		assert.Equal(t, uint32(0), header.GetVersion())
+
+		header.Version = 255
+		assert.Equal(t, uint32(255), header.GetVersion())
+	})
+
+	t.Run("GetPrevBlockHashEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			PrevBlockHash: []byte{},
+		}
+		assert.Equal(t, []byte{}, header.GetPrevBlockHash())
+
+		header.PrevBlockHash = nil
+		assert.Nil(t, header.GetPrevBlockHash())
+	})
+
+	t.Run("GetMerkleRootEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			MerkleRoot: []byte{},
+		}
+		assert.Equal(t, []byte{}, header.GetMerkleRoot())
+
+		header.MerkleRoot = nil
+		assert.Nil(t, header.GetMerkleRoot())
+	})
+
+	t.Run("GetTimestampEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			Timestamp: 0,
+		}
+		assert.Equal(t, int64(0), header.GetTimestamp())
+
+		header.Timestamp = -1
+		assert.Equal(t, int64(-1), header.GetTimestamp())
+	})
+
+	t.Run("GetDifficultyEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			Difficulty: 0,
+		}
+		assert.Equal(t, uint64(0), header.GetDifficulty())
+
+		header.Difficulty = 18446744073709551615 // max uint64
+		assert.Equal(t, uint64(18446744073709551615), header.GetDifficulty())
+	})
+
+	t.Run("GetNonceEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			Nonce: 0,
+		}
+		assert.Equal(t, uint64(0), header.GetNonce())
+
+		header.Nonce = 18446744073709551615 // max uint64
+		assert.Equal(t, uint64(18446744073709551615), header.GetNonce())
+	})
+
+	t.Run("GetHeightEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			Height: 0,
+		}
+		assert.Equal(t, uint64(0), header.GetHeight())
+
+		header.Height = 18446744073709551615 // max uint64
+		assert.Equal(t, uint64(18446744073709551615), header.GetHeight())
+	})
+
+	t.Run("GetHashEdgeCases", func(t *testing.T) {
+		header := &BlockHeader{
+			Hash: []byte{},
+		}
+		assert.Equal(t, []byte{}, header.GetHash())
+
+		header.Hash = nil
+		assert.Nil(t, header.GetHash())
+	})
+}
+
+func TestMessageGettersEdgeCases(t *testing.T) {
+	t.Run("GetTimestampUnixNanoEdgeCases", func(t *testing.T) {
+		msg := &Message{
+			TimestampUnixNano: 0,
+		}
+		assert.Equal(t, int64(0), msg.GetTimestampUnixNano())
+
+		msg.TimestampUnixNano = -1
+		assert.Equal(t, int64(-1), msg.GetTimestampUnixNano())
+	})
+
+	t.Run("GetFromPeerIdEdgeCases", func(t *testing.T) {
+		msg := &Message{
+			FromPeerId: []byte{},
+		}
+		assert.Equal(t, []byte{}, msg.GetFromPeerId())
+
+		msg.FromPeerId = nil
+		assert.Nil(t, msg.GetFromPeerId())
+	})
+
+	t.Run("GetSignatureEdgeCases", func(t *testing.T) {
+		msg := &Message{
+			Signature: []byte{},
+		}
+		assert.Equal(t, []byte{}, msg.GetSignature())
+
+		msg.Signature = nil
+		assert.Nil(t, msg.GetSignature())
+	})
+}
+
+func TestSyncRequestGettersEdgeCases(t *testing.T) {
+	t.Run("GetCurrentHeightEdgeCases", func(t *testing.T) {
+		req := &SyncRequest{
+			CurrentHeight: 0,
+		}
+		assert.Equal(t, uint64(0), req.GetCurrentHeight())
+
+		req.CurrentHeight = 18446744073709551615 // max uint64
+		assert.Equal(t, uint64(18446744073709551615), req.GetCurrentHeight())
+	})
+
+	t.Run("GetBestBlockHashEdgeCases", func(t *testing.T) {
+		req := &SyncRequest{
+			BestBlockHash: []byte{},
+		}
+		assert.Equal(t, []byte{}, req.GetBestBlockHash())
+
+		req.BestBlockHash = nil
+		assert.Nil(t, req.GetBestBlockHash())
+	})
+
+	t.Run("GetKnownHeadersEdgeCases", func(t *testing.T) {
+		req := &SyncRequest{
+			KnownHeaders: [][]byte{},
+		}
+		assert.Equal(t, [][]byte{}, req.GetKnownHeaders())
+
+		req.KnownHeaders = nil
+		assert.Nil(t, req.GetKnownHeaders())
+	})
+}
+
+func TestSyncResponseGettersEdgeCases(t *testing.T) {
+	t.Run("GetBestHeightEdgeCases", func(t *testing.T) {
+		resp := &SyncResponse{
+			BestHeight: 0,
+		}
+		assert.Equal(t, uint64(0), resp.GetBestHeight())
+
+		resp.BestHeight = 18446744073709551615 // max uint64
+		assert.Equal(t, uint64(18446744073709551615), resp.GetBestHeight())
+	})
+
+	t.Run("GetBestBlockHashEdgeCases", func(t *testing.T) {
+		resp := &SyncResponse{
+			BestBlockHash: []byte{},
+		}
+		assert.Equal(t, []byte{}, resp.GetBestBlockHash())
+
+		resp.BestBlockHash = nil
+		assert.Nil(t, resp.GetBestBlockHash())
+	})
+
+	t.Run("GetHeadersEdgeCases", func(t *testing.T) {
+		resp := &SyncResponse{
+			Headers: []*BlockHeader{},
+		}
+		assert.Equal(t, []*BlockHeader{}, resp.GetHeaders())
+
+		resp.Headers = nil
+		assert.Nil(t, resp.GetHeaders())
+	})
+
+	t.Run("GetNeedsSyncEdgeCases", func(t *testing.T) {
+		resp := &SyncResponse{
+			NeedsSync: false,
+		}
+		assert.False(t, resp.GetNeedsSync())
+
+		resp.NeedsSync = true
+		assert.True(t, resp.GetNeedsSync())
 	})
 }
