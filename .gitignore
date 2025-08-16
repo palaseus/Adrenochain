@@ -76,3 +76,15 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# GoChain runtime data
+wallet_data/
+fresh_start_data/
+fresh_logs/
+fresh_data/
+data/
+logs/
+mining_demo_db/
+
+# Build artifacts
+gochain
