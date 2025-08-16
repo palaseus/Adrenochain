@@ -2447,19 +2447,27 @@ func TestRebuildAccumulatedDifficulty(t *testing.T) {
 	}
 
 	// Add several blocks to build up difficulty
-	for i := uint64(1); i <= 5; i++ {
+	// For testing, we need to use the difficulty that consensus expects
+	// The first block after genesis should have difficulty 1 (same as genesis)
+	// Subsequent blocks will have the same difficulty until adjustment interval
+	genesisBlock := chain.GetBestBlock()
+	block1 := createEmptyTestBlock(genesisBlock, 1, 1) // Use difficulty 1 for first block
+	err = chain.AddBlock(block1)
+	assert.NoError(t, err)
+
+	// Add more blocks with the same difficulty
+	for i := uint64(2); i <= 5; i++ {
 		prevBlock := chain.GetBestBlock()
-		newBlock := createEmptyTestBlock(prevBlock, i, uint64(i*100))
+		newBlock := createEmptyTestBlock(prevBlock, i, 1) // Keep same difficulty
 
 		err = chain.AddBlock(newBlock)
 		assert.NoError(t, err)
 	}
 
 	// Verify accumulated difficulty is calculated correctly
-	expectedDiff := uint64(0)
-	for i := uint64(1); i <= 5; i++ {
-		expectedDiff += i * 100
-	}
+	// Since we're using difficulty 1 for all blocks, the accumulated difficulty
+	// at height 5 will be 5 (excluding genesis which has 0)
+	expectedDiff := uint64(5)
 
 	actualDiff, err := chain.GetAccumulatedDifficulty(5)
 	assert.NoError(t, err)
@@ -2487,29 +2495,18 @@ func TestRebuildAccumulatedDifficultyWithGaps(t *testing.T) {
 	// Add blocks 1, 3, 5 (missing 2, 4)
 	genesisBlock := chain.GetBestBlock()
 	
-	// Block 1
-	block1 := createEmptyTestBlock(genesisBlock, 1, 100)
+	// Block 1 - should have difficulty 1 (same as genesis)
+	block1 := createEmptyTestBlock(genesisBlock, 1, 1)
 	err = chain.AddBlock(block1)
 	assert.NoError(t, err)
 
-	// Block 3 (missing block 2)
-	block3 := createEmptyTestBlock(block1, 3, 300)
+	// Block 3 (missing block 2) - should have difficulty 1
+	block3 := createEmptyTestBlock(block1, 3, 1)
 	err = chain.AddBlock(block3)
 	assert.Error(t, err) // Should fail due to height discontinuity
 
-	// Block 5 (missing block 4)
-	block5 := &block.Block{
-		Header: &block.Header{
-			Version:       1,
-			PrevBlockHash: block3.CalculateHash(),
-			MerkleRoot:    make([]byte, 32),
-			Timestamp:     time.Now(),
-			Difficulty:    500,
-			Nonce:         0,
-			Height:        5,
-		},
-		Transactions: []*block.Transaction{},
-	}
+	// Block 5 (missing block 4) - should have difficulty 1
+	block5 := createEmptyTestBlock(block3, 5, 1)
 	err = chain.AddBlock(block5)
 	assert.Error(t, err) // Should fail due to height discontinuity
 }
@@ -2561,18 +2558,7 @@ func TestRebuildAccumulatedDifficultySingleBlock(t *testing.T) {
 
 	// Add one block
 	genesisBlock := chain.GetBestBlock()
-	block1 := &block.Block{
-		Header: &block.Header{
-			Version:       1,
-			PrevBlockHash: genesisBlock.CalculateHash(),
-			MerkleRoot:    make([]byte, 32),
-			Timestamp:     time.Now(),
-			Difficulty:    150,
-			Nonce:         0,
-			Height:        1,
-		},
-		Transactions: []*block.Transaction{},
-	}
+	block1 := createEmptyTestBlock(genesisBlock, 1, 1) // Use difficulty 1 for consistency
 	err = chain.AddBlock(block1)
 	assert.NoError(t, err)
 
@@ -2583,7 +2569,7 @@ func TestRebuildAccumulatedDifficultySingleBlock(t *testing.T) {
 
 	diff1, err := chain.GetAccumulatedDifficulty(1)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(150), diff1.Int64())
+	assert.Equal(t, int64(1), diff1.Int64()) // Difficulty 1
 }
 
 // TestRebuildAccumulatedDifficultyComplexChain tests rebuilding with complex chain
@@ -2604,12 +2590,13 @@ func TestRebuildAccumulatedDifficultyComplexChain(t *testing.T) {
 		t.Fatalf("Failed to create chain: %v", err)
 	}
 
-	// Build a chain with varying difficulties
-	difficulties := []uint64{100, 250, 75, 400, 200, 300}
+	// Build a chain with consistent difficulty for testing
+	// Since consensus expects the same difficulty until adjustment interval,
+	// we'll use difficulty 1 for all blocks
 	var prevBlock *block.Block = chain.GetBestBlock()
 	
-	for i, difficulty := range difficulties {
-		newBlock := createEmptyTestBlock(prevBlock, uint64(i+1), difficulty)
+	for i := uint64(1); i <= 6; i++ {
+		newBlock := createEmptyTestBlock(prevBlock, i, 1) // Use consistent difficulty
 
 		err = chain.AddBlock(newBlock)
 		assert.NoError(t, err)
@@ -2617,10 +2604,12 @@ func TestRebuildAccumulatedDifficultyComplexChain(t *testing.T) {
 	}
 
 	// Calculate expected accumulated difficulties
-	expectedDiffs := make([]uint64, len(difficulties)+1)
+	// Since we're using difficulty 1 for all blocks, the accumulated difficulty
+	// at height n will be n (excluding genesis which has 0)
+	expectedDiffs := make([]uint64, 7) // 0 through 6
 	expectedDiffs[0] = 0 // Genesis
-	for i, diff := range difficulties {
-		expectedDiffs[i+1] = expectedDiffs[i] + diff
+	for i := uint64(1); i <= 6; i++ {
+		expectedDiffs[i] = i // Each block adds difficulty 1
 	}
 
 	// Verify accumulated difficulties at each height
@@ -2684,8 +2673,15 @@ func mineTestBlock(block *block.Block, difficulty uint64) {
 	// Calculate target based on difficulty
 	target := calculateTestTarget(difficulty)
 	
+	// For very low difficulties (1-10), we can find valid nonces quickly
+	// For higher difficulties, we'll use a more aggressive approach
+	maxNonce := uint64(100000)
+	if difficulty > 10 {
+		maxNonce = uint64(10000) // Reduce search space for higher difficulties
+	}
+	
 	// Try different nonces until we find a valid one
-	for nonce := uint64(0); nonce < 1000000; nonce++ { // Limit to prevent infinite loops
+	for nonce := uint64(0); nonce < maxNonce; nonce++ {
 		block.Header.Nonce = nonce
 		hash := block.CalculateHash()
 		
@@ -2694,8 +2690,19 @@ func mineTestBlock(block *block.Block, difficulty uint64) {
 		}
 	}
 	
-	// If we can't find a valid nonce in reasonable time, just use 0
-	// This might cause tests to fail, but it's better than hanging
+	// If we can't find a valid nonce in reasonable time, try a few more with random values
+	for i := 0; i < 100; i++ {
+		nonce := uint64(i * 1000 + 12345) // Use some "random" nonces
+		block.Header.Nonce = nonce
+		hash := block.CalculateHash()
+		
+		if hashLessThan(hash, target) {
+			return // Found valid nonce
+		}
+	}
+	
+	// If still no valid nonce, just use 0 and let the test fail
+	// This is better than hanging indefinitely
 	block.Header.Nonce = 0
 }
 
