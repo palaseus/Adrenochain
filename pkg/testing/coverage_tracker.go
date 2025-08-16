@@ -147,30 +147,33 @@ func (ct *CoverageTracker) Initialize() error {
 	return nil
 }
 
-// UpdateCoverage updates coverage for a test case
-func (ct *CoverageTracker) UpdateCoverage(testCaseID string, coverage float64) {
+// UpdateCoverage updates coverage for a specific package
+func (ct *CoverageTracker) UpdateCoverage(packageName string, coverage float64) {
 	ct.mu.Lock()
 	defer ct.mu.Unlock()
 
-	// In a real implementation, this would update coverage based on
-	// actual test execution and code coverage analysis
-	// For now, simulate coverage updates
+	// Find the specific package to update
+	if pkg, exists := ct.packageCoverage[packageName]; exists {
+		// Ensure coverage is within valid range
+		if coverage < 0 {
+			coverage = 0
+		} else if coverage > 100 {
+			coverage = 100
+		}
 
-	// Update package coverage (simulate some coverage)
-	for _, pkg := range ct.packageCoverage {
-		// Simulate coverage increase
+		// Update package coverage
 		coveredLines := uint64(float64(pkg.TotalLines) * coverage / 100.0)
 		pkg.CoveredLines = coveredLines
-		pkg.Coverage = float64(coveredLines) / float64(pkg.TotalLines) * 100.0
+		pkg.Coverage = coverage
 		pkg.LastUpdated = time.Now()
 
 		// Update function coverage
 		coveredFunctions := uint64(float64(pkg.TotalFunctions) * coverage / 100.0)
 		pkg.CoveredFunctions = coveredFunctions
-	}
 
-	// Update overall coverage
-	ct.updateOverallCoverage()
+		// Update overall coverage
+		ct.updateOverallCoverage()
+	}
 }
 
 // GetOverallCoverage returns the overall coverage percentage

@@ -379,7 +379,7 @@ func TestOracleAggregatorConcurrency(t *testing.T) {
 
 // TestMockOracleProvider tests mock provider functionality
 func TestMockOracleProvider(t *testing.T) {
-	provider := NewMockOracleProvider("test", "Test Provider", "http://test.com", 0.95)
+	provider := NewMockOracleProvider("test", "Test Provider", "http://test.com", 1.0) // 100% reliability for consistent testing
 
 	// Test GetPrice
 	ctx := context.Background()

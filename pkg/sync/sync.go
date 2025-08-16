@@ -111,6 +111,8 @@ type SyncConfig struct {
 	LightClientEnabled bool          // LightClientEnabled enables light client mode
 	MaxSyncPeers       int           // MaxSyncPeers is the maximum number of peers to sync with
 	SyncTimeout        time.Duration // SyncTimeout is the timeout for sync operations
+	RetryDelay         time.Duration // RetryDelay is the delay between retry attempts
+	MaxRetries         int           // MaxRetries is the maximum number of retry attempts
 	BlockDownloadLimit uint64        // BlockDownloadLimit is the maximum blocks to download per request
 	StateSyncEnabled   bool          // StateSyncEnabled enables state synchronization
 	CheckpointInterval uint64        // CheckpointInterval is the height interval for checkpoints
@@ -123,6 +125,8 @@ func DefaultSyncConfig() *SyncConfig {
 		LightClientEnabled: false,
 		MaxSyncPeers:       5,
 		SyncTimeout:        30 * time.Second,
+		RetryDelay:         5 * time.Second,
+		MaxRetries:         3,
 		BlockDownloadLimit: 1000,
 		StateSyncEnabled:   true,
 		CheckpointInterval: 10000,

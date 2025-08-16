@@ -1191,18 +1191,27 @@ func TestExchangeSyncInfoComprehensive(t *testing.T) {
 	chain := NewMockChain()
 	storage := &MockStorage{}
 	config := DefaultSyncConfig()
+	// Use shorter timeout for testing to avoid hanging
+	config.SyncTimeout = 1 * time.Second
 
 	sp := NewSyncProtocol(host, chain, chain, storage, config)
 
 	// Test exchangeSyncInfo with valid peer
 	peerID := peer.ID("test_peer")
 	err := sp.exchangeSyncInfo(peerID)
-	_ = err // May fail due to network issues, but we're testing function structure
+	// This will fail due to network issues, but we're testing function structure
+	// Just ensure it doesn't hang indefinitely
+	if err != nil {
+		t.Logf("Expected error for non-existent peer: %v", err)
+	}
 
 	// Test with invalid peer ID
 	invalidPeerID := peer.ID("invalid_peer_123")
 	err = sp.exchangeSyncInfo(invalidPeerID)
-	_ = err // May fail due to network issues, but we're testing function structure
+	// This will also fail due to network issues, but we're testing function structure
+	if err != nil {
+		t.Logf("Expected error for invalid peer: %v", err)
+	}
 }
 
 func TestSyncHeadersComprehensive(t *testing.T) {
@@ -1212,13 +1221,18 @@ func TestSyncHeadersComprehensive(t *testing.T) {
 	chain := NewMockChain()
 	storage := &MockStorage{}
 	config := DefaultSyncConfig()
+	// Use shorter timeout for testing to avoid hanging
+	config.SyncTimeout = 1 * time.Second
 
 	sp := NewSyncProtocol(host, chain, chain, storage, config)
 
 	// Test syncHeaders with valid peer
 	peerID := peer.ID("test_peer")
 	err := sp.syncHeaders(peerID)
-	_ = err // May fail due to network issues, but we're testing function structure
+	// This will fail due to network issues, but we're testing function structure
+	if err != nil {
+		t.Logf("Expected error for non-existent peer: %v", err)
+	}
 }
 
 func TestSyncBlocksComprehensive(t *testing.T) {
@@ -1228,13 +1242,18 @@ func TestSyncBlocksComprehensive(t *testing.T) {
 	chain := NewMockChain()
 	storage := &MockStorage{}
 	config := DefaultSyncConfig()
+	// Use shorter timeout for testing to avoid hanging
+	config.SyncTimeout = 1 * time.Second
 
 	sp := NewSyncProtocol(host, chain, chain, storage, config)
 
 	// Test syncBlocks with valid peer
 	peerID := peer.ID("test_peer")
 	err := sp.syncBlocks(peerID)
-	_ = err // May fail due to network issues, but we're testing function structure
+	// This will fail due to network issues, but we're testing function structure
+	if err != nil {
+		t.Logf("Expected error for non-existent peer: %v", err)
+	}
 }
 
 func TestSendSyncRequestComprehensive(t *testing.T) {
@@ -1244,6 +1263,8 @@ func TestSendSyncRequestComprehensive(t *testing.T) {
 	chain := NewMockChain()
 	storage := &MockStorage{}
 	config := DefaultSyncConfig()
+	// Use shorter timeout for testing to avoid hanging
+	config.SyncTimeout = 1 * time.Second
 
 	sp := NewSyncProtocol(host, chain, chain, storage, config)
 
@@ -1259,7 +1280,10 @@ func TestSendSyncRequestComprehensive(t *testing.T) {
 
 	// Test successful case
 	resp, err := sp.sendSyncRequest(context.Background(), peerID, syncReq)
-	_ = err  // May fail due to network issues, but we're testing function structure
+	// This will fail due to network issues, but we're testing function structure
+	if err != nil {
+		t.Logf("Expected error for non-existent peer: %v", err)
+	}
 	_ = resp // May be nil due to network issues
 }
 
@@ -1270,6 +1294,8 @@ func TestRequestHeadersComprehensive(t *testing.T) {
 	chain := NewMockChain()
 	storage := &MockStorage{}
 	config := DefaultSyncConfig()
+	// Use shorter timeout for testing to avoid hanging
+	config.SyncTimeout = 1 * time.Second
 
 	sp := NewSyncProtocol(host, chain, chain, storage, config)
 
@@ -1285,7 +1311,10 @@ func TestRequestHeadersComprehensive(t *testing.T) {
 
 	// Test successful case
 	headers, err := sp.requestHeaders(peerID, req)
-	_ = err     // May fail due to network issues, but we're testing function structure
+	// This will fail due to network issues, but we're testing function structure
+	if err != nil {
+		t.Logf("Expected error for non-existent peer: %v", err)
+	}
 	_ = headers // May be nil due to network issues
 }
 
@@ -1296,6 +1325,8 @@ func TestRequestBlockComprehensive(t *testing.T) {
 	chain := NewMockChain()
 	storage := &MockStorage{}
 	config := DefaultSyncConfig()
+	// Use shorter timeout for testing to avoid hanging
+	config.SyncTimeout = 1 * time.Second
 
 	sp := NewSyncProtocol(host, chain, chain, storage, config)
 
@@ -1310,7 +1341,10 @@ func TestRequestBlockComprehensive(t *testing.T) {
 
 	// Test successful case
 	block, err := sp.requestBlock(peerID, req)
-	_ = err   // May fail due to network issues, but we're testing function structure
+	// This will fail due to network issues, but we're testing function structure
+	if err != nil {
+		t.Logf("Expected error for non-existent peer: %v", err)
+	}
 	_ = block // May be nil due to network issues
 }
 

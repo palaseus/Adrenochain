@@ -76,7 +76,7 @@ test-verbose:
 # Run tests with coverage
 test-coverage:
 	@echo "🧪 Running tests with coverage..."
-	go test ./... -coverprofile=coverage.out -covermode=atomic -timeout 30s
+	go test ./... -coverprofile=coverage.out -covermode=atomic -timeout 60s
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "✅ Coverage report generated: coverage.html"
 

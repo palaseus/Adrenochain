@@ -155,13 +155,22 @@ func (sp *SyncProtocol) recordError(peerID peer.ID, err error) {
 		state.RetryCount++
 
 		// Implement retry logic
-		if state.RetryCount < MaxRetries {
+		maxRetries := sp.config.MaxRetries
+		if maxRetries == 0 {
+			maxRetries = MaxRetries // fallback to default
+		}
+		retryDelay := sp.config.RetryDelay
+		if retryDelay == 0 {
+			retryDelay = RetryDelay // fallback to default
+		}
+
+		if state.RetryCount < maxRetries {
 			fmt.Printf("Sync error with peer %s (attempt %d/%d): %v, retrying in %v\n",
-				peerID, state.RetryCount, MaxRetries, err, RetryDelay)
+				peerID, state.RetryCount, maxRetries, err, retryDelay)
 
 			// Schedule retry
 			go func() {
-				time.Sleep(RetryDelay)
+				time.Sleep(retryDelay)
 				sp.StartSync(peerID)
 			}()
 		} else {
@@ -172,7 +181,11 @@ func (sp *SyncProtocol) recordError(peerID peer.ID, err error) {
 
 // exchangeSyncInfo exchanges synchronization information with a peer
 func (sp *SyncProtocol) exchangeSyncInfo(peerID peer.ID) error {
-	ctx, cancel := context.WithTimeout(context.Background(), SyncTimeout)
+	timeout := sp.config.SyncTimeout
+	if timeout == 0 {
+		timeout = SyncTimeout // fallback to default
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	// Create sync request
@@ -186,19 +199,28 @@ func (sp *SyncProtocol) exchangeSyncInfo(peerID peer.ID) error {
 	var syncResp *net.SyncResponse
 	var err error
 
-	for attempt := 0; attempt < MaxRetries; attempt++ {
+	maxRetries := sp.config.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = MaxRetries // fallback to default
+	}
+	retryDelay := sp.config.RetryDelay
+	if retryDelay == 0 {
+		retryDelay = RetryDelay // fallback to default
+	}
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
 		syncResp, err = sp.sendSyncRequest(ctx, peerID, syncReq)
 		if err == nil {
 			break
 		}
 
-		if attempt < MaxRetries-1 {
-			time.Sleep(RetryDelay)
+		if attempt < maxRetries-1 {
+			time.Sleep(retryDelay)
 		}
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to exchange sync info after %d attempts: %w", MaxRetries, err)
+		return fmt.Errorf("failed to exchange sync info after %d attempts: %w", maxRetries, err)
 	}
 
 	// Update peer state
@@ -349,7 +371,11 @@ func (sp *SyncProtocol) syncStateData(peerID peer.ID) error {
 
 // requestHeaders requests block headers from a peer
 func (sp *SyncProtocol) requestHeaders(peerID peer.ID, req *net.BlockHeadersRequest) ([]*net.BlockHeader, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), SyncTimeout)
+	timeout := sp.config.SyncTimeout
+	if timeout == 0 {
+		timeout = SyncTimeout // fallback to default
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	stream, err := sp.host.NewStream(ctx, peerID, protocol.ID(HeaderSyncProtocolID))
@@ -385,7 +411,11 @@ func (sp *SyncProtocol) requestHeaders(peerID peer.ID, req *net.BlockHeadersRequ
 
 // requestBlock requests a block from a peer
 func (sp *SyncProtocol) requestBlock(peerID peer.ID, req *net.BlockRequest) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), SyncTimeout)
+	timeout := sp.config.SyncTimeout
+	if timeout == 0 {
+		timeout = SyncTimeout // fallback to default
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	stream, err := sp.host.NewStream(ctx, peerID, protocol.ID(BlockSyncProtocolID))

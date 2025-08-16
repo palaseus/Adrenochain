@@ -192,6 +192,10 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 // Note: This method treats transactions with no inputs as potentially valid (coinbase-like),
 // but for strict validation in block context, use ValidateTransactionInBlock.
 func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
+	if tx == nil {
+		return fmt.Errorf("transaction is nil")
+	}
+
 	// Transactions with no inputs are potentially coinbase transactions
 	if len(tx.Inputs) == 0 {
 		if len(tx.Outputs) == 0 {

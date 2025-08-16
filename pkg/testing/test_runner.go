@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -55,12 +56,32 @@ func (tr *TestRunner) Stop() {
 	// Stop monitoring
 	tr.performanceMonitor.Stop()
 
-	// Close result queue
-	close(tr.resultQueue)
+	// Close result queue safely
+	select {
+	case <-tr.resultQueue:
+		// Channel is already closed or empty
+	default:
+		// Channel is open, close it
+		close(tr.resultQueue)
+	}
 }
 
 // ExecuteTest executes a single test case
 func (tr *TestRunner) ExecuteTest(ctx context.Context, testCase *TestCase) (*TestResult, error) {
+	// Handle nil test case
+	if testCase == nil {
+		return &TestResult{
+			TestCaseID:  "",
+			Status:      TestStatusFailed,
+			Duration:    0,
+			Error:       fmt.Errorf("test case is nil"),
+			MemoryUsage: 0,
+			CPUUsage:    0,
+			Logs:        []string{},
+			Timestamp:   time.Now(),
+		}, nil
+	}
+
 	tr.mu.Lock()
 	tr.activeTests[testCase.ID] = testCase
 	tr.mu.Unlock()
@@ -119,10 +140,10 @@ func (tr *TestRunner) GetTestResult(testCaseID string) *TestResult {
 	if result, exists := tr.testResults[testCaseID]; exists {
 		// Return a copy to avoid race conditions
 		resultCopy := &TestResult{
-			TestCaseID:  result.TestCaseID,
-			Status:      result.Status,
-			Duration:    result.Duration,
-			Error:       result.Error,
+			TestCaseID: result.TestCaseID,
+			Status:     result.Status,
+			Duration:   result.Duration,
+			Error:      result.Error,
 			// Coverage is tracked separately
 			MemoryUsage: result.MemoryUsage,
 			CPUUsage:    result.CPUUsage,
@@ -165,7 +186,9 @@ func (tr *TestRunner) runTestCase(ctx context.Context, testCase *TestCase) *Test
 
 	// Execute test function
 	var err error
-	if testCase.Function != nil {
+	if testCase.Function == nil {
+		err = fmt.Errorf("test function is nil")
+	} else {
 		// Create test context with timeout
 		testCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
@@ -242,10 +265,10 @@ func (tr *TestRunner) runTestCase(ctx context.Context, testCase *TestCase) *Test
 
 	// Create test result
 	result := &TestResult{
-		TestCaseID:  testCase.ID,
-		Status:      status,
-		Duration:    duration,
-		Error:       err,
+		TestCaseID: testCase.ID,
+		Status:     status,
+		Duration:   duration,
+		Error:      err,
 		// Coverage is tracked separately
 		MemoryUsage: memoryUsage,
 		CPUUsage:    cpuUsage,
