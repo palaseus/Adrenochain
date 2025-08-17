@@ -1,8 +1,8 @@
-# adrenochain Production Deployment Guide
+# adrenochain Research Deployment Guide
 
 ## 🚀 **Overview**
 
-This guide provides comprehensive instructions for deploying adrenochain in production environments. It covers security hardening, monitoring, scaling, and maintenance procedures.
+This guide provides comprehensive instructions for deploying adrenochain in research and development environments. It covers security hardening, monitoring, scaling, and maintenance procedures.
 
 ## 📋 **Prerequisites**
 
@@ -16,7 +16,7 @@ This guide provides comprehensive instructions for deploying adrenochain in prod
 ### **Dependencies**
 - Go 1.21+
 - Docker (optional, for containerized deployment)
-- PostgreSQL 13+ (for production database)
+- PostgreSQL 13+ (for research database)
 - Redis 6+ (for caching and session management)
 
 ## 🔒 **Security Hardening**
@@ -73,7 +73,7 @@ crypto:
 
 ### **Method 1: Binary Deployment**
 ```bash
-# Build production binary
+# Build research binary
 make build-prod
 
 # Create systemd service
@@ -435,7 +435,7 @@ sudo -u postgres psql -c "SELECT version();"
 
 ## 🆘 **Support**
 
-For production deployment support:
+For research deployment support:
 - **Email**: support@adrenochain.io
 - **Documentation**: https://docs.adrenochain.io
 - **Community**: https://community.adrenochain.io
@@ -443,4 +443,4 @@ For production deployment support:
 
 ---
 
-**⚠️ Important**: This guide covers production deployment. Always test in staging environments first and ensure proper security measures are in place before deploying to production. 
+**⚠️ Important**: This guide covers research deployment. Always test in development environments first and ensure proper security measures are in place before deploying to research environments. 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Welcome to the adrenochain Developer Guide! This comprehensive guide will help you understand, set up, and develop on the adrenochain platform. adrenochain is a high-performance blockchain platform designed for DeFi applications, cross-chain interoperability, and enterprise solutions.
+Welcome to the adrenochain Developer Guide! This comprehensive guide will help you understand, set up, and develop on the adrenochain platform. adrenochain is a high-performance blockchain platform designed for DeFi applications, cross-chain interoperability, and research solutions.
 
 ## Table of Contents
 
@@ -575,9 +575,9 @@ func BenchmarkOrderBookAddOrder(b *testing.B) {
 
 ### Deployment
 
-#### Production Configuration
+#### Research Configuration
 ```yaml
-# config/production.yaml
+# config/research.yaml
 server:
   port: 443
   host: "0.0.0.0"

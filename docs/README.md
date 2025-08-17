@@ -30,7 +30,7 @@ Welcome to the comprehensive documentation for Adrenochain, a research-grade blo
 ### **📊 Performance & Monitoring**
 - **[Performance Guide](PERFORMANCE.md)** - Optimization and benchmarking
 - **[Monitoring](MONITORING.md)** - Health checks and metrics
-- **[Deployment](DEPLOYMENT.md)** - Production deployment guide
+- **[Deployment](DEPLOYMENT.md)** - Research deployment guide
 
 ### **🌐 DeFi & Smart Contracts**
 - **[DeFi Protocols](DEFI_PROTOCOLS.md)** - AMM, lending, and yield farming

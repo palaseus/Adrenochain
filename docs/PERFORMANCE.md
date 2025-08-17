@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides comprehensive strategies and best practices for optimizing performance across all adrenochain components. Performance optimization is crucial for maintaining high throughput, low latency, and efficient resource utilization in production environments.
+This guide provides comprehensive strategies and best practices for optimizing performance across all adrenochain components. Performance optimization is crucial for maintaining high throughput, low latency, and efficient resource utilization in research environments.
 
 ## Table of Contents
 
@@ -99,7 +99,7 @@ func GetUserOrders(userID string, status string) ([]*Order, error) {
     // ... process results
 }
 
-// Avoid SELECT * in production
+// Avoid SELECT * in research environments
 func GetOrderSummary(orderID string) (*OrderSummary, error) {
     query := `
         SELECT id, trading_pair, side, quantity, price, status 

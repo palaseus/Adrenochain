@@ -323,7 +323,7 @@ cat test_results/mempool_tests.log
 
 ### Performance Testing
 1. **Benchmark Critical Paths**: Focus on frequently executed code
-2. **Use Realistic Data**: Test with production-like data sizes
+2. **Use Realistic Data**: Test with research-like data sizes
 3. **Profile Regularly**: Monitor performance regressions
 4. **Set Baselines**: Establish performance benchmarks
 
