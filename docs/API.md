@@ -2,729 +2,695 @@
 
 ## Overview
 
-GoChain is a blockchain implementation in Go that provides a complete blockchain infrastructure including wallet management, transaction processing, consensus mechanisms, and network communication.
+GoChain provides a comprehensive API for blockchain operations, DeFi protocols, cross-chain bridging, and governance. This document covers all available endpoints and their usage.
 
-## Package Structure
+## Table of Contents
 
+1. [Exchange Layer API](#exchange-layer-api)
+2. [Bridge Infrastructure API](#bridge-infrastructure-api)
+3. [Governance & DAO API](#governance--dao-api)
+4. [DeFi Protocols API](#defi-protocols-api)
+5. [Core Blockchain API](#core-blockchain-api)
+6. [WebSocket APIs](#websocket-apis)
+
+## Exchange Layer API
+
+### Trading API
+
+The trading API provides endpoints for order management, market data, and trading operations.
+
+#### Base URL
 ```
-pkg/
-├── block/      # Block and transaction structures
-├── chain/      # Blockchain management and validation
-├── consensus/  # Consensus mechanisms (PoW)
-├── mempool/    # Transaction memory pool
-├── miner/      # Block mining operations
-├── net/        # Network communication
-├── storage/    # Data persistence
-├── utxo/       # Unspent Transaction Output management
-└── wallet/     # Wallet operations and key management
-```
-
-## Core Types
-
-### Block Structure
-
-```go
-type Block struct {
-    Header       *BlockHeader
-    Transactions []*Transaction
-    Hash         []byte
-    Size         int
-}
-
-type BlockHeader struct {
-    Version       uint32
-    PrevHash      []byte
-    MerkleRoot    []byte
-    Timestamp     int64
-    Difficulty    uint64
-    Nonce         uint64
-}
+http://localhost:8080/api/v1
 ```
 
-### Transaction Structure
+#### Endpoints
 
-```go
-type Transaction struct {
-    ID        []byte
-    Inputs    []*TxInput
-    Outputs   []*TxOutput
-    Timestamp int64
-    Fee       uint64
-}
+##### Create Order
+```http
+POST /orders
+```
 
-type TxInput struct {
-    TxID      []byte
-    OutIndex  uint32
-    Signature []byte
-    PubKey    []byte
-}
-
-type TxOutput struct {
-    Value   uint64
-    Address string
+**Request Body:**
+```json
+{
+  "trading_pair": "BTC/USDT",
+  "side": "buy",
+  "type": "limit",
+  "quantity": "1000000",
+  "price": "50000",
+  "user_id": "user123",
+  "time_in_force": "GTC"
 }
 ```
 
-## Package: block
+**Response:**
+```json
+{
+  "order_id": "order_12345",
+  "status": "pending",
+  "message": "Order created successfully"
+}
+```
+
+##### Get Order
+```http
+GET /orders/{order_id}
+```
+
+**Response:**
+```json
+{
+  "order": {
+    "id": "order_12345",
+    "trading_pair": "BTC/USDT",
+    "side": "buy",
+    "type": "limit",
+    "quantity": "1000000",
+    "price": "50000",
+    "user_id": "user123",
+    "status": "pending",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+##### Cancel Order
+```http
+DELETE /orders/{order_id}
+```
+
+**Response:**
+```json
+{
+  "status": "cancelled",
+  "message": "Order cancelled successfully"
+}
+```
+
+##### Get Order Book
+```http
+GET /orderbook/{trading_pair}?depth=10
+```
+
+**Response:**
+```json
+{
+  "trading_pair": "BTC/USDT",
+  "bids": [
+    {
+      "price": "50000",
+      "quantity": "1000000",
+      "total": "1000000"
+    }
+  ],
+  "asks": [
+    {
+      "price": "50100",
+      "quantity": "500000",
+      "total": "500000"
+    }
+  ],
+  "last_updated": "2024-01-01T00:00:00Z"
+}
+```
+
+##### Get Trading Pairs
+```http
+GET /trading-pairs
+```
+
+**Response:**
+```json
+{
+  "pairs": [
+    {
+      "base_asset": "BTC",
+      "quote_asset": "USDT",
+      "min_quantity": "1000",
+      "max_quantity": "1000000",
+      "min_price": "100",
+      "max_price": "100000",
+      "tick_size": "1",
+      "step_size": "1",
+      "maker_fee": "100",
+      "taker_fee": "200",
+      "status": "active"
+    }
+  ]
+}
+```
+
+##### Get Market Data
+```http
+GET /market-data/{trading_pair}
+```
+
+**Response:**
+```json
+{
+  "trading_pair": "BTC/USDT",
+  "last_price": "50000",
+  "price_change_24h": "500",
+  "volume_24h": "1000000000",
+  "high_24h": "51000",
+  "low_24h": "49000",
+  "bid": "49900",
+  "ask": "50100"
+}
+```
+
+### WebSocket Market Data
+
+#### Connection
+```javascript
+const ws = new WebSocket('ws://localhost:8080/ws/market-data');
+```
+
+#### Subscribe to Order Book Updates
+```json
+{
+  "type": "subscribe",
+  "channel": "orderbook",
+  "trading_pair": "BTC/USDT"
+}
+```
+
+#### Subscribe to Trade Updates
+```json
+{
+  "type": "subscribe",
+  "channel": "trades",
+  "trading_pair": "BTC/USDT"
+}
+```
+
+#### Subscribe to Market Data Updates
+```json
+{
+  "type": "subscribe",
+  "channel": "market_data",
+  "trading_pair": "BTC/USDT"
+}
+```
+
+## Bridge Infrastructure API
+
+### Validator Management
+
+#### Add Validator
+```http
+POST /bridge/validators
+```
+
+**Request Body:**
+```json
+{
+  "id": "validator_123",
+  "chain_id": "gochain",
+  "stake_amount": "1000000000000000000",
+  "public_key": "0x..."
+}
+```
+
+#### Remove Validator
+```http
+DELETE /bridge/validators/{validator_id}
+```
+
+#### Update Validator Stake
+```http
+PUT /bridge/validators/{validator_id}/stake
+```
+
+**Request Body:**
+```json
+{
+  "new_stake_amount": "2000000000000000000"
+}
+```
+
+#### Get Validator List
+```http
+GET /bridge/validators
+```
+
+### Cross-Chain Transactions
+
+#### Initiate Transfer
+```http
+POST /bridge/transfers
+```
+
+**Request Body:**
+```json
+{
+  "source_chain": "gochain",
+  "destination_chain": "ethereum",
+  "source_address": "0x...",
+  "destination_address": "0x...",
+  "asset_type": "native",
+  "amount": "1000000000000000000",
+  "fee": "10000000000000000"
+}
+```
+
+#### Get Transfer Status
+```http
+GET /bridge/transfers/{transfer_id}
+```
+
+#### Batch Transfer
+```http
+POST /bridge/transfers/batch
+```
+
+**Request Body:**
+```json
+{
+  "transfers": [
+    {
+      "source_chain": "gochain",
+      "destination_chain": "ethereum",
+      "source_address": "0x...",
+      "destination_address": "0x...",
+      "asset_type": "native",
+      "amount": "1000000000000000000"
+    }
+  ]
+}
+```
+
+### Bridge Security
+
+#### Check Transfer Security
+```http
+POST /bridge/security/check
+```
+
+**Request Body:**
+```json
+{
+  "source_address": "0x...",
+  "destination_address": "0x...",
+  "amount": "1000000000000000000",
+  "asset_type": "native"
+}
+```
+
+#### Emergency Pause
+```http
+POST /bridge/security/pause
+```
+
+#### Emergency Resume
+```http
+POST /bridge/security/resume
+```
+
+## Governance & DAO API
+
+### Proposal Management
+
+#### Create Proposal
+```http
+POST /governance/proposals
+```
+
+**Request Body:**
+```json
+{
+  "title": "Increase Treasury Daily Limit",
+  "description": "Proposal to increase the daily treasury spending limit",
+  "proposal_type": "treasury",
+  "quorum_required": "1000000000000000000",
+  "min_voting_power": "100000000000000000"
+}
+```
+
+#### Get Proposal
+```http
+GET /governance/proposals/{proposal_id}
+```
+
+#### Activate Proposal
+```http
+POST /governance/proposals/{proposal_id}/activate
+```
+
+#### Get All Proposals
+```http
+GET /governance/proposals
+```
+
+### Voting
+
+#### Cast Vote
+```http
+POST /governance/proposals/{proposal_id}/vote
+```
+
+**Request Body:**
+```json
+{
+  "voter": "0x...",
+  "vote_choice": "for",
+  "reason": "This proposal will improve treasury efficiency"
+}
+```
+
+#### Delegate Voting Power
+```http
+POST /governance/delegations
+```
+
+**Request Body:**
+```json
+{
+  "delegator": "0x...",
+  "delegate": "0x...",
+  "amount": "1000000000000000000"
+}
+```
+
+#### Get Voting Results
+```http
+GET /governance/proposals/{proposal_id}/results
+```
+
+### Treasury Management
+
+#### Create Treasury Proposal
+```http
+POST /treasury/proposals
+```
+
+**Request Body:**
+```json
+{
+  "title": "Fund Development Team",
+  "description": "Allocate funds for development team expansion",
+  "amount": "5000000000000000000",
+  "asset": "ETH",
+  "recipient": "0x...",
+  "purpose": "Development team expansion"
+}
+```
+
+#### Execute Treasury Transaction
+```http
+POST /treasury/transactions
+```
+
+**Request Body:**
+```json
+{
+  "transaction_type": "transfer",
+  "amount": "1000000000000000000",
+  "asset": "ETH",
+  "to": "0x...",
+  "description": "Development funding",
+  "executor": "0x..."
+}
+```
+
+#### Get Treasury Balance
+```http
+GET /treasury/balances
+```
+
+#### Get Treasury Transactions
+```http
+GET /treasury/transactions
+```
+
+## DeFi Protocols API
+
+### Lending Protocol
+
+#### Create Lending Pool
+```http
+POST /defi/lending/pools
+```
+
+**Request Body:**
+```json
+{
+  "asset": "ETH",
+  "max_supply": "100000000000000000000",
+  "interest_rate": "500",
+  "liquidation_threshold": "8000"
+}
+```
+
+#### Supply Assets
+```http
+POST /defi/lending/supply
+```
+
+**Request Body:**
+```json
+{
+  "pool_id": "pool_123",
+  "amount": "1000000000000000000",
+  "user": "0x..."
+}
+```
+
+#### Borrow Assets
+```http
+POST /defi/lending/borrow
+```
+
+**Request Body:**
+```json
+{
+  "pool_id": "pool_123",
+  "amount": "500000000000000000",
+  "user": "0x..."
+}
+```
+
+### AMM (Automated Market Maker)
+
+#### Create Liquidity Pool
+```http
+POST /defi/amm/pools
+```
+
+**Request Body:**
+```json
+{
+  "asset_a": "ETH",
+  "asset_b": "USDT",
+  "fee_rate": "300"
+}
+```
+
+#### Add Liquidity
+```http
+POST /defi/amm/liquidity/add
+```
+
+**Request Body:**
+```json
+{
+  "pool_id": "pool_123",
+  "amount_a": "1000000000000000000",
+  "amount_b": "50000000000000000000"
+}
+```
+
+#### Swap Tokens
+```http
+POST /defi/amm/swap
+```
+
+**Request Body:**
+```json
+{
+  "pool_id": "pool_123",
+  "input_asset": "ETH",
+  "output_asset": "USDT",
+  "input_amount": "100000000000000000",
+  "min_output_amount": "4900000000000000000"
+}
+```
+
+## Core Blockchain API
 
 ### Block Operations
 
-#### `NewBlock(prevHash []byte, transactions []*Transaction, difficulty uint64) *Block`
-Creates a new block with the given parameters.
-
-**Parameters:**
-- `prevHash`: Hash of the previous block
-- `transactions`: List of transactions to include
-- `difficulty`: Mining difficulty target
-
-**Returns:** New block instance
-
-**Example:**
-```go
-block := block.NewBlock(prevHash, transactions, 1000000)
+#### Get Block by Hash
+```http
+GET /blocks/{block_hash}
 ```
 
-#### `(b *Block) CalculateHash() []byte`
-Calculates the SHA-256 hash of the block.
-
-**Returns:** Block hash as byte slice
-
-**Example:**
-```go
-hash := block.CalculateHash()
+#### Get Block by Number
+```http
+GET /blocks/number/{block_number}
 ```
 
-#### `(b *Block) Validate() error`
-Validates the block structure and contents.
-
-**Returns:** Error if validation fails, nil otherwise
-
-**Example:**
-```go
-if err := block.Validate(); err != nil {
-    log.Printf("Block validation failed: %v", err)
-}
+#### Get Latest Block
+```http
+GET /blocks/latest
 ```
 
 ### Transaction Operations
 
-#### `NewTransaction(inputs []*TxInput, outputs []*TxOutput, fee uint64) *Transaction`
-Creates a new transaction.
-
-**Parameters:**
-- `inputs`: Transaction inputs (UTXOs being spent)
-- `outputs`: Transaction outputs (new UTXOs)
-- `fee`: Transaction fee
-
-**Returns:** New transaction instance
-
-**Example:**
-```go
-tx := block.NewTransaction(inputs, outputs, 1000)
+#### Get Transaction
+```http
+GET /transactions/{tx_hash}
 ```
 
-#### `(tx *Transaction) CalculateHash() []byte`
-Calculates the transaction ID.
-
-**Returns:** Transaction hash as byte slice
-
-**Example:**
-```go
-txID := tx.CalculateHash()
+#### Send Transaction
+```http
+POST /transactions
 ```
 
-#### `(tx *Transaction) Validate() error`
-Validates the transaction structure and signatures.
-
-**Returns:** Error if validation fails, nil otherwise
-
-**Example:**
-```go
-if err := tx.Validate(); err != nil {
-    log.Printf("Transaction validation failed: %v", err)
+**Request Body:**
+```json
+{
+  "from": "0x...",
+  "to": "0x...",
+  "value": "1000000000000000000",
+  "gas_limit": "21000",
+  "gas_price": "20000000000"
 }
 ```
 
-## Package: chain
+### Account Operations
 
-### Blockchain Management
+#### Get Account Balance
+```http
+GET /accounts/{address}/balance
+```
 
-#### `NewChain(dataDir string) (*Chain, error)`
-Creates a new blockchain instance.
+#### Get Account Transactions
+```http
+GET /accounts/{address}/transactions
+```
 
-**Parameters:**
-- `dataDir`: Directory for storing blockchain data
+## WebSocket APIs
 
-**Returns:** Chain instance and error
+### Blockchain Events
 
-**Example:**
-```go
-chain, err := chain.NewChain("./data")
-if err != nil {
-    log.Fatalf("Failed to create chain: %v", err)
+#### Subscribe to New Blocks
+```json
+{
+  "type": "subscribe",
+  "channel": "blocks"
 }
 ```
 
-#### `(c *Chain) AddBlock(block *block.Block) error`
-Adds a new block to the blockchain.
-
-**Parameters:**
-- `block`: Block to add
-
-**Returns:** Error if addition fails
-
-**Example:**
-```go
-if err := chain.AddBlock(newBlock); err != nil {
-    log.Printf("Failed to add block: %v", err)
+#### Subscribe to New Transactions
+```json
+{
+  "type": "subscribe",
+  "channel": "transactions",
+  "address": "0x..."
 }
 ```
 
-#### `(c *Chain) GetBlock(hash []byte) (*block.Block, error)`
-Retrieves a block by its hash.
+### Bridge Events
 
-**Parameters:**
-- `hash`: Block hash
-
-**Returns:** Block instance and error
-
-**Example:**
-```go
-block, err := chain.GetBlock(blockHash)
-if err != nil {
-    log.Printf("Block not found: %v", err)
+#### Subscribe to Bridge Events
+```json
+{
+  "type": "subscribe",
+  "channel": "bridge_events"
 }
 ```
 
-#### `(c *Chain) GetLatestBlock() *block.Block`
-Gets the most recent block in the chain.
-
-**Returns:** Latest block instance
-
-**Example:**
-```go
-latestBlock := chain.GetLatestBlock()
-log.Printf("Latest block height: %d", latestBlock.Header.Height)
-```
-
-#### `(c *Chain) ValidateBlock(block *block.Block) error`
-Validates a block before adding it to the chain.
-
-**Parameters:**
-- `block`: Block to validate
-
-**Returns:** Error if validation fails
-
-**Example:**
-```go
-if err := chain.ValidateBlock(newBlock); err != nil {
-    log.Printf("Block validation failed: %v", err)
-}
-```
-
-#### `(c *Chain) GetBalance(address string) uint64`
-Gets the balance of a specific address.
-
-**Parameters:**
-- `address`: Wallet address
-
-**Returns:** Current balance in satoshis
-
-**Example:**
-```go
-balance := chain.GetBalance("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-log.Printf("Balance: %d satoshis", balance)
-```
-
-## Package: wallet
-
-### Wallet Management
-
-#### `NewWallet() (*Wallet, error)`
-Creates a new wallet instance.
-
-**Returns:** Wallet instance and error
-
-**Example:**
-```go
-wallet, err := wallet.NewWallet()
-if err != nil {
-    log.Fatalf("Failed to create wallet: %v", err)
-}
-```
-
-#### `(w *Wallet) GenerateKeyPair() (*ecdsa.PrivateKey, *ecdsa.PublicKey, error)`
-Generates a new ECDSA key pair using secp256k1 curve.
-
-**Returns:** Private key, public key, and error
-
-**Example:**
-```go
-privKey, pubKey, err := wallet.GenerateKeyPair()
-if err != nil {
-    log.Printf("Failed to generate key pair: %v", err)
-}
-```
-
-#### `(w *Wallet) GetAddress(pubKey *ecdsa.PublicKey) (string, error)`
-Generates a Bitcoin-style address from a public key.
-
-**Parameters:**
-- `pubKey`: ECDSA public key
-
-**Returns:** Base58-encoded address and error
-
-**Example:**
-```go
-address, err := wallet.GetAddress(pubKey)
-if err != nil {
-    log.Printf("Failed to generate address: %v", err)
-}
-log.Printf("Generated address: %s", address)
-```
-
-#### `(w *Wallet) SignTransaction(tx *block.Transaction, privKey *ecdsa.PrivateKey) error`
-Signs a transaction with the provided private key.
-
-**Parameters:**
-- `tx`: Transaction to sign
-- `privKey`: Private key for signing
-
-**Returns:** Error if signing fails
-
-**Example:**
-```go
-if err := wallet.SignTransaction(transaction, privateKey); err != nil {
-    log.Printf("Failed to sign transaction: %v", err)
-}
-```
-
-#### `(w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee uint64) (*block.Transaction, error)`
-Creates a new transaction between two addresses.
-
-**Parameters:**
-- `fromAddress`: Source address
-- `toAddress`: Destination address
-- `amount`: Amount to transfer
-- `fee`: Transaction fee
-
-**Returns:** Created transaction and error
-
-**Example:**
-```go
-tx, err := wallet.CreateTransaction(fromAddr, toAddr, 1000000, 1000)
-if err != nil {
-    log.Printf("Failed to create transaction: %v", err)
-}
-```
-
-#### `(w *Wallet) VerifySignature(tx *block.Transaction, pubKey *ecdsa.PublicKey) bool`
-Verifies the signature of a transaction.
-
-**Parameters:**
-- `tx`: Transaction to verify
-- `pubKey`: Public key for verification
-
-**Returns:** True if signature is valid
-
-**Example:**
-```go
-if wallet.VerifySignature(transaction, publicKey) {
-    log.Println("Transaction signature is valid")
-} else {
-    log.Println("Transaction signature is invalid")
-}
-```
-
-## Package: utxo
-
-### UTXO Management
-
-#### `NewUTXOSet() *UTXOSet`
-Creates a new UTXO set instance.
-
-**Returns:** UTXO set instance
-
-**Example:**
-```go
-utxoSet := utxo.NewUTXOSet()
-```
-
-#### `(us *UTXOSet) AddUTXO(utxo *UTXO)`
-Adds a new UTXO to the set.
-
-**Parameters:**
-- `utxo`: UTXO to add
-
-**Example:**
-```go
-utxoSet.AddUTXO(newUTXO)
-```
-
-#### `(us *UTXOSet) SpendUTXO(txID []byte, outIndex uint32) error`
-Marks a UTXO as spent.
-
-**Parameters:**
-- `txID`: Transaction ID
-- `outIndex`: Output index
-
-**Returns:** Error if UTXO not found
-
-**Example:**
-```go
-if err := utxoSet.SpendUTXO(txHash, 0); err != nil {
-    log.Printf("Failed to spend UTXO: %v", err)
-}
-```
-
-#### `(us *UTXOSet) GetAddressUTXOs(address string) []*UTXO`
-Gets all unspent UTXOs for a specific address.
-
-**Parameters:**
-- `address`: Wallet address
-
-**Returns:** List of unspent UTXOs
-
-**Example:**
-```go
-utxos := utxoSet.GetAddressUTXOs("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-log.Printf("Found %d unspent UTXOs", len(utxos))
-```
-
-#### `(us *UTXOSet) GetBalance(address string) uint64`
-Calculates the total balance for an address.
-
-**Parameters:**
-- `address`: Wallet address
-
-**Returns:** Total balance in satoshis
-
-**Example:**
-```go
-balance := utxoSet.GetBalance("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-log.Printf("Address balance: %d satoshis", balance)
-```
-
-## Package: miner
-
-### Mining Operations
-
-#### `NewMiner(chain *chain.Chain) *Miner`
-Creates a new miner instance.
-
-**Parameters:**
-- `chain`: Blockchain instance
-
-**Returns:** Miner instance
-
-**Example:**
-```go
-miner := miner.NewMiner(blockchain)
-```
-
-#### `(m *Miner) MineBlock(transactions []*block.Transaction) (*block.Block, error)`
-Mines a new block with the given transactions.
-
-**Parameters:**
-- `transactions`: Transactions to include in the block
-
-**Returns:** Mined block and error
-
-**Example:**
-```go
-block, err := miner.MineBlock(pendingTransactions)
-if err != nil {
-    log.Printf("Mining failed: %v", err)
-} else {
-    log.Printf("Block mined successfully: %x", block.Hash)
-}
-```
-
-#### `(m *Miner) SetDifficulty(difficulty uint64)`
-Sets the mining difficulty target.
-
-**Parameters:**
-- `difficulty`: New difficulty value
-
-**Example:**
-```go
-miner.SetDifficulty(1000000)
-```
-
-#### `(m *Miner) GetHashRate() uint64`
-Gets the current hash rate in hashes per second.
-
-**Returns:** Hash rate
-
-**Example:**
-```go
-hashRate := miner.GetHashRate()
-log.Printf("Current hash rate: %d H/s", hashRate)
-```
-
-## Package: net
-
-### Network Communication
-
-#### `NewNetwork(port int, chain *chain.Chain) *Network`
-Creates a new network instance.
-
-**Parameters:**
-- `port`: Network port to listen on
-- `chain`: Blockchain instance
-
-**Returns:** Network instance
-
-**Example:**
-```go
-network := net.NewNetwork(8333, blockchain)
-```
-
-#### `(n *Network) Start() error`
-Starts the network server.
-
-**Returns:** Error if startup fails
-
-**Example:**
-```go
-if err := network.Start(); err != nil {
-    log.Fatalf("Failed to start network: %v", err)
-}
-```
-
-#### `(n *Network) Stop()`
-Stops the network server.
-
-**Example:**
-```go
-network.Stop()
-```
-
-#### `(n *Network) Connect(peer string) error`
-Connects to a peer node.
-
-**Parameters:**
-- `peer`: Peer address (host:port)
-
-**Returns:** Error if connection fails
-
-**Example:**
-```go
-if err := network.Connect("192.168.1.100:8333"); err != nil {
-    log.Printf("Failed to connect to peer: %v", err)
-}
-```
-
-#### `(n *Network) BroadcastTransaction(tx *block.Transaction) error`
-Broadcasts a transaction to all connected peers.
-
-**Parameters:**
-- `tx`: Transaction to broadcast
-
-**Returns:** Error if broadcast fails
-
-**Example:**
-```go
-if err := network.BroadcastTransaction(transaction); err != nil {
-    log.Printf("Failed to broadcast transaction: %v", err)
-}
-```
-
-#### `(n *Network) BroadcastBlock(block *block.Block) error`
-Broadcasts a new block to all connected peers.
-
-**Parameters:**
-- `block`: Block to broadcast
-
-**Returns:** Error if broadcast fails
-
-**Example:**
-```go
-if err := network.BroadcastBlock(newBlock); err != nil {
-    log.Printf("Failed to broadcast block: %v", err)
-}
-```
-
-## Package: storage
-
-### Data Persistence
-
-#### `NewStorage(dataDir string) (*Storage, error)`
-Creates a new storage instance.
-
-**Parameters:**
-- `dataDir`: Directory for data storage
-
-**Returns:** Storage instance and error
-
-**Example:**
-```go
-storage, err := storage.NewStorage("./data")
-if err != nil {
-    log.Fatalf("Failed to create storage: %v", err)
-}
-```
-
-#### `(s *Storage) Put(key []byte, value []byte) error`
-Stores a key-value pair.
-
-**Parameters:**
-- `key`: Storage key
-- `value`: Data to store
-
-**Returns:** Error if storage fails
-
-**Example:**
-```go
-if err := storage.Put([]byte("block:123"), blockData); err != nil {
-    log.Printf("Failed to store block: %v", err)
-}
-```
-
-#### `(s *Storage) Get(key []byte) ([]byte, error)`
-Retrieves data by key.
-
-**Parameters:**
-- `key`: Storage key
-
-**Returns:** Stored data and error
-
-**Example:**
-```go
-data, err := storage.Get([]byte("block:123"))
-if err != nil {
-    log.Printf("Failed to retrieve block: %v", err)
-}
-```
-
-#### `(s *Storage) Delete(key []byte) error`
-Deletes data by key.
-
-**Parameters:**
-- `key`: Storage key
-
-**Returns:** Error if deletion fails
-
-**Example:**
-```go
-if err := storage.Delete([]byte("block:123")); err != nil {
-    log.Printf("Failed to delete block: %v", err)
-}
-```
-
-#### `(s *Storage) Close() error`
-Closes the storage and releases resources.
-
-**Returns:** Error if close fails
-
-**Example:**
-```go
-if err := storage.Close(); err != nil {
-    log.Printf("Failed to close storage: %v", err)
+### Governance Events
+
+#### Subscribe to Governance Events
+```json
+{
+  "type": "subscribe",
+  "channel": "governance_events"
 }
 ```
 
 ## Error Handling
 
-All functions return errors that should be checked and handled appropriately. Common error patterns:
+All API endpoints return consistent error responses:
 
-```go
-// Check for errors
-if err != nil {
-    log.Printf("Operation failed: %v", err)
-    return err
-}
-
-// Handle specific error types
-if errors.Is(err, ErrBlockNotFound) {
-    log.Println("Block not found")
-} else if errors.Is(err, ErrInvalidSignature) {
-    log.Println("Invalid signature")
+```json
+{
+  "error": {
+    "code": "INVALID_REQUEST",
+    "message": "Invalid request parameters",
+    "details": {
+      "field": "amount",
+      "issue": "Amount must be positive"
+    }
+  }
 }
 ```
 
-## Best Practices
+### Common Error Codes
 
-1. **Always check errors** returned by functions
-2. **Use proper logging** for debugging and monitoring
-3. **Validate inputs** before processing
-4. **Handle edge cases** gracefully
-5. **Use context** for cancellation and timeouts
-6. **Implement proper cleanup** in defer statements
-7. **Use interfaces** for testing and flexibility
+- `INVALID_REQUEST` - Invalid request parameters
+- `UNAUTHORIZED` - Authentication required
+- `FORBIDDEN` - Insufficient permissions
+- `NOT_FOUND` - Resource not found
+- `RATE_LIMITED` - Too many requests
+- `INTERNAL_ERROR` - Internal server error
 
-## Examples
+## Rate Limiting
 
-### Complete Transaction Flow
+API endpoints are rate-limited to ensure fair usage:
 
-```go
-func main() {
-    // Create wallet
-    wallet, err := wallet.NewWallet()
-    if err != nil {
-        log.Fatalf("Failed to create wallet: %v", err)
-    }
+- **Public endpoints**: 100 requests per minute
+- **Authenticated endpoints**: 1000 requests per minute
+- **Admin endpoints**: 10000 requests per minute
 
-    // Generate key pair
-    privKey, pubKey, err := wallet.GenerateKeyPair()
-    if err != nil {
-        log.Fatalf("Failed to generate keys: %v", err)
-    }
+## Authentication
 
-    // Get address
-    address, err := wallet.GetAddress(pubKey)
-    if err != nil {
-        log.Fatalf("Failed to get address: %v", err)
-    }
+Most endpoints require authentication using API keys or JWT tokens:
 
-    // Create transaction
-    tx, err := wallet.CreateTransaction(address, "destination", 1000000, 1000)
-    if err != nil {
-        log.Fatalf("Failed to create transaction: %v", err)
-    }
-
-    // Sign transaction
-    if err := wallet.SignTransaction(tx, privKey); err != nil {
-        log.Fatalf("Failed to sign transaction: %v", err)
-    }
-
-    // Validate transaction
-    if err := tx.Validate(); err != nil {
-        log.Fatalf("Transaction validation failed: %v", err)
-    }
-
-    log.Printf("Transaction created successfully: %x", tx.ID)
-}
+```http
+Authorization: Bearer <jwt_token>
 ```
 
-### Blockchain Operations
+or
 
-```go
-func main() {
-    // Create blockchain
-    chain, err := chain.NewChain("./data")
-    if err != nil {
-        log.Fatalf("Failed to create chain: %v", err)
-    }
-
-    // Create miner
-    miner := miner.NewMiner(chain)
-
-    // Mine block
-    block, err := miner.MineBlock([]*block.Transaction{})
-    if err != nil {
-        log.Fatalf("Mining failed: %v", err)
-    }
-
-    // Add block to chain
-    if err := chain.AddBlock(block); err != nil {
-        log.Fatalf("Failed to add block: %v", err)
-    }
-
-    log.Printf("Block added successfully: %x", block.Hash)
-}
+```http
+X-API-Key: <api_key>
 ```
 
----
+## SDKs and Libraries
 
-For more detailed information about specific functions and types, refer to the GoDoc comments in the source code. 
+### Go SDK
+```go
+import "github.com/gochain/gochain/pkg/sdk"
+
+client := sdk.NewClient("http://localhost:8080")
+```
+
+### JavaScript SDK
+```javascript
+import { GoChainClient } from '@gochain/sdk'
+
+const client = new GoChainClient('http://localhost:8080')
+```
+
+## Testing
+
+### Testnet Endpoints
+- **Testnet API**: `https://testnet-api.gochain.io`
+- **Testnet WebSocket**: `wss://testnet-ws.gochain.io`
+
+### Sandbox Environment
+- **Sandbox API**: `https://sandbox-api.gochain.io`
+- **Sandbox WebSocket**: `wss://sandbox-ws.gochain.io`
+
+## Support
+
+For API support and questions:
+- **Documentation**: [docs.gochain.io](https://docs.gochain.io)
+- **GitHub Issues**: [github.com/gochain/gochain/issues](https://github.com/gochain/gochain/issues)
+- **Discord**: [discord.gg/gochain](https://discord.gg/gochain)
+- **Email**: api-support@gochain.io 
