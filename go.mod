@@ -7,6 +7,7 @@ toolchain go1.23.12
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.5
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/libp2p/go-libp2p-kad-dht v0.33.1
 	github.com/libp2p/go-libp2p-pubsub v0.14.2
@@ -19,8 +20,6 @@ require (
 	golang.org/x/crypto v0.41.0
 	google.golang.org/protobuf v1.36.7
 )
-
-replace google.golang.org/protobuf => google.golang.org/protobuf v1.31.0
 
 replace github.com/klauspost/compress => github.com/klauspost/compress v1.15.15
 
@@ -41,7 +40,6 @@ require (
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

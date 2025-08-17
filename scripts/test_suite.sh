@@ -358,7 +358,15 @@ run_package_tests() {
     
     echo "Running: $test_cmd ${test_args[*]}" | tee -a "$LOG_FILE"
     
-    if $test_cmd "${test_args[@]}" 2>&1 | tee "$test_file"; then
+    # Capture both output and exit code properly
+    local test_output
+    test_output=$($test_cmd "${test_args[@]}" 2>&1)
+    exit_code=$?
+    
+    # Save output to file
+    echo "$test_output" > "$test_file"
+    
+    if [[ $exit_code -eq 0 ]]; then
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         
@@ -577,15 +585,29 @@ get_accurate_test_counts() {
             local failed=$(grep -c "^--- FAIL" "$file" 2>/dev/null || echo "0")
             local skipped=$(grep -c "^--- SKIP" "$file" 2>/dev/null || echo "0")
             
+            # Also check for panic and other failure indicators
+            local panic_count=$(grep -c "panic:" "$file" 2>/dev/null || echo "0")
+            local fail_count=$(grep -c "FAIL" "$file" 2>/dev/null || echo "0")
+            
             # Ensure variables are numbers and handle empty strings
             passed=${passed:-0}
             failed=${failed:-0}
             skipped=${skipped:-0}
+            panic_count=${panic_count:-0}
+            fail_count=${fail_count:-0}
             
             # Convert to integers to avoid syntax errors
             passed=$((passed + 0))
             failed=$((failed + 0))
             skipped=$((skipped + 0))
+            panic_count=$((panic_count + 0))
+            fail_count=$((fail_count + 0))
+            
+            # If we found panics or FAIL indicators, mark as failed
+            if [[ $panic_count -gt 0 ]] || [[ $fail_count -gt 0 ]]; then
+                failed=$((failed + panic_count + fail_count))
+                echo -e "   🚨 $file: Found $panic_count panics and $fail_count FAIL indicators"
+            fi
             
             PASSED_TESTS=$((PASSED_TESTS + passed))
             FAILED_TESTS=$((FAILED_TESTS + failed))
@@ -629,10 +651,44 @@ generate_test_summary() {
         echo "| **Failed Packages** | $FAILED_PACKAGES |"
         echo "| **Total Tests** | $TOTAL_TESTS |"
         echo "| **Passed Tests** | $PASSED_TESTS |"
-        echo "| **Failed Tests** | $FAILED_TESTS |"
         echo "| **Skipped Tests** | $SKIPPED_TESTS |"
         echo "| **Fuzz Tests** | $FUZZ_TESTS_COUNT |"
         echo "| **Benchmark Tests** | $BENCHMARK_TESTS_COUNT |"
+        echo
+        echo "## 🚨 Test Failures"
+        echo
+        if [[ $FAILED_TESTS -gt 0 ]]; then
+            echo "### ❌ Failed Tests: $FAILED_TESTS"
+            echo
+            # Find and report specific failures
+            for file in "$TEST_RESULTS_DIR"/*_tests.log; do
+                if [[ -f "$file" ]]; then
+                    local filename=$(basename "$file")
+                    local panic_count=$(grep -c "panic:" "$file" 2>/dev/null || echo "0")
+                    local fail_count=$(grep -c "FAIL" "$file" 2>/dev/null || echo "0")
+                    
+                    if [[ $panic_count -gt 0 ]] || [[ $fail_count -gt 0 ]]; then
+                        echo "#### $filename"
+                        echo "- **Panics:** $panic_count"
+                        echo "- **Failures:** $fail_count"
+                        
+                        # Show specific error details
+                        if [[ $panic_count -gt 0 ]]; then
+                            echo "- **Panic Details:**"
+                            grep "panic:" "$file" | head -3 | sed 's/^/  - /'
+                        fi
+                        
+                        if [[ $fail_count -gt 0 ]]; then
+                            echo "- **Failure Details:**"
+                            grep "FAIL" "$file" | head -3 | sed 's/^/  - /'
+                        fi
+                        echo
+                    fi
+                fi
+            done
+        else
+            echo "✅ **No test failures detected**"
+        fi
         echo
         echo "## 🎯 Success Rate"
         echo
@@ -668,10 +724,11 @@ generate_test_summary() {
         echo
         echo "## 🚀 Next Steps"
         echo
-        if [[ $FAILED_PACKAGES -gt 0 ]]; then
-            echo "❌ **Action Required:** $FAILED_PACKAGES package(s) failed tests"
-            echo "   - Review failed test logs in $TEST_RESULTS_DIR"
+        if [[ $FAILED_TESTS -gt 0 ]]; then
+            echo "❌ **Action Required:** $FAILED_TESTS test(s) failed"
+            echo "   - Review failed test logs above"
             echo "   - Fix failing tests before proceeding"
+            echo "   - Pay special attention to packages with panics"
         else
             echo "✅ **All tests passed successfully!**"
             echo "   - Ready for deployment or further development"
@@ -741,6 +798,21 @@ main() {
     for pkg in "${packages[@]}"; do
         if ! run_package_tests "$pkg"; then
             overall_success=false
+            echo -e "${RED}🚨 Package $pkg failed tests!${NC}"
+            
+            # Check for specific failure types
+            local test_file="$TEST_RESULTS_DIR/$(basename "$pkg")_tests.log"
+            if [[ -f "$test_file" ]]; then
+                if grep -q "panic:" "$test_file"; then
+                    echo -e "${RED}   💥 PANIC DETECTED in $pkg${NC}"
+                    grep "panic:" "$test_file" | head -2
+                fi
+                if grep -q "FAIL" "$test_file"; then
+                    echo -e "${RED}   ❌ FAILURES DETECTED in $pkg${NC}"
+                    grep "FAIL" "$test_file" | head -2
+                fi
+            fi
+            echo
         fi
     done
     
@@ -761,6 +833,9 @@ main() {
     run_fuzz_tests
     run_benchmark_tests
     run_security_tests # Added security tests
+    
+    # Get accurate test counts
+    get_accurate_test_counts
     
     # Generate reports
     generate_coverage_report
