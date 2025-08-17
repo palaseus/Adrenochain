@@ -1,15 +1,15 @@
-# GoChain Blockchain - Makefile
+# Adrenochain Blockchain - Makefile
 # Provides convenient commands for building, testing, and managing the project
 
 .PHONY: help build test test-verbose test-coverage test-race test-fuzz test-bench test-all clean install deps lint format check
 
 # Default target
 help:
-	@echo "🚀 GoChain Blockchain - Available Commands:"
+	     @echo "🚀 Adrenochain Blockchain - Available Commands:"
 	@echo ""
 	@echo "📦 Building:"
-	@echo "  build          - Build the GoChain binary"
-	@echo "  install        - Install GoChain binary to GOPATH"
+	     @echo "  build          - Build the Adrenochain binary"
+	     @echo "  install        - Install Adrenochain binary to GOPATH"
 	@echo "  clean          - Clean build artifacts"
 	@echo ""
 	@echo "🧪 Testing:"
@@ -37,14 +37,14 @@ help:
 
 # Build the project
 build:
-	@echo "🔨 Building GoChain..."
-	go build -o bin/gochain ./cmd/gochain
-	@echo "✅ Build complete: bin/gochain"
+	     @echo "🔨 Building Adrenochain..."
+	go build -o bin/adrenochain ./cmd/adrenochain
+	     @echo "✅ Build complete: bin/adrenochain"
 
 # Install to GOPATH
 install:
-	@echo "📦 Installing GoChain..."
-	go install ./cmd/gochain
+	     @echo "📦 Installing Adrenochain..."
+	go install ./cmd/adrenochain
 	@echo "✅ Installation complete"
 
 # Clean build artifacts
@@ -158,7 +158,7 @@ performance:
 
 # Development setup
 setup:
-	@echo "🚀 Setting up GoChain development environment..."
+	     @echo "🚀 Setting up Adrenochain development environment..."
 	make deps
 	make format
 	make test
@@ -166,14 +166,14 @@ setup:
 
 # Quick validation
 validate:
-	@echo "✅ Validating GoChain..."
+	     @echo "✅ Validating Adrenochain..."
 	go build ./...
 	go test ./... -timeout 10s
 	@echo "✅ Validation complete"
 
 # Show project status
 status:
-	@echo "📊 GoChain Project Status:"
+	     @echo "📊 Adrenochain Project Status:"
 	@echo "  📦 Go version: $(shell go version)"
 	@echo "  📁 Project root: $(shell pwd)"
 	@echo "  🔧 Go modules: $(shell go list -m)"

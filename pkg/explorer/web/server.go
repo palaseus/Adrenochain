@@ -43,7 +43,7 @@ func (ws *WebServer) Start(port int) error {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Printf("Starting GoChain Explorer web interface on port %d", port)
+	log.Printf("Starting adrenochain Explorer web interface on port %d", port)
 	log.Printf("Web interface available at: http://localhost:%d", port)
 	log.Printf("API endpoints available at: http://localhost:%d/api/v1", port)
 
@@ -53,7 +53,7 @@ func (ws *WebServer) Start(port int) error {
 // Stop gracefully stops the web server
 func (ws *WebServer) Stop() error {
 	if ws.server != nil {
-		log.Println("Stopping GoChain Explorer web interface...")
+		log.Println("Stopping adrenochain Explorer web interface...")
 		return ws.server.Close()
 	}
 	return nil

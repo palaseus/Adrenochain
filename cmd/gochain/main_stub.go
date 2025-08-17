@@ -6,5 +6,5 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("gochain CLI requires Go 1.20+. Please build with a newer Go version.")
+	fmt.Println("adrenochain CLI requires Go 1.20+. Please build with a newer Go version.")
 }

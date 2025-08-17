@@ -16,7 +16,7 @@ func TestNewBridge(t *testing.T) {
 		assert.Equal(t, BridgeStatusActive, bridge.config.Status)
 		assert.Equal(t, 3, bridge.config.MinValidators)
 		assert.Equal(t, 2, bridge.config.RequiredConfirmations)
-		assert.Equal(t, "gochain_bridge", bridge.config.ID)
+		assert.Equal(t, "adrenochain_bridge", bridge.config.ID)
 	})
 
 	t.Run("create bridge with custom config", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate valid transfer", func(t *testing.T) {
 		amount := big.NewInt(1000000000000000000) // 1 ETH
 		transaction, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -53,7 +53,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, transaction)
-		assert.Equal(t, ChainIDGoChain, transaction.SourceChain)
+		assert.Equal(t, ChainIDadrenochain, transaction.SourceChain)
 		assert.Equal(t, ChainIDEthereum, transaction.DestinationChain)
 		assert.Equal(t, amount, transaction.Amount)
 		assert.Equal(t, TransactionStatusPending, transaction.Status)
@@ -64,8 +64,8 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate transfer with same chains", func(t *testing.T) {
 		amount := big.NewInt(1000000000000000000)
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
-			ChainIDGoChain, // Same as source
+			ChainIDadrenochain,
+			ChainIDadrenochain, // Same as source
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
 			AssetTypeNative,
@@ -98,7 +98,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate transfer with invalid destination chain", func(t *testing.T) {
 		amount := big.NewInt(1000000000000000000)
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			"invalid_chain",
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -115,7 +115,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate transfer with empty addresses", func(t *testing.T) {
 		amount := big.NewInt(1000000000000000000)
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"", // Empty source address
 			"0x0987654321098765432109876543210987654321",
@@ -132,7 +132,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate transfer with amount too small", func(t *testing.T) {
 		amount := big.NewInt(100000000000000) // 0.0001 ETH (below minimum)
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -149,7 +149,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate transfer with amount too large", func(t *testing.T) {
 		amount := big.NewInt(2000000000000000000) // 2 ETH (above maximum)
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -166,7 +166,7 @@ func TestBridgeInitiateTransfer(t *testing.T) {
 	t.Run("initiate transfer with unsupported asset", func(t *testing.T) {
 		amount := big.NewInt(1000000000000000000)
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -188,7 +188,7 @@ func TestBridgeConfirmTransaction(t *testing.T) {
 		// Create a fresh test transaction for this test
 		amount := big.NewInt(1000000000000000000)
 		transaction, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -203,7 +203,7 @@ func TestBridgeConfirmTransaction(t *testing.T) {
 		validator := &Validator{
 			ID:            "validator1",
 			Address:       "0x1111111111111111111111111111111111111111",
-			ChainID:       ChainIDGoChain,
+			ChainID:       ChainIDadrenochain,
 			StakeAmount:   big.NewInt(1000000000000000000),
 			IsActive:      true,
 			LastHeartbeat: time.Now(),
@@ -233,7 +233,7 @@ func TestBridgeConfirmTransaction(t *testing.T) {
 		// Create a fresh test transaction for this test
 		amount := big.NewInt(1000000000000000000)
 		transaction, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -256,7 +256,7 @@ func TestBridgeExecuteTransaction(t *testing.T) {
 	// Create and confirm a test transaction
 	amount := big.NewInt(1000000000000000000)
 	transaction, err := bridge.InitiateTransfer(
-		ChainIDGoChain,
+		ChainIDadrenochain,
 		ChainIDEthereum,
 		"0x1234567890123456789012345678901234567890",
 		"0x0987654321098765432109876543210987654321",
@@ -271,7 +271,7 @@ func TestBridgeExecuteTransaction(t *testing.T) {
 	validator := &Validator{
 		ID:            "validator1",
 		Address:       "0x1111111111111111111111111111111111111111",
-		ChainID:       ChainIDGoChain,
+		ChainID:       ChainIDadrenochain,
 		StakeAmount:   big.NewInt(1000000000000000000),
 		IsActive:      true,
 		LastHeartbeat: time.Now(),
@@ -310,7 +310,7 @@ func TestBridgeExecuteTransaction(t *testing.T) {
 		// Create a new pending transaction
 		amount2 := big.NewInt(500000000000000000) // 0.5 ETH
 		transaction2, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -333,7 +333,7 @@ func TestBridgeFailTransaction(t *testing.T) {
 	// Create a test transaction
 	amount := big.NewInt(1000000000000000000)
 	transaction, err := bridge.InitiateTransfer(
-		ChainIDGoChain,
+		ChainIDadrenochain,
 		ChainIDEthereum,
 		"0x1234567890123456789012345678901234567890",
 		"0x0987654321098765432109876543210987654321",
@@ -374,7 +374,7 @@ func TestBridgeGetTransactions(t *testing.T) {
 
 	// Transaction 1
 	tx1, err := bridge.InitiateTransfer(
-		ChainIDGoChain,
+		ChainIDadrenochain,
 		ChainIDEthereum,
 		address1,
 		address2,
@@ -388,7 +388,7 @@ func TestBridgeGetTransactions(t *testing.T) {
 	// Transaction 2
 	_, err = bridge.InitiateTransfer(
 		ChainIDEthereum,
-		ChainIDGoChain,
+		ChainIDadrenochain,
 		address2,
 		address1,
 		AssetTypeNative,
@@ -438,7 +438,7 @@ func TestBridgeGetBridgeStats(t *testing.T) {
 	amount := big.NewInt(1000000000000000000)
 	for i := 0; i < 3; i++ {
 		_, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -489,7 +489,7 @@ func TestBridgeEventHandling(t *testing.T) {
 		// Trigger event
 		amount := big.NewInt(1000000000000000000)
 		transaction, err := bridge.InitiateTransfer(
-			ChainIDGoChain,
+			ChainIDadrenochain,
 			ChainIDEthereum,
 			"0x1234567890123456789012345678901234567890",
 			"0x0987654321098765432109876543210987654321",
@@ -534,11 +534,11 @@ func TestBridgeValidation(t *testing.T) {
 
 	t.Run("validate chains", func(t *testing.T) {
 		// Valid chains
-		err := bridge.validateChains(ChainIDGoChain, ChainIDEthereum)
+		err := bridge.validateChains(ChainIDadrenochain, ChainIDEthereum)
 		assert.NoError(t, err)
 
 		// Same chains
-		err = bridge.validateChains(ChainIDGoChain, ChainIDGoChain)
+		err = bridge.validateChains(ChainIDadrenochain, ChainIDadrenochain)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cannot be the same")
 
@@ -548,7 +548,7 @@ func TestBridgeValidation(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid source chain")
 
 		// Invalid destination chain
-		err = bridge.validateChains(ChainIDGoChain, "invalid_chain")
+		err = bridge.validateChains(ChainIDadrenochain, "invalid_chain")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid destination chain")
 	})

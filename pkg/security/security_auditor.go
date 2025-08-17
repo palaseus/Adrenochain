@@ -226,10 +226,10 @@ func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditRes
 	auditResult := &AuditResult{
 		ID:        auditID,
 		Type:      AuditTypeComprehensive,
-		Component: "GoChain Platform",
+		Component: "adrenochain Platform",
 		StartTime: startTime,
 		Status:    AuditStatusRunning,
-		Auditor:   "GoChain Security Auditor",
+		Auditor:   "adrenochain Security Auditor",
 		Version:   "1.0.0",
 		Timestamp: startTime,
 	}

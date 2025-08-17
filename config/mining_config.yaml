@@ -1,4 +1,4 @@
-# GoChain Mining Configuration File
+# adrenochain Mining Configuration File
 
 # Network Configuration
 network:
@@ -46,7 +46,7 @@ logging:
   level: "info"  # debug, info, warn, error
   format: "text"  # text or json
   output: "stdout"  # stdout, stderr, or file path
-  log_file: "./logs/mining_gochain.log"  # Path to log file
+  log_file: "./logs/mining_adrenochain.log"  # Path to log file
   max_size: 104857600  # 100MB
   max_backups: 5
 

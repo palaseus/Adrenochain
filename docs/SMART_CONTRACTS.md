@@ -1,10 +1,10 @@
 # Smart Contract Development Guide 🚀
 
-This guide covers smart contract development on GoChain, including EVM and WASM execution environments, contract development best practices, and advanced features.
+This guide covers smart contract development on adrenochain, including EVM and WASM execution environments, contract development best practices, and advanced features.
 
 ## 🎯 **Overview**
 
-GoChain provides a comprehensive smart contract platform with support for:
+adrenochain provides a comprehensive smart contract platform with support for:
 
 - **Ethereum Virtual Machine (EVM)**: Full Ethereum compatibility
 - **WebAssembly (WASM)**: Cross-platform contract execution
@@ -66,10 +66,10 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract GoChainToken is ERC20, Ownable {
+contract adrenochainToken is ERC20, Ownable {
     uint256 public constant INITIAL_SUPPLY = 1000000 * 10**18;
     
-    constructor() ERC20("GoChain Token", "GCH") {
+    constructor() ERC20("adrenochain Token", "GCH") {
         _mint(msg.sender, INITIAL_SUPPLY);
     }
     
@@ -93,8 +93,8 @@ import (
     "fmt"
     "log"
     
-    "github.com/gochain/gochain/pkg/contracts/evm"
-    "github.com/gochain/gochain/pkg/wallet"
+    "github.com/adrenochain/adrenochain/pkg/contracts/evm"
+    "github.com/adrenochain/adrenochain/pkg/wallet"
 )
 
 func main() {
@@ -235,8 +235,8 @@ import (
     "fmt"
     "log"
     
-    "github.com/gochain/gochain/pkg/contracts/wasm"
-    "github.com/gochain/gochain/pkg/wallet"
+    "github.com/adrenochain/adrenochain/pkg/contracts/wasm"
+    "github.com/adrenochain/adrenochain/pkg/wallet"
 )
 
 func main() {
@@ -433,7 +433,7 @@ package contracts_test
 import (
     "testing"
     
-    "github.com/gochain/gochain/pkg/contracts/evm"
+    "github.com/adrenochain/adrenochain/pkg/contracts/evm"
     "github.com/stretchr/testify/assert"
 )
 
@@ -523,7 +523,7 @@ func FuzzTokenTransfer(f *testing.F) {
 package analytics
 
 import (
-    "github.com/gochain/gochain/pkg/contracts/evm"
+    "github.com/adrenochain/adrenochain/pkg/contracts/evm"
 )
 
 type GasAnalytics struct {
@@ -691,20 +691,20 @@ contract ContractFactory {
 
 ## 📚 **Development Tools**
 
-### **1. GoChain CLI**
+### **1. adrenochain CLI**
 
 ```bash
 # Deploy contract
-gochain contract deploy Token.sol --network testnet
+adrenochain contract deploy Token.sol --network testnet
 
 # Call contract function
-gochain contract call 0x123... balanceOf 0x456...
+adrenochain contract call 0x123... balanceOf 0x456...
 
 # Execute contract function
-gochain contract execute 0x123... transfer 0x456... 100
+adrenochain contract execute 0x123... transfer 0x456... 100
 
 # Verify contract
-gochain contract verify 0x123... Token.sol --constructor-args "Token,TKN,1000000"
+adrenochain contract verify 0x123... Token.sol --constructor-args "Token,TKN,1000000"
 ```
 
 ### **2. Development Environment**
@@ -725,7 +725,7 @@ godoc -http=:6060
 
 ### **3. IDE Integration**
 
-- **VS Code**: GoChain extension for contract development
+- **VS Code**: adrenochain extension for contract development
 - **GoLand**: Native Go support with contract debugging
 - **Remix**: Web-based Solidity IDE integration
 
@@ -747,13 +747,13 @@ godoc -http=:6060
 
 ## 📞 **Support & Resources**
 
-- **Documentation**: [docs.gochain.dev](https://docs.gochain.dev)
-- **GitHub**: [github.com/gochain/gochain](https://github.com/gochain/gochain)
-- **Discord**: [discord.gg/gochain](https://discord.gg/gochain)
-- **Email**: contracts@gochain.dev
+- **Documentation**: [docs.adrenochain.dev](https://docs.adrenochain.dev)
+- **GitHub**: [github.com/adrenochain/adrenochain](https://github.com/adrenochain/adrenochain)
+- **Discord**: [discord.gg/adrenochain](https://discord.gg/adrenochain)
+- **Email**: contracts@adrenochain.dev
 
 ---
 
 **Last Updated**: December 2024  
 **Version**: 1.0.0  
-**GoChain**: Advanced smart contract development platform 🚀🔬💻
+**adrenochain**: Advanced smart contract development platform 🚀🔬💻

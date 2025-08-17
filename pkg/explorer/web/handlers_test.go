@@ -152,7 +152,7 @@ func TestHomeHandler(t *testing.T) {
 
 	body := w.Body.String()
 
-	if !strings.Contains(body, "GoChain Blockchain Explorer") {
+	if !strings.Contains(body, "adrenochain Blockchain Explorer") {
 		t.Error("Expected page title in response")
 	}
 

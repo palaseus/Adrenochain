@@ -37,8 +37,8 @@ func TestDefaultConfig(t *testing.T) {
 	if config.Level != INFO {
 		t.Errorf("Default level should be INFO, got %v", config.Level)
 	}
-	if config.Prefix != "gochain" {
-		t.Errorf("Default prefix should be 'gochain', got %s", config.Prefix)
+	if config.Prefix != "adrenochain" {
+		t.Errorf("Default prefix should be 'adrenochain', got %s", config.Prefix)
 	}
 	if config.Output != os.Stdout {
 		t.Errorf("Default output should be os.Stdout")
@@ -71,8 +71,8 @@ func TestNewLogger_WithNilConfig(t *testing.T) {
 	if logger.level != INFO {
 		t.Errorf("Logger level should be INFO, got %v", logger.level)
 	}
-	if logger.prefix != "gochain" {
-		t.Errorf("Logger prefix should be 'gochain', got %s", logger.prefix)
+	if logger.prefix != "adrenochain" {
+		t.Errorf("Logger prefix should be 'adrenochain', got %s", logger.prefix)
 	}
 	if logger.output != os.Stdout {
 		t.Error("Logger output should be os.Stdout")

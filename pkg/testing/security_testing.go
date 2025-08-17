@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// SecurityTestFramework provides comprehensive security testing for all GoChain components
+// SecurityTestFramework provides comprehensive security testing for all adrenochain components
 type SecurityTestFramework struct {
 	testResults map[string]*SecurityTestResult
 }
@@ -40,7 +40,7 @@ func NewSecurityTestFramework() *SecurityTestFramework {
 
 // RunAllSecurityTests executes comprehensive security tests across all components
 func (stf *SecurityTestFramework) RunAllSecurityTests() map[string]*SecurityTestResult {
-	fmt.Println("🔒 Starting GoChain Security Testing...")
+	fmt.Println("🔒 Starting adrenochain Security Testing...")
 
 	// Exchange Layer Security Tests
 	stf.testOrderBookSecurity()
@@ -632,7 +632,7 @@ func (stf *SecurityTestFramework) GetResults() map[string]*SecurityTestResult {
 
 // PrintResults prints security test results in a formatted way
 func (stf *SecurityTestFramework) PrintResults() {
-	fmt.Println("\n🔒 GoChain Security Test Results")
+	fmt.Println("\n🔒 adrenochain Security Test Results")
 	fmt.Println("=================================")
 
 	passed := 0
@@ -650,7 +650,7 @@ func (stf *SecurityTestFramework) PrintResults() {
 
 	fmt.Printf("\n📈 Security Summary: %d/%d tests PASSED\n", passed, total)
 	if passed == total {
-		fmt.Println("✅ All security tests passed! GoChain is secure.")
+		fmt.Println("✅ All security tests passed! adrenochain is secure.")
 	} else {
 		fmt.Printf("⚠️  %d security issues found. Review required.\n", total-passed)
 	}

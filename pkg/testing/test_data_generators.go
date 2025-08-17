@@ -125,7 +125,7 @@ func (tdg *TestDataGenerators) GenerateOrderBook(tradingPair string, orderCount 
 func (tdg *TestDataGenerators) GenerateBridgeTransaction() *bridge.CrossChainTransaction {
 	tdg.txCounter++
 	
-	chains := []bridge.ChainID{bridge.ChainIDGoChain, bridge.ChainIDEthereum, bridge.ChainIDPolygon}
+	chains := []bridge.ChainID{bridge.ChainIDadrenochain, bridge.ChainIDEthereum, bridge.ChainIDPolygon}
 	assetTypes := []bridge.AssetType{bridge.AssetTypeNative, bridge.AssetTypeERC20, bridge.AssetTypeERC721}
 	
 	sourceChain := chains[tdg.randomInt(len(chains))]
@@ -250,7 +250,7 @@ func (tdg *TestDataGenerators) GenerateValidator() *bridge.Validator {
 	validator := &bridge.Validator{
 		ID:             fmt.Sprintf("validator_%d", tdg.randomInt(100)),
 		Address:        tdg.generateRandomAddress(),
-		ChainID:        bridge.ChainIDGoChain,
+		ChainID:        bridge.ChainIDadrenochain,
 		StakeAmount:    stakeAmount,
 		IsActive:       true,
 		LastHeartbeat:  time.Now().Add(-time.Duration(tdg.randomInt(3600)) * time.Second),
@@ -265,7 +265,7 @@ func (tdg *TestDataGenerators) GenerateValidator() *bridge.Validator {
 
 // GenerateAssetMapping generates a random asset mapping
 func (tdg *TestDataGenerators) GenerateAssetMapping() *bridge.AssetMapping {
-	chains := []bridge.ChainID{bridge.ChainIDGoChain, bridge.ChainIDEthereum, bridge.ChainIDPolygon}
+	chains := []bridge.ChainID{bridge.ChainIDadrenochain, bridge.ChainIDEthereum, bridge.ChainIDPolygon}
 	assetTypes := []bridge.AssetType{bridge.AssetTypeNative, bridge.AssetTypeERC20, bridge.AssetTypeERC721, bridge.AssetTypeERC1155}
 	
 	sourceChain := chains[tdg.randomInt(len(chains))]

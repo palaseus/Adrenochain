@@ -10,7 +10,7 @@ import (
 
 // RunSimpleTest runs basic component tests without complex initialization
 func RunSimpleTest() {
-	fmt.Println("🧪 GOCHAIN SIMPLE COMPONENT TEST")
+	fmt.Println("🧪 adrenochain SIMPLE COMPONENT TEST")
 	fmt.Println("==================================")
 	
 	// Test 1: Storage Components
@@ -156,7 +156,7 @@ func RunSimpleTest() {
 	fmt.Println("✅ Performance monitoring active")
 	fmt.Println("✅ Memory monitoring active")
 	fmt.Println("✅ CPU monitoring active")
-	fmt.Println("\n🎉 GoChain is ready for comprehensive testing!")
+	fmt.Println("\n🎉 adrenochain is ready for comprehensive testing!")
 }
 
 

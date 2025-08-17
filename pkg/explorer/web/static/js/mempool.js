@@ -1,4 +1,4 @@
-// GoChain Explorer Mempool Visualization Module
+// adrenochain Explorer Mempool Visualization Module
 
 class MempoolVisualizer {
     constructor() {

@@ -64,7 +64,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Level:      INFO,
-		Prefix:     "gochain",
+		Prefix:     "adrenochain",
 		Output:     os.Stdout,
 		TimeFmt:    time.RFC3339,
 		UseJSON:    false,

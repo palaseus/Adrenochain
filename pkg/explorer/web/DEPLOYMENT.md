@@ -1,6 +1,6 @@
-# GoChain Explorer Deployment Guide
+# adrenochain Explorer Deployment Guide
 
-This guide covers deploying the GoChain Explorer web interface to production environments.
+This guide covers deploying the adrenochain Explorer web interface to production environments.
 
 ## 🚀 **Quick Start Deployment**
 
@@ -8,25 +8,25 @@ This guide covers deploying the GoChain Explorer web interface to production env
 
 ```bash
 # Build the Docker image
-docker build -t gochain-explorer .
+docker build -t adrenochain-explorer .
 
 # Run the container
 docker run -d \
-  --name gochain-explorer \
+  --name adrenochain-explorer \
   -p 8080:8080 \
   -e EXPLORER_PORT=8080 \
   -e EXPLORER_ENV=production \
-  gochain-explorer
+  adrenochain-explorer
 ```
 
 ### 2. **Binary Deployment**
 
 ```bash
 # Build the binary
-go build -o gochain-explorer ./cmd/explorer
+go build -o adrenochain-explorer ./cmd/explorer
 
 # Run the explorer
-./gochain-explorer --config config.yaml
+./adrenochain-explorer --config config.yaml
 ```
 
 ## 🏗️ **Production Architecture**
@@ -35,14 +35,14 @@ go build -o gochain-explorer ./cmd/explorer
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Load Balancer │    │   Reverse Proxy │    │  GoChain Nodes │
+│   Load Balancer │    │   Reverse Proxy │    │  adrenochain Nodes │
 │   (nginx/HAProxy)│    │   (nginx)       │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  │
                     ┌─────────────────┐
-                    │  GoChain        │
+                    │  adrenochain        │
                     │  Explorer       │
                     │  (Multiple      │
                     │   Instances)    │
@@ -104,7 +104,7 @@ export EXPLORER_HOST=0.0.0.0
 # Database Configuration
 export DB_HOST=localhost
 export DB_PORT=5432
-export DB_NAME=gochain_explorer
+export DB_NAME=adrenochain_explorer
 export DB_USER=explorer_user
 export DB_PASSWORD=secure_password
 
@@ -148,7 +148,7 @@ explorer:
 database:
   host: localhost
   port: 5432
-  name: gochain_explorer
+  name: adrenochain_explorer
   user: explorer_user
   password: secure_password
   ssl_mode: require
@@ -192,7 +192,7 @@ web:
 ### **Nginx Configuration**
 
 ```nginx
-# /etc/nginx/sites-available/gochain-explorer
+# /etc/nginx/sites-available/adrenochain-explorer
 upstream explorer_backend {
     server 127.0.0.1:8080;
     server 127.0.0.1:8081;
@@ -290,7 +290,7 @@ server {
 
 ```bash
 # Create symlink
-sudo ln -s /etc/nginx/sites-available/gochain-explorer /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/adrenochain-explorer /etc/nginx/sites-enabled/
 
 # Test configuration
 sudo nginx -t
@@ -326,7 +326,7 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'gochain-explorer'
+  - job_name: 'adrenochain-explorer'
     static_configs:
       - targets: ['localhost:9090']
     metrics_path: /metrics
@@ -338,7 +338,7 @@ scrape_configs:
 ```json
 {
   "dashboard": {
-    "title": "GoChain Explorer Metrics",
+    "title": "adrenochain Explorer Metrics",
     "panels": [
       {
         "title": "Request Rate",
@@ -404,35 +404,35 @@ scrape_configs:
 
 set -e
 
-echo "🚀 Deploying GoChain Explorer..."
+echo "🚀 Deploying adrenochain Explorer..."
 
 # Pull latest changes
 git pull origin main
 
 # Build the application
 echo "📦 Building application..."
-go build -o gochain-explorer ./cmd/explorer
+go build -o adrenochain-explorer ./cmd/explorer
 
 # Stop existing service
 echo "⏹️  Stopping existing service..."
-sudo systemctl stop gochain-explorer || true
+sudo systemctl stop adrenochain-explorer || true
 
 # Backup current binary
 echo "💾 Creating backup..."
-sudo cp /usr/local/bin/gochain-explorer /usr/local/bin/gochain-explorer.backup || true
+sudo cp /usr/local/bin/adrenochain-explorer /usr/local/bin/adrenochain-explorer.backup || true
 
 # Install new binary
 echo "📥 Installing new binary..."
-sudo cp gochain-explorer /usr/local/bin/
-sudo chmod +x /usr/local/bin/gochain-explorer
+sudo cp adrenochain-explorer /usr/local/bin/
+sudo chmod +x /usr/local/bin/adrenochain-explorer
 
 # Start service
 echo "▶️  Starting service..."
-sudo systemctl start gochain-explorer
+sudo systemctl start adrenochain-explorer
 
 # Check status
 echo "🔍 Checking service status..."
-sudo systemctl status gochain-explorer
+sudo systemctl status adrenochain-explorer
 
 echo "✅ Deployment completed successfully!"
 ```
@@ -440,29 +440,29 @@ echo "✅ Deployment completed successfully!"
 ### **Systemd Service**
 
 ```ini
-# /etc/systemd/system/gochain-explorer.service
+# /etc/systemd/system/adrenochain-explorer.service
 [Unit]
-Description=GoChain Explorer
+Description=adrenochain Explorer
 After=network.target postgresql.service redis.service
 
 [Service]
 Type=simple
 User=explorer
 Group=explorer
-WorkingDirectory=/opt/gochain-explorer
-ExecStart=/usr/local/bin/gochain-explorer --config /opt/gochain-explorer/config.yaml
+WorkingDirectory=/opt/adrenochain-explorer
+ExecStart=/usr/local/bin/adrenochain-explorer --config /opt/adrenochain-explorer/config.yaml
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=gochain-explorer
+SyslogIdentifier=adrenochain-explorer
 
 # Security settings
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/gochain-explorer/logs /opt/gochain-explorer/data
+ReadWritePaths=/opt/adrenochain-explorer/logs /opt/adrenochain-explorer/data
 
 # Resource limits
 LimitNOFILE=65536
@@ -502,7 +502,7 @@ echo "💾 Creating backup for $DATE..."
 mkdir -p "$BACKUP_DIR"
 
 # Backup database
-pg_dump gochain_explorer > "$BACKUP_DIR/db_backup_$DATE.sql"
+pg_dump adrenochain_explorer > "$BACKUP_DIR/db_backup_$DATE.sql"
 
 # Backup configuration
 cp config.yaml "$BACKUP_DIR/config_$DATE.yaml"
@@ -525,16 +525,16 @@ echo "✅ Backup completed: $BACKUP_DIR"
 1. **Service won't start**
    ```bash
    # Check logs
-   sudo journalctl -u gochain-explorer -f
+   sudo journalctl -u adrenochain-explorer -f
    
    # Check configuration
-   sudo -u explorer gochain-explorer --config-check
+   sudo -u explorer adrenochain-explorer --config-check
    ```
 
 2. **High memory usage**
    ```bash
    # Check memory usage
-   ps aux | grep gochain-explorer
+   ps aux | grep adrenochain-explorer
    
    # Check for memory leaks
    curl http://localhost:9090/metrics | grep go_memstats
@@ -543,7 +543,7 @@ echo "✅ Backup completed: $BACKUP_DIR"
 3. **Database connection issues**
    ```bash
    # Test database connection
-   psql -h localhost -U explorer_user -d gochain_explorer -c "SELECT 1"
+   psql -h localhost -U explorer_user -d adrenochain_explorer -c "SELECT 1"
    
    # Check database status
    sudo systemctl status postgresql
@@ -564,7 +564,7 @@ sysctl -p
 
 ## 📚 **Additional Resources**
 
-- [GoChain Documentation](https://docs.gochain.io)
+- [adrenochain Documentation](https://docs.adrenochain.io)
 - [Nginx Configuration Guide](https://nginx.org/en/docs/)
 - [Prometheus Best Practices](https://prometheus.io/docs/practices/)
 - [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
@@ -572,6 +572,6 @@ sysctl -p
 ## 🆘 **Support**
 
 For deployment issues:
-- Check the logs: `sudo journalctl -u gochain-explorer -f`
-- Review configuration: `sudo -u explorer gochain-explorer --config-check`
-- Open an issue: [GitHub Issues](https://github.com/gochain/gochain/issues)
+- Check the logs: `sudo journalctl -u adrenochain-explorer -f`
+- Review configuration: `sudo -u explorer adrenochain-explorer --config-check`
+- Open an issue: [GitHub Issues](https://github.com/adrenochain/adrenochain/issues)

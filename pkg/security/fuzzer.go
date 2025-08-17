@@ -12,7 +12,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/storage"
 )
 
-// Fuzzer provides comprehensive fuzz testing for GoChain
+// Fuzzer provides comprehensive fuzz testing for adrenochain
 type Fuzzer struct {
 	chain     *chain.Chain
 	storage   storage.StorageInterface
@@ -511,7 +511,7 @@ func (f *Fuzzer) GetResults() map[string]*FuzzResult {
 func (f *Fuzzer) GenerateReport() string {
 	results := f.GetResults()
 
-	report := "# 🔒 GoChain Fuzz Test Report\n\n"
+	report := "# 🔒 adrenochain Fuzz Test Report\n\n"
 	report += fmt.Sprintf("Generated: %s\n\n", time.Now().Format(time.RFC3339))
 
 	report += "## 📊 Summary\n\n"

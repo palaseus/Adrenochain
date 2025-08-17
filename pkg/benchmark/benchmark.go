@@ -12,7 +12,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/storage"
 )
 
-// BenchmarkSuite provides comprehensive performance testing for GoChain
+// BenchmarkSuite provides comprehensive performance testing for adrenochain
 type BenchmarkSuite struct {
 	chain   *chain.Chain
 	storage storage.StorageInterface
@@ -536,7 +536,7 @@ func (bs *BenchmarkSuite) GetResults() map[string]*BenchmarkResult {
 func (bs *BenchmarkSuite) GenerateReport() string {
 	results := bs.GetResults()
 
-	report := "# 🚀 GoChain Benchmark Report\n\n"
+	report := "# 🚀 adrenochain Benchmark Report\n\n"
 	report += fmt.Sprintf("Generated: %s\n\n", time.Now().Format(time.RFC3339))
 
 	report += "## 📊 Summary\n\n"

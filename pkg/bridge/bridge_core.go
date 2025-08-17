@@ -63,7 +63,7 @@ func mustParseBigInt(s string) *big.Int {
 // getDefaultConfig returns default bridge configuration
 func getDefaultConfig() *BridgeConfig {
 	return &BridgeConfig{
-		ID:                    "gochain_bridge",
+		ID:                    "adrenochain_bridge",
 		Status:                BridgeStatusActive,
 		MinValidators:         3,
 		RequiredConfirmations: 2,
@@ -82,10 +82,10 @@ func getDefaultConfig() *BridgeConfig {
 
 // initializeDefaultAssetMappings sets up default asset mappings
 func (b *Bridge) initializeDefaultAssetMappings() {
-	// GoChain <-> Ethereum native token mapping
-	b.assetMappings["gochain_ethereum_native"] = &AssetMapping{
-		ID:               "gochain_ethereum_native",
-		SourceChain:      ChainIDGoChain,
+	// adrenochain <-> Ethereum native token mapping
+	b.assetMappings["adrenochain_ethereum_native"] = &AssetMapping{
+		ID:               "adrenochain_ethereum_native",
+		SourceChain:      ChainIDadrenochain,
 		DestinationChain: ChainIDEthereum,
 		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token
 		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token
@@ -101,11 +101,11 @@ func (b *Bridge) initializeDefaultAssetMappings() {
 		UpdatedAt:        time.Now(),
 	}
 
-	// Ethereum <-> GoChain native token mapping
-	b.assetMappings["ethereum_gochain_native"] = &AssetMapping{
-		ID:               "ethereum_gochain_native",
+	// Ethereum <-> adrenochain native token mapping
+	b.assetMappings["ethereum_adrenochain_native"] = &AssetMapping{
+		ID:               "ethereum_adrenochain_native",
 		SourceChain:      ChainIDEthereum,
-		DestinationChain: ChainIDGoChain,
+		DestinationChain: ChainIDadrenochain,
 		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token
 		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token
 		AssetType:        AssetTypeNative,
@@ -413,7 +413,7 @@ func (b *Bridge) validateChains(sourceChain, destinationChain ChainID) error {
 
 	// Validate chain IDs
 	validChains := map[ChainID]bool{
-		ChainIDGoChain:  true,
+		ChainIDadrenochain:  true,
 		ChainIDEthereum: true,
 		ChainIDPolygon:  true,
 		ChainIDArbitrum: true,

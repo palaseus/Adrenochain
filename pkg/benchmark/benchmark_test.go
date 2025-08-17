@@ -139,7 +139,7 @@ func TestBenchmarkSuite_ReportGeneration(t *testing.T) {
 	report := suite.GenerateReport()
 
 	// Verify report content
-	assert.Contains(t, report, "# 🚀 GoChain Benchmark Report")
+	assert.Contains(t, report, "# 🚀 adrenochain Benchmark Report")
 	assert.Contains(t, report, "## 📊 Summary")
 	assert.Contains(t, report, "## 🎯 Overall Performance")
 	assert.Contains(t, report, "TransactionThroughput")

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package net;
 
-option go_package = "github.com/gochain/gochain/pkg/proto/net";
+option go_package = "github.com/adrenochain/adrenochain/pkg/proto/net";
 
 // Block header information
 message BlockHeader {

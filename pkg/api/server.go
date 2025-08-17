@@ -99,7 +99,7 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
-		"service":   "gochain-api",
+		"service":   "adrenochain-api",
 	})
 }
 

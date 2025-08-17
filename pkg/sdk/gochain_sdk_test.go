@@ -58,7 +58,7 @@ func (m *MockContractEngine) Call(contract *engine.Contract, input []byte, sende
 	return []byte("success"), nil
 }
 
-func TestNewGoChainSDK(t *testing.T) {
+func TestNewadrenochainSDK(t *testing.T) {
 	config := SDKConfig{
 		NetworkID:       1,
 		RPCEndpoint:     "http://localhost:8545",
@@ -69,10 +69,10 @@ func TestNewGoChainSDK(t *testing.T) {
 		EnableMetrics:   true,
 	}
 
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	if sdk == nil {
-		t.Fatal("NewGoChainSDK returned nil")
+		t.Fatal("NewadrenochainSDK returned nil")
 	}
 
 	if sdk.Config.NetworkID != 1 {
@@ -110,7 +110,7 @@ func TestNewGoChainSDK(t *testing.T) {
 
 func TestInitializeComponents(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	// Create mock instances
 	mockEngine := &MockContractEngine{}
@@ -149,7 +149,7 @@ func TestInitializeComponents(t *testing.T) {
 
 func TestCreateToken_ERC20(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	tokenConfig := TokenCreationConfig{
@@ -200,7 +200,7 @@ func TestCreateToken_ERC20(t *testing.T) {
 
 func TestCreateToken_ERC721(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	tokenConfig := TokenCreationConfig{
@@ -242,7 +242,7 @@ func TestCreateToken_ERC721(t *testing.T) {
 
 func TestCreateToken_ERC1155(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	tokenConfig := TokenCreationConfig{
@@ -274,7 +274,7 @@ func TestCreateToken_ERC1155(t *testing.T) {
 
 func TestCreateToken_UnsupportedType(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	tokenConfig := TokenCreationConfig{
@@ -291,7 +291,7 @@ func TestCreateToken_UnsupportedType(t *testing.T) {
 
 func TestGenerateAddress(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	// Generate first address
 	addr1 := sdk.generateAddress()
@@ -331,7 +331,7 @@ func TestGenerateAddress(t *testing.T) {
 
 func TestConcurrency(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	// Test concurrent token creation
 	const numGoroutines = 10
@@ -374,7 +374,7 @@ func TestConcurrency(t *testing.T) {
 
 func TestCreateAMM_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize AMM component
 	ammInstance := &amm.AMM{}
@@ -422,7 +422,7 @@ func TestCreateAMM_Success(t *testing.T) {
 
 func TestCreateAMM_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	tokenA := createTestAddress(1)
@@ -438,7 +438,7 @@ func TestCreateAMM_NotInitialized(t *testing.T) {
 
 func TestAddLiquidity_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize AMM component
 	ammInstance := &amm.AMM{}
@@ -479,7 +479,7 @@ func TestAddLiquidity_Success(t *testing.T) {
 
 func TestAddLiquidity_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	ammAddress := createTestAddress(1)
@@ -494,7 +494,7 @@ func TestAddLiquidity_NotInitialized(t *testing.T) {
 
 func TestSwapTokens_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize AMM component
 	ammInstance := &amm.AMM{}
@@ -540,7 +540,7 @@ func TestSwapTokens_Success(t *testing.T) {
 
 func TestSwapTokens_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	ammAddress := createTestAddress(1)
@@ -560,7 +560,7 @@ func TestSwapTokens_NotInitialized(t *testing.T) {
 
 func TestCreateLendingProtocol_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize Lending component
 	lendingInstance := &lending.LendingProtocol{}
@@ -613,7 +613,7 @@ func TestCreateLendingProtocol_Success(t *testing.T) {
 
 func TestCreateLendingProtocol_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	lendingConfig := LendingProtocolConfig{
@@ -632,7 +632,7 @@ func TestCreateLendingProtocol_NotInitialized(t *testing.T) {
 
 func TestSupplyAsset_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize Lending component
 	lendingInstance := &lending.LendingProtocol{}
@@ -680,7 +680,7 @@ func TestSupplyAsset_Success(t *testing.T) {
 
 func TestSupplyAsset_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	protocolAddress := createTestAddress(1)
@@ -700,7 +700,7 @@ func TestSupplyAsset_NotInitialized(t *testing.T) {
 
 func TestCreateYieldFarm_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize Yield Farming component
 	yieldInstance := &yield.YieldFarm{}
@@ -759,7 +759,7 @@ func TestCreateYieldFarm_Success(t *testing.T) {
 
 func TestCreateYieldFarm_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	startTime := time.Now()
@@ -789,7 +789,7 @@ func TestCreateYieldFarm_NotInitialized(t *testing.T) {
 
 func TestCreateGovernance_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize Governance component
 	governanceInstance := &governance.Governance{}
@@ -845,7 +845,7 @@ func TestCreateGovernance_Success(t *testing.T) {
 
 func TestCreateGovernance_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	governanceConfig := GovernanceConfig{
@@ -868,7 +868,7 @@ func TestCreateGovernance_NotInitialized(t *testing.T) {
 
 func TestGetPrice_Success(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 	
 	// Initialize Oracle component
 	oracleInstance := &oracle.OracleAggregator{}
@@ -907,7 +907,7 @@ func TestGetPrice_Success(t *testing.T) {
 
 func TestGetPrice_NotInitialized(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 	asset := "ETH"
@@ -924,7 +924,7 @@ func TestGetPrice_NotInitialized(t *testing.T) {
 
 func TestCalculateLPTokens(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	amountA := big.NewInt(1000000000000000000) // 1 token
 	amountB := big.NewInt(2000000000000000000) // 2 tokens
@@ -940,7 +940,7 @@ func TestCalculateLPTokens(t *testing.T) {
 
 func TestCalculateSwapOutput(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	amountIn := big.NewInt(1000000000000000000) // 1 token
 
@@ -955,7 +955,7 @@ func TestCalculateSwapOutput(t *testing.T) {
 
 func TestGetCurrentTimestamp(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	result := sdk.getCurrentTimestamp()
 	
@@ -980,7 +980,7 @@ func TestSDKFullInitialization(t *testing.T) {
 		EnableMetrics:   true,
 	}
 
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	// Initialize all components
 	mockEngine := &MockContractEngine{}
@@ -1020,7 +1020,7 @@ func TestSDKFullInitialization(t *testing.T) {
 
 func TestSDKOperationsCounter(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	// Initialize components
 	mockEngine := &MockContractEngine{}
@@ -1079,7 +1079,7 @@ func TestSDKOperationsCounter(t *testing.T) {
 
 func TestSDKErrorHandling(t *testing.T) {
 	config := SDKConfig{}
-	sdk := NewGoChainSDK(config)
+	sdk := NewadrenochainSDK(config)
 
 	ctx := context.Background()
 

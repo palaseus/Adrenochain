@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println("🧪 GOCHAIN SIMPLE COMPONENT TEST")
+	fmt.Println("🧪 adrenochain SIMPLE COMPONENT TEST")
 	fmt.Println("==================================")
 	
 	// Test 1: Storage Components
@@ -146,6 +146,6 @@ func main() {
 	fmt.Println("✅ Performance monitoring active")
 	fmt.Println("✅ Memory monitoring active")
 	fmt.Println("✅ CPU monitoring active")
-	fmt.Println("\n🎉 GoChain core components are working!")
+	fmt.Println("\n🎉 adrenochain core components are working!")
 	fmt.Println("📝 Note: Consensus integration requires proper interface implementation")
 }

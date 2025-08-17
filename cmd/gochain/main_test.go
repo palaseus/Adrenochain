@@ -15,7 +15,7 @@ import (
 
 func TestRunNode(t *testing.T) {
 	// Create a temporary data directory
-	dataDir, err := ioutil.TempDir("", "gochain_test_data_")
+	dataDir, err := ioutil.TempDir("", "adrenochain_test_data_")
 	assert.NoError(t, err)
 	defer os.RemoveAll(dataDir)
 
@@ -70,7 +70,7 @@ func TestCreateWalletCmd(t *testing.T) {
 	passphrase = "test_passphrase"
 
 	// Create a temporary directory for test data
-	tempDir, err := os.MkdirTemp("", "gochain_test_wallet")
+	tempDir, err := os.MkdirTemp("", "adrenochain_test_wallet")
 	assert.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 

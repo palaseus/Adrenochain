@@ -82,7 +82,7 @@ func runBasicTests() {
 }
 
 func runCrossCollateralDemoFunc() {
-	fmt.Println("=== GoChain Cross-Collateral System Demo ===\n")
+	fmt.Println("=== adrenochain Cross-Collateral System Demo ===\n")
 
 	// Create a cross-collateral manager
 	ccm := advanced.NewCrossCollateralManager()
@@ -234,7 +234,7 @@ func showPortfolioState(ccm *advanced.CrossCollateralManager, userID, title stri
 }
 
 func showHelp() {
-	fmt.Println("🚀 GOCHAIN COMPREHENSIVE TEST RUNNER")
+	fmt.Println("🚀 adrenochain COMPREHENSIVE TEST RUNNER")
 	fmt.Println("=====================================")
 	fmt.Println()
 	fmt.Println("Usage: go run cmd/test_runner/main.go [options]")
@@ -261,5 +261,5 @@ func showHelp() {
 	fmt.Println("  go run cmd/test_runner/main.go -security")
 	fmt.Println("  go run cmd/test_runner/main.go -report")
 	fmt.Println()
-	fmt.Println("🏆 GoChain is the most advanced smart contract platform in the world!")
+	fmt.Println("🏆 adrenochain is the most advanced smart contract platform in the world!")
 }

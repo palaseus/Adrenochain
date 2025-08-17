@@ -1,6 +1,6 @@
 # Quick Start Guide 🚀
 
-Get up and running with GoChain in minutes! This guide will help you set up your development environment and start building blockchain applications.
+Get up and running with adrenochain in minutes! This guide will help you set up your development environment and start building blockchain applications.
 
 ## ⚡ **5-Minute Setup**
 
@@ -14,8 +14,8 @@ Get up and running with GoChain in minutes! This guide will help you set up your
 
 ```bash
 # Clone the repository
-git clone https://github.com/gochain/gochain.git
-cd gochain
+git clone https://github.com/adrenochain/adrenochain.git
+cd adrenochain
 
 # Install dependencies
 go mod download
@@ -47,7 +47,7 @@ go test -cover ./pkg/block/
 ## 🏗️ **Project Structure Overview**
 
 ```
-gochain/
+adrenochain/
 ├── cmd/                    # Application entry points
 ├── pkg/                   # Core packages
 │   ├── block/            # Block structure & validation [93.0% coverage]
@@ -71,7 +71,7 @@ package main
 
 import (
     "fmt"
-    "github.com/gochain/gochain/pkg/block"
+    "github.com/adrenochain/adrenochain/pkg/block"
 )
 
 func main() {
@@ -127,7 +127,7 @@ go test -fuzz=Fuzz ./pkg/wallet/
 
 ```bash
 # Build main application
-go build ./cmd/gochain
+go build ./cmd/adrenochain
 
 # Build test runner
 go build ./cmd/test_runner
@@ -230,4 +230,4 @@ You're ready to continue when:
 
 **Last Updated**: December 2024  
 **Version**: 1.0.0  
-**GoChain**: Research-grade blockchain development platform 🚀🔬💻
+**adrenochain**: Research-grade blockchain development platform 🚀🔬💻

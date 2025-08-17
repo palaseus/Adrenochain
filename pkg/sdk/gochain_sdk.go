@@ -15,8 +15,8 @@ import (
 	"github.com/palaseus/adrenochain/pkg/defi/yield"
 )
 
-// GoChainSDK provides a high-level interface for DeFi development
-type GoChainSDK struct {
+// adrenochainSDK provides a high-level interface for DeFi development
+type adrenochainSDK struct {
 	mu sync.RWMutex
 
 	// Core components
@@ -50,9 +50,9 @@ type SDKConfig struct {
 	EnableMetrics   bool
 }
 
-// NewGoChainSDK creates a new GoChain SDK instance
-func NewGoChainSDK(config SDKConfig) *GoChainSDK {
-	return &GoChainSDK{
+// NewadrenochainSDK creates a new adrenochain SDK instance
+func NewadrenochainSDK(config SDKConfig) *adrenochainSDK {
+	return &adrenochainSDK{
 		ContractEngine:   nil, // Will be initialized separately
 		AMM:              nil, // Will be initialized separately
 		Lending:          nil, // Will be initialized separately
@@ -66,7 +66,7 @@ func NewGoChainSDK(config SDKConfig) *GoChainSDK {
 }
 
 // InitializeComponents initializes all DeFi components
-func (sdk *GoChainSDK) InitializeComponents(
+func (sdk *adrenochainSDK) InitializeComponents(
 	contractEngine engine.ContractEngine,
 	ammInstance *amm.AMM,
 	lendingInstance *lending.LendingProtocol,
@@ -90,7 +90,7 @@ func (sdk *GoChainSDK) InitializeComponents(
 // ============================================================================
 
 // CreateToken creates a new token with the specified standard
-func (sdk *GoChainSDK) CreateToken(
+func (sdk *adrenochainSDK) CreateToken(
 	ctx context.Context,
 	tokenType TokenType,
 	config TokenCreationConfig,
@@ -113,7 +113,7 @@ func (sdk *GoChainSDK) CreateToken(
 }
 
 // createERC20Token creates a new ERC-20 token
-func (sdk *GoChainSDK) createERC20Token(
+func (sdk *adrenochainSDK) createERC20Token(
 	ctx context.Context,
 	config TokenCreationConfig,
 ) (*TokenResult, error) {
@@ -148,7 +148,7 @@ func (sdk *GoChainSDK) createERC20Token(
 }
 
 // createERC721Token creates a new ERC-721 token
-func (sdk *GoChainSDK) createERC721Token(
+func (sdk *adrenochainSDK) createERC721Token(
 	ctx context.Context,
 	config TokenCreationConfig,
 ) (*TokenResult, error) {
@@ -180,7 +180,7 @@ func (sdk *GoChainSDK) createERC721Token(
 }
 
 // createERC1155Token creates a new ERC-1155 token
-func (sdk *GoChainSDK) createERC1155Token(
+func (sdk *adrenochainSDK) createERC1155Token(
 	ctx context.Context,
 	config TokenCreationConfig,
 ) (*TokenResult, error) {
@@ -212,7 +212,7 @@ func (sdk *GoChainSDK) createERC1155Token(
 // ============================================================================
 
 // CreateAMM creates a new Automated Market Maker
-func (sdk *GoChainSDK) CreateAMM(
+func (sdk *adrenochainSDK) CreateAMM(
 	ctx context.Context,
 	tokenA, tokenB engine.Address,
 	fee *big.Int,
@@ -240,7 +240,7 @@ func (sdk *GoChainSDK) CreateAMM(
 }
 
 // AddLiquidity adds liquidity to an AMM pool
-func (sdk *GoChainSDK) AddLiquidity(
+func (sdk *adrenochainSDK) AddLiquidity(
 	ctx context.Context,
 	ammAddress engine.Address,
 	amountA, amountB *big.Int,
@@ -265,7 +265,7 @@ func (sdk *GoChainSDK) AddLiquidity(
 }
 
 // SwapTokens swaps tokens using an AMM
-func (sdk *GoChainSDK) SwapTokens(
+func (sdk *adrenochainSDK) SwapTokens(
 	ctx context.Context,
 	ammAddress engine.Address,
 	tokenIn engine.Address,
@@ -297,7 +297,7 @@ func (sdk *GoChainSDK) SwapTokens(
 // ============================================================================
 
 // CreateLendingProtocol creates a new lending protocol
-func (sdk *GoChainSDK) CreateLendingProtocol(
+func (sdk *adrenochainSDK) CreateLendingProtocol(
 	ctx context.Context,
 	config LendingProtocolConfig,
 ) (*LendingProtocolResult, error) {
@@ -331,7 +331,7 @@ func (sdk *GoChainSDK) CreateLendingProtocol(
 }
 
 // SupplyAsset supplies assets to the lending protocol
-func (sdk *GoChainSDK) SupplyAsset(
+func (sdk *adrenochainSDK) SupplyAsset(
 	ctx context.Context,
 	protocolAddress engine.Address,
 	asset engine.Address,
@@ -362,7 +362,7 @@ func (sdk *GoChainSDK) SupplyAsset(
 // ============================================================================
 
 // CreateYieldFarm creates a new yield farming protocol
-func (sdk *GoChainSDK) CreateYieldFarm(
+func (sdk *adrenochainSDK) CreateYieldFarm(
 	ctx context.Context,
 	config YieldFarmConfig,
 ) (*YieldFarmResult, error) {
@@ -403,7 +403,7 @@ func (sdk *GoChainSDK) CreateYieldFarm(
 // ============================================================================
 
 // CreateGovernance creates a new governance system
-func (sdk *GoChainSDK) CreateGovernance(
+func (sdk *adrenochainSDK) CreateGovernance(
 	ctx context.Context,
 	config GovernanceConfig,
 ) (*GovernanceResult, error) {
@@ -444,7 +444,7 @@ func (sdk *GoChainSDK) CreateGovernance(
 // ============================================================================
 
 // GetPrice gets the current price for an asset
-func (sdk *GoChainSDK) GetPrice(
+func (sdk *adrenochainSDK) GetPrice(
 	ctx context.Context,
 	asset string,
 ) (*PriceResult, error) {
@@ -471,7 +471,7 @@ func (sdk *GoChainSDK) GetPrice(
 // HELPER FUNCTIONS
 // ============================================================================
 
-func (sdk *GoChainSDK) generateAddress() engine.Address {
+func (sdk *adrenochainSDK) generateAddress() engine.Address {
 	// In real implementation, this would generate a proper address
 	// For now, create a unique address based on operation count
 	var addr engine.Address
@@ -480,19 +480,19 @@ func (sdk *GoChainSDK) generateAddress() engine.Address {
 	return addr
 }
 
-func (sdk *GoChainSDK) calculateLPTokens(amountA, amountB *big.Int) *big.Int {
+func (sdk *adrenochainSDK) calculateLPTokens(amountA, amountB *big.Int) *big.Int {
 	// Simplified LP token calculation
 	// In real implementation, this would use the AMM formula
 	return new(big.Int).Add(amountA, amountB)
 }
 
-func (sdk *GoChainSDK) calculateSwapOutput(amountIn *big.Int) *big.Int {
+func (sdk *adrenochainSDK) calculateSwapOutput(amountIn *big.Int) *big.Int {
 	// Simplified swap calculation
 	// In real implementation, this would use the AMM formula
 	return new(big.Int).Div(amountIn, big.NewInt(1000)) // 0.1% fee
 }
 
-func (sdk *GoChainSDK) getCurrentTimestamp() int64 {
+func (sdk *adrenochainSDK) getCurrentTimestamp() int64 {
 	// In real implementation, this would get the current block timestamp
 	return 0
 }

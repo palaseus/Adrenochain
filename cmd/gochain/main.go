@@ -43,9 +43,9 @@ var (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "gochain",
-		Short: "GoChain - A modular blockchain implementation in Go",
-		Long: `GoChain is a modular blockchain implementation written in Go.
+		Use:   "adrenochain",
+		Short: "adrenochain - A modular blockchain implementation in Go",
+		Long: `adrenochain is a modular blockchain implementation written in Go.
 It features proof-of-work consensus, P2P networking, transaction mempool,
 and wallet functionality.`,
 		RunE: runNode,
@@ -76,7 +76,7 @@ func runNode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	fmt.Println("Starting GoChain node...")
+	fmt.Println("Starting adrenochain node...")
 	fmt.Printf("Network: %s\n", network)
 	fmt.Printf("Port: %d\n", port)
 	fmt.Printf("Mining: %t\n", mining)
@@ -532,7 +532,7 @@ func runNode(cmd *cobra.Command, args []string) error {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
 
-	logger.Info("Shutting down GoChain node...")
+	logger.Info("Shutting down adrenochain node...")
 
 	// Cancel context to stop all goroutines
 	cancel()
@@ -564,7 +564,7 @@ func runNode(cmd *cobra.Command, args []string) error {
 		logger.Info("API server stopped")
 	}
 
-	logger.Info("GoChain node stopped")
+	logger.Info("adrenochain node stopped")
 	return nil
 }
 
@@ -808,7 +808,7 @@ func setupLogger() *logger.Logger {
 
 	logConfig := &logger.Config{
 		Level:      logLevel,
-		Prefix:     "gochain",
+		Prefix:     "adrenochain",
 		UseJSON:    useJSON,
 		LogFile:    logFile,
 		MaxSize:    maxSize,

@@ -1,10 +1,10 @@
-# GoChain Architecture Overview 🏗️
+# adrenochain Architecture Overview 🏗️
 
-This document provides a comprehensive overview of the GoChain architecture, including system design, component interactions, and architectural decisions.
+This document provides a comprehensive overview of the adrenochain architecture, including system design, component interactions, and architectural decisions.
 
 ## 🎯 **System Overview**
 
-GoChain is a modular, research-grade blockchain platform designed with the following architectural principles:
+adrenochain is a modular, research-grade blockchain platform designed with the following architectural principles:
 
 - **Modularity**: Loosely coupled components with well-defined interfaces
 - **Extensibility**: Plugin-based architecture for easy feature addition
@@ -552,11 +552,11 @@ type ConsensusStrategy interface {
 ### **1. Environment Variables**
 
 ```bash
-GOCHAIN_DATA_DIR=/data/gochain
-GOCHAIN_NETWORK=mainnet
-GOCHAIN_RPC_PORT=8545
-GOCHAIN_P2P_PORT=30303
-GOCHAIN_LOG_LEVEL=info
+adrenochain_DATA_DIR=/data/adrenochain
+adrenochain_NETWORK=mainnet
+adrenochain_RPC_PORT=8545
+adrenochain_P2P_PORT=30303
+adrenochain_LOG_LEVEL=info
 ```
 
 ### **2. Configuration Files**
@@ -575,7 +575,7 @@ consensus:
 
 storage:
   engine: "leveldb"
-  data_dir: "/data/gochain"
+  data_dir: "/data/adrenochain"
   compression: true
 ```
 
@@ -621,7 +621,7 @@ type Config struct {
 
 ```
 ┌─────────────────────────────────────┐
-│            GoChain Node             │
+│            adrenochain Node             │
 ├─────────────────────────────────────┤
 │  API Server  │  P2P Network        │
 │  [Port 8545] │  [Port 30303]       │
@@ -684,4 +684,4 @@ type Config struct {
 
 **Last Updated**: December 2024  
 **Version**: 1.0.0  
-**GoChain**: Research-grade blockchain architecture for academic exploration 🏗️🔬🚀
+**adrenochain**: Research-grade blockchain architecture for academic exploration 🏗️🔬🚀

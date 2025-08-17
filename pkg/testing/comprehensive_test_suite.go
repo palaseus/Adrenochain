@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// ComprehensiveTestSuite provides a complete test suite for GoChain
+// ComprehensiveTestSuite provides a complete test suite for adrenochain
 type ComprehensiveTestSuite struct {
 	framework *UnitTestFramework
 	suites    map[string]*TestSuite

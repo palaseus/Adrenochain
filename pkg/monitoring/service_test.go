@@ -487,9 +487,9 @@ func TestPrometheusEndpointResponse(t *testing.T) {
 
 	// Verify content contains Prometheus format
 	body := w.Body.String()
-	assert.Contains(t, body, "# HELP gochain_block_height")
-	assert.Contains(t, body, "# TYPE gochain_block_height gauge")
-	assert.Contains(t, body, "gochain_block_height 1")
+	assert.Contains(t, body, "# HELP adrenochain_block_height")
+	assert.Contains(t, body, "# TYPE adrenochain_block_height gauge")
+	assert.Contains(t, body, "adrenochain_block_height 1")
 }
 
 func TestServiceLogging(t *testing.T) {

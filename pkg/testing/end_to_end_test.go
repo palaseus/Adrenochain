@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// EndToEndTestSuite provides comprehensive end-to-end testing of the GoChain DeFi ecosystem
+// EndToEndTestSuite provides comprehensive end-to-end testing of the adrenochain DeFi ecosystem
 type EndToEndTestSuite struct {
 	ctx context.Context
 

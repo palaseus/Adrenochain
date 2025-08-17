@@ -199,8 +199,8 @@ func TestServer_HealthHandler(t *testing.T) {
 		t.Errorf("Expected status 'healthy', got %v", response["status"])
 	}
 
-	if response["service"] != "gochain-api" {
-		t.Errorf("Expected service 'gochain-api', got %v", response["service"])
+	if response["service"] != "adrenochain-api" {
+		t.Errorf("Expected service 'adrenochain-api', got %v", response["service"])
 	}
 
 	if _, exists := response["timestamp"]; !exists {

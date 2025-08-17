@@ -86,7 +86,7 @@ func (h *WebHandler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Title":     "GoChain Explorer",
+		"Title":     "adrenochain Explorer",
 		"Dashboard": dashboard,
 	}
 
@@ -114,7 +114,7 @@ func (h *WebHandler) BlockListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Title":      "Blocks - GoChain Explorer",
+		"Title":      "Blocks - adrenochain Explorer",
 		"Blocks":     blocks,
 		"Pagination": h.createPagination(limit, offset, int(stats.Blockchain.TotalBlocks)),
 	}
@@ -142,7 +142,7 @@ func (h *WebHandler) BlockDetailHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	data := map[string]interface{}{
-		"Title": "Block Details - GoChain Explorer",
+		"Title": "Block Details - adrenochain Explorer",
 		"Block": blockDetails,
 	}
 
@@ -170,7 +170,7 @@ func (h *WebHandler) TransactionListHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	data := map[string]interface{}{
-		"Title":        "Transactions - GoChain Explorer",
+		"Title":        "Transactions - adrenochain Explorer",
 		"Transactions": transactions,
 		"Pagination":   h.createPagination(limit, offset, int(stats.Blockchain.TotalTransactions)),
 	}
@@ -198,7 +198,7 @@ func (h *WebHandler) TransactionDetailHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	data := map[string]interface{}{
-		"Title":       "Transaction Details - GoChain Explorer",
+		"Title":       "Transaction Details - adrenochain Explorer",
 		"Transaction": txDetails,
 	}
 
@@ -224,7 +224,7 @@ func (h *WebHandler) AddressDetailHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	data := map[string]interface{}{
-		"Title":   "Address Details - GoChain Explorer",
+		"Title":   "Address Details - adrenochain Explorer",
 		"Address": addressDetails,
 	}
 
@@ -244,7 +244,7 @@ func (h *WebHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	if query == "" {
 		// Show search form
 		data := map[string]interface{}{
-			"Title": "Search - GoChain Explorer",
+			"Title": "Search - adrenochain Explorer",
 		}
 		h.templates.Render(w, "search.html", data)
 		return
@@ -264,7 +264,7 @@ func (h *WebHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Title":        "Search Results - GoChain Explorer",
+		"Title":        "Search Results - adrenochain Explorer",
 		"Query":        query,
 		"SearchResult": searchResult,
 	}
@@ -288,7 +288,7 @@ func (h *WebHandler) StaticFileHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *WebHandler) renderError(w http.ResponseWriter, message string, err error) {
 	data := map[string]interface{}{
-		"Title":   "Error - GoChain Explorer",
+		"Title":   "Error - adrenochain Explorer",
 		"Message": message,
 		"Error":   err,
 	}

@@ -1,4 +1,4 @@
-# GoChain Production Configuration
+# adrenochain Production Configuration
 # This file contains production-ready settings for security and performance
 
 # Security Configuration
@@ -36,7 +36,7 @@ network:
 
 # Blockchain Configuration
 blockchain:
-  data_dir: "/var/lib/gochain/data"
+  data_dir: "/var/lib/adrenochain/data"
   genesis_block: false
   difficulty: 1000000
   block_time: 15s
@@ -71,7 +71,7 @@ logging:
   level: "info"
   format: "json"
   output: "file"
-  file_path: "/var/log/gochain/app.log"
+  file_path: "/var/log/adrenochain/app.log"
   max_size: "100MB"
   max_age: 30
   max_backups: 10

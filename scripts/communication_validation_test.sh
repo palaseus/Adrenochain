@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Communication Validation Test Script
-# This script validates actual communication between GoChain nodes
+# This script validates actual communication between adrenochain nodes
 
 set -e
 
@@ -90,7 +90,7 @@ check_prerequisites() {
     
     # Check if we're in the right directory
     if [ ! -f "$PROJECT_ROOT/go.mod" ]; then
-        print_error "go.mod not found. Please run this script from the GoChain project root."
+        print_error "go.mod not found. Please run this script from the adrenochain project root."
         exit 1
     fi
     
@@ -106,11 +106,11 @@ init_test_environment() {
     mkdir -p "$LOG_DIR"
     mkdir -p "$NODE_DATA_DIR"
     
-    # Build GoChain binary
-    print_status "Building GoChain binary..."
+    # Build adrenochain binary
+    print_status "Building adrenochain binary..."
     cd "$PROJECT_ROOT"
-    if ! go build -o gochain ./cmd/gochain; then
-        print_error "Failed to build GoChain binary"
+    if ! go build -o adrenochain ./cmd/adrenochain; then
+        print_error "Failed to build adrenochain binary"
         exit 1
     fi
     
@@ -129,7 +129,7 @@ create_node_config() {
     
     # Create node configuration
     cat > "$data_dir/config.yaml" << EOF
-# GoChain Node Configuration for Communication Testing
+# adrenochain Node Configuration for Communication Testing
 network:
   listen_port: $rpc_port
   p2p_port: $p2p_port
@@ -209,7 +209,7 @@ start_test_nodes() {
         print_status "Starting node $i on RPC port $rpc_port, P2P port $p2p_port"
         
         # Start node in background
-        ./gochain --config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
+        ./adrenochain --config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
         local node_pid=$!
         NODE_PIDS+=("$node_pid")
         

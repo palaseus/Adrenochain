@@ -21,10 +21,10 @@ import (
 
 const (
 	// Protocol IDs for different sync operations
-	SyncProtocolID       = "/gochain/sync/1.0.0"
-	HeaderSyncProtocolID = "/gochain/headers/1.0.0"
-	BlockSyncProtocolID  = "/gochain/blocks/1.0.0"
-	StateSyncProtocolID  = "/gochain/state/1.0.0"
+	SyncProtocolID       = "/adrenochain/sync/1.0.0"
+	HeaderSyncProtocolID = "/adrenochain/headers/1.0.0"
+	BlockSyncProtocolID  = "/adrenochain/blocks/1.0.0"
+	StateSyncProtocolID  = "/adrenochain/state/1.0.0"
 
 	// Sync constants
 	MaxHeadersPerRequest = 2000

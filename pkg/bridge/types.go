@@ -20,7 +20,7 @@ const (
 type ChainID string
 
 const (
-	ChainIDGoChain  ChainID = "gochain"
+	ChainIDadrenochain  ChainID = "adrenochain"
 	ChainIDEthereum ChainID = "ethereum"
 	ChainIDPolygon  ChainID = "polygon"
 	ChainIDArbitrum ChainID = "arbitrum"

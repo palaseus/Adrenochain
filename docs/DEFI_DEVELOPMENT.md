@@ -1,10 +1,10 @@
 # DeFi Protocol Development Guide 🏦
 
-This comprehensive guide covers decentralized finance (DeFi) development on GoChain, including protocol design, token standards, and advanced DeFi features.
+This comprehensive guide covers decentralized finance (DeFi) development on adrenochain, including protocol design, token standards, and advanced DeFi features.
 
 ## 🎯 **Overview**
 
-GoChain provides a complete DeFi development platform with:
+adrenochain provides a complete DeFi development platform with:
 
 - **Token Standards**: ERC-20, ERC-721, ERC-1155 implementations
 - **AMM Protocols**: Automated market maker with liquidity pools
@@ -584,7 +584,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract GoChainToken is ERC20, Ownable, Pausable, ReentrancyGuard {
+contract adrenochainToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     // Token metadata
     string public constant VERSION = "1.0.0";
     uint8 public constant DECIMALS = 18;
@@ -683,8 +683,8 @@ import (
     "testing"
     "math/big"
     
-    "github.com/gochain/gochain/pkg/contracts/evm"
-    "github.com/gochain/gochain/pkg/defi/tokens"
+    "github.com/adrenochain/adrenochain/pkg/contracts/evm"
+    "github.com/adrenochain/adrenochain/pkg/defi/tokens"
     "github.com/stretchr/testify/assert"
 )
 
@@ -751,7 +751,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract GoChainNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
+contract adrenochainNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     
     Counters.Counter private _tokenIds;
@@ -942,7 +942,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract GoChainMultiToken is ERC1155, Ownable, Pausable {
+contract adrenochainMultiToken is ERC1155, Ownable, Pausable {
     using Strings for uint256;
     
     // Token metadata
@@ -1134,7 +1134,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract GoChainAMM is ReentrancyGuard, Ownable {
+contract adrenochainAMM is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     
     // Pool structure
@@ -1363,7 +1363,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-contract GoChainOracle is Ownable, Pausable {
+contract adrenochainOracle is Ownable, Pausable {
     // Price data structure
     struct PriceData {
         uint256 price;
@@ -1483,9 +1483,9 @@ import (
     "testing"
     "math/big"
     
-    "github.com/gochain/gochain/pkg/contracts/evm"
-    "github.com/gochain/gochain/pkg/defi/amm"
-    "github.com/gochain/gochain/pkg/defi/tokens"
+    "github.com/adrenochain/adrenochain/pkg/contracts/evm"
+    "github.com/adrenochain/adrenochain/pkg/defi/amm"
+    "github.com/adrenochain/adrenochain/pkg/defi/tokens"
     "github.com/stretchr/testify/assert"
 )
 
@@ -1620,4 +1620,4 @@ contract GasOptimizedAMM {
 
 **Last Updated**: December 2024  
 **Version**: 1.0.0  
-**GoChain**: Advanced DeFi development platform 🏦🚀🔬
+**adrenochain**: Advanced DeFi development platform 🏦🚀🔬

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Enhanced GoChain Test Suite
+# Enhanced adrenochain Test Suite
 # This script provides comprehensive testing including multi-node testing
 
 set -e
@@ -95,7 +95,7 @@ check_prerequisites() {
     
     # Check if we're in the right directory
     if [ ! -f "$PROJECT_ROOT/go.mod" ]; then
-        print_error "go.mod not found. Please run this script from the GoChain project root."
+        print_error "go.mod not found. Please run this script from the adrenochain project root."
         exit 1
     fi
     
@@ -121,11 +121,11 @@ init_test_environment() {
     mkdir -p "$LOG_DIR"
     mkdir -p "$NODE_DATA_DIR"
     
-    # Build GoChain binary
-    print_status "Building GoChain binary..."
+    # Build adrenochain binary
+    print_status "Building adrenochain binary..."
     cd "$PROJECT_ROOT"
-    if ! go build -o gochain ./cmd/gochain; then
-        print_error "Failed to build GoChain binary"
+    if ! go build -o adrenochain ./cmd/adrenochain; then
+        print_error "Failed to build adrenochain binary"
         exit 1
     fi
     
@@ -187,7 +187,7 @@ EOF
         print_status "Starting node $i on RPC port $rpc_port, P2P port $p2p_port"
         
         # Start node in background
-        ./gochain -config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
+        ./adrenochain -config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
         local node_pid=$!
         NODE_PIDS+=("$node_pid")
         
@@ -508,7 +508,7 @@ generate_test_summary() {
     local summary_file="$TEST_RESULTS_DIR/enhanced_test_summary.md"
     
     cat > "$summary_file" << EOF
-# Enhanced GoChain Test Suite Results
+# Enhanced adrenochain Test Suite Results
 
 ## Test Execution Summary
 - **Execution Time**: $(date)
@@ -552,7 +552,7 @@ EOF
 main() {
     echo
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                🚀 Enhanced GoChain Test Suite 🚀            ║"
+    echo "║                🚀 Enhanced adrenochain Test Suite 🚀            ║"
     echo "║                                                              ║"
     echo "║  Multi-node testing with synchronization and transactions   ║"
     echo "║  Comprehensive coverage and performance validation          ║"

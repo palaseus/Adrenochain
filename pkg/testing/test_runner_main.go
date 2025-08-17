@@ -10,7 +10,7 @@ import (
 
 // TestRunnerMain provides the main entry point for running all tests
 func TestRunnerMain() {
-	fmt.Println("🚀 GOCHAIN COMPREHENSIVE TEST SUITE")
+	fmt.Println("🚀 adrenochain COMPREHENSIVE TEST SUITE")
 	fmt.Println("=====================================")
 	
 	// Create comprehensive test suite
@@ -91,7 +91,7 @@ func TestRunnerMain() {
 	fmt.Println("==================")
 	if report.SuccessRate >= 95.0 && report.Coverage >= 90.0 {
 		fmt.Println("🎉 EXCELLENT! All tests passed with high coverage!")
-		fmt.Println("✅ GoChain is production-ready!")
+		fmt.Println("✅ adrenochain is production-ready!")
 		os.Exit(0)
 	} else if report.SuccessRate >= 90.0 && report.Coverage >= 80.0 {
 		fmt.Println("👍 GOOD! Tests passed with acceptable coverage.")
@@ -248,7 +248,7 @@ func GenerateTestReport() {
 	stats := testSuite.GetTestStatistics()
 	coverageReport := testSuite.GetCoverageReport()
 	
-	fmt.Println("\n📊 GOCHAIN TEST REPORT")
+	fmt.Println("\n📊 adrenochain TEST REPORT")
 	fmt.Println("=======================")
 	fmt.Printf("📅 Generated: %v\n", time.Now())
 	fmt.Printf("🔄 Last Run: %v\n", stats.LastRun)
@@ -279,7 +279,7 @@ func GenerateTestReport() {
 	fmt.Println("\n🏆 REPORT SUMMARY")
 	fmt.Println("==================")
 	if stats.Coverage >= 90.0 {
-		fmt.Println("🎉 EXCELLENT COVERAGE! GoChain is production-ready!")
+		fmt.Println("🎉 EXCELLENT COVERAGE! adrenochain is production-ready!")
 	} else if stats.Coverage >= 80.0 {
 		fmt.Println("👍 GOOD COVERAGE! Minor improvements recommended.")
 	} else {

@@ -1,8 +1,8 @@
-# GoChain API Documentation
+# adrenochain API Documentation
 
 ## Overview
 
-GoChain provides a comprehensive API for blockchain operations, DeFi protocols, cross-chain bridging, and governance. This document covers all available endpoints and their usage.
+adrenochain provides a comprehensive API for blockchain operations, DeFi protocols, cross-chain bridging, and governance. This document covers all available endpoints and their usage.
 
 ## Table of Contents
 
@@ -572,7 +572,7 @@ POST /bridge/validators
 ```json
 {
   "id": "validator_123",
-  "chain_id": "gochain",
+  "chain_id": "adrenochain",
   "stake_amount": "1000000000000000000",
   "public_key": "0x..."
 }
@@ -610,7 +610,7 @@ POST /bridge/transfers
 **Request Body:**
 ```json
 {
-  "source_chain": "gochain",
+  "source_chain": "adrenochain",
   "destination_chain": "ethereum",
   "source_address": "0x...",
   "destination_address": "0x...",
@@ -635,7 +635,7 @@ POST /bridge/transfers/batch
 {
   "transfers": [
     {
-      "source_chain": "gochain",
+      "source_chain": "adrenochain",
       "destination_chain": "ethereum",
       "source_address": "0x...",
       "destination_address": "0x...",
@@ -1029,32 +1029,32 @@ X-API-Key: <api_key>
 
 ### Go SDK
 ```go
-import "github.com/gochain/gochain/pkg/sdk"
+import "github.com/adrenochain/adrenochain/pkg/sdk"
 
 client := sdk.NewClient("http://localhost:8080")
 ```
 
 ### JavaScript SDK
 ```javascript
-import { GoChainClient } from '@gochain/sdk'
+import { adrenochainClient } from '@adrenochain/sdk'
 
-const client = new GoChainClient('http://localhost:8080')
+const client = new adrenochainClient('http://localhost:8080')
 ```
 
 ## Testing
 
 ### Testnet Endpoints
-- **Testnet API**: `https://testnet-api.gochain.io`
-- **Testnet WebSocket**: `wss://testnet-ws.gochain.io`
+- **Testnet API**: `https://testnet-api.adrenochain.io`
+- **Testnet WebSocket**: `wss://testnet-ws.adrenochain.io`
 
 ### Sandbox Environment
-- **Sandbox API**: `https://sandbox-api.gochain.io`
-- **Sandbox WebSocket**: `wss://sandbox-ws.gochain.io`
+- **Sandbox API**: `https://sandbox-api.adrenochain.io`
+- **Sandbox WebSocket**: `wss://sandbox-ws.adrenochain.io`
 
 ## Support
 
 For API support and questions:
-- **Documentation**: [docs.gochain.io](https://docs.gochain.io)
-- **GitHub Issues**: [github.com/gochain/gochain/issues](https://github.com/gochain/gochain/issues)
-- **Discord**: [discord.gg/gochain](https://discord.gg/gochain)
-- **Email**: api-support@gochain.io 
+- **Documentation**: [docs.adrenochain.io](https://docs.adrenochain.io)
+- **GitHub Issues**: [github.com/adrenochain/adrenochain/issues](https://github.com/adrenochain/adrenochain/issues)
+- **Discord**: [discord.gg/adrenochain](https://discord.gg/adrenochain)
+- **Email**: api-support@adrenochain.io 

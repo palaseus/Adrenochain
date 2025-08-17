@@ -10,7 +10,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/governance"
 )
 
-// PerformanceBenchmarks provides comprehensive benchmarking for all GoChain components
+// PerformanceBenchmarks provides comprehensive benchmarking for all adrenochain components
 type PerformanceBenchmarks struct {
 	results map[string]*BenchmarkResult
 }
@@ -38,7 +38,7 @@ func NewPerformanceBenchmarks() *PerformanceBenchmarks {
 
 // RunAllBenchmarks executes comprehensive performance tests across all components
 func (pb *PerformanceBenchmarks) RunAllBenchmarks() map[string]*BenchmarkResult {
-	fmt.Println("🚀 Starting GoChain Performance Benchmarks...")
+	fmt.Println("🚀 Starting adrenochain Performance Benchmarks...")
 
 	// Exchange Layer Benchmarks
 	pb.benchmarkOrderBook()
@@ -326,7 +326,7 @@ func (pb *PerformanceBenchmarks) GetResults() map[string]*BenchmarkResult {
 
 // PrintResults prints benchmark results in a formatted way
 func (pb *PerformanceBenchmarks) PrintResults() {
-	fmt.Println("\n📊 GoChain Performance Benchmark Results")
+	fmt.Println("\n📊 adrenochain Performance Benchmark Results")
 	fmt.Println("==========================================")
 	
 	for _, result := range pb.results {

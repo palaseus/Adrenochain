@@ -1,7 +1,7 @@
-// GoChain Explorer JavaScript
+// adrenochain Explorer JavaScript
 
 // Main application class
-class GoChainExplorer {
+class adrenochainExplorer {
     constructor() {
         this.init();
     }
@@ -809,10 +809,10 @@ class GoChainExplorer {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.explorerApp = new GoChainExplorer();
+    window.explorerApp = new adrenochainExplorer();
 });
 
 // Export for potential use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GoChainExplorer;
+    module.exports = adrenochainExplorer;
 }

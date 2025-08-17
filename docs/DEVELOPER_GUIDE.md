@@ -1,8 +1,8 @@
-# GoChain Developer Guide
+# adrenochain Developer Guide
 
 ## Overview
 
-Welcome to the GoChain Developer Guide! This comprehensive guide will help you understand, set up, and develop on the GoChain platform. GoChain is a high-performance blockchain platform designed for DeFi applications, cross-chain interoperability, and enterprise solutions.
+Welcome to the adrenochain Developer Guide! This comprehensive guide will help you understand, set up, and develop on the adrenochain platform. adrenochain is a high-performance blockchain platform designed for DeFi applications, cross-chain interoperability, and enterprise solutions.
 
 ## Table of Contents
 
@@ -32,8 +32,8 @@ Welcome to the GoChain Developer Guide! This comprehensive guide will help you u
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/gochain/gochain.git
-   cd gochain
+   git clone https://github.com/adrenochain/adrenochain.git
+   cd adrenochain
    ```
 
 2. **Install Dependencies**
@@ -116,10 +116,10 @@ Welcome to the GoChain Developer Guide! This comprehensive guide will help you u
 
 1. **Environment Variables**
    ```bash
-   export GOCHAIN_ENV=development
-   export GOCHAIN_PORT=8080
-   export GOCHAIN_DB_PATH=./data
-   export GOCHAIN_LOG_LEVEL=debug
+   export adrenochain_ENV=development
+   export adrenochain_PORT=8080
+   export adrenochain_DB_PATH=./data
+   export adrenochain_LOG_LEVEL=debug
    ```
 
 2. **Database Setup**
@@ -128,9 +128,9 @@ Welcome to the GoChain Developer Guide! This comprehensive guide will help you u
    mkdir -p data/chainstate
    
    # PostgreSQL (optional)
-   docker run -d --name gochain-postgres \
-     -e POSTGRES_PASSWORD=gochain \
-     -e POSTGRES_DB=gochain \
+   docker run -d --name adrenochain-postgres \
+     -e POSTGRES_PASSWORD=adrenochain \
+     -e POSTGRES_DB=adrenochain \
      -p 5432:5432 postgres:15
    ```
 
@@ -240,7 +240,7 @@ type StateDB interface {
 
 ### Consensus Mechanism
 
-GoChain uses a hybrid consensus mechanism combining Proof of Stake (PoS) and Proof of Authority (PoA):
+adrenochain uses a hybrid consensus mechanism combining Proof of Stake (PoS) and Proof of Authority (PoA):
 
 ```go
 type ConsensusEngine interface {
@@ -262,8 +262,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract GoChainToken is ERC20 {
-    constructor() ERC20("GoChain Token", "GOCH") {
+contract adrenochainToken is ERC20 {
+    constructor() ERC20("adrenochain Token", "GOCH") {
         _mint(msg.sender, 1000000 * 10**decimals());
     }
 }
@@ -422,7 +422,7 @@ err := bridge.RemoveValidator(validatorID)
 ```go
 // Create asset mapping
 mapping := &bridge.AssetMapping{
-    SourceChain:      bridge.ChainIDGoChain,
+    SourceChain:      bridge.ChainIDadrenochain,
     DestinationChain: bridge.ChainIDEthereum,
     SourceAsset:      "0x...",
     DestinationAsset: "0x...",
@@ -583,13 +583,13 @@ server:
   host: "0.0.0.0"
   tls:
     enabled: true
-    cert_file: "/etc/ssl/certs/gochain.crt"
-    key_file: "/etc/ssl/private/gochain.key"
+    cert_file: "/etc/ssl/certs/adrenochain.crt"
+    key_file: "/etc/ssl/private/adrenochain.key"
 
 blockchain:
   network_id: 1
   genesis_file: "config/mainnet-genesis.json"
-  data_dir: "/var/lib/gochain"
+  data_dir: "/var/lib/adrenochain"
 
 exchange:
   enabled: true
@@ -801,7 +801,7 @@ CMD ["./main"]
    sudo systemctl status postgresql
    
    # Check connection
-   psql -h localhost -U gochain -d gochain
+   psql -h localhost -U adrenochain -d adrenochain
    
    # Check logs
    tail -f /var/log/postgresql/postgresql-15-main.log
@@ -863,7 +863,7 @@ CMD ["./main"]
 
 ## Conclusion
 
-This developer guide provides a comprehensive overview of developing on the GoChain platform. For more detailed information, refer to the specific component documentation and API references.
+This developer guide provides a comprehensive overview of developing on the adrenochain platform. For more detailed information, refer to the specific component documentation and API references.
 
 ### Next Steps
 
@@ -874,9 +874,9 @@ This developer guide provides a comprehensive overview of developing on the GoCh
 
 ### Resources
 
-- **Documentation**: [docs.gochain.io](https://docs.gochain.io)
-- **GitHub**: [github.com/gochain/gochain](https://github.com/gochain/gochain)
-- **Discord**: [discord.gg/gochain](https://discord.gg/gochain)
-- **Blog**: [blog.gochain.io](https://blog.gochain.io)
+- **Documentation**: [docs.adrenochain.io](https://docs.adrenochain.io)
+- **GitHub**: [github.com/adrenochain/adrenochain](https://github.com/adrenochain/adrenochain)
+- **Discord**: [discord.gg/adrenochain](https://discord.gg/adrenochain)
+- **Blog**: [blog.adrenochain.io](https://blog.adrenochain.io)
 
-Happy coding on GoChain! 🚀
+Happy coding on adrenochain! 🚀

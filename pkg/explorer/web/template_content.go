@@ -15,7 +15,7 @@ const baseTemplate = `<!DOCTYPE html>
     <header class="header">
         <nav class="nav">
             <div class="nav-brand">
-                <a href="/" class="brand-link">GoChain Explorer</a>
+                <a href="/" class="brand-link">adrenochain Explorer</a>
             </div>
             <div class="nav-menu">
                 <a href="/" class="nav-link">Home</a>
@@ -38,7 +38,7 @@ const baseTemplate = `<!DOCTYPE html>
 
     <footer class="footer">
         <div class="footer-content">
-            <p>&copy; 2024 GoChain Explorer. Built with Go.</p>
+            <p>&copy; 2024 adrenochain Explorer. Built with Go.</p>
         </div>
     </footer>
 
@@ -53,8 +53,8 @@ const baseTemplate = `<!DOCTYPE html>
 const homeTemplate = `{{define "content"}}
 <div class="dashboard">
     <div class="dashboard-header">
-        <h1>GoChain Blockchain Explorer</h1>
-        <p>Explore the GoChain blockchain in real-time</p>
+        <h1>adrenochain Blockchain Explorer</h1>
+        <p>Explore the adrenochain blockchain in real-time</p>
     </div>
 
     {{if .Dashboard}}
@@ -133,7 +133,7 @@ const blocksTemplate = `{{define "content"}}
 <div class="blocks-page">
     <div class="page-header">
         <h1>Blocks</h1>
-        <p>Browse all blocks in the GoChain blockchain</p>
+        <p>Browse all blocks in the adrenochain blockchain</p>
     </div>
 
     {{if .Blocks}}
@@ -313,7 +313,7 @@ const transactionsTemplate = `{{define "content"}}
 <div class="transactions-page">
     <div class="page-header">
         <h1>Transactions</h1>
-        <p>Browse all transactions in the GoChain blockchain</p>
+        <p>Browse all transactions in the adrenochain blockchain</p>
     </div>
 
     {{if .Transactions}}

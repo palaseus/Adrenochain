@@ -137,7 +137,7 @@ func (ith *IntegrationTestHelpers) SetupBridgeEnvironment() (*BridgeTestEnvironm
 	for _, validator := range validators {
 		_, err := bridgeInstance.GetValidatorManager().AddValidator(
 			validator.ID,
-			bridge.ChainIDGoChain,
+			bridge.ChainIDadrenochain,
 			validator.StakeAmount,
 			nil, // Public key would be set in real implementation
 		)
@@ -282,7 +282,7 @@ func (ith *IntegrationTestHelpers) SimulateBridgeActivity(env *BridgeTestEnviron
 			// Simulate cross-chain transaction
 			_ = &bridge.CrossChainTransaction{
 				ID:                 fmt.Sprintf("test_tx_%d", txCount),
-				SourceChain:        bridge.ChainIDGoChain,
+				SourceChain:        bridge.ChainIDadrenochain,
 				DestinationChain:   bridge.ChainIDEthereum,
 				SourceAddress:      "0x1234567890abcdef",
 				DestinationAddress: "0xabcdef1234567890",
@@ -379,7 +379,7 @@ type GovernanceTestEnvironment struct {
 
 // RunIntegrationTests runs comprehensive integration tests
 func (ith *IntegrationTestHelpers) RunIntegrationTests() error {
-	fmt.Println("🧪 Starting GoChain Integration Tests...")
+	fmt.Println("🧪 Starting adrenochain Integration Tests...")
 
 	// Setup environments
 	tradingEnv, err := ith.SetupTradingEnvironment()

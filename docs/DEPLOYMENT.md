@@ -1,8 +1,8 @@
-# GoChain Production Deployment Guide
+# adrenochain Production Deployment Guide
 
 ## 🚀 **Overview**
 
-This guide provides comprehensive instructions for deploying GoChain in production environments. It covers security hardening, monitoring, scaling, and maintenance procedures.
+This guide provides comprehensive instructions for deploying adrenochain in production environments. It covers security hardening, monitoring, scaling, and maintenance procedures.
 
 ## 📋 **Prerequisites**
 
@@ -77,16 +77,16 @@ crypto:
 make build-prod
 
 # Create systemd service
-sudo tee /etc/systemd/system/gochain.service << EOF
+sudo tee /etc/systemd/system/adrenochain.service << EOF
 [Unit]
-Description=GoChain Node
+Description=adrenochain Node
 After=network.target
 
 [Service]
 Type=simple
-User=gochain
-WorkingDirectory=/opt/gochain
-ExecStart=/opt/gochain/gochain
+User=adrenochain
+WorkingDirectory=/opt/adrenochain
+ExecStart=/opt/adrenochain/adrenochain
 Restart=always
 RestartSec=10
 Environment=GOMAXPROCS=8
@@ -98,8 +98,8 @@ EOF
 
 # Start service
 sudo systemctl daemon-reload
-sudo systemctl enable gochain
-sudo systemctl start gochain
+sudo systemctl enable adrenochain
+sudo systemctl start adrenochain
 ```
 
 ### **Method 2: Docker Deployment**
@@ -107,48 +107,48 @@ sudo systemctl start gochain
 # docker-compose.yml
 version: '3.8'
 services:
-  gochain:
-    image: gochain/gochain:latest
-    container_name: gochain-node
+  adrenochain:
+    image: adrenochain/adrenochain:latest
+    container_name: adrenochain-node
     restart: unless-stopped
     ports:
       - "8545:8545"
       - "30303:30303"
     volumes:
-      - ./data:/opt/gochain/data
-      - ./config:/opt/gochain/config
-      - ./logs:/opt/gochain/logs
+      - ./data:/opt/adrenochain/data
+      - ./config:/opt/adrenochain/config
+      - ./logs:/opt/adrenochain/logs
     environment:
       - GOMAXPROCS=8
       - GOGC=100
     networks:
-      - gochain-network
+      - adrenochain-network
 
   postgres:
     image: postgres:13
-    container_name: gochain-db
+    container_name: adrenochain-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: gochain
-      POSTGRES_USER: gochain
+      POSTGRES_DB: adrenochain
+      POSTGRES_USER: adrenochain
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - gochain-network
+      - adrenochain-network
 
   redis:
     image: redis:6-alpine
-    container_name: gochain-cache
+    container_name: adrenochain-cache
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
-      - gochain-network
+      - adrenochain-network
 
 networks:
-  gochain-network:
+  adrenochain-network:
     driver: bridge
 
 volumes:
@@ -184,7 +184,7 @@ logging:
   level: info
   format: json
   output: file
-  file_path: /var/log/gochain/app.log
+  file_path: /var/log/adrenochain/app.log
   max_size: 100MB
   max_age: 30
   max_backups: 10
@@ -229,7 +229,7 @@ alerts:
 ### **1. Horizontal Scaling**
 ```bash
 # Load balancer configuration (nginx)
-upstream gochain_backend {
+upstream adrenochain_backend {
     least_conn;
     server 192.168.1.10:8545;
     server 192.168.1.11:8545;
@@ -238,10 +238,10 @@ upstream gochain_backend {
 
 server {
     listen 80;
-    server_name gochain.example.com;
+    server_name adrenochain.example.com;
     
     location / {
-        proxy_pass http://gochain_backend;
+        proxy_pass http://adrenochain_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -269,20 +269,20 @@ export GOMEMLIMIT=8GiB
 ```bash
 #!/bin/bash
 # backup.sh
-BACKUP_DIR="/backup/gochain"
+BACKUP_DIR="/backup/adrenochain"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
 
 # Backup data directory
-tar -czf $BACKUP_DIR/data_$DATE.tar.gz /opt/gochain/data
+tar -czf $BACKUP_DIR/data_$DATE.tar.gz /opt/adrenochain/data
 
 # Backup configuration
-tar -czf $BACKUP_DIR/config_$DATE.tar.gz /opt/gochain/config
+tar -czf $BACKUP_DIR/config_$DATE.tar.gz /opt/adrenochain/config
 
 # Backup logs
-tar -czf $BACKUP_DIR/logs_$DATE.tar.gz /opt/gochain/logs
+tar -czf $BACKUP_DIR/logs_$DATE.tar.gz /opt/adrenochain/logs
 
 # Clean old backups (keep last 30 days)
 find $BACKUP_DIR -name "*.tar.gz" -mtime +30 -delete
@@ -294,29 +294,29 @@ find $BACKUP_DIR -name "*.tar.gz" -mtime +30 -delete
 # update.sh
 set -e
 
-echo "Starting GoChain update..."
+echo "Starting adrenochain update..."
 
 # Stop service
-sudo systemctl stop gochain
+sudo systemctl stop adrenochain
 
 # Backup current version
-cp /opt/gochain/gochain /opt/gochain/gochain.backup
+cp /opt/adrenochain/adrenochain /opt/adrenochain/adrenochain.backup
 
 # Download new version
-wget -O /tmp/gochain.tar.gz https://github.com/gochain/gochain/releases/latest/download/gochain_linux_amd64.tar.gz
+wget -O /tmp/adrenochain.tar.gz https://github.com/adrenochain/adrenochain/releases/latest/download/adrenochain_linux_amd64.tar.gz
 
 # Extract and install
-tar -xzf /tmp/gochain.tar.gz -C /tmp
-sudo cp /tmp/gochain /opt/gochain/
+tar -xzf /tmp/adrenochain.tar.gz -C /tmp
+sudo cp /tmp/adrenochain /opt/adrenochain/
 
 # Verify binary
-/opt/gochain/gochain version
+/opt/adrenochain/adrenochain version
 
 # Start service
-sudo systemctl start gochain
+sudo systemctl start adrenochain
 
 # Check status
-sudo systemctl status gochain
+sudo systemctl status adrenochain
 
 echo "Update completed successfully!"
 ```
@@ -350,13 +350,13 @@ exit 1
 ### **1. Recovery Procedures**
 ```bash
 # Database recovery
-pg_restore -d gochain /backup/gochain/db_20231201_120000.dump
+pg_restore -d adrenochain /backup/adrenochain/db_20231201_120000.dump
 
 # Data recovery
-tar -xzf /backup/gochain/data_20231201_120000.tar.gz -C /
+tar -xzf /backup/adrenochain/data_20231201_120000.tar.gz -C /
 
 # Configuration recovery
-tar -xzf /backup/gochain/config_20231201_120000.tar.gz -C /
+tar -xzf /backup/adrenochain/config_20231201_120000.tar.gz -C /
 ```
 
 ### **2. Failover Configuration**
@@ -406,7 +406,7 @@ free -h
 ps aux --sort=-%mem | head -10
 
 # Restart service if needed
-sudo systemctl restart gochain
+sudo systemctl restart adrenochain
 ```
 
 #### **2. Network Connectivity Issues**
@@ -428,7 +428,7 @@ sudo -u postgres psql -c "SELECT version();"
 
 ## 📚 **Additional Resources**
 
-- [GoChain Architecture Documentation](ARCHITECTURE.md)
+- [adrenochain Architecture Documentation](ARCHITECTURE.md)
 - [API Reference](API.md)
 - [Security Best Practices](SECURITY.md)
 - [Performance Tuning Guide](PERFORMANCE.md)
@@ -436,10 +436,10 @@ sudo -u postgres psql -c "SELECT version();"
 ## 🆘 **Support**
 
 For production deployment support:
-- **Email**: support@gochain.io
-- **Documentation**: https://docs.gochain.io
-- **Community**: https://community.gochain.io
-- **Emergency**: +1-800-GOCHAIN
+- **Email**: support@adrenochain.io
+- **Documentation**: https://docs.adrenochain.io
+- **Community**: https://community.adrenochain.io
+- **Emergency**: +1-800-adrenochain
 
 ---
 

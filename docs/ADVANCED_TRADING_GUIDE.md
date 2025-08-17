@@ -1,10 +1,10 @@
 # Advanced Trading & Risk Management Guide 🚀
 
-This comprehensive guide covers advanced trading features, derivatives, risk management, and algorithmic trading on the GoChain platform.
+This comprehensive guide covers advanced trading features, derivatives, risk management, and algorithmic trading on the adrenochain platform.
 
 ## 🎯 **Overview**
 
-GoChain provides a complete advanced trading platform with:
+adrenochain provides a complete advanced trading platform with:
 
 - **Derivatives Trading**: Options, futures, and synthetic assets
 - **Risk Management**: VaR models, stress testing, and portfolio analytics
@@ -49,7 +49,7 @@ GoChain provides a complete advanced trading platform with:
 
 #### **European Options**
 
-European options can only be exercised at expiration. GoChain supports comprehensive options trading with Black-Scholes pricing.
+European options can only be exercised at expiration. adrenochain supports comprehensive options trading with Black-Scholes pricing.
 
 ##### **Creating an Options Position**
 
@@ -740,7 +740,7 @@ curl -X POST http://localhost:8080/api/v1/portfolio/alerts \
 
 ### **Prerequisites**
 
-1. **GoChain Account**: Active account with sufficient funds
+1. **adrenochain Account**: Active account with sufficient funds
 2. **API Access**: API keys for programmatic trading
 3. **Risk Understanding**: Knowledge of derivatives and risk management
 4. **Testing Environment**: Use testnet for initial experimentation
@@ -812,9 +812,9 @@ curl -X POST http://localhost:8080/api/v1/portfolio/alerts \
 - [Algorithmic Trading Examples](../examples/algo_trading/)
 
 ### **Support**
-- [Community Forum](https://forum.gochain.io)
-- [Technical Support](https://support.gochain.io)
-- [Developer Discord](https://discord.gg/gochain)
+- [Community Forum](https://forum.adrenochain.io)
+- [Technical Support](https://support.adrenochain.io)
+- [Developer Discord](https://discord.gg/adrenochain)
 
 ---
 

@@ -268,58 +268,58 @@ func (m *Metrics) GetPrometheusMetrics() string {
 	var prometheus string
 
 	// Blockchain metrics
-	prometheus += fmt.Sprintf("# HELP gochain_block_height Current blockchain height\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_block_height gauge\n")
-	prometheus += fmt.Sprintf("gochain_block_height %d\n", atomic.LoadInt64(&m.blockHeight))
+	prometheus += fmt.Sprintf("# HELP adrenochain_block_height Current blockchain height\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_block_height gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_block_height %d\n", atomic.LoadInt64(&m.blockHeight))
 
-	prometheus += fmt.Sprintf("# HELP gochain_total_blocks Total number of blocks\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_total_blocks counter\n")
-	prometheus += fmt.Sprintf("gochain_total_blocks %d\n", atomic.LoadInt64(&m.totalBlocks))
+	prometheus += fmt.Sprintf("# HELP adrenochain_total_blocks Total number of blocks\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_total_blocks counter\n")
+	prometheus += fmt.Sprintf("adrenochain_total_blocks %d\n", atomic.LoadInt64(&m.totalBlocks))
 
-	prometheus += fmt.Sprintf("# HELP gochain_total_transactions Total number of transactions\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_total_transactions counter\n")
-	prometheus += fmt.Sprintf("gochain_total_transactions %d\n", atomic.LoadInt64(&m.totalTxns))
+	prometheus += fmt.Sprintf("# HELP adrenochain_total_transactions Total number of transactions\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_total_transactions counter\n")
+	prometheus += fmt.Sprintf("adrenochain_total_transactions %d\n", atomic.LoadInt64(&m.totalTxns))
 
-	prometheus += fmt.Sprintf("# HELP gochain_pending_transactions Number of pending transactions\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_pending_transactions gauge\n")
-	prometheus += fmt.Sprintf("gochain_pending_transactions %d\n", atomic.LoadInt64(&m.pendingTxns))
+	prometheus += fmt.Sprintf("# HELP adrenochain_pending_transactions Number of pending transactions\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_pending_transactions gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_pending_transactions %d\n", atomic.LoadInt64(&m.pendingTxns))
 
-	prometheus += fmt.Sprintf("# HELP gochain_chain_difficulty Current chain difficulty\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_chain_difficulty gauge\n")
-	prometheus += fmt.Sprintf("gochain_chain_difficulty %f\n", m.chainDifficulty)
+	prometheus += fmt.Sprintf("# HELP adrenochain_chain_difficulty Current chain difficulty\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_chain_difficulty gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_chain_difficulty %f\n", m.chainDifficulty)
 
 	// Network metrics
-	prometheus += fmt.Sprintf("# HELP gochain_connected_peers Number of connected peers\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_connected_peers gauge\n")
-	prometheus += fmt.Sprintf("gochain_connected_peers %d\n", atomic.LoadInt64(&m.connectedPeers))
+	prometheus += fmt.Sprintf("# HELP adrenochain_connected_peers Number of connected peers\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_connected_peers gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_connected_peers %d\n", atomic.LoadInt64(&m.connectedPeers))
 
-	prometheus += fmt.Sprintf("# HELP gochain_total_peers Total number of known peers\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_total_peers gauge\n")
-	prometheus += fmt.Sprintf("gochain_total_peers %d\n", atomic.LoadInt64(&m.totalPeers))
+	prometheus += fmt.Sprintf("# HELP adrenochain_total_peers Total number of known peers\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_total_peers gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_total_peers %d\n", atomic.LoadInt64(&m.totalPeers))
 
 	// Mining metrics
-	prometheus += fmt.Sprintf("# HELP gochain_hash_rate Current hash rate\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_hash_rate gauge\n")
-	prometheus += fmt.Sprintf("gochain_hash_rate %d\n", atomic.LoadInt64(&m.hashRate))
+	prometheus += fmt.Sprintf("# HELP adrenochain_hash_rate Current hash rate\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_hash_rate gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_hash_rate %d\n", atomic.LoadInt64(&m.hashRate))
 
-	prometheus += fmt.Sprintf("# HELP gochain_blocks_mined Total blocks mined\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_blocks_mined counter\n")
-	prometheus += fmt.Sprintf("gochain_blocks_mined %d\n", atomic.LoadInt64(&m.blocksMined))
+	prometheus += fmt.Sprintf("# HELP adrenochain_blocks_mined Total blocks mined\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_blocks_mined counter\n")
+	prometheus += fmt.Sprintf("adrenochain_blocks_mined %d\n", atomic.LoadInt64(&m.blocksMined))
 
 	// Performance metrics
-	prometheus += fmt.Sprintf("# HELP gochain_memory_usage_bytes Current memory usage in bytes\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_memory_usage_bytes gauge\n")
-	prometheus += fmt.Sprintf("gochain_memory_usage_bytes %d\n", atomic.LoadInt64(&m.memoryUsage))
+	prometheus += fmt.Sprintf("# HELP adrenochain_memory_usage_bytes Current memory usage in bytes\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_memory_usage_bytes gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_memory_usage_bytes %d\n", atomic.LoadInt64(&m.memoryUsage))
 
 	// Error metrics
-	prometheus += fmt.Sprintf("# HELP gochain_total_errors Total number of errors\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_total_errors counter\n")
-	prometheus += fmt.Sprintf("gochain_total_errors %d\n", atomic.LoadInt64(&m.totalErrors))
+	prometheus += fmt.Sprintf("# HELP adrenochain_total_errors Total number of errors\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_total_errors counter\n")
+	prometheus += fmt.Sprintf("adrenochain_total_errors %d\n", atomic.LoadInt64(&m.totalErrors))
 
 	// System metrics
-	prometheus += fmt.Sprintf("# HELP gochain_uptime_seconds Node uptime in seconds\n")
-	prometheus += fmt.Sprintf("# TYPE gochain_uptime_seconds gauge\n")
-	prometheus += fmt.Sprintf("gochain_uptime_seconds %f\n", uptime)
+	prometheus += fmt.Sprintf("# HELP adrenochain_uptime_seconds Node uptime in seconds\n")
+	prometheus += fmt.Sprintf("# TYPE adrenochain_uptime_seconds gauge\n")
+	prometheus += fmt.Sprintf("adrenochain_uptime_seconds %f\n", uptime)
 
 	return prometheus
 }

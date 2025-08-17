@@ -1,4 +1,4 @@
-// GoChain Explorer Charts Module
+// adrenochain Explorer Charts Module
 
 class BlockchainCharts {
     constructor() {

@@ -1,4 +1,4 @@
-// GoChain Explorer Performance Monitoring Module
+// adrenochain Explorer Performance Monitoring Module
 
 class PerformanceMonitor {
     constructor() {

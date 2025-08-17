@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Enhanced Multi-Node GoChain Test Script
+# Enhanced Multi-Node adrenochain Test Script
 # This script validates actual data propagation and communication between nodes
 
 set -e
@@ -93,7 +93,7 @@ check_prerequisites() {
     
     # Check if we're in the right directory
     if [ ! -f "$PROJECT_ROOT/go.mod" ]; then
-        print_error "go.mod not found. Please run this script from the GoChain project root."
+        print_error "go.mod not found. Please run this script from the adrenochain project root."
         exit 1
     fi
     
@@ -118,11 +118,11 @@ init_test_environment() {
     mkdir -p "$LOG_DIR"
     mkdir -p "$NODE_DATA_DIR"
     
-    # Build GoChain binary
-    print_status "Building GoChain binary..."
+    # Build adrenochain binary
+    print_status "Building adrenochain binary..."
     cd "$PROJECT_ROOT"
-    if ! go build -o gochain ./cmd/gochain; then
-        print_error "Failed to build GoChain binary"
+    if ! go build -o adrenochain ./cmd/adrenochain; then
+        print_error "Failed to build adrenochain binary"
         exit 1
     fi
     
@@ -141,7 +141,7 @@ create_node_config() {
     
     # Create node configuration
     cat > "$data_dir/config.yaml" << EOF
-# GoChain Node Configuration for Enhanced Testing
+# adrenochain Node Configuration for Enhanced Testing
 network:
   listen_port: $rpc_port
   p2p_port: $p2p_port
@@ -221,7 +221,7 @@ start_test_nodes() {
         print_status "Starting node $i on RPC port $rpc_port, P2P port $p2p_port"
         
         # Start node in background
-        ./gochain --config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
+        ./adrenochain --config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
         local node_pid=$!
         NODE_PIDS+=("$node_pid")
         
@@ -521,7 +521,7 @@ generate_enhanced_test_summary() {
     local summary_file="$TEST_RESULTS_DIR/enhanced_multi_node_test_summary.md"
     
     cat > "$summary_file" << EOF
-# Enhanced Multi-Node GoChain Test Results
+# Enhanced Multi-Node adrenochain Test Results
 
 ## Test Execution Summary
 - **Execution Time**: $(date)
@@ -573,7 +573,7 @@ EOF
 main() {
     echo
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║            🚀 Enhanced Multi-Node GoChain Test 🚀          ║"
+    echo "║            🚀 Enhanced Multi-Node adrenochain Test 🚀          ║"
     echo "║                                                              ║"
     echo "║  Validating actual data propagation and communication       ║"
     echo "║  Testing P2P synchronization and state consistency          ║"

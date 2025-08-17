@@ -1,4 +1,4 @@
-# GoChain Fresh Mining Configuration
+# adrenochain Fresh Mining Configuration
 # This config uses completely separate storage to avoid conflicts
 
 network:
@@ -37,7 +37,7 @@ storage:
 
 logging:
   level: "info"
-  log_file: "./fresh_logs/gochain.log"
+  log_file: "./fresh_logs/adrenochain.log"
   max_size: 100
   max_backups: 3
   max_age: 28

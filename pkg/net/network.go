@@ -232,7 +232,7 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 func (n *Network) startPeerDiscovery() error {
 	// Start mDNS discovery if enabled
 	if n.config.EnableMDNS {
-		service := mdns.NewMdnsService(n.host, "gochain-discovery", n)
+		service := mdns.NewMdnsService(n.host, "adrenochain-discovery", n)
 		if err := service.Start(); err != nil {
 			return fmt.Errorf("failed to start mDNS service: %w", err)
 		}
@@ -245,7 +245,7 @@ func (n *Network) startPeerDiscovery() error {
 
 	// Setup a routing discovery service and attach it to the DHT
 	discovery := routing.NewRoutingDiscovery(n.dht)
-	discovery.Advertise(n.ctx, "gochain-discovery")
+	discovery.Advertise(n.ctx, "adrenochain-discovery")
 
 	return nil
 }

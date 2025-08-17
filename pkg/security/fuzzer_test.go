@@ -265,7 +265,7 @@ func TestFuzzer_GenerateReport(t *testing.T) {
 	report := fuzzer.GenerateReport()
 
 	// Verify report content
-	assert.Contains(t, report, "# 🔒 GoChain Fuzz Test Report")
+	assert.Contains(t, report, "# 🔒 adrenochain Fuzz Test Report")
 	assert.Contains(t, report, "## 📊 Summary")
 	assert.Contains(t, report, "## 🎯 Overall Results")
 	assert.Contains(t, report, "test")

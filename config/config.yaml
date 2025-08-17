@@ -1,4 +1,4 @@
-# GoChain Configuration File
+# adrenochain Configuration File
 
 # Network Configuration
 network:
@@ -46,7 +46,7 @@ logging:
   level: "info"  # debug, info, warn, error
   format: "text"  # text or json
   output: "stdout"  # stdout, stderr, or file path
-  log_file: "./logs/gochain.log"  # Path to log file (if using file output)
+  log_file: "./logs/adrenochain.log"  # Path to log file (if using file output)
   max_size: 104857600  # 100MB - maximum log file size before rotation
   max_backups: 5  # Maximum number of backup log files to keep
 

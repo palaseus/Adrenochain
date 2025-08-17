@@ -16,7 +16,7 @@ func TestValidatorManager(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		stakeAmount := big.NewInt(2000000000000000000) // 2 ETH
 		
-		validator, err := vm.AddValidator(address, ChainIDGoChain, stakeAmount, nil)
+		validator, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
 		if err != nil {
 			t.Fatalf("Failed to add validator: %v", err)
 		}
@@ -38,7 +38,7 @@ func TestValidatorManager(t *testing.T) {
 		address := "0x2345678901234567890123456789012345678901"
 		stakeAmount := big.NewInt(500000000000000000) // 0.5 ETH (below threshold)
 		
-		_, err := vm.AddValidator(address, ChainIDGoChain, stakeAmount, nil)
+		_, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
 		if err == nil {
 			t.Error("Expected error for insufficient stake")
 		}
@@ -48,7 +48,7 @@ func TestValidatorManager(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		stakeAmount := big.NewInt(2000000000000000000) // 2 ETH
 		
-		_, err := vm.AddValidator(address, ChainIDGoChain, stakeAmount, nil)
+		_, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
 		if err == nil {
 			t.Error("Expected error for duplicate validator")
 		}
@@ -185,7 +185,7 @@ func TestCrossChainTransactionManager(t *testing.T) {
 	t.Run("InitiateBatchTransfer", func(t *testing.T) {
 		transfers := []*TransferRequest{
 			{
-				SourceChain:       ChainIDGoChain,
+				SourceChain:       ChainIDadrenochain,
 				DestinationChain:  ChainIDEthereum,
 				SourceAddress:     "0x1234567890123456789012345678901234567890",
 				DestinationAddress: "0x0987654321098765432109876543210987654321",

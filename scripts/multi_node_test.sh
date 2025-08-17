@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Multi-Node GoChain Test Script
+# Multi-Node adrenochain Test Script
 # This script tests node synchronization and transaction propagation
 
 set -e
@@ -92,7 +92,7 @@ check_prerequisites() {
     
     # Check if we're in the right directory
     if [ ! -f "$PROJECT_ROOT/go.mod" ]; then
-        print_error "go.mod not found. Please run this script from the GoChain project root."
+        print_error "go.mod not found. Please run this script from the adrenochain project root."
         exit 1
     fi
     
@@ -113,11 +113,11 @@ init_test_environment() {
     mkdir -p "$LOG_DIR"
     mkdir -p "$NODE_DATA_DIR"
     
-    # Build GoChain binary
-    print_status "Building GoChain binary..."
+    # Build adrenochain binary
+    print_status "Building adrenochain binary..."
     cd "$PROJECT_ROOT"
-    if ! go build -o gochain ./cmd/gochain; then
-        print_error "Failed to build GoChain binary"
+    if ! go build -o adrenochain ./cmd/adrenochain; then
+        print_error "Failed to build adrenochain binary"
         exit 1
     fi
     
@@ -136,7 +136,7 @@ create_node_config() {
     
     # Create node configuration
     cat > "$data_dir/config.yaml" << EOF
-# GoChain Node Configuration for Testing
+# adrenochain Node Configuration for Testing
 network:
   listen_port: $rpc_port
   p2p_port: $p2p_port
@@ -216,7 +216,7 @@ start_test_nodes() {
         print_status "Starting node $i on RPC port $rpc_port, P2P port $p2p_port"
         
         # Start node in background
-        ./gochain --config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
+        ./adrenochain --config "$data_dir/config.yaml" > "$data_dir/stdout.log" 2> "$data_dir/stderr.log" &
         local node_pid=$!
         NODE_PIDS+=("$node_pid")
         
@@ -446,7 +446,7 @@ generate_test_summary() {
     local summary_file="$TEST_RESULTS_DIR/multi_node_test_summary.md"
     
     cat > "$summary_file" << EOF
-# Multi-Node GoChain Test Results
+# Multi-Node adrenochain Test Results
 
 ## Test Execution Summary
 - **Execution Time**: $(date)
@@ -488,7 +488,7 @@ EOF
 main() {
     echo
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                🚀 Multi-Node GoChain Test 🚀               ║"
+    echo "║                🚀 Multi-Node adrenochain Test 🚀               ║"
     echo "║                                                              ║"
     echo "║  Testing node synchronization and transaction propagation    ║"
     echo "║  Multi-node network validation                               ║"
