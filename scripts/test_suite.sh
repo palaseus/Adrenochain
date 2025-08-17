@@ -579,6 +579,20 @@ get_accurate_test_counts() {
     SKIPPED_TESTS=0
     
     # Count from all package test logs
+    echo -e "   🔍 Scanning test logs in $TEST_RESULTS_DIR..."
+    
+    # Check if directory exists and has content
+    if [[ ! -d "$TEST_RESULTS_DIR" ]]; then
+        echo -e "   ⚠️  Warning: Test results directory $TEST_RESULTS_DIR does not exist"
+        return
+    fi
+    
+    local log_files=("$TEST_RESULTS_DIR"/*_tests.log)
+    if [[ ! -e "${log_files[0]}" ]]; then
+        echo -e "   ⚠️  Warning: No test log files found in $TEST_RESULTS_DIR"
+        return
+    fi
+    
     for file in "$TEST_RESULTS_DIR"/*_tests.log; do
         if [[ -f "$file" ]]; then
             local passed=$(grep -c "^--- PASS" "$file" 2>/dev/null || echo "0")
@@ -596,6 +610,16 @@ get_accurate_test_counts() {
             panic_count=${panic_count:-0}
             fail_count=${fail_count:-0}
             
+            # Validate that variables are numeric before arithmetic operations
+            if [[ ! "$passed" =~ ^[0-9]+$ ]]; then passed="0"; fi
+            if [[ ! "$failed" =~ ^[0-9]+$ ]]; then failed="0"; fi
+            if [[ ! "$skipped" =~ ^[0-9]+$ ]]; then skipped="0"; fi
+            if [[ ! "$panic_count" =~ ^[0-9]+$ ]]; then panic_count="0"; fi
+            if [[ ! "$fail_count" =~ ^[0-9]+$ ]]; then fail_count="0"; fi
+            
+            # Debug: Log variable values for troubleshooting
+            echo -e "   🔍 Debug: passed='$passed', failed='$failed', skipped='$skipped', panic='$panic_count', fail='$fail_count'"
+            
             # Convert to integers to avoid syntax errors
             passed=$((passed + 0))
             failed=$((failed + 0))
@@ -609,6 +633,11 @@ get_accurate_test_counts() {
                 echo -e "   🚨 $file: Found $panic_count panics and $fail_count FAIL indicators"
             fi
             
+            # Ensure global variables are initialized
+            PASSED_TESTS=${PASSED_TESTS:-0}
+            FAILED_TESTS=${FAILED_TESTS:-0}
+            SKIPPED_TESTS=${SKIPPED_TESTS:-0}
+            
             PASSED_TESTS=$((PASSED_TESTS + passed))
             FAILED_TESTS=$((FAILED_TESTS + failed))
             SKIPPED_TESTS=$((SKIPPED_TESTS + skipped))
@@ -617,13 +646,33 @@ get_accurate_test_counts() {
         fi
     done
     
+    # Ensure all variables are initialized before calculation
+    PASSED_TESTS=${PASSED_TESTS:-0}
+    FAILED_TESTS=${FAILED_TESTS:-0}
+    SKIPPED_TESTS=${SKIPPED_TESTS:-0}
+    
     TOTAL_TESTS=$((PASSED_TESTS + FAILED_TESTS + SKIPPED_TESTS))
     
     # Count fuzz tests (they don't follow the --- PASS format)
-    FUZZ_TESTS_COUNT=$(find "$TEST_RESULTS_DIR" -name "*_fuzz.log" | wc -l)
+    echo -e "   🔍 Counting fuzz test logs..."
+    FUZZ_TESTS_COUNT=$(find "$TEST_RESULTS_DIR" -name "*_fuzz.log" 2>/dev/null | wc -l)
+    FUZZ_TESTS_COUNT=${FUZZ_TESTS_COUNT:-0}
     
     # Count benchmark tests
-    BENCHMARK_TESTS_COUNT=$(find "$TEST_RESULTS_DIR" -name "*_bench.log" | wc -l)
+    echo -e "   🔍 Counting benchmark test logs..."
+    BENCHMARK_TESTS_COUNT=$(find "$TEST_RESULTS_DIR" -name "*_bench.log" 2>/dev/null | wc -l)
+    BENCHMARK_TESTS_COUNT=${BENCHMARK_TESTS_COUNT:-0}
+    
+    # Additional safety: ensure these are numeric
+    if [[ ! "$FUZZ_TESTS_COUNT" =~ ^[0-9]+$ ]]; then
+        echo -e "   ⚠️  Warning: Invalid fuzz test count: '$FUZZ_TESTS_COUNT', setting to 0"
+        FUZZ_TESTS_COUNT=0
+    fi
+    
+    if [[ ! "$BENCHMARK_TESTS_COUNT" =~ ^[0-9]+$ ]]; then
+        echo -e "   ⚠️  Warning: Invalid benchmark test count: '$BENCHMARK_TESTS_COUNT', setting to 0"
+        BENCHMARK_TESTS_COUNT=0
+    fi
     
     echo -e "${GREEN}✅ Accurate counts: $PASSED_TESTS passed, $FAILED_TESTS failed, $SKIPPED_TESTS skipped${NC}"
     echo -e "${GREEN}✅ Fuzz tests: $FUZZ_TESTS_COUNT, Benchmark tests: $BENCHMARK_TESTS_COUNT${NC}"

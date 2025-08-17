@@ -88,3 +88,6 @@ mining_demo_db/
 
 # Build artifacts
 adrenochain
+
+# Documentation and planning files
+TODO.md
