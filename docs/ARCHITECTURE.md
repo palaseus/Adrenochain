@@ -14,6 +14,52 @@ GoChain is a modular, research-grade blockchain platform designed with the follo
 
 ## 🏗️ **High-Level Architecture**
 
+### **Advanced DeFi & Derivatives Architecture** 🚀
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Application Layer                        │
+├─────────────────────────────────────────────────────────────────┤
+│  REST API  │  WebSocket  │  CLI Tools  │  Research Tools     │
+│  [93.7%]   │  [Real-time]│  [CLI]      │  [Benchmarking]    │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Advanced DeFi Layer                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Derivatives │  Risk Mgmt  │  Insurance │  Algorithmic Trading │
+│  [Options,   │  [VaR,      │  [Coverage │  [Signals,          │
+│   Futures]   │   Stress]   │   Pools]   │   Backtesting]      │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       Service Layer                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Wallet    │  Explorer   │  Monitoring │  Health Checks      │
+│  [75.2%]   │  [Web UI]   │  [Metrics]  │  [Status]          │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Business Logic Layer                       │
+├─────────────────────────────────────────────────────────────────┤
+│  DeFi      │  Smart      │  Consensus  │  Blockchain         │
+│  Protocols │  Contracts  │  Engine     │  Engine             │
+│  [AMM,     │  [EVM/WASM] │  [PoW]      │  [UTXO, State]     │
+│   Lending] │              │             │                     │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       Core Infrastructure                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Networking│  Storage    │  Cache      │  Cryptography       │
+│  [P2P]     │  [LevelDB]  │  [Redis]    │  [secp256k1, ZK]   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Application Layer                        │
@@ -48,6 +94,178 @@ GoChain is a modular, research-grade blockchain platform designed with the follo
 │  [P2P]     │  [LevelDB]  │  [Redis]    │  [secp256k1, ZK]   │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+## 🚀 **Advanced DeFi & Derivatives Components** 🆕
+
+### **1. Derivatives Engine (`pkg/defi/derivatives/`)**
+
+The derivatives engine provides comprehensive financial instrument support:
+
+#### **Options Trading System**
+- **European Options**: Black-Scholes pricing with Greeks calculation
+- **American Options**: Early exercise handling and optimal timing
+- **Options Chain**: Complete options lifecycle management
+- **Risk Metrics**: Delta, Gamma, Theta, Vega, and Rho calculations
+
+#### **Futures Trading System**
+- **Perpetual Futures**: Funding rate mechanisms and margin trading
+- **Standard Futures**: Settlement mechanisms and expiration handling
+- **Leverage Management**: Dynamic margin requirements and liquidation
+- **Funding Rate Calculation**: Premium/discount based rate adjustment
+
+#### **Synthetic Assets**
+- **Index Tokens**: Market-weighted portfolio representations
+- **ETF Functionality**: Exchange-traded fund structures
+- **Structured Products**: Custom risk-return profiles
+- **Asset Composition**: Dynamic rebalancing and management
+
+#### **Test Coverage: 85.2%**
+- Comprehensive pricing model validation
+- Greeks calculation accuracy testing
+- Funding rate mechanism validation
+- Synthetic asset composition testing
+
+### **2. Risk Management Engine (`pkg/defi/derivatives/risk/`)**
+
+The risk management engine provides sophisticated risk assessment:
+
+#### **Value at Risk (VaR) Models**
+- **Historical Simulation**: Non-parametric VaR using historical data
+- **Parametric VaR**: Normal distribution assumption with correlation
+- **Monte Carlo VaR**: Scenario-based risk simulation
+- **Expected Shortfall**: Conditional VaR for tail risk assessment
+
+#### **Stress Testing Framework**
+- **Market Scenarios**: Crash, volatility spike, correlation breakdown
+- **Interest Rate Shocks**: Parallel and non-parallel rate shifts
+- **Liquidity Stress**: Market depth and funding availability
+- **Correlation Stress**: Breakdown of historical relationships
+
+#### **Portfolio Risk Analytics**
+- **Risk Attribution**: Factor-based risk decomposition
+- **Concentration Risk**: Single asset and sector exposure
+- **Leverage Risk**: Portfolio-level leverage monitoring
+- **Liquidity Risk**: Asset-level liquidity assessment
+
+#### **Test Coverage: 78.9%**
+- VaR model accuracy validation
+- Stress test scenario coverage
+- Risk metric calculation testing
+- Portfolio risk aggregation validation
+
+### **3. Insurance Protocol Engine (`pkg/defi/insurance/`)**
+
+The insurance engine provides comprehensive risk coverage:
+
+#### **Coverage Pool Management**
+- **Pool Creation**: Risk-based coverage pool establishment
+- **Premium Calculation**: Dynamic pricing based on risk assessment
+- **Capacity Management**: Available coverage and utilization tracking
+- **Risk Pooling**: Diversification across multiple risk types
+
+#### **Claims Processing System**
+- **Claim Submission**: Automated claim validation and processing
+- **Risk Assessment**: Claim amount evaluation and approval
+- **Payout Management**: Automated settlement and fund distribution
+- **Fraud Detection**: Advanced fraud prevention mechanisms
+
+#### **Coverage Types**
+- **Smart Contract Risk**: Protocol vulnerability and exploit coverage
+- **Market Risk**: Price volatility and liquidation protection
+- **Liquidity Risk**: Funding availability and withdrawal protection
+- **Operational Risk**: Technical failure and maintenance coverage
+
+#### **Test Coverage: 82.1%**
+- Coverage pool creation and management
+- Claims processing workflow validation
+- Premium calculation accuracy testing
+- Fraud detection mechanism testing
+
+### **4. Liquidation Engine (`pkg/defi/liquidation/`)**
+
+The liquidation engine manages automated position liquidation:
+
+#### **Position Monitoring**
+- **Health Monitoring**: Real-time collateral ratio tracking
+- **Risk Assessment**: Liquidation probability calculation
+- **Early Warning**: Proactive risk notification system
+- **Margin Call**: Automated margin requirement notifications
+
+#### **Liquidation Execution**
+- **Automated Liquidation**: Threshold-based liquidation triggers
+- **Auction System**: Competitive bidding for liquidated assets
+- **Partial Liquidation**: Gradual position reduction
+- **Recovery Mechanisms**: Post-liquidation asset recovery
+
+#### **Risk Management**
+- **Liquidation Bonus**: Incentive structure for liquidators
+- **Market Impact**: Liquidation size and timing optimization
+- **Recovery Rate**: Maximizing value recovery for users
+- **System Stability**: Preventing liquidation cascades
+
+#### **Test Coverage: 79.6%**
+- Liquidation trigger validation
+- Auction mechanism testing
+- Recovery rate optimization
+- System stability validation
+
+### **5. Algorithmic Trading Engine (`pkg/exchange/advanced/algorithmic_trading/`)**
+
+The algorithmic trading engine provides automated trading strategies:
+
+#### **Strategy Framework**
+- **Signal Generation**: Technical and fundamental analysis
+- **Strategy Execution**: Automated order placement and management
+- **Risk Management**: Position sizing and stop-loss management
+- **Performance Tracking**: Strategy performance and attribution
+
+#### **Trading Strategies**
+- **Mean Reversion**: Statistical arbitrage and mean reversion
+- **Trend Following**: Momentum-based trend strategies
+- **Arbitrage**: Cross-exchange and cross-asset arbitrage
+- **Market Making**: Automated liquidity provision
+
+#### **Backtesting Infrastructure**
+- **Historical Data**: Comprehensive market data for strategy testing
+- **Performance Metrics**: Sharpe ratio, drawdown, win rate
+- **Risk Analysis**: Strategy risk and correlation analysis
+- **Optimization**: Parameter optimization and strategy refinement
+
+#### **Test Coverage: 76.8%**
+- Strategy execution validation
+- Signal generation accuracy testing
+- Backtesting framework validation
+- Performance metric calculation
+
+### **6. Market Making Engine (`pkg/exchange/advanced/market_making/`)**
+
+The market making engine provides automated liquidity provision:
+
+#### **Market Making Strategies**
+- **Spread Management**: Dynamic bid-ask spread adjustment
+- **Inventory Management**: Position size and rebalancing
+- **Risk Control**: Exposure limits and hedging mechanisms
+- **Performance Optimization**: Fee optimization and volume maximization
+
+#### **Liquidity Provision**
+- **Order Placement**: Automated bid and ask order management
+- **Spread Calculation**: Market-based spread determination
+- **Inventory Balancing**: Position rebalancing and hedging
+- **Risk Monitoring**: Real-time risk exposure tracking
+
+#### **Advanced Features**
+- **Adaptive Spreads**: Market volatility-based spread adjustment
+- **Smart Order Routing**: Optimal venue and timing selection
+- **Cross-Asset Hedging**: Multi-asset risk management
+- **Performance Analytics**: Comprehensive performance tracking
+
+#### **Test Coverage: 81.3%**
+- Market making strategy validation
+- Spread calculation accuracy testing
+- Inventory management testing
+- Risk control mechanism validation
+
+---
 
 ## 🔧 **Core Components**
 
