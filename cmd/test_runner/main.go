@@ -82,7 +82,7 @@ func runBasicTests() {
 }
 
 func runCrossCollateralDemoFunc() {
-	fmt.Println("=== adrenochain Cross-Collateral System Demo ===\n")
+	fmt.Println("=== adrenochain Cross-Collateral System Demo ===")
 
 	// Create a cross-collateral manager
 	ccm := advanced.NewCrossCollateralManager()
