@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // ERC20Token represents an ERC-20 compliant fungible token

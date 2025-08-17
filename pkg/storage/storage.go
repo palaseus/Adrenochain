@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // Storage implements a file-based storage for blocks and chain state.

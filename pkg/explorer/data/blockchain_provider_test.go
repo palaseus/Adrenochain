@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/explorer/service"
-	"github.com/gochain/gochain/pkg/storage"
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
+	"github.com/palaseus/adrenochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/utxo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

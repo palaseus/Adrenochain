@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/gochain/gochain/pkg/exchange/orderbook"
+	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
 )
 
 // CreateOrderRequest represents a request to create a new order

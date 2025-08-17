@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // AMM represents an Automated Market Maker with constant product formula

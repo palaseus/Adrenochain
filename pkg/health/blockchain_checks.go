@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gochain/gochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/chain"
 )
 
 // ChainHealthChecker checks the health of the blockchain

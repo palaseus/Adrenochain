@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // ExecutionContext holds the context for EVM execution

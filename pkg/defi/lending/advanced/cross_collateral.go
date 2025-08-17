@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
 // CrossCollateralType represents the type of collateral

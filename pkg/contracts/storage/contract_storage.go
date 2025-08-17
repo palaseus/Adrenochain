@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
-	"github.com/gochain/gochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/storage"
 )
 
 // ContractStorageImpl implements the ContractStorage interface

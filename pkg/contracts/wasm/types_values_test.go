@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // TestWASMValueTypeConstants tests WASM value type constants

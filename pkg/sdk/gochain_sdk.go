@@ -6,13 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
-	"github.com/gochain/gochain/pkg/defi/amm"
-	"github.com/gochain/gochain/pkg/defi/governance"
-	"github.com/gochain/gochain/pkg/defi/lending"
-	"github.com/gochain/gochain/pkg/defi/oracle"
-	"github.com/gochain/gochain/pkg/defi/tokens"
-	"github.com/gochain/gochain/pkg/defi/yield"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/defi/amm"
+	"github.com/palaseus/adrenochain/pkg/defi/governance"
+	"github.com/palaseus/adrenochain/pkg/defi/lending"
+	"github.com/palaseus/adrenochain/pkg/defi/oracle"
+	"github.com/palaseus/adrenochain/pkg/defi/tokens"
+	"github.com/palaseus/adrenochain/pkg/defi/yield"
 )
 
 // GoChainSDK provides a high-level interface for DeFi development

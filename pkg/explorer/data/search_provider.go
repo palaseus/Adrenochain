@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/explorer/service"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 )
 
 // SimpleSearchProvider implements SearchProvider interface with basic search functionality

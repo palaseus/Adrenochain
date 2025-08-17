@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/explorer/service"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 	"github.com/gorilla/mux"
 )
 

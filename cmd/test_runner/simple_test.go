@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/storage"
-	"github.com/gochain/gochain/pkg/testing"
+	"github.com/palaseus/adrenochain/pkg/contracts/storage"
+	"github.com/palaseus/adrenochain/pkg/testing"
 )
 
 // RunSimpleTest runs basic component tests without complex initialization

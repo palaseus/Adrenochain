@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/health"
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/health"
+	"github.com/palaseus/adrenochain/pkg/logger"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

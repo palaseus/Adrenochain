@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // NewWASMEngine creates a new WASM execution engine

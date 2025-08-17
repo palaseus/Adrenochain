@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // ChainReader defines the methods from the chain that the consensus package needs

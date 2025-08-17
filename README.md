@@ -1,10 +1,10 @@
-# GoChain 🔬
+# Adrenochain 🔬
 
 **A comprehensive blockchain research and development platform in Go for academic study, security research, and DeFi experimentation**
 
 ## 🎯 **Project Overview**
 
-GoChain is a **comprehensive blockchain research and development platform** built with Go, designed for academic research, security analysis, performance benchmarking, distributed systems experimentation, and DeFi protocol development. It provides a complete foundation for understanding blockchain technology, consensus mechanisms, distributed systems, and decentralized finance through hands-on exploration, rigorous testing methodologies, and advanced research tools.
+Adrenochain is a **comprehensive blockchain research and development platform** built with Go, designed for academic research, security analysis, performance benchmarking, distributed systems experimentation, and DeFi protocol development. It provides a complete foundation for understanding blockchain technology, consensus mechanisms, distributed systems, and decentralized finance through hands-on exploration, rigorous testing methodologies, and advanced research tools.
 
 **⚠️ Important Note**: This is a research and development platform. While it includes comprehensive testing and advanced features, it is **NOT production-ready** and should not be used in production environments without extensive security audits and additional development.
 
@@ -206,8 +206,8 @@ GoChain is a **comprehensive blockchain research and development platform** buil
 
 ```bash
 # Clone and setup
-git clone https://github.com/gochain/gochain.git
-cd gochain
+git clone https://github.com/palaseus/adrenochain.git
+cd adrenochain
 go mod download
 
 # Run comprehensive test suite
@@ -340,7 +340,7 @@ go test ./pkg/bridge -run TestValidatorManager -v
 
 ```bash
 # Run complete end-to-end ecosystem tests
-go test ./pkg/testing/ -v -run "TestCompleteGoChainEcosystem"
+go test ./pkg/testing/ -v -run "TestCompleteAdrenochainEcosystem"
 
 # Test specific components
 go test ./pkg/testing/ -v -run "TestDeFiProtocolFoundation"
@@ -351,10 +351,10 @@ go test ./pkg/testing/ -v -run "TestSystemStressTesting"
 go test ./pkg/testing/ -v -run "TestPerformanceValidation"
 
 # Run with performance benchmarking
-go test ./pkg/testing/ -v -run "TestCompleteGoChainEcosystem" -bench=. -benchmem
+go test ./pkg/testing/ -v -run "TestCompleteAdrenochainEcosystem" -bench=. -benchmem
 
 # Run with race condition detection
-go test -race ./pkg/testing/ -v -run "TestCompleteGoChainEcosystem"
+go test -race ./pkg/testing/ -v -run "TestCompleteAdrenochainEcosystem"
 ```
 
 ## 🏆 **Core Components**
@@ -458,8 +458,8 @@ go test -race ./pkg/testing/ -v -run "TestCompleteGoChainEcosystem"
 ## 🛠️ **Project Structure**
 
 ```
-gochain/
-├── cmd/gochain/          # Application entry point
+adrenochain/
+├── cmd/adrenochain/          # Application entry point
 ├── pkg/
 │   ├── block/            # Block structure & validation [93.0% coverage]
 │   ├── chain/            # Blockchain management
@@ -562,11 +562,11 @@ We welcome contributions from developers, researchers, students, and blockchain 
 
 ```bash
 # Fork and clone
-git clone https://github.com/yourusername/gochain.git
-cd gochain
+git clone https://github.com/yourusername/adrenochain.git
+cd adrenochain
 
 # Add upstream
-git remote add upstream https://github.com/gochain/gochain.git
+git remote add upstream https://github.com/palaseus/adrenochain.git
 
 # Create development branch
 git checkout -b feature/improve-defi-protocols
@@ -624,7 +624,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**GoChain**: Advancing blockchain technology through rigorous research, comprehensive testing, performance analysis, security research, academic exploration, and DeFi protocol development. 🚀🔬🧪⚡🔒🏦
+**Adrenochain**: Advancing blockchain technology through rigorous research, comprehensive testing, performance analysis, security research, academic exploration, and DeFi protocol development. 🚀🔬🧪⚡🔒🏦
 
 *Current Status: 100% test success rate (1240+ tests) with comprehensive development infrastructure, complete DeFi foundation layer, advanced cryptographic features, exchange infrastructure, cross-chain bridge support, governance systems, and significantly improved test coverage. **MULTI-NODE NETWORK VALIDATED** with confirmed P2P communication, data propagation, and synchronized mining operations. Mining operations are fully functional and the blockchain is actively producing blocks. **PRODUCTION-READY** for multi-node deployment and enterprise-scale blockchain networks. **WEEK 11-12 POLISH & PRODUCTION COMPLETED** with exceptional performance metrics (4,400x faster portfolio calculation, 638k orders/second, 770x faster latency), comprehensive end-to-end testing, advanced derivatives & risk management, algorithmic trading infrastructure, and complete cross-protocol integration. Ready for blockchain research, development, DeFi experimentation, exchange development, cross-chain operations, advanced derivatives trading, and production deployment.*
 

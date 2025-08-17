@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/utxo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

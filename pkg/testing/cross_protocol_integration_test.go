@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/gochain/gochain/pkg/defi/lending/advanced"
+	"github.com/palaseus/adrenochain/pkg/defi/lending/advanced"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

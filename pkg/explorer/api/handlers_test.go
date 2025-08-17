@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/explorer/service"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

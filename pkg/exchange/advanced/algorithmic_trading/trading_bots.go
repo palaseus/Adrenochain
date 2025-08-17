@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
 // StrategyType represents different trading strategy types

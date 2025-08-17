@@ -1,6 +1,6 @@
-# GoChain Documentation 📚
+# Adrenochain Documentation 📚
 
-Welcome to the comprehensive documentation for GoChain, a research-grade blockchain platform built in Go. This documentation covers all aspects of the platform from basic concepts to advanced development.
+Welcome to the comprehensive documentation for Adrenochain, a research-grade blockchain platform built in Go. This documentation covers all aspects of the platform from basic concepts to advanced development.
 
 ## 📖 **Documentation Overview**
 
@@ -90,11 +90,11 @@ We welcome contributions to improve our documentation:
 
 - **Documentation Issues**: Open an issue in the repository
 - **Code Questions**: Use GitHub Discussions
-- **Security Concerns**: Report via security@gochain.dev
-- **Research Collaboration**: Contact research@gochain.dev
+- **Security Concerns**: Report via security@adrenochain.dev
+- **Research Collaboration**: Contact research@adrenochain.dev
 
 ---
 
 **Last Updated**: December 2024  
 **Version**: 1.0.0  
-**GoChain**: Advancing blockchain technology through comprehensive documentation and research 🚀🔬📚
+**Adrenochain**: Advancing blockchain technology through comprehensive documentation and research 🚀🔬📚

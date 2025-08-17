@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/proto/net"
-	"github.com/gochain/gochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/proto/net"
+	"github.com/palaseus/adrenochain/pkg/storage"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"

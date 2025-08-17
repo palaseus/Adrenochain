@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // TestNewERC721Token tests ERC-721 token creation

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/wallet"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/wallet"
 	"github.com/gorilla/mux"
 )
 

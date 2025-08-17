@@ -1,6 +1,6 @@
-# GoChain Explorer Web Interface
+# Adrenochain Explorer Web Interface
 
-This package provides a complete web interface for the GoChain blockchain explorer, built with Go HTML templates, modern CSS, and vanilla JavaScript.
+This package provides a complete web interface for the Adrenochain blockchain explorer, built with Go HTML templates, modern CSS, and vanilla JavaScript.
 
 ## Features
 
@@ -45,8 +45,8 @@ package main
 
 import (
     "log"
-    "github.com/gochain/gochain/pkg/explorer/service"
-    "github.com/gochain/gochain/pkg/explorer/web"
+    "github.com/palaseus/adrenochain/pkg/explorer/service"
+"github.com/palaseus/adrenochain/pkg/explorer/web"
 )
 
 func main() {
@@ -223,4 +223,4 @@ Future enhancements planned:
 
 ## License
 
-This package is part of the GoChain project and follows the same license terms.
+This package is part of the Adrenochain project and follows the same license terms.

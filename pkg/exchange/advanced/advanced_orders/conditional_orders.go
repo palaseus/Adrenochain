@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
 // OrderType represents different types of advanced orders

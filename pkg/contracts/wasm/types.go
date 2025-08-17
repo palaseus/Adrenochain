@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // WASMEngine implements the ContractEngine interface for WebAssembly smart contracts

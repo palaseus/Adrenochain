@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
 // SignalGenerator generates trading signals based on market analysis

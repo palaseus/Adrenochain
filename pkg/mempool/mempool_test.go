@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/utxo"
 	"github.com/stretchr/testify/assert"
 )
 

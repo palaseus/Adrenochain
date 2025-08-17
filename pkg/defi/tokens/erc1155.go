@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // ERC1155Token represents an ERC-1155 compliant multi-token standard

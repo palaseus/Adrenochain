@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // StorageIntegration extends existing storage for smart contract data

@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/consensus"
-	"github.com/gochain/gochain/pkg/storage"
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/consensus"
+	"github.com/palaseus/adrenochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/utxo"
 )
 
 // Chain represents the blockchain, managing blocks, chain state, and interactions with storage, UTXO set, and consensus.

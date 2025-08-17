@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // ERC721Token represents an ERC-721 compliant non-fungible token

@@ -1,6 +1,6 @@
-# 🚀 GoChain Comprehensive Testing System
+# 🚀 Adrenochain Comprehensive Testing System
 
-This directory contains a complete testing infrastructure for the GoChain blockchain project, designed to make debugging, testing, and quality assurance a breeze.
+This directory contains a complete testing infrastructure for the Adrenochain blockchain project, designed to make debugging, testing, and quality assurance a breeze.
 
 ## 📋 Table of Contents
 

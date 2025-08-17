@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
 // BacktestEngine performs backtesting of trading strategies

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gochain/gochain/pkg/explorer/service"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 )
 
 // WebServer manages the explorer web interface

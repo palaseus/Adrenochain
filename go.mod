@@ -1,4 +1,4 @@
-module github.com/gochain/gochain
+module github.com/palaseus/adrenochain
 
 go 1.23.8
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"

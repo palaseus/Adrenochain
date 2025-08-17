@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
-	"github.com/gochain/gochain/pkg/contracts/storage"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/storage"
 )
 
 // StateManager defines the interface for state management operations

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/stretchr/testify/assert"
 )
 

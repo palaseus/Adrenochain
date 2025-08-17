@@ -7,7 +7,7 @@ import (
 	"log"
 	"math/big"
 
-	"github.com/gochain/gochain/pkg/defi/lending/advanced"
+	"github.com/palaseus/adrenochain/pkg/defi/lending/advanced"
 )
 
 func main() {

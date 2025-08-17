@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/chain"
-	"github.com/gochain/gochain/pkg/health"
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/health"
+	"github.com/palaseus/adrenochain/pkg/logger"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 

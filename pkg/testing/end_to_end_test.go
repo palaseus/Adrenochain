@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/defi/lending/advanced"
-	"github.com/gochain/gochain/pkg/exchange/orderbook"
+	"github.com/palaseus/adrenochain/pkg/defi/lending/advanced"
+	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,8 +31,8 @@ func NewEndToEndTestSuite() *EndToEndTestSuite {
 	}
 }
 
-// TestCompleteGoChainEcosystem tests the complete GoChain DeFi ecosystem end-to-end
-func TestCompleteGoChainEcosystem(t *testing.T) {
+// TestCompleteAdrenochainEcosystem tests the complete Adrenochain DeFi ecosystem end-to-end
+func TestCompleteAdrenochainEcosystem(t *testing.T) {
 	suite := NewEndToEndTestSuite()
 
 	// Test 1: DeFi Protocol Foundation
@@ -580,7 +580,7 @@ func (suite *EndToEndTestSuite) testPerformanceValidation(t *testing.T) {
 func (suite *EndToEndTestSuite) RunAllEndToEndTests(t *testing.T) {
 	fmt.Println("🚀 Running All End-to-End Tests...")
 
-	TestCompleteGoChainEcosystem(t)
+	TestCompleteAdrenochainEcosystem(t)
 
 	fmt.Println("🎉 All End-to-End Tests Completed Successfully!")
 }

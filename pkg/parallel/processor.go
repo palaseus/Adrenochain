@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // ProcessorConfig holds configuration for the parallel processor

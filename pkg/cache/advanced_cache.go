@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/utxo"
 )
 
 // CacheLevel represents different levels of caching

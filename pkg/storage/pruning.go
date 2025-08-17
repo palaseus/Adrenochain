@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // PruningConfig holds configuration for pruning operations

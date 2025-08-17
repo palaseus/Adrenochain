@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/gochain/gochain/pkg/chain"
-	"github.com/gochain/gochain/pkg/consensus"
-	"github.com/gochain/gochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/consensus"
+	"github.com/palaseus/adrenochain/pkg/storage"
 )
 
 // MockChain and MockStorage are defined in protocol_test.go to avoid duplication

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // explorerService implements the ExplorerService interface

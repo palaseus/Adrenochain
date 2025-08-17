@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/logger"
+	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
 // CreditLineStatus represents the status of a credit line

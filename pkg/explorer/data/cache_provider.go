@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/explorer/service"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 )
 
 // InMemoryCache implements CacheProvider interface with an in-memory store

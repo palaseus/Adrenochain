@@ -987,7 +987,7 @@ const file_pkg_proto_net_message_proto_rawDesc = "" +
 	"\rstate_request\x18\x10 \x01(\v2\x11.net.StateRequestH\x00R\fstateRequest\x12;\n" +
 	"\x0estate_response\x18\x11 \x01(\v2\x12.net.StateResponseH\x00R\rstateResponse\x12\x1c\n" +
 	"\tsignature\x18\x05 \x01(\fR\tsignatureB\t\n" +
-	"\acontentB*Z(github.com/gochain/gochain/pkg/proto/netb\x06proto3"
+	"\acontentB*Z(github.com/palaseus/adrenochain/pkg/proto/netb\x06proto3"
 
 var (
 	file_pkg_proto_net_message_proto_rawDescOnce sync.Once

@@ -6,10 +6,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/gochain/gochain/pkg/exchange/orderbook"
-	"github.com/gochain/gochain/pkg/exchange/trading"
-	"github.com/gochain/gochain/pkg/bridge"
-	"github.com/gochain/gochain/pkg/governance"
+	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
+	"github.com/palaseus/adrenochain/pkg/exchange/trading"
+	"github.com/palaseus/adrenochain/pkg/bridge"
+	"github.com/palaseus/adrenochain/pkg/governance"
 )
 
 // TestDataGenerators provides utilities for generating test data

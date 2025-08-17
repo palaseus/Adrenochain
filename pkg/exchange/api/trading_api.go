@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gochain/gochain/pkg/exchange/orderbook"
-	"github.com/gochain/gochain/pkg/exchange/trading"
+	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
+	"github.com/palaseus/adrenochain/pkg/exchange/trading"
 )
 
 // TradingAPI handles trading-related HTTP endpoints

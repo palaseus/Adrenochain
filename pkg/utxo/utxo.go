@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // UTXOSet represents the set of unspent transaction outputs

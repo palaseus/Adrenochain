@@ -3,7 +3,7 @@ package wasm
 import (
 	"testing"
 
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // Simple test to verify WASM engine creation works

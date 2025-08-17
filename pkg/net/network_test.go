@@ -8,11 +8,11 @@ import (
 
 	"sync"
 
-	"github.com/gochain/gochain/pkg/chain"
-	"github.com/gochain/gochain/pkg/consensus"
-	"github.com/gochain/gochain/pkg/mempool"
-	proto_net "github.com/gochain/gochain/pkg/proto/net"
-	"github.com/gochain/gochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/consensus"
+	"github.com/palaseus/adrenochain/pkg/mempool"
+	proto_net "github.com/palaseus/adrenochain/pkg/proto/net"
+	"github.com/palaseus/adrenochain/pkg/storage"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"

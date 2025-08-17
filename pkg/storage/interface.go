@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // StorageInterface defines the common interface for all storage implementations

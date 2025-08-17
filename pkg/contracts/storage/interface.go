@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/gochain/gochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
 // ContractStorage defines the interface for contract state storage

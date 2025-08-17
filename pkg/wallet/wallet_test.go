@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/gochain/gochain/pkg/storage" // Added import
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/storage" // Added import
+	"github.com/palaseus/adrenochain/pkg/utxo"
 	"github.com/stretchr/testify/assert" // Added import for assert
 )
 

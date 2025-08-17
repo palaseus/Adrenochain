@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gochain/gochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/block"
 )
 
 // BlockchainDataProvider defines the interface for accessing blockchain data

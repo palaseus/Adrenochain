@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gochain/gochain/pkg/storage"
-	"github.com/gochain/gochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/storage"
+	"github.com/palaseus/adrenochain/pkg/utxo"
 )
 
 // FuzzAddressValidation tests address validation with fuzzed data

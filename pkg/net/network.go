@@ -12,9 +12,9 @@ import (
 
 	libp2p "github.com/libp2p/go-libp2p"
 
-	"github.com/gochain/gochain/pkg/chain"
-	"github.com/gochain/gochain/pkg/mempool"
-	proto_net "github.com/gochain/gochain/pkg/proto/net"
+	"github.com/palaseus/adrenochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/mempool"
+	proto_net "github.com/palaseus/adrenochain/pkg/proto/net"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
