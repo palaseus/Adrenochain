@@ -50,7 +50,7 @@ Adrenochain is a **comprehensive blockchain research and development platform** 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   DeFi          │    │   Security      │    │   Research      │
 │   Protocols     │    │   Framework     │    │   Tools         │
-│   [80.4% cov]   │    │   [60.4% cov]   │    │   [31.6% cov]  │
+│   [80.4% cov]   │    │   [60.4% cov]   │    │   [31.6% cov]   │
 └─────────────────┘    │    [ZK Proofs,  │    └─────────────────┘
                        │    Quantum      │
                        │    Resistance]  │
@@ -59,7 +59,7 @@ Adrenochain is a **comprehensive blockchain research and development platform** 
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Layer 2       │    │   Cross-Chain   │    │   AI/ML         │
-│   Solutions      │    │   Infrastructure│    │   Integration   │
+│   Solutions     │    │   Infrastructure│    │   Integration   │
 │   [89-98% cov]  │    │   [74-98% cov]  │    │   [84-97% cov]  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
@@ -67,7 +67,7 @@ Adrenochain is a **comprehensive blockchain research and development platform** 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Privacy       │    │   Governance    │    │   Performance   │
 │   & ZK Layer    │    │   & DAO Layer   │    │   & Security    │
-│   [67-83% cov]  │    │   [70-88% cov]  │    │   [100% cov]   │
+│   [67-83% cov]  │    │   [70-88% cov]  │    │   [100% cov]    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
