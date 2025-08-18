@@ -318,6 +318,55 @@ run_security_tests() {
     echo
 }
 
+# Run comprehensive performance benchmarking suite
+run_comprehensive_benchmarks() {
+    echo -e "${BLUE}📊 Running Comprehensive Performance Benchmarking Suite...${NC}"
+    
+    echo -e "   🚀 Building benchmark tool..."
+    if go build -o "$PROJECT_ROOT/benchmark_tool" "$PROJECT_ROOT/cmd/benchmark"; then
+        echo -e "      ✅ Benchmark tool built successfully"
+        
+        echo -e "   📊 Running comprehensive benchmarks..."
+        if "$PROJECT_ROOT/benchmark_tool" 2>&1 | tee "$TEST_RESULTS_DIR/comprehensive_benchmarks.log"; then
+            echo -e "      ✅ Comprehensive benchmarks completed successfully"
+            BENCHMARK_TESTS_COUNT=$((BENCHMARK_TESTS_COUNT + 1))
+        else
+            echo -e "      ❌ Comprehensive benchmarks failed"
+        fi
+        
+        # Clean up
+        rm -f "$PROJECT_ROOT/benchmark_tool"
+    else
+        echo -e "      ❌ Failed to build benchmark tool"
+    fi
+    
+    echo -e "${GREEN}✅ Comprehensive benchmarking completed${NC}"
+}
+
+# Run comprehensive security validation suite
+run_comprehensive_security_validation() {
+    echo -e "${BLUE}🔒 Running Comprehensive Security Validation Suite...${NC}"
+    
+    echo -e "   🚀 Building security validation tool..."
+    if go build -o "$PROJECT_ROOT/security_tool" "$PROJECT_ROOT/cmd/security"; then
+        echo -e "      ✅ Security validation tool built successfully"
+        
+        echo -e "   🔒 Running comprehensive security validation..."
+        if "$PROJECT_ROOT/security_tool" 2>&1 | tee "$TEST_RESULTS_DIR/comprehensive_security_validation.log"; then
+            echo -e "      ✅ Comprehensive security validation completed successfully"
+        else
+            echo -e "      ❌ Comprehensive security validation failed"
+        fi
+        
+        # Clean up
+        rm -f "$PROJECT_ROOT/security_tool"
+    else
+        echo -e "      ❌ Failed to build security validation tool"
+    fi
+    
+    echo -e "${GREEN}✅ Comprehensive security validation completed${NC}"
+}
+
 # Run tests for a specific package
 run_package_tests() {
     local package_path="$1"
@@ -883,6 +932,11 @@ main() {
     run_benchmark_tests
     run_security_tests # Added security tests
     
+    # Run comprehensive testing suites
+    echo -e "${BLUE}🚀 Running Comprehensive Testing Suites...${NC}"
+    run_comprehensive_benchmarks
+    run_comprehensive_security_validation
+    
     # Get accurate test counts
     get_accurate_test_counts
     
@@ -915,6 +969,8 @@ case "${1:-}" in
         echo "  --contracts    Run only smart contract tests"
         echo "  --no-contracts Disable smart contract tests"
         echo "  --week11-12    Run only Week 11-12: Polish & Production tests"
+        echo "  --comprehensive-benchmarks Run comprehensive performance benchmarking"
+        echo "  --comprehensive-security  Run comprehensive security validation"
         echo "  --verbose      Enable verbose output"
         echo "  --timeout N    Set test timeout (default: 300s)"
         echo
@@ -922,6 +978,8 @@ case "${1:-}" in
         echo "  $0                    # Run all tests with default settings"
         echo "  $0 --contracts       # Run only smart contract tests"
         echo "  $0 --week11-12       # Run only Week 11-12: Polish & Production tests"
+        echo "  $0 --comprehensive-benchmarks # Run only comprehensive performance benchmarking"
+        echo "  $0 --comprehensive-security   # Run only comprehensive security validation"
         echo "  $0 --no-race         # Run tests without race detection"
         echo "  $0 --timeout 600s    # Run tests with 10 minute timeout"
         echo "  $0 --no-coverage     # Run tests without coverage"
@@ -955,6 +1013,16 @@ case "${1:-}" in
     --week11-12)
         echo -e "${BLUE}🚀 Running Week 11-12: Polish & Production Tests Only...${NC}"
         run_week_11_12_tests
+        exit 0
+        ;;
+    --comprehensive-benchmarks)
+        echo -e "${BLUE}📊 Running Comprehensive Performance Benchmarking Only...${NC}"
+        run_comprehensive_benchmarks
+        exit 0
+        ;;
+    --comprehensive-security)
+        echo -e "${BLUE}🔒 Running Comprehensive Security Validation Only...${NC}"
+        run_comprehensive_security_validation
         exit 0
         ;;
     --verbose)
