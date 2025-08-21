@@ -1,10 +1,12 @@
 package wallet
 
 import (
+	"math/big"
 	"os"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/palaseus/adrenochain/pkg/block"   // Added import for block
 	"github.com/palaseus/adrenochain/pkg/storage" // Added import
 	"github.com/palaseus/adrenochain/pkg/utxo"
 	"github.com/stretchr/testify/assert" // Added import for assert
@@ -344,4 +346,125 @@ func TestWalletEncryptionDecryption(t *testing.T) {
 	wallet.passphrase = "incorrect_passphrase"
 	_, err = wallet.Decrypt(encryptedData)
 	assert.Error(t, err) // Expect an error due to incorrect decryption
+}
+
+// TestBytesEqual tests the bytesEqual helper function
+func TestBytesEqual(t *testing.T) {
+	s := newTestStorage(t)
+	config := DefaultWalletConfig()
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us, s)
+	assert.NoError(t, err)
+
+	// Test equal byte slices
+	a := []byte{1, 2, 3, 4}
+	b := []byte{1, 2, 3, 4}
+	assert.True(t, wallet.bytesEqual(a, b))
+
+	// Test different length byte slices
+	c := []byte{1, 2, 3}
+	assert.False(t, wallet.bytesEqual(a, c))
+
+	// Test different content byte slices
+	d := []byte{1, 2, 3, 5}
+	assert.False(t, wallet.bytesEqual(a, d))
+
+	// Test empty byte slices
+	e := []byte{}
+	f := []byte{}
+	assert.True(t, wallet.bytesEqual(e, f))
+
+	// Test nil byte slices
+	assert.True(t, wallet.bytesEqual(nil, nil))
+	assert.False(t, wallet.bytesEqual(nil, a))
+	assert.False(t, wallet.bytesEqual(a, nil))
+}
+
+// TestCalculateTransactionHash tests the calculateTransactionHash function
+func TestCalculateTransactionHash(t *testing.T) {
+	s := newTestStorage(t)
+	config := DefaultWalletConfig()
+	us := utxo.NewUTXOSet()
+	wallet, err := NewWallet(config, us, s)
+	assert.NoError(t, err)
+
+	// Create a test transaction
+	tx := &block.Transaction{
+		Version: 1,
+		Inputs: []*block.TxInput{
+			{
+				PrevTxHash:  []byte{1, 2, 3, 4},
+				PrevTxIndex: 0,
+				ScriptSig:   []byte{5, 6, 7, 8},
+				Sequence:    0xffffffff,
+			},
+		},
+		Outputs: []*block.TxOutput{
+			{
+				Value:        1000,
+				ScriptPubKey: []byte{9, 10, 11, 12},
+			},
+		},
+		LockTime: 0,
+		Fee:      10,
+	}
+
+	// Calculate hash
+	hash := wallet.calculateTransactionHash(tx)
+	assert.NotNil(t, hash)
+	assert.Len(t, hash, 32) // SHA256 hash length
+
+	// Test that same transaction produces same hash
+	hash2 := wallet.calculateTransactionHash(tx)
+	assert.Equal(t, hash, hash2)
+
+	// Test that different transaction produces different hash
+	tx2 := &block.Transaction{
+		Version: 2, // Different version
+		Inputs: []*block.TxInput{
+			{
+				PrevTxHash:  []byte{1, 2, 3, 4},
+				PrevTxIndex: 0,
+				ScriptSig:   []byte{5, 6, 7, 8},
+				Sequence:    0xffffffff,
+			},
+		},
+		Outputs: []*block.TxOutput{
+			{
+				Value:        1000,
+				ScriptPubKey: []byte{9, 10, 11, 12},
+			},
+		},
+		LockTime: 0,
+		Fee:      10,
+	}
+	hash3 := wallet.calculateTransactionHash(tx2)
+	assert.NotEqual(t, hash, hash3)
+}
+
+// TestConcatRS tests the concatRS helper function
+func TestConcatRS(t *testing.T) {
+	// Test with small numbers
+	r := big.NewInt(123)
+	s := big.NewInt(456)
+	result := concatRS(r, s)
+	assert.Len(t, result, 64)
+
+	// Test with large numbers
+	r2 := big.NewInt(0)
+	r2.SetString("1234567890123456789012345678901234567890", 10)
+	s2 := big.NewInt(0)
+	s2.SetString("9876543210987654321098765432109876543210", 10)
+	result2 := concatRS(r2, s2)
+	assert.Len(t, result2, 64)
+
+	// Test with zero values
+	r3 := big.NewInt(0)
+	s3 := big.NewInt(0)
+	result3 := concatRS(r3, s3)
+	assert.Len(t, result3, 64)
+
+	// Verify the structure: first 32 bytes should contain r, last 32 bytes should contain s
+	// This is a basic verification of the concatenation logic
+	assert.Equal(t, 64, len(result3))
 }

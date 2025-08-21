@@ -3,6 +3,7 @@ package testing
 import (
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/palaseus/adrenochain/pkg/bridge"
@@ -14,13 +15,37 @@ import (
 // IntegrationTestHelpers provides utilities for comprehensive integration testing
 type IntegrationTestHelpers struct {
 	testData map[string]interface{}
+	mu       sync.RWMutex
 }
 
 // NewIntegrationTestHelpers creates new integration test helpers
 func NewIntegrationTestHelpers() *IntegrationTestHelpers {
 	return &IntegrationTestHelpers{
 		testData: make(map[string]interface{}),
+		mu:       sync.RWMutex{},
 	}
+}
+
+// SetTestData safely sets a key-value pair in testData
+func (ith *IntegrationTestHelpers) SetTestData(key string, value interface{}) {
+	ith.mu.Lock()
+	defer ith.mu.Unlock()
+	ith.testData[key] = value
+}
+
+// GetTestData safely gets a value from testData
+func (ith *IntegrationTestHelpers) GetTestData(key string) (interface{}, bool) {
+	ith.mu.RLock()
+	defer ith.mu.RUnlock()
+	value, exists := ith.testData[key]
+	return value, exists
+}
+
+// GetTestDataLength safely gets the length of testData
+func (ith *IntegrationTestHelpers) GetTestDataLength() int {
+	ith.mu.RLock()
+	defer ith.mu.RUnlock()
+	return len(ith.testData)
 }
 
 // SetupTradingEnvironment creates a complete trading environment for testing

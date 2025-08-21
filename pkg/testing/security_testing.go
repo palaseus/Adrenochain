@@ -245,6 +245,7 @@ func (stf *SecurityTestFramework) testSQLInjectionVulnerability(component, testT
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "SQL injection protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -256,6 +257,7 @@ func (stf *SecurityTestFramework) testBufferOverflowVulnerability(component, tes
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Buffer overflow protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -267,6 +269,7 @@ func (stf *SecurityTestFramework) testRaceConditionVulnerability(component, test
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Race condition protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -278,6 +281,7 @@ func (stf *SecurityTestFramework) testPriceManipulationVulnerability(component, 
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Price manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -289,6 +293,7 @@ func (stf *SecurityTestFramework) testOrderManipulationVulnerability(component, 
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Order manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -300,6 +305,7 @@ func (stf *SecurityTestFramework) testFrontRunningVulnerability(component, testT
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Front-running protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -311,6 +317,7 @@ func (stf *SecurityTestFramework) testMEVVulnerability(component, testType strin
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "MEV protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -322,6 +329,7 @@ func (stf *SecurityTestFramework) testAssetValidationVulnerability(component, te
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Asset validation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -333,6 +341,7 @@ func (stf *SecurityTestFramework) testFeeManipulationVulnerability(component, te
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Fee manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -344,6 +353,7 @@ func (stf *SecurityTestFramework) testSymbolInjectionVulnerability(component, te
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Symbol injection protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -355,6 +365,7 @@ func (stf *SecurityTestFramework) testValidatorCollusionVulnerability(component,
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Validator collusion protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -366,6 +377,7 @@ func (stf *SecurityTestFramework) testReplayAttackVulnerability(component, testT
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Replay attack protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -377,6 +389,7 @@ func (stf *SecurityTestFramework) testAssetLockVulnerability(component, testType
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Asset lock protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -388,6 +401,7 @@ func (stf *SecurityTestFramework) testStakeManipulationVulnerability(component, 
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Stake manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -399,6 +413,7 @@ func (stf *SecurityTestFramework) testSignatureForgeryVulnerability(component, t
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Signature forgery protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -410,6 +425,7 @@ func (stf *SecurityTestFramework) testConsensusManipulationVulnerability(compone
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Consensus manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -421,6 +437,7 @@ func (stf *SecurityTestFramework) testVoteManipulationVulnerability(component, t
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Vote manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -432,6 +449,7 @@ func (stf *SecurityTestFramework) testSybilAttackVulnerability(component, testTy
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Sybil attack protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -443,6 +461,7 @@ func (stf *SecurityTestFramework) testDelegationManipulationVulnerability(compon
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Delegation manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -454,6 +473,7 @@ func (stf *SecurityTestFramework) testFundTheftVulnerability(component, testType
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Fund theft protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -465,6 +485,7 @@ func (stf *SecurityTestFramework) testMultisigCompromiseVulnerability(component,
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Multisig compromise protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -476,6 +497,7 @@ func (stf *SecurityTestFramework) testTransactionReplayVulnerability(component, 
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Transaction replay protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -487,6 +509,7 @@ func (stf *SecurityTestFramework) testFlashLoanVulnerability(component, testType
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Flash loan attack protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -498,6 +521,7 @@ func (stf *SecurityTestFramework) testLiquidationManipulationVulnerability(compo
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Liquidation manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -509,6 +533,7 @@ func (stf *SecurityTestFramework) testInterestRateManipulationVulnerability(comp
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Interest rate manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -520,6 +545,7 @@ func (stf *SecurityTestFramework) testSandwichAttackVulnerability(component, tes
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Sandwich attack protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -531,6 +557,7 @@ func (stf *SecurityTestFramework) testAMMPriceManipulationVulnerability(componen
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "AMM price manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -542,6 +569,7 @@ func (stf *SecurityTestFramework) testLiquidityDrainVulnerability(component, tes
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Liquidity drain protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -553,6 +581,7 @@ func (stf *SecurityTestFramework) testMaliciousInputVulnerability(component, tes
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Malicious input protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -564,6 +593,7 @@ func (stf *SecurityTestFramework) testTypeConfusionVulnerability(component, test
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Type confusion protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -575,6 +605,7 @@ func (stf *SecurityTestFramework) testPrivilegeEscalationVulnerability(component
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Privilege escalation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -586,6 +617,7 @@ func (stf *SecurityTestFramework) testUnauthorizedAccessVulnerability(component,
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Unauthorized access protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -597,6 +629,7 @@ func (stf *SecurityTestFramework) testRoleManipulationVulnerability(component, t
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Role manipulation protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -608,6 +641,7 @@ func (stf *SecurityTestFramework) testDataTamperingVulnerability(component, test
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Data tampering protection verified",
 		Timestamp:   time.Now(),
 	}
@@ -619,6 +653,7 @@ func (stf *SecurityTestFramework) testMITMVulnerability(component, testType stri
 		Component:   component,
 		TestType:    testType,
 		Status:      "PASSED",
+		Severity:    string(SecuritySeverityHigh),
 		Description: "Man-in-the-middle attack protection verified",
 		Timestamp:   time.Now(),
 	}

@@ -16,23 +16,23 @@ type SecurityAuditor struct {
 	contractAuditor  *ContractAuditor
 	networkAuditor   *NetworkAuditor
 	economicAuditor  *EconomicAuditor
-	
+
 	// Security configuration
 	config SecurityAuditConfig
-	
+
 	// Audit results
 	auditResults map[string]*AuditResult
 	auditHistory []*AuditResult
-	
+
 	// Statistics
-	TotalAudits     uint64
-	PassedAudits    uint64
-	FailedAudits    uint64
-	CriticalIssues  uint64
-	HighIssues      uint64
-	MediumIssues    uint64
-	LowIssues       uint64
-	LastAudit       time.Time
+	TotalAudits    uint64
+	PassedAudits   uint64
+	FailedAudits   uint64
+	CriticalIssues uint64
+	HighIssues     uint64
+	MediumIssues   uint64
+	LowIssues      uint64
+	LastAudit      time.Time
 }
 
 // SecurityAuditConfig holds configuration for security auditing
@@ -42,48 +42,48 @@ type SecurityAuditConfig struct {
 	EnableContractAuditing  bool
 	EnableNetworkAuditing   bool
 	EnableEconomicAuditing  bool
-	
+
 	// Security thresholds
 	MaxCriticalIssues uint64
 	MaxHighIssues     uint64
 	MaxMediumIssues   uint64
 	MaxLowIssues      uint64
-	
+
 	// Audit frequency
-	AuditInterval     time.Duration
+	AuditInterval            time.Duration
 	EnableContinuousAuditing bool
-	
+
 	// Reporting
-	EnableDetailedReports bool
+	EnableDetailedReports       bool
 	EnableVulnerabilityDatabase bool
-	ReportOutputPath     string
+	ReportOutputPath            string
 }
 
 // AuditResult contains the result of a security audit
 type AuditResult struct {
-	ID              string
-	Type            AuditType
-	Component       string
-	StartTime       time.Time
-	EndTime         time.Time
-	Duration        time.Duration
-	Status          AuditStatus
-	Score           float64
-	
+	ID        string
+	Type      AuditType
+	Component string
+	StartTime time.Time
+	EndTime   time.Time
+	Duration  time.Duration
+	Status    AuditStatus
+	Score     float64
+
 	// Issues found
-	CriticalIssues  []SecurityIssue
-	HighIssues      []SecurityIssue
-	MediumIssues    []SecurityIssue
-	LowIssues       []SecurityIssue
-	
+	CriticalIssues []SecurityIssue
+	HighIssues     []SecurityIssue
+	MediumIssues   []SecurityIssue
+	LowIssues      []SecurityIssue
+
 	// Recommendations
 	Recommendations []string
 	RiskLevel       RiskLevel
-	
+
 	// Metadata
-	Auditor         string
-	Version         string
-	Timestamp       time.Time
+	Auditor   string
+	Version   string
+	Timestamp time.Time
 }
 
 // AuditType indicates the type of security audit
@@ -120,19 +120,19 @@ const (
 
 // SecurityIssue represents a security vulnerability or issue
 type SecurityIssue struct {
-	ID              string
-	Title           string
-	Description     string
-	Severity        IssueSeverity
-	Category        IssueCategory
-	CVSS            float64
-	Status          IssueStatus
-	DiscoveredAt    time.Time
-	FixedAt         *time.Time
-	FixVersion      string
-	References      []string
-	Exploitability  ExploitabilityLevel
-	Impact          ImpactLevel
+	ID             string
+	Title          string
+	Description    string
+	Severity       IssueSeverity
+	Category       IssueCategory
+	CVSS           float64
+	Status         IssueStatus
+	DiscoveredAt   time.Time
+	FixedAt        *time.Time
+	FixVersion     string
+	References     []string
+	Exploitability ExploitabilityLevel
+	Impact         ImpactLevel
 }
 
 // IssueSeverity indicates the severity of a security issue
@@ -219,10 +219,10 @@ func NewSecurityAuditor(config SecurityAuditConfig) *SecurityAuditor {
 func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditResult, error) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
-	
+
 	auditID := generateAuditID()
 	startTime := time.Now()
-	
+
 	auditResult := &AuditResult{
 		ID:        auditID,
 		Type:      AuditTypeComprehensive,
@@ -233,7 +233,7 @@ func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditRes
 		Version:   "1.0.0",
 		Timestamp: startTime,
 	}
-	
+
 	// Run consensus audit
 	if sa.config.EnableConsensusAuditing {
 		if consensusResult, err := sa.consensusAuditor.Audit(ctx); err == nil {
@@ -243,7 +243,7 @@ func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditRes
 			auditResult.LowIssues = append(auditResult.LowIssues, consensusResult.LowIssues...)
 		}
 	}
-	
+
 	// Run contract audit
 	if sa.config.EnableContractAuditing {
 		if contractResult, err := sa.contractAuditor.Audit(ctx); err == nil {
@@ -253,7 +253,7 @@ func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditRes
 			auditResult.LowIssues = append(auditResult.LowIssues, contractResult.LowIssues...)
 		}
 	}
-	
+
 	// Run network audit
 	if sa.config.EnableNetworkAuditing {
 		if networkResult, err := sa.networkAuditor.Audit(ctx); err == nil {
@@ -263,7 +263,7 @@ func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditRes
 			auditResult.LowIssues = append(auditResult.LowIssues, networkResult.LowIssues...)
 		}
 	}
-	
+
 	// Run economic audit
 	if sa.config.EnableEconomicAuditing {
 		if economicResult, err := sa.economicAuditor.Audit(ctx); err == nil {
@@ -273,26 +273,26 @@ func (sa *SecurityAuditor) RunComprehensiveAudit(ctx context.Context) (*AuditRes
 			auditResult.LowIssues = append(auditResult.LowIssues, economicResult.LowIssues...)
 		}
 	}
-	
+
 	// Calculate audit score and risk level
 	auditResult.Score = sa.calculateAuditScore(auditResult)
 	auditResult.RiskLevel = sa.calculateRiskLevel(auditResult)
-	
+
 	// Generate recommendations
 	auditResult.Recommendations = sa.generateRecommendations(auditResult)
-	
+
 	// Finalize audit
 	auditResult.EndTime = time.Now()
 	auditResult.Duration = auditResult.EndTime.Sub(auditResult.StartTime)
 	auditResult.Status = AuditStatusCompleted
-	
+
 	// Update statistics
 	sa.updateAuditStatistics(auditResult)
-	
+
 	// Store result
 	sa.auditResults[auditID] = auditResult
 	sa.auditHistory = append(sa.auditHistory, auditResult)
-	
+
 	return auditResult, nil
 }
 
@@ -301,8 +301,21 @@ func (sa *SecurityAuditor) RunConsensusAudit(ctx context.Context) (*AuditResult,
 	if !sa.config.EnableConsensusAuditing {
 		return nil, ErrConsensusAuditingNotEnabled
 	}
-	
-	return sa.consensusAuditor.Audit(ctx)
+
+	result, err := sa.consensusAuditor.Audit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store result and update statistics
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	sa.auditResults[result.ID] = result
+	sa.auditHistory = append(sa.auditHistory, result)
+	sa.updateAuditStatistics(result)
+
+	return result, nil
 }
 
 // RunContractAudit runs a contract security audit
@@ -310,8 +323,21 @@ func (sa *SecurityAuditor) RunContractAudit(ctx context.Context) (*AuditResult, 
 	if !sa.config.EnableContractAuditing {
 		return nil, ErrContractAuditingNotEnabled
 	}
-	
-	return sa.contractAuditor.Audit(ctx)
+
+	result, err := sa.contractAuditor.Audit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store result and update statistics
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	sa.auditResults[result.ID] = result
+	sa.auditHistory = append(sa.auditHistory, result)
+	sa.updateAuditStatistics(result)
+
+	return result, nil
 }
 
 // RunNetworkAudit runs a network security audit
@@ -319,8 +345,21 @@ func (sa *SecurityAuditor) RunNetworkAudit(ctx context.Context) (*AuditResult, e
 	if !sa.config.EnableNetworkAuditing {
 		return nil, ErrNetworkAuditingNotEnabled
 	}
-	
-	return sa.networkAuditor.Audit(ctx)
+
+	result, err := sa.networkAuditor.Audit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store result and update statistics
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	sa.auditResults[result.ID] = result
+	sa.auditHistory = append(sa.auditHistory, result)
+	sa.updateAuditStatistics(result)
+
+	return result, nil
 }
 
 // RunEconomicAudit runs an economic security audit
@@ -328,15 +367,28 @@ func (sa *SecurityAuditor) RunEconomicAudit(ctx context.Context) (*AuditResult, 
 	if !sa.config.EnableEconomicAuditing {
 		return nil, ErrEconomicAuditingNotEnabled
 	}
-	
-	return sa.economicAuditor.Audit(ctx)
+
+	result, err := sa.economicAuditor.Audit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store result and update statistics
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	sa.auditResults[result.ID] = result
+	sa.auditHistory = append(sa.auditHistory, result)
+	sa.updateAuditStatistics(result)
+
+	return result, nil
 }
 
 // GetAuditResult returns a specific audit result
 func (sa *SecurityAuditor) GetAuditResult(auditID string) *AuditResult {
 	sa.mu.RLock()
 	defer sa.mu.RUnlock()
-	
+
 	if result, exists := sa.auditResults[auditID]; exists {
 		// Return a copy to avoid race conditions
 		resultCopy := &AuditResult{
@@ -358,17 +410,17 @@ func (sa *SecurityAuditor) GetAuditResult(auditID string) *AuditResult {
 			LowIssues:       make([]SecurityIssue, len(result.LowIssues)),
 			Recommendations: make([]string, len(result.Recommendations)),
 		}
-		
+
 		// Copy issues
 		copy(resultCopy.CriticalIssues, result.CriticalIssues)
 		copy(resultCopy.HighIssues, result.HighIssues)
 		copy(resultCopy.MediumIssues, result.MediumIssues)
 		copy(resultCopy.LowIssues, result.LowIssues)
 		copy(resultCopy.Recommendations, result.Recommendations)
-		
+
 		return resultCopy
 	}
-	
+
 	return nil
 }
 
@@ -376,20 +428,20 @@ func (sa *SecurityAuditor) GetAuditResult(auditID string) *AuditResult {
 func (sa *SecurityAuditor) GetAuditHistory(limit int) []*AuditResult {
 	sa.mu.RLock()
 	defer sa.mu.RUnlock()
-	
+
 	if limit <= 0 || limit > len(sa.auditHistory) {
 		limit = len(sa.auditHistory)
 	}
-	
+
 	// Return recent audits
 	recentAudits := sa.auditHistory[len(sa.auditHistory)-limit:]
-	
+
 	// Return copies to avoid race conditions
 	audits := make([]*AuditResult, len(recentAudits))
 	for i, audit := range recentAudits {
 		audits[i] = sa.copyAuditResult(audit)
 	}
-	
+
 	return audits
 }
 
@@ -397,7 +449,7 @@ func (sa *SecurityAuditor) GetAuditHistory(limit int) []*AuditResult {
 func (sa *SecurityAuditor) GetSecurityStatistics() *SecurityStatistics {
 	sa.mu.RLock()
 	defer sa.mu.RUnlock()
-	
+
 	return &SecurityStatistics{
 		TotalAudits:    sa.TotalAudits,
 		PassedAudits:   sa.PassedAudits,
@@ -414,29 +466,29 @@ func (sa *SecurityAuditor) GetSecurityStatistics() *SecurityStatistics {
 // Helper functions
 func (sa *SecurityAuditor) calculateAuditScore(result *AuditResult) float64 {
 	totalIssues := len(result.CriticalIssues) + len(result.HighIssues) + len(result.MediumIssues) + len(result.LowIssues)
-	
+
 	if totalIssues == 0 {
 		return 100.0
 	}
-	
+
 	// Weight issues by severity
 	criticalWeight := 10.0
 	highWeight := 5.0
 	mediumWeight := 2.0
 	lowWeight := 0.5
-	
-	weightedScore := float64(len(result.CriticalIssues)) * criticalWeight +
-		float64(len(result.HighIssues)) * highWeight +
-		float64(len(result.MediumIssues)) * mediumWeight +
-		float64(len(result.LowIssues)) * lowWeight
-	
+
+	weightedScore := float64(len(result.CriticalIssues))*criticalWeight +
+		float64(len(result.HighIssues))*highWeight +
+		float64(len(result.MediumIssues))*mediumWeight +
+		float64(len(result.LowIssues))*lowWeight
+
 	// Convert to 0-100 scale
 	score := 100.0 - (weightedScore * 100.0 / 100.0) // Normalize to 100
-	
+
 	if score < 0 {
 		score = 0
 	}
-	
+
 	return score
 }
 
@@ -444,19 +496,19 @@ func (sa *SecurityAuditor) calculateRiskLevel(result *AuditResult) RiskLevel {
 	if len(result.CriticalIssues) > 0 {
 		return RiskLevelCritical
 	}
-	
+
 	if len(result.HighIssues) > 0 {
 		return RiskLevelHigh
 	}
-	
+
 	if len(result.MediumIssues) > 0 {
 		return RiskLevelMedium
 	}
-	
+
 	if len(result.LowIssues) > 0 {
 		return RiskLevelLow
 	}
-	
+
 	return RiskLevelLow
 }
 
@@ -464,69 +516,75 @@ func (sa *SecurityAuditor) calculateOverallRiskLevel() RiskLevel {
 	if sa.CriticalIssues > 0 {
 		return RiskLevelCritical
 	}
-	
+
 	if sa.HighIssues > 0 {
 		return RiskLevelHigh
 	}
-	
+
 	if sa.MediumIssues > 0 {
 		return RiskLevelMedium
 	}
-	
+
 	return RiskLevelLow
 }
 
 func (sa *SecurityAuditor) generateRecommendations(result *AuditResult) []string {
 	var recommendations []string
-	
+
 	// Critical issues
 	if len(result.CriticalIssues) > 0 {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			fmt.Sprintf("Immediately address %d critical security issues", len(result.CriticalIssues)))
 	}
-	
+
 	// High issues
 	if len(result.HighIssues) > 0 {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			fmt.Sprintf("Address %d high-priority security issues within 30 days", len(result.HighIssues)))
 	}
-	
+
 	// Medium issues
 	if len(result.MediumIssues) > 0 {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			fmt.Sprintf("Plan to address %d medium-priority security issues", len(result.MediumIssues)))
 	}
-	
+
 	// Low issues
 	if len(result.LowIssues) > 0 {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			fmt.Sprintf("Consider addressing %d low-priority security issues", len(result.LowIssues)))
 	}
-	
+
 	// General recommendations
 	if result.Score < 80.0 {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			"Implement comprehensive security review process")
 	}
-	
+
 	if result.Score < 60.0 {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			"Consider engaging external security audit firm")
 	}
-	
+
+	// Always provide at least one recommendation
+	if len(recommendations) == 0 {
+		recommendations = append(recommendations,
+			"Security audit completed successfully. Continue monitoring and maintain current security practices.")
+	}
+
 	return recommendations
 }
 
 func (sa *SecurityAuditor) updateAuditStatistics(result *AuditResult) {
 	sa.TotalAudits++
 	sa.LastAudit = time.Now()
-	
+
 	// Update issue counts
 	sa.CriticalIssues += uint64(len(result.CriticalIssues))
 	sa.HighIssues += uint64(len(result.HighIssues))
 	sa.MediumIssues += uint64(len(result.MediumIssues))
 	sa.LowIssues += uint64(len(result.LowIssues))
-	
+
 	// Update audit status counts
 	if result.RiskLevel == RiskLevelCritical || result.RiskLevel == RiskLevelHigh {
 		sa.FailedAudits++

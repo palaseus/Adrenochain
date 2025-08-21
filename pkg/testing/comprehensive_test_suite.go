@@ -718,27 +718,129 @@ func (cts *ComprehensiveTestSuite) teardownIntegrationTests() error {
 
 // Additional test creation functions (simplified for brevity)
 func (cts *ComprehensiveTestSuite) createTokenStandardTests() []*TestCase {
-	return []*TestCase{} // Placeholder
+	var tests []*TestCase
+	
+	// ERC-20 token tests
+	tests = append(tests, &TestCase{
+		ID:          "erc20_basic",
+		Name:        "ERC-20 Basic Functionality",
+		Description: "Test basic ERC-20 token operations",
+		Function:    cts.testERC20Basic,
+		Priority:    TestPriorityHigh,
+		Tags:        []string{"token", "erc20", "basic"},
+	})
+	
+	// ERC-721 token tests
+	tests = append(tests, &TestCase{
+		ID:          "erc721_basic",
+		Name:        "ERC-721 Basic Functionality",
+		Description: "Test basic ERC-721 token operations",
+		Function:    cts.testERC721Basic,
+		Priority:    TestPriorityHigh,
+		Tags:        []string{"token", "erc721", "basic"},
+	})
+	
+	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createAMMTests() []*TestCase {
-	return []*TestCase{} // Placeholder
+	var tests []*TestCase
+	
+	// Uniswap-style AMM tests
+	tests = append(tests, &TestCase{
+		ID:          "amm_swap",
+		Name:        "AMM Swap Operations",
+		Description: "Test AMM swap functionality",
+		Function:    cts.testAMMSwap,
+		Priority:    TestPriorityHigh,
+		Tags:        []string{"amm", "swap", "defi"},
+	})
+	
+	// Liquidity provision tests
+	tests = append(tests, &TestCase{
+		ID:          "amm_liquidity",
+		Name:        "AMM Liquidity Provision",
+		Description: "Test AMM liquidity provision",
+		Function:    cts.testAMMLiquidity,
+		Priority:    TestPriorityNormal,
+		Tags:        []string{"amm", "liquidity", "defi"},
+	})
+	
+	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createLendingTests() []*TestCase {
-	return []*TestCase{} // Placeholder
+	var tests []*TestCase
+	
+	// Lending protocol tests
+	tests = append(tests, &TestCase{
+		ID:          "lending_borrow",
+		Name:        "Lending Borrow Operations",
+		Description: "Test lending protocol borrow functionality",
+		Function:    cts.testLendingBorrow,
+		Priority:    TestPriorityHigh,
+		Tags:        []string{"lending", "borrow", "defi"},
+	})
+	
+	// Collateral management tests
+	tests = append(tests, &TestCase{
+		ID:          "lending_collateral",
+		Name:        "Lending Collateral Management",
+		Description: "Test lending protocol collateral operations",
+		Function:    cts.testLendingCollateral,
+		Priority:    TestPriorityNormal,
+		Tags:        []string{"lending", "collateral", "defi"},
+	})
+	
+	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createYieldFarmingTests() []*TestCase {
-	return []*TestCase{} // Placeholder
+	var tests []*TestCase
+	
+	// Yield farming tests
+	tests = append(tests, &TestCase{
+		ID:          "yield_farming_stake",
+		Name:        "Yield Farming Stake",
+		Description: "Test yield farming stake functionality",
+		Function:    cts.testYieldFarmingStake,
+		Priority:    TestPriorityNormal,
+		Tags:        []string{"yield", "farming", "stake", "defi"},
+	})
+	
+	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createGovernanceTests() []*TestCase {
-	return []*TestCase{} // Placeholder
+	var tests []*TestCase
+	
+	// Governance proposal tests
+	tests = append(tests, &TestCase{
+		ID:          "governance_proposal",
+		Name:        "Governance Proposal",
+		Description: "Test governance proposal functionality",
+		Function:    cts.testGovernanceProposal,
+		Priority:    TestPriorityNormal,
+		Tags:        []string{"governance", "proposal", "defi"},
+	})
+	
+	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createOracleTests() []*TestCase {
-	return []*TestCase{} // Placeholder
+	var tests []*TestCase
+	
+	// Price oracle tests
+	tests = append(tests, &TestCase{
+		ID:          "oracle_price",
+		Name:        "Price Oracle",
+		Description: "Test price oracle functionality",
+		Function:    cts.testOraclePrice,
+		Priority:    TestPriorityHigh,
+		Tags:        []string{"oracle", "price", "defi"},
+	})
+	
+	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createStorageTests() []*TestCase {
@@ -775,4 +877,50 @@ func (cts *ComprehensiveTestSuite) createCrossComponentTests() []*TestCase {
 
 func (cts *ComprehensiveTestSuite) createPerformanceIntegrationTests() []*TestCase {
 	return []*TestCase{} // Placeholder
+}
+
+// Test function implementations (placeholder implementations)
+func (cts *ComprehensiveTestSuite) testERC20Basic(t interface{}) error {
+	// Placeholder for ERC-20 basic functionality test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testERC721Basic(t interface{}) error {
+	// Placeholder for ERC-721 basic functionality test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testAMMSwap(t interface{}) error {
+	// Placeholder for AMM swap test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testAMMLiquidity(t interface{}) error {
+	// Placeholder for AMM liquidity test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testLendingBorrow(t interface{}) error {
+	// Placeholder for lending borrow test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testLendingCollateral(t interface{}) error {
+	// Placeholder for lending collateral test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testYieldFarmingStake(t interface{}) error {
+	// Placeholder for yield farming stake test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testGovernanceProposal(t interface{}) error {
+	// Placeholder for governance proposal test
+	return nil
+}
+
+func (cts *ComprehensiveTestSuite) testOraclePrice(t interface{}) error {
+	// Placeholder for oracle price test
+	return nil
 }

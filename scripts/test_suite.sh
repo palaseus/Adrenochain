@@ -47,6 +47,17 @@ FAILED_PACKAGES=0
 FUZZ_TESTS_COUNT=0
 BENCHMARK_TESTS_COUNT=0
 
+# Ensure all variables are integers
+TOTAL_TESTS=${TOTAL_TESTS:-0}
+PASSED_TESTS=${PASSED_TESTS:-0}
+FAILED_TESTS=${FAILED_TESTS:-0}
+SKIPPED_TESTS=${SKIPPED_TESTS:-0}
+TOTAL_PACKAGES=${TOTAL_PACKAGES:-0}
+PASSED_PACKAGES=${PASSED_PACKAGES:-0}
+FAILED_PACKAGES=${FAILED_PACKAGES:-0}
+FUZZ_TESTS_COUNT=${FUZZ_TESTS_COUNT:-0}
+BENCHMARK_TESTS_COUNT=${BENCHMARK_TESTS_COUNT:-0}
+
 # Initialize test environment
 init_test_environment() {
     echo -e "${BLUE}🔧 Initializing adrenochain Test Suite...${NC}"
@@ -58,6 +69,17 @@ init_test_environment() {
     # Clean previous results
     rm -rf "$TEST_RESULTS_DIR"/*
     rm -rf "$COVERAGE_DIR"/*
+    
+    # Reset all counters to ensure they're numeric
+    TOTAL_TESTS=0
+    PASSED_TESTS=0
+    FAILED_TESTS=0
+    SKIPPED_TESTS=0
+    TOTAL_PACKAGES=0
+    PASSED_PACKAGES=0
+    FAILED_PACKAGES=0
+    FUZZ_TESTS_COUNT=0
+    BENCHMARK_TESTS_COUNT=0
     
     # Start log file
     {
@@ -765,18 +787,18 @@ generate_test_summary() {
                     local panic_count=$(grep -c "panic:" "$file" 2>/dev/null || echo "0")
                     local fail_count=$(grep -c "FAIL" "$file" 2>/dev/null || echo "0")
                     
-                    if [[ $panic_count -gt 0 ]] || [[ $fail_count -gt 0 ]]; then
+                    if [[ ${panic_count:-0} -gt 0 ]] || [[ ${fail_count:-0} -gt 0 ]]; then
                         echo "#### $filename"
                         echo "- **Panics:** $panic_count"
                         echo "- **Failures:** $fail_count"
                         
                         # Show specific error details
-                        if [[ $panic_count -gt 0 ]]; then
+                        if [[ ${panic_count:-0} -gt 0 ]]; then
                             echo "- **Panic Details:**"
                             grep "panic:" "$file" | head -3 | sed 's/^/  - /'
                         fi
                         
-                        if [[ $fail_count -gt 0 ]]; then
+                        if [[ ${fail_count:-0} -gt 0 ]]; then
                             echo "- **Failure Details:**"
                             grep "FAIL" "$file" | head -3 | sed 's/^/  - /'
                         fi
@@ -790,13 +812,13 @@ generate_test_summary() {
         echo
         echo "## 🎯 Success Rate"
         echo
-        if [[ $TOTAL_PACKAGES -gt 0 ]]; then
-            local package_success_rate=$((PASSED_PACKAGES * 100 / TOTAL_PACKAGES))
+        if [[ ${TOTAL_PACKAGES:-0} -gt 0 ]]; then
+            local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-1}))
             echo "- **Package Success Rate:** ${package_success_rate}%"
         fi
         
-        if [[ $TOTAL_TESTS -gt 0 ]]; then
-            local test_success_rate=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+        if [[ ${TOTAL_TESTS:-0} -gt 0 ]]; then
+            local test_success_rate=$(((${PASSED_TESTS:-0} * 100) / ${TOTAL_TESTS:-1}))
             echo "- **Test Success Rate:** ${test_success_rate}%"
         fi
         echo
@@ -822,8 +844,8 @@ generate_test_summary() {
         echo
         echo "## 🚀 Next Steps"
         echo
-        if [[ $FAILED_TESTS -gt 0 ]]; then
-            echo "❌ **Action Required:** $FAILED_TESTS test(s) failed"
+        if [[ ${FAILED_TESTS:-0} -gt 0 ]]; then
+            echo "❌ **Action Required:** ${FAILED_TESTS:-0} test(s) failed"
             echo "   - Review failed test logs above"
             echo "   - Fix failing tests before proceeding"
             echo "   - Pay special attention to packages with panics"
@@ -848,18 +870,18 @@ print_final_results() {
     echo -e "${NC}"
     
     echo -e "${BLUE}📊 Final Results Summary:${NC}"
-    echo -e "   📦 Packages: ${GREEN}$PASSED_PACKAGES passed${NC}, ${RED}$FAILED_PACKAGES failed${NC}, ${YELLOW}$((TOTAL_PACKAGES - PASSED_PACKAGES - FAILED_PACKAGES)) skipped${NC} (Total: $TOTAL_PACKAGES)"
-    echo -e "   🧪 Tests: ${GREEN}$PASSED_TESTS passed${NC}, ${RED}$FAILED_TESTS failed${NC}, ${YELLOW}$SKIPPED_TESTS skipped${NC} (Total: $TOTAL_TESTS from successful packages)"
+    echo -e "   📦 Packages: ${GREEN}${PASSED_PACKAGES:-0} passed${NC}, ${RED}${FAILED_PACKAGES:-0} failed${NC}, ${YELLOW}$((${TOTAL_PACKAGES:-0} - ${PASSED_PACKAGES:-0} - ${FAILED_PACKAGES:-0})) skipped${NC} (Total: ${TOTAL_PACKAGES:-0})"
+    echo -e "   🧪 Tests: ${GREEN}${PASSED_TESTS:-0} passed${NC}, ${RED}${FAILED_TESTS:-0} failed${NC}, ${YELLOW}${SKIPPED_TESTS:-0} skipped${NC} (Total: ${TOTAL_TESTS:-0} from successful packages)"
     echo -e "   🧪 Fuzz Tests: ${GREEN}$FUZZ_TESTS_COUNT${NC}, Benchmark Tests: ${GREEN}$BENCHMARK_TESTS_COUNT${NC}"
     echo -e "   🔐 Security: ${GREEN}ZK Proofs & Quantum-Resistant Crypto${NC} ✅"
     
-    if [[ $TOTAL_PACKAGES -gt 0 ]]; then
-        local package_success_rate=$((PASSED_PACKAGES * 100 / TOTAL_PACKAGES))
+    if [[ ${TOTAL_PACKAGES:-0} -gt 0 ]]; then
+        local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-1}))
         echo -e "   📈 Package Success Rate: ${GREEN}${package_success_rate}%${NC}"
     fi
     
-    if [[ $TOTAL_TESTS -gt 0 ]]; then
-        local test_success_rate=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+    if [[ ${TOTAL_TESTS:-0} -gt 0 ]]; then
+        local test_success_rate=$(((${PASSED_TESTS:-0} * 100) / ${TOTAL_TESTS:-1}))
         echo -e "   📈 Test Success Rate: ${GREEN}${test_success_rate}%${NC}"
     fi
     

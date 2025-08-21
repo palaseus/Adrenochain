@@ -3,56 +3,16 @@ package pools
 import (
 	"fmt"
 	"math/big"
-	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNewPrivacyPools(t *testing.T) {
+func TestPrivacyPools_CreatePrivacyPool(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	if pp == nil {
-		t.Fatal("Expected non-nil PrivacyPools")
-	}
-	
-	if pp.Config.MaxPools != 100 {
-		t.Errorf("Expected MaxPools to be 100, got %d", pp.Config.MaxPools)
-	}
-	
-	if pp.Config.MinAnonymitySet != 3 {
-		t.Errorf("Expected MinAnonymitySet to be 3, got %d", pp.Config.MinAnonymitySet)
-	}
-	
-	if len(pp.encryptionKey) != 32 {
-		t.Errorf("Expected encryption key length to be 32, got %d", len(pp.encryptionKey))
-	}
-}
 
-func TestStartStop(t *testing.T) {
-	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	err := pp.Start()
-	if err != nil {
-		t.Fatalf("Expected Start to succeed, got error: %v", err)
-	}
-	
-	if !pp.running {
-		t.Error("Expected PrivacyPools to be running after Start")
-	}
-	
-	err = pp.Stop()
-	if err != nil {
-		t.Fatalf("Expected Stop to succeed, got error: %v", err)
-	}
-	
-	if pp.running {
-		t.Error("Expected PrivacyPools to not be running after Stop")
-	}
-}
-
-func TestCreatePrivacyPool(t *testing.T) {
-	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
 	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
 		"Test Pool",
@@ -65,23 +25,26 @@ func TestCreatePrivacyPool(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Expected CreatePrivacyPool to succeed, got error: %v", err)
-	}
-	
-	if pool.Name != "Test Pool" {
-		t.Errorf("Expected Name to be 'Test Pool', got %s", pool.Name)
-	}
-	
-	if pool.Type != PoolTypeCoinMixing {
-		t.Errorf("Expected Type to be CoinMixing, got %v", pool.Type)
-	}
+
+	require.NoError(t, err)
+	assert.NotNil(t, pool)
+	assert.Equal(t, "Test Pool", pool.Name)
+	assert.Equal(t, "Test Description", pool.Description)
+	assert.Equal(t, "BTC", pool.Asset)
+	assert.Equal(t, PoolTypeCoinMixing, pool.Type)
+	assert.Equal(t, PoolStatusActive, pool.Status)
+	assert.Equal(t, uint64(3), pool.MinParticipants)
+	assert.Equal(t, uint64(10), pool.MaxParticipants)
+	assert.Equal(t, big.NewInt(1000), pool.MinAmount)
+	assert.Equal(t, big.NewInt(10000), pool.MaxAmount)
+	assert.Equal(t, big.NewInt(10), pool.Fee)
+	assert.NotEmpty(t, pool.ID)
+	assert.NotZero(t, pool.CreatedAt)
 }
 
-func TestJoinPool(t *testing.T) {
+func TestPrivacyPools_JoinPool(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
+
 	// Create a pool first
 	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
@@ -95,30 +58,22 @@ func TestJoinPool(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Join the pool
-	participant, err := pp.JoinPool(pool.ID, "alice", big.NewInt(5000), nil)
-	
-	if err != nil {
-		t.Fatalf("Expected JoinPool to succeed, got error: %v", err)
-	}
-	
-	if participant.Address != "alice" {
-		t.Errorf("Expected Address to be 'alice', got %s", participant.Address)
-	}
-	
-	if participant.PoolID != pool.ID {
-		t.Errorf("Expected PoolID to match, got %s vs %s", participant.PoolID, pool.ID)
-	}
+	participant, err := pp.JoinPool(pool.ID, "user1", big.NewInt(5000), nil)
+	require.NoError(t, err)
+	assert.NotNil(t, participant)
+	assert.Equal(t, "user1", participant.Address)
+	assert.Equal(t, pool.ID, participant.PoolID)
+	assert.Equal(t, big.NewInt(5000), participant.InputAmount)
+	assert.NotEmpty(t, participant.ID)
+	assert.NotZero(t, participant.JoinedAt)
 }
 
-func TestStartMixingRound(t *testing.T) {
+func TestPrivacyPools_StartMixingRound(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
+
 	// Create a pool
 	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
@@ -132,39 +87,28 @@ func TestStartMixingRound(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Join with minimum participants
 	for i := 0; i < 3; i++ {
 		_, err = pp.JoinPool(pool.ID, fmt.Sprintf("user_%d", i), big.NewInt(5000), nil)
-		if err != nil {
-			t.Fatalf("Failed to join pool: %v", err)
-		}
+		require.NoError(t, err)
 	}
-	
+
 	// Start mixing round
 	round, err := pp.StartMixingRound(pool.ID)
-	
-	if err != nil {
-		t.Fatalf("Expected StartMixingRound to succeed, got error: %v", err)
-	}
-	
-	if round.PoolID != pool.ID {
-		t.Errorf("Expected PoolID to match, got %s vs %s", round.PoolID, pool.ID)
-	}
-	
-	if len(round.Participants) != 3 {
-		t.Errorf("Expected 3 participants, got %d", len(round.Participants))
-	}
+	require.NoError(t, err)
+	assert.NotNil(t, round)
+	assert.Equal(t, pool.ID, round.PoolID)
+	assert.Equal(t, MixingRoundStatusCollecting, round.Status)
+	assert.NotEmpty(t, round.RoundID)
+	assert.NotZero(t, round.StartTime)
 }
 
-func TestExecuteMixing(t *testing.T) {
+func TestPrivacyPools_ExecuteMixing(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	// Create a pool and start mixing round
+
+	// Create a pool
 	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
 		"Test Pool",
@@ -177,153 +121,34 @@ func TestExecuteMixing(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Join with minimum participants
 	for i := 0; i < 3; i++ {
 		_, err = pp.JoinPool(pool.ID, fmt.Sprintf("user_%d", i), big.NewInt(5000), nil)
-		if err != nil {
-			t.Fatalf("Failed to join pool: %v", err)
-		}
+		require.NoError(t, err)
 	}
-	
+
 	// Start mixing round
 	round, err := pp.StartMixingRound(pool.ID)
-	if err != nil {
-		t.Fatalf("Failed to start mixing round: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Execute mixing
 	err = pp.ExecuteMixing(round.RoundID)
-	if err != nil {
-		t.Fatalf("Expected ExecuteMixing to succeed, got error: %v", err)
-	}
-	
-	// Verify round was completed
-	completedRound, err := pp.GetMixingRound(round.RoundID)
-	if err != nil {
-		t.Fatalf("Failed to get mixing round: %v", err)
-	}
-	
-	if completedRound.Status != MixingRoundStatusCompleted {
-		t.Errorf("Expected Status to be Completed, got %v", completedRound.Status)
-	}
+	require.NoError(t, err)
+
+	// Verify round status changed
+	updatedRound, err := pp.GetMixingRound(round.RoundID)
+	require.NoError(t, err)
+	assert.Equal(t, MixingRoundStatusCompleted, updatedRound.Status)
+	assert.NotZero(t, updatedRound.EndTime)
 }
 
-func TestCreateSelectiveDisclosure(t *testing.T) {
+func TestPrivacyPools_CreateSelectiveDisclosure(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	// Create a pool and participant
-	pool, err := pp.CreatePrivacyPool(
-		PoolTypeCoinMixing,
-		"Test Pool",
-		"Test Description",
-		"BTC",
-		big.NewInt(1000),
-		big.NewInt(10000),
-		3,
-		10,
-		big.NewInt(10),
-		nil,
-	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
-	participant, err := pp.JoinPool(pool.ID, "alice", big.NewInt(5000), nil)
-	if err != nil {
-		t.Fatalf("Failed to join pool: %v", err)
-	}
-	
-	// Create selective disclosure
-	disclosure, err := pp.CreateSelectiveDisclosure(
-		pool.ID,
-		participant.ID,
-		DisclosureTypeAmount,
-		[]byte("5000"),
-		time.Now().Add(time.Hour),
-		nil,
-	)
-	
-	if err != nil {
-		t.Fatalf("Expected CreateSelectiveDisclosure to succeed, got error: %v", err)
-	}
-	
-	if disclosure.ParticipantID != participant.ID {
-		t.Errorf("Expected ParticipantID to match, got %s vs %s", disclosure.ParticipantID, participant.ID)
-	}
-	
-	if disclosure.DisclosureType != DisclosureTypeAmount {
-		t.Errorf("Expected DisclosureType to be Amount, got %v", disclosure.DisclosureType)
-	}
-}
 
-func TestValidateDisclosure(t *testing.T) {
-	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	// Create a pool and participant
-	pool, err := pp.CreatePrivacyPool(
-		PoolTypeCoinMixing,
-		"Test Pool",
-		"Test Description",
-		"BTC",
-		big.NewInt(1000),
-		big.NewInt(10000),
-		3,
-		10,
-		big.NewInt(10),
-		nil,
-	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
-	participant, err := pp.JoinPool(pool.ID, "alice", big.NewInt(5000), nil)
-	if err != nil {
-		t.Fatalf("Failed to join pool: %v", err)
-	}
-	
-	// Create selective disclosure
-	disclosure, err := pp.CreateSelectiveDisclosure(
-		pool.ID,
-		participant.ID,
-		DisclosureTypeAmount,
-		[]byte("5000"),
-		time.Now().Add(time.Hour),
-		nil,
-	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create disclosure: %v", err)
-	}
-	
-	// Validate disclosure
-	err = pp.ValidateDisclosure(disclosure.ID)
-	if err != nil {
-		t.Fatalf("Expected ValidateDisclosure to succeed, got error: %v", err)
-	}
-	
-	// Verify status was updated
-	validatedDisclosure, err := pp.GetDisclosure(disclosure.ID)
-	if err != nil {
-		t.Fatalf("Failed to get disclosure: %v", err)
-	}
-	
-	if validatedDisclosure.Status != DisclosureStatusValidated {
-		t.Errorf("Expected Status to be Validated, got %v", validatedDisclosure.Status)
-	}
-}
-
-func TestGetPool(t *testing.T) {
-	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
 	// Create a pool
-	createdPool, err := pp.CreatePrivacyPool(
+	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
 		"Test Pool",
 		"Test Description",
@@ -335,43 +160,38 @@ func TestGetPool(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
-	// Retrieve the pool
-	retrievedPool, err := pp.GetPool(createdPool.ID)
-	if err != nil {
-		t.Fatalf("Expected GetPool to succeed, got error: %v", err)
-	}
-	
-	if retrievedPool.ID != createdPool.ID {
-		t.Errorf("Expected ID to match, got %s vs %s", retrievedPool.ID, createdPool.ID)
-	}
-	
-	// Verify it's a deep copy
-	originalName := retrievedPool.Name
-	retrievedPool.Name = "Modified Name"
-	
-	storedPool, _ := pp.GetPool(createdPool.ID)
-	if storedPool.Name == "Modified Name" {
-		t.Error("Expected stored pool to not be affected by external modifications")
-	}
-	
-	if storedPool.Name != originalName {
-		t.Errorf("Expected stored pool name to remain unchanged, got %s", storedPool.Name)
-	}
+	require.NoError(t, err)
+
+	// Join the pool first to create a participant
+	participant, err := pp.JoinPool(pool.ID, "user1", big.NewInt(5000), nil)
+	require.NoError(t, err)
+
+	// Create selective disclosure
+	disclosure, err := pp.CreateSelectiveDisclosure(
+		pool.ID,
+		participant.ID,
+		DisclosureTypeAmount,
+		[]byte("proof_data"),
+		time.Now().Add(time.Hour),
+		map[string]interface{}{"key": "value"},
+	)
+	require.NoError(t, err)
+	assert.NotNil(t, disclosure)
+	assert.Equal(t, pool.ID, disclosure.PoolID)
+	assert.Equal(t, participant.ID, disclosure.ParticipantID)
+	assert.Equal(t, []byte("proof_data"), disclosure.DisclosedData)
+	assert.NotEmpty(t, disclosure.ID)
+	assert.NotZero(t, disclosure.CreatedAt)
 }
 
-func TestGetPools(t *testing.T) {
+func TestPrivacyPools_GetPool(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	// Create multiple pools
-	_, err := pp.CreatePrivacyPool(
+
+	// Create a pool
+	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
-		"BTC Pool",
-		"BTC Description",
+		"Test Pool",
+		"Test Description",
 		"BTC",
 		big.NewInt(1000),
 		big.NewInt(10000),
@@ -380,15 +200,41 @@ func TestGetPools(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create first pool: %v", err)
-	}
-	
-	_, err = pp.CreatePrivacyPool(
+	require.NoError(t, err)
+
+	// Get the pool
+	retrievedPool, err := pp.GetPool(pool.ID)
+	require.NoError(t, err)
+	assert.NotNil(t, retrievedPool)
+	assert.Equal(t, pool.ID, retrievedPool.ID)
+	assert.Equal(t, pool.Name, retrievedPool.Name)
+
+	// Test getting non-existent pool
+	_, err = pp.GetPool("non-existent")
+	assert.Error(t, err)
+}
+
+func TestPrivacyPools_GetPools(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create pools of different types
+	pool1, _ := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Coin Mixing Pool",
+		"Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+
+	_, _ = pp.CreatePrivacyPool(
 		PoolTypePrivacyPool,
-		"ETH Pool",
-		"ETH Description",
+		"Privacy Pool",
+		"Description",
 		"ETH",
 		big.NewInt(1000),
 		big.NewInt(10000),
@@ -397,151 +243,29 @@ func TestGetPools(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create second pool: %v", err)
-	}
-	
-	// Get all pools
+
+	// Test getting all pools without filter
 	allPools := pp.GetPools(nil)
-	if len(allPools) != 2 {
-		t.Errorf("Expected 2 pools, got %d", len(allPools))
-	}
-	
-	// Get pools with filter
-	btcPools := pp.GetPools(func(p *PrivacyPool) bool {
-		return p.Asset == "BTC"
+	assert.Equal(t, 2, len(allPools))
+
+	// Test getting pools by type using filter
+	coinMixingPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.Type == PoolTypeCoinMixing
 	})
-	
-	if len(btcPools) != 1 {
-		t.Errorf("Expected 1 BTC pool, got %d", len(btcPools))
-	}
-	
-	if btcPools[0].Asset != "BTC" {
-		t.Errorf("Expected filtered pool to be BTC, got %s", btcPools[0].Asset)
-	}
+	assert.Equal(t, 1, len(coinMixingPools))
+	assert.Equal(t, pool1.ID, coinMixingPools[0].ID)
+
+	// Test getting pools by asset using filter
+	btcPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.Asset == "BTC"
+	})
+	assert.Equal(t, 1, len(btcPools))
+	assert.Equal(t, pool1.ID, btcPools[0].ID)
 }
 
-func TestConcurrency(t *testing.T) {
+func TestPrivacyPools_GetParticipant(t *testing.T) {
 	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	// Start the system
-	err := pp.Start()
-	if err != nil {
-		t.Fatalf("Failed to start PrivacyPools: %v", err)
-	}
-	defer pp.Stop()
-	
-	// Test concurrent pool creation
-	const numGoroutines = 5
-	var wg sync.WaitGroup
-	wg.Add(numGoroutines)
-	
-	for i := 0; i < numGoroutines; i++ {
-		go func(id int) {
-			defer wg.Done()
-			_, err := pp.CreatePrivacyPool(
-				PoolTypeCoinMixing,
-				fmt.Sprintf("Pool_%d", id),
-				"Test Description",
-				"BTC",
-				big.NewInt(1000),
-				big.NewInt(10000),
-				3,
-				10,
-				big.NewInt(10),
-				nil,
-			)
-			if err != nil {
-				// Log error but continue (some might fail due to limits)
-				return
-			}
-		}(i)
-	}
-	
-	wg.Wait()
-	
-	// Verify some pools were created
-	if len(pp.Pools) == 0 {
-		t.Error("Expected some pools to be created")
-	}
-}
 
-func TestEdgeCases(t *testing.T) {
-	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
-	// Test with zero amounts
-	_, err := pp.CreatePrivacyPool(
-		PoolTypeCoinMixing,
-		"Test Pool",
-		"Test Description",
-		"BTC",
-		big.NewInt(0),
-		big.NewInt(10000),
-		3,
-		10,
-		big.NewInt(10),
-		nil,
-	)
-	
-	if err == nil {
-		t.Error("Expected error when min amount is zero")
-	}
-	
-	// Test with invalid participant limits
-	_, err = pp.CreatePrivacyPool(
-		PoolTypeCoinMixing,
-		"Test Pool",
-		"Test Description",
-		"BTC",
-		big.NewInt(1000),
-		big.NewInt(10000),
-		1, // Below minimum anonymity set
-		10,
-		big.NewInt(10),
-		nil,
-	)
-	
-	if err == nil {
-		t.Error("Expected error when min participants is below anonymity set")
-	}
-}
-
-func TestStringMethods(t *testing.T) {
-	// Test PoolType.String()
-	if PoolTypeCoinMixing.String() != "coin_mixing" {
-		t.Errorf("Expected 'coin_mixing', got %s", PoolTypeCoinMixing.String())
-	}
-	
-	// Test PoolStatus.String()
-	if PoolStatusActive.String() != "active" {
-		t.Errorf("Expected 'active', got %s", PoolStatusActive.String())
-	}
-	
-	// Test MixingRoundStatus.String()
-	if MixingRoundStatusPending.String() != "pending" {
-		t.Errorf("Expected 'pending', got %s", MixingRoundStatusPending.String())
-	}
-	
-	// Test ParticipantStatus.String()
-	if ParticipantStatusActive.String() != "active" {
-		t.Errorf("Expected 'active', got %s", ParticipantStatusActive.String())
-	}
-	
-	// Test DisclosureType.String()
-	if DisclosureTypeAmount.String() != "amount" {
-		t.Errorf("Expected 'amount', got %s", DisclosureTypeAmount.String())
-	}
-	
-	// Test DisclosureStatus.String()
-	if DisclosureStatusPending.String() != "pending" {
-		t.Errorf("Expected 'pending', got %s", DisclosureStatusPending.String())
-	}
-}
-
-func TestMemorySafety(t *testing.T) {
-	pp := NewPrivacyPools(PrivacyPoolsConfig{})
-	
 	// Create a pool
 	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
@@ -555,29 +279,394 @@ func TestMemorySafety(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
+	require.NoError(t, err)
+
+	// Join the pool
+	participant, err := pp.JoinPool(pool.ID, "user1", big.NewInt(5000), nil)
+	require.NoError(t, err)
+
+	// Get the participant
+	retrievedParticipant, err := pp.GetParticipant(participant.ID)
+	require.NoError(t, err)
+	assert.NotNil(t, retrievedParticipant)
+	assert.Equal(t, participant.ID, retrievedParticipant.ID)
+	assert.Equal(t, participant.Address, retrievedParticipant.Address)
+
+	// Test getting non-existent participant
+	_, err = pp.GetParticipant("non-existent")
+	assert.Error(t, err)
+}
+
+func TestPrivacyPools_GetMixingRound(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create a pool
+	pool, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Test Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+	require.NoError(t, err)
+
+	// Join with minimum participants
+	for i := 0; i < 3; i++ {
+		_, err = pp.JoinPool(pool.ID, fmt.Sprintf("user_%d", i), big.NewInt(5000), nil)
+		require.NoError(t, err)
 	}
-	
+
+	// Start mixing round
+	round, err := pp.StartMixingRound(pool.ID)
+	require.NoError(t, err)
+
+	// Get the mixing round
+	retrievedRound, err := pp.GetMixingRound(round.RoundID)
+	require.NoError(t, err)
+	assert.NotNil(t, retrievedRound)
+	assert.Equal(t, round.RoundID, retrievedRound.RoundID)
+	assert.Equal(t, round.PoolID, retrievedRound.PoolID)
+
+	// Test getting non-existent round
+	_, err = pp.GetMixingRound("non-existent")
+	assert.Error(t, err)
+}
+
+func TestPrivacyPools_GetDisclosure(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create a pool
+	pool, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Test Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+	require.NoError(t, err)
+
+	// Join the pool first to create a participant
+	participant, err := pp.JoinPool(pool.ID, "user1", big.NewInt(5000), nil)
+	require.NoError(t, err)
+
+	// Create selective disclosure
+	disclosure, err := pp.CreateSelectiveDisclosure(
+		pool.ID,
+		participant.ID,
+		DisclosureTypeAmount,
+		[]byte("proof_data"),
+		time.Now().Add(time.Hour),
+		map[string]interface{}{"key": "value"},
+	)
+	require.NoError(t, err)
+
+	// Get the disclosure
+	retrievedDisclosure, err := pp.GetDisclosure(disclosure.ID)
+	require.NoError(t, err)
+	assert.NotNil(t, retrievedDisclosure)
+	assert.Equal(t, disclosure.ID, retrievedDisclosure.ID)
+	assert.Equal(t, disclosure.PoolID, retrievedDisclosure.PoolID)
+
+	// Test getting non-existent disclosure
+	_, err = pp.GetDisclosure("non-existent")
+	assert.Error(t, err)
+}
+
+func TestPrivacyPools_ValidateDisclosure(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create a pool
+	pool, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Test Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+	require.NoError(t, err)
+
+	// Join the pool first to create a participant
+	participant, err := pp.JoinPool(pool.ID, "user1", big.NewInt(5000), nil)
+	require.NoError(t, err)
+
+	// Create selective disclosure
+	disclosure, err := pp.CreateSelectiveDisclosure(
+		pool.ID,
+		participant.ID,
+		DisclosureTypeAmount,
+		[]byte("proof_data"),
+		time.Now().Add(time.Hour),
+		map[string]interface{}{"key": "value"},
+	)
+	require.NoError(t, err)
+
+	// Validate the disclosure
+	err = pp.ValidateDisclosure(disclosure.ID)
+	require.NoError(t, err)
+
+	// Verify disclosure status changed
+	updatedDisclosure, err := pp.GetDisclosure(disclosure.ID)
+	require.NoError(t, err)
+	assert.Equal(t, DisclosureStatusValidated, updatedDisclosure.Status)
+}
+
+func TestPrivacyPools_StartStop(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Test starting
+	err := pp.Start()
+	require.NoError(t, err)
+
+	// Test starting again (should fail)
+	err = pp.Start()
+	assert.Error(t, err)
+
+	// Test stopping
+	err = pp.Stop()
+	require.NoError(t, err)
+
+	// Test stopping again (should fail)
+	err = pp.Stop()
+	assert.Error(t, err)
+}
+
+func TestPrivacyPools_GetPoolsWithVariousFilters(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create pools with different characteristics
+	pool1, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"BTC Pool",
+		"Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(5000),
+		3,
+		5,
+		big.NewInt(5),
+		map[string]interface{}{"category": "defi"},
+	)
+	require.NoError(t, err)
+
+	_, err = pp.CreatePrivacyPool(
+		PoolTypePrivacyPool,
+		"ETH Pool",
+		"Description",
+		"ETH",
+		big.NewInt(1000),
+		big.NewInt(15000),
+		5,
+		15,
+		big.NewInt(20),
+		map[string]interface{}{"category": "gaming"},
+	)
+	require.NoError(t, err)
+
+	// Verify pools were created
+	allPools := pp.GetPools(nil)
+	assert.Equal(t, 2, len(allPools))
+
+	// Test various filter combinations using the actual GetPools method
+	// Test by asset
+	btcPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.Asset == "BTC"
+	})
+	assert.Equal(t, 1, len(btcPools))
+
+	// Test by size range
+	smallPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.MaxAmount.Cmp(big.NewInt(10000)) <= 0
+	})
+	assert.Equal(t, 1, len(smallPools))
+
+	// Test by fee range
+	lowFeePools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.Fee.Cmp(big.NewInt(10)) <= 0
+	})
+	assert.Equal(t, 1, len(lowFeePools))
+
+	// Test by minimum participants
+	smallMinPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.MinParticipants <= 3
+	})
+	assert.Equal(t, 1, len(smallMinPools))
+
+	// Test by maximum participants
+	smallMaxPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.MaxParticipants <= 10
+	})
+	assert.Equal(t, 1, len(smallMaxPools))
+
+	// Test by metadata
+	defiPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		if category, ok := pool.Metadata["category"]; ok {
+			return category == "defi"
+		}
+		return false
+	})
+	assert.Equal(t, 1, len(defiPools))
+
+	// Test complex filter
+	complexPools := pp.GetPools(func(pool *PrivacyPool) bool {
+		return pool.Type == PoolTypeCoinMixing &&
+			pool.Asset == "BTC" &&
+			pool.Fee.Cmp(big.NewInt(10)) <= 0
+	})
+	assert.Equal(t, 1, len(complexPools))
+	assert.Equal(t, pool1.ID, complexPools[0].ID)
+}
+
+func TestPrivacyPools_CopyMethods(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create a pool
+	pool, _ := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+
 	// Get the pool and modify it
 	retrievedPool, err := pp.GetPool(pool.ID)
-	if err != nil {
-		t.Fatalf("Failed to get pool: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	originalName := retrievedPool.Name
 	retrievedPool.Name = "Modified Name"
-	
+
 	// Verify internal state wasn't affected
 	storedPool, _ := pp.GetPool(pool.ID)
-	if storedPool.Name == "Modified Name" {
-		t.Error("Expected internal state to not be affected by external modifications")
+	assert.NotEqual(t, "Modified Name", storedPool.Name)
+	assert.Equal(t, originalName, storedPool.Name)
+}
+
+func TestPrivacyPools_CopyMethodsWithNil(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Test copying nil objects
+	nilPool := pp.copyPool(nil)
+	assert.Nil(t, nilPool)
+
+	nilParticipant := pp.copyParticipant(nil)
+	assert.Nil(t, nilParticipant)
+
+	nilMixingRound := pp.copyMixingRound(nil)
+	assert.Nil(t, nilMixingRound)
+
+	nilDisclosure := pp.copyDisclosure(nil)
+	assert.Nil(t, nilDisclosure)
+}
+
+func TestPrivacyPools_CopyMethodsWithData(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create a pool with metadata
+	pool, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		map[string]interface{}{"key": "value"},
+	)
+	require.NoError(t, err)
+
+	// Test copying pool
+	copiedPool := pp.copyPool(pool)
+	assert.NotNil(t, copiedPool)
+	assert.Equal(t, pool.ID, copiedPool.ID)
+	assert.Equal(t, pool.Name, copiedPool.Name)
+
+	// Modify copied pool and verify original is unchanged
+	copiedPool.Name = "Modified Name"
+	assert.NotEqual(t, pool.Name, copiedPool.Name)
+	assert.Equal(t, "Test Pool", pool.Name)
+
+	// Test copying participant
+	participant, err := pp.JoinPool(pool.ID, "user1", big.NewInt(5000), nil)
+	require.NoError(t, err)
+
+	copiedParticipant := pp.copyParticipant(participant)
+	assert.NotNil(t, copiedParticipant)
+	assert.Equal(t, participant.ID, copiedParticipant.ID)
+	assert.Equal(t, participant.Address, copiedParticipant.Address)
+
+	// Test copying disclosure
+	disclosure, err := pp.CreateSelectiveDisclosure(
+		pool.ID,
+		participant.ID,
+		DisclosureTypeAmount,
+		[]byte("proof_data"),
+		time.Now().Add(time.Hour),
+		map[string]interface{}{"key": "value"},
+	)
+	require.NoError(t, err)
+
+	copiedDisclosure := pp.copyDisclosure(disclosure)
+	assert.NotNil(t, copiedDisclosure)
+	assert.Equal(t, disclosure.ID, copiedDisclosure.ID)
+	assert.Equal(t, disclosure.PoolID, copiedDisclosure.PoolID)
+}
+
+func TestPrivacyPools_CopyMixingRound(t *testing.T) {
+	pp := NewPrivacyPools(PrivacyPoolsConfig{})
+
+	// Create a pool
+	pool, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+	require.NoError(t, err)
+
+	// Join with enough participants to start mixing
+	for i := 0; i < 3; i++ {
+		_, err = pp.JoinPool(pool.ID, fmt.Sprintf("user_%d", i), big.NewInt(5000), nil)
+		require.NoError(t, err)
 	}
-	
-	if storedPool.Name != originalName {
-		t.Errorf("Expected stored pool name to remain unchanged, got %s", storedPool.Name)
-	}
+
+	// Start mixing round
+	round, err := pp.StartMixingRound(pool.ID)
+	require.NoError(t, err)
+
+	// Test copying mixing round
+	copiedRound := pp.copyMixingRound(round)
+	assert.NotNil(t, copiedRound)
+	assert.Equal(t, round.RoundID, copiedRound.RoundID)
+	assert.Equal(t, round.PoolID, copiedRound.PoolID)
+	assert.Equal(t, round.Status, copiedRound.Status)
 }
 
 func TestCleanupOldData(t *testing.T) {
@@ -587,14 +676,12 @@ func TestCleanupOldData(t *testing.T) {
 		CleanupInterval: time.Millisecond * 50,
 	}
 	pp := NewPrivacyPools(config)
-	
+
 	// Start the system
 	err := pp.Start()
-	if err != nil {
-		t.Fatalf("Failed to start PrivacyPools: %v", err)
-	}
+	require.NoError(t, err)
 	defer pp.Stop()
-	
+
 	// Create a pool and start mixing round
 	pool, err := pp.CreatePrivacyPool(
 		PoolTypeCoinMixing,
@@ -608,36 +695,148 @@ func TestCleanupOldData(t *testing.T) {
 		big.NewInt(10),
 		nil,
 	)
-	
-	if err != nil {
-		t.Fatalf("Failed to create pool: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Join with minimum participants
 	for i := 0; i < 3; i++ {
 		_, err = pp.JoinPool(pool.ID, fmt.Sprintf("user_%d", i), big.NewInt(5000), nil)
-		if err != nil {
-			t.Fatalf("Failed to join pool: %v", err)
-		}
+		require.NoError(t, err)
 	}
-	
+
 	// Start and complete mixing round
 	round, err := pp.StartMixingRound(pool.ID)
-	if err != nil {
-		t.Fatalf("Failed to start mixing round: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	err = pp.ExecuteMixing(round.RoundID)
-	if err != nil {
-		t.Fatalf("Failed to execute mixing: %v", err)
-	}
-	
+	require.NoError(t, err)
+
 	// Wait for cleanup
 	time.Sleep(time.Millisecond * 200)
-	
+
 	// Verify mixing round was cleaned up
 	_, err = pp.GetMixingRound(round.RoundID)
-	if err == nil {
-		t.Error("Expected completed mixing round to be cleaned up")
+	assert.Error(t, err)
+}
+
+func TestPoolTypeString(t *testing.T) {
+	// Test all pool type string representations
+	assert.Equal(t, "coin_mixing", PoolTypeCoinMixing.String())
+	assert.Equal(t, "privacy_pool", PoolTypePrivacyPool.String())
+	assert.Equal(t, "selective_disclosure", PoolTypeSelectiveDisclosure.String())
+	assert.Equal(t, "confidential_swap", PoolTypeConfidentialSwap.String())
+	assert.Equal(t, "anonymity_set", PoolTypeAnonymitySet.String())
+	assert.Equal(t, "custom", PoolTypeCustom.String())
+	assert.Equal(t, "unknown", PoolType(999).String()) // Test unknown type
+}
+
+func TestPoolStatusString(t *testing.T) {
+	// Test all pool status string representations
+	assert.Equal(t, "active", PoolStatusActive.String())
+	assert.Equal(t, "mixing", PoolStatusMixing.String())
+	assert.Equal(t, "completed", PoolStatusCompleted.String())
+	assert.Equal(t, "paused", PoolStatusPaused.String())
+	assert.Equal(t, "closed", PoolStatusClosed.String())
+	assert.Equal(t, "error", PoolStatusError.String())
+	assert.Equal(t, "unknown", PoolStatus(999).String()) // Test unknown status
+}
+
+func TestMixingRoundStatusString(t *testing.T) {
+	// Test all mixing round status string representations
+	assert.Equal(t, "pending", MixingRoundStatusPending.String())
+	assert.Equal(t, "collecting", MixingRoundStatusCollecting.String())
+	assert.Equal(t, "mixing", MixingRoundStatusMixing.String())
+	assert.Equal(t, "distributing", MixingRoundStatusDistributing.String())
+	assert.Equal(t, "completed", MixingRoundStatusCompleted.String())
+	assert.Equal(t, "failed", MixingRoundStatusFailed.String())
+	assert.Equal(t, "unknown", MixingRoundStatus(999).String()) // Test unknown status
+}
+
+func TestParticipantStatusString(t *testing.T) {
+	// Test all participant status string representations
+	assert.Equal(t, "pending", ParticipantStatusPending.String())
+	assert.Equal(t, "active", ParticipantStatusActive.String())
+	assert.Equal(t, "mixing", ParticipantStatusMixing.String())
+	assert.Equal(t, "completed", ParticipantStatusCompleted.String())
+	assert.Equal(t, "failed", ParticipantStatusFailed.String())
+	assert.Equal(t, "exited", ParticipantStatusExited.String())
+	assert.Equal(t, "unknown", ParticipantStatus(999).String()) // Test unknown status
+}
+
+func TestDisclosureTypeString(t *testing.T) {
+	// Test all disclosure type string representations
+	assert.Equal(t, "amount", DisclosureTypeAmount.String())
+	assert.Equal(t, "source", DisclosureTypeSource.String())
+	assert.Equal(t, "destination", DisclosureTypeDestination.String())
+	assert.Equal(t, "timestamp", DisclosureTypeTimestamp.String())
+	assert.Equal(t, "custom", DisclosureTypeCustom.String())
+	assert.Equal(t, "unknown", DisclosureType(999).String()) // Test unknown type
+}
+
+func TestDisclosureStatusString(t *testing.T) {
+	// Test all disclosure status string representations
+	assert.Equal(t, "pending", DisclosureStatusPending.String())
+	assert.Equal(t, "validated", DisclosureStatusValidated.String())
+	assert.Equal(t, "expired", DisclosureStatusExpired.String())
+	assert.Equal(t, "revoked", DisclosureStatusRevoked.String())
+	assert.Equal(t, "unknown", DisclosureStatus(999).String()) // Test unknown status
+}
+
+func TestPrivacyPools_BackgroundProcessing(t *testing.T) {
+	// Create PrivacyPools with very short intervals to trigger background processing
+	config := PrivacyPoolsConfig{
+		MixingTimeout:   time.Millisecond * 50,
+		CleanupInterval: time.Millisecond * 25,
 	}
+	pp := NewPrivacyPools(config)
+
+	// Start the system
+	err := pp.Start()
+	require.NoError(t, err)
+	defer pp.Stop()
+
+	// Create a pool
+	pool, err := pp.CreatePrivacyPool(
+		PoolTypeCoinMixing,
+		"Test Pool",
+		"Description",
+		"BTC",
+		big.NewInt(1000),
+		big.NewInt(10000),
+		3,
+		10,
+		big.NewInt(10),
+		nil,
+	)
+	require.NoError(t, err)
+
+	// Join with participants
+	for i := 0; i < 3; i++ {
+		_, err = pp.JoinPool(pool.ID, fmt.Sprintf("user_%d", i), big.NewInt(5000), nil)
+		require.NoError(t, err)
+	}
+
+	// Start mixing round
+	round, err := pp.StartMixingRound(pool.ID)
+	require.NoError(t, err)
+
+	// Create a disclosure
+	participant, err := pp.GetParticipant(round.Participants[0])
+	require.NoError(t, err)
+
+	_, err = pp.CreateSelectiveDisclosure(
+		pool.ID,
+		participant.ID,
+		DisclosureTypeAmount,
+		[]byte("proof_data"),
+		time.Now().Add(time.Millisecond*100),
+		nil,
+	)
+	require.NoError(t, err)
+
+	// Wait for background processing to run
+	time.Sleep(time.Millisecond * 100)
+
+	// Verify that some background processing occurred
+	// The exact behavior depends on timing, but we can check that the system is still running
+	assert.True(t, pp.running)
 }

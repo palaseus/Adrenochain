@@ -504,3 +504,160 @@ func TestLogger_EmptyMessage(t *testing.T) {
 		t.Error("Empty message should still be logged")
 	}
 }
+
+// TestLogger_RotateFile tests the rotateFile function
+func TestLogger_RotateFile(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir, err := os.MkdirTemp("", "logger_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	logFile := filepath.Join(tempDir, "test.log")
+	
+	// Create initial log file
+	file, err := os.Create(logFile)
+	if err != nil {
+		t.Fatalf("Failed to create log file: %v", err)
+	}
+	file.Close()
+
+	// Create some backup files to test rotation
+	backup1 := logFile + ".1"
+	backup2 := logFile + ".2"
+	
+	// Create backup files with some content
+	os.WriteFile(backup1, []byte("backup1"), 0644)
+	os.WriteFile(backup2, []byte("backup2"), 0644)
+
+	config := &Config{
+		MaxBackups: 3,
+	}
+
+	logger := &Logger{
+		file:     file,
+		filePath: logFile,
+		output:   file,
+	}
+
+	// Test rotateFile function
+	logger.rotateFile(config)
+
+	// Verify that backup files were rotated
+	if _, err := os.Stat(logFile + ".1"); os.IsNotExist(err) {
+		t.Error("Backup file .1 should exist after rotation")
+	}
+	if _, err := os.Stat(logFile + ".2"); os.IsNotExist(err) {
+		t.Error("Backup file .2 should exist after rotation")
+	}
+	if _, err := os.Stat(logFile + ".3"); os.IsNotExist(err) {
+		t.Error("Backup file .3 should exist after rotation")
+	}
+
+	// Verify that a new log file was created
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Error("New log file should exist after rotation")
+	}
+}
+
+// TestLogger_RotateFileWithNilFile tests rotateFile with nil file
+func TestLogger_RotateFileWithNilFile(t *testing.T) {
+	config := &Config{
+		MaxBackups: 3,
+	}
+
+	logger := &Logger{
+		file:     nil,
+		filePath: "/tmp/test.log",
+	}
+
+	// This should not panic
+	logger.rotateFile(config)
+}
+
+// TestLogger_RotateFileWithError tests rotateFile when file operations fail
+func TestLogger_RotateFileWithError(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir, err := os.MkdirTemp("", "logger_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	logFile := filepath.Join(tempDir, "test.log")
+	
+	// Create initial log file
+	file, err := os.Create(logFile)
+	if err != nil {
+		t.Fatalf("Failed to create log file: %v", err)
+	}
+	file.Close()
+
+	config := &Config{
+		MaxBackups: 3,
+	}
+
+	logger := &Logger{
+		file:     file,
+		filePath: logFile,
+		output:   file,
+	}
+
+	// Test rotateFile function
+	logger.rotateFile(config)
+
+	// Verify that a new log file was created
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Error("New log file should exist after rotation")
+	}
+}
+
+// TestLogger_RotateLogFile tests the rotateLogFile function
+func TestLogger_RotateLogFile(t *testing.T) {
+	// Create a temporary directory for test files
+	tempDir, err := os.MkdirTemp("", "logger_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	logFile := filepath.Join(tempDir, "test.log")
+	
+	// Create initial log file with some content to make it large enough
+	file, err := os.Create(logFile)
+	if err != nil {
+		t.Fatalf("Failed to create log file: %v", err)
+	}
+	
+	// Write enough content to trigger rotation
+	largeContent := strings.Repeat("x", 1024*1024) // 1MB
+	file.WriteString(largeContent)
+	file.Close()
+
+	config := &Config{
+		MaxSize: 1024, // 1KB, so our 1MB file should trigger rotation
+	}
+
+	logger := &Logger{
+		file:     file,
+		filePath: logFile,
+		output:   file,
+	}
+
+	// Start the rotation goroutine
+	go logger.rotateLogFile(config)
+	
+	// Wait a bit for rotation to potentially happen
+	time.Sleep(100 * time.Millisecond)
+	
+	// Stop the rotation by closing the file
+	if logger.file != nil {
+		logger.file.Close()
+	}
+
+	// Verify that the log file still exists (rotation may or may not have happened)
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Error("Log file should still exist")
+	}
+}

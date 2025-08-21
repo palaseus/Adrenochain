@@ -109,10 +109,10 @@ func (ta *TradingAPI) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Return response
 	response := CreateOrderResponse{
-		OrderID:     order.ID,
-		Status:      order.Status,
-		Execution:   execution,
-		Timestamp:   time.Now(),
+		OrderID:   order.ID,
+		Status:    order.Status,
+		Execution: execution,
+		Timestamp: time.Now(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -266,18 +266,44 @@ func (ta *TradingAPI) GetMarketData(w http.ResponseWriter, r *http.Request) {
 
 // createOrderFromRequest creates an order from the request
 func (ta *TradingAPI) createOrderFromRequest(req *CreateOrderRequest) (*orderbook.Order, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request cannot be nil")
+	}
+
+	// Validate required fields
+	if req.TradingPair == "" {
+		return nil, fmt.Errorf("trading pair is required")
+	}
+	if req.Quantity == nil {
+		return nil, fmt.Errorf("quantity is required")
+	}
+	// For non-market orders, price is required
+	if req.Type != orderbook.OrderTypeMarket && req.Price == nil {
+		return nil, fmt.Errorf("price is required")
+	}
+	// For market orders, price should be nil or zero
+	if req.Type == orderbook.OrderTypeMarket && req.Price != nil && req.Price.Cmp(big.NewInt(0)) > 0 {
+		return nil, fmt.Errorf("market orders cannot have a price")
+	}
+	if req.UserID == "" {
+		return nil, fmt.Errorf("user ID is required")
+	}
+
 	// Create order with proper validation
 	order := &orderbook.Order{
-		ID:          generateOrderID(),
-		TradingPair: req.TradingPair,
-		Side:        req.Side,
-		Type:        req.Type,
-		Quantity:    req.Quantity,
-		Price:       req.Price,
-		UserID:      req.UserID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Status:      orderbook.OrderStatusPending,
+		ID:                generateOrderID(),
+		TradingPair:       req.TradingPair,
+		Side:              req.Side,
+		Type:              req.Type,
+		Quantity:          req.Quantity,
+		Price:             req.Price, // This can be nil for market orders
+		UserID:            req.UserID,
+		TimeInForce:       orderbook.TimeInForceGTC,       // Default to Good Till Cancelled
+		FilledQuantity:    big.NewInt(0),                  // Initialize to zero
+		RemainingQuantity: new(big.Int).Set(req.Quantity), // Copy quantity
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		Status:            orderbook.OrderStatusPending,
 	}
 
 	if err := order.Validate(); err != nil {
@@ -289,6 +315,10 @@ func (ta *TradingAPI) createOrderFromRequest(req *CreateOrderRequest) (*orderboo
 
 // processOrder processes an order through the matching engine
 func (ta *TradingAPI) processOrder(order *orderbook.Order) (*orderbook.TradeExecution, error) {
+	if order == nil {
+		return nil, fmt.Errorf("order cannot be nil")
+	}
+
 	// Get or create order book for the trading pair
 	ob, err := ta.getOrCreateOrderBook(order.TradingPair)
 	if err != nil {
@@ -359,8 +389,8 @@ func (ta *TradingAPI) getOrderBook(tradingPair string, depth int) (*OrderBookRes
 
 	// Filter buy orders (we'll need to get sell depth separately)
 	// For now, create a simple response with available data
-	var bids []*orderbook.Order
-	var asks []*orderbook.Order
+	bids := make([]*orderbook.Order, 0) // Initialize as empty slice, not nil
+	asks := make([]*orderbook.Order, 0) // Initialize as empty slice, not nil
 
 	// Convert PriceLevel to Order format for bids
 	for _, level := range buyDepth {
@@ -393,7 +423,7 @@ func (ta *TradingAPI) getTrades(tradingPair string, limit int) ([]*orderbook.Tra
 	ta.marketData.mutex.RLock()
 	defer ta.marketData.mutex.RUnlock()
 
-	var trades []*orderbook.Trade
+	trades := make([]*orderbook.Trade, 0) // Initialize as empty slice, not nil
 	for _, trade := range ta.marketData.trades {
 		if trade.TradingPair == tradingPair {
 			trades = append(trades, trade)
@@ -411,7 +441,7 @@ func (ta *TradingAPI) getAllTradingPairs() []*trading.TradingPair {
 	ta.tradingManager.mutex.RLock()
 	defer ta.tradingManager.mutex.RUnlock()
 
-	var pairs []*trading.TradingPair
+	pairs := make([]*trading.TradingPair, 0) // Initialize as empty slice, not nil
 	for _, pair := range ta.tradingManager.tradingPairs {
 		pairs = append(pairs, pair)
 	}
@@ -428,16 +458,16 @@ func (ta *TradingAPI) getMarketData(tradingPair string) (*MarketDataResponse, er
 
 	// Calculate market data using available methods
 	// For now, use placeholder values since these methods don't exist yet
-	lastPrice := big.NewInt(0) // Would come from trade history
+	lastPrice := big.NewInt(0)       // Would come from trade history
 	volume24h := ob.GetTotalVolume() // Use available volume method
-	priceChange24h := big.NewInt(0) // Would be calculated from price history
+	priceChange24h := big.NewInt(0)  // Would be calculated from price history
 
 	return &MarketDataResponse{
-		TradingPair:      tradingPair,
-		LastPrice:        lastPrice,
-		Volume24h:        volume24h,
-		PriceChange24h:   priceChange24h,
-		Timestamp:        time.Now(),
+		TradingPair:    tradingPair,
+		LastPrice:      lastPrice,
+		Volume24h:      volume24h,
+		PriceChange24h: priceChange24h,
+		Timestamp:      time.Now(),
 	}, nil
 }
 
@@ -462,6 +492,10 @@ func (ta *TradingAPI) getOrCreateOrderBook(tradingPair string) (*orderbook.Order
 
 // updateMarketData updates market data after a trade
 func (ta *TradingAPI) updateMarketData(tradingPair string, execution *orderbook.TradeExecution) {
+	if execution == nil {
+		return // Nothing to update
+	}
+
 	ta.marketData.mutex.Lock()
 	defer ta.marketData.mutex.Unlock()
 

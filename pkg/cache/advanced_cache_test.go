@@ -98,6 +98,190 @@ func TestAdvancedCache_Compression(t *testing.T) {
 	assert.Greater(t, stats.Decompressions, int64(0))
 }
 
+// TestLRUCacheFunctions tests the LRU cache functions that have low coverage
+func TestLRUCacheFunctions(t *testing.T) {
+	// Test Size function
+	lru := NewLRUCache(5, time.Minute)
+
+	// Initially size should be 0
+	assert.Equal(t, 0, lru.Size())
+
+	// Add some items
+	item1 := &CacheItem{Key: "key1", Value: "value1", Created: time.Now(), Accessed: time.Now()}
+	item2 := &CacheItem{Key: "key2", Value: "value2", Created: time.Now(), Accessed: time.Now()}
+	lru.Set("key1", item1)
+	lru.Set("key2", item2)
+	assert.Equal(t, 2, lru.Size())
+
+	// Test GetKeys function
+	keys := lru.GetKeys()
+	assert.Len(t, keys, 2)
+	assert.Contains(t, keys, "key1")
+	assert.Contains(t, keys, "key2")
+
+	// Test SetWithTTL with expiration
+	item3 := &CacheItem{Key: "key3", Value: "value3", Created: time.Now(), Accessed: time.Now()}
+	lru.SetWithTTL("key3", item3, 10*time.Millisecond)
+	assert.Equal(t, 3, lru.Size())
+
+	// Wait for expiration
+	time.Sleep(15 * time.Millisecond)
+
+	// Clean up expired items
+	lru.Cleanup()
+	assert.Equal(t, 2, lru.Size())
+
+	// Test that items are still accessible
+	_, found1 := lru.Get("key1")
+	assert.True(t, found1)
+	_, found2 := lru.Get("key2")
+	assert.True(t, found2)
+}
+
+func TestAdvancedCache_CalculateSize(t *testing.T) {
+	cache := NewAdvancedCache(nil)
+	defer cache.Close()
+
+	// Test different value types
+	testCases := []struct {
+		name     string
+		value    interface{}
+		expected int64
+	}{
+		{"string", "test", 4},
+		{"bytes", []byte("test"), 4},
+		{"default", 123, 128}, // Default case
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			size := cache.calculateSize(tc.value)
+			assert.Equal(t, tc.expected, size)
+		})
+	}
+}
+
+func TestAdvancedCache_CalculateSize_ComplexTypes(t *testing.T) {
+	cache := NewAdvancedCache(nil)
+	defer cache.Close()
+
+	// Test with more complex types to improve coverage
+	testCases := []struct {
+		name     string
+		value    interface{}
+		expected int64
+	}{
+		{"nil", nil, 128},
+		{"int", 123, 128},
+		{"float", 123.45, 128},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			size := cache.calculateSize(tc.value)
+			assert.Equal(t, tc.expected, size)
+		})
+	}
+}
+
+func TestAdvancedCache_PerformMaintenance(t *testing.T) {
+	config := DefaultCacheConfig()
+	config.Parallelism = 1
+	cache := NewAdvancedCache(config)
+	defer cache.Close()
+
+	// Add some items to different levels
+	cache.Set("key1", "value1", LevelL1)
+	cache.Set("key2", "value2", LevelL2)
+	cache.Set("key3", "value3", LevelL3)
+
+	// Access some items to create different hit patterns
+	cache.Get("key1")
+	cache.Get("key1") // Multiple hits
+	cache.Get("key2")
+
+	// Call balanceCacheLevels directly
+	cache.balanceCacheLevels()
+
+	// Verify that the function doesn't crash and items are still accessible
+	val1, found1 := cache.Get("key1")
+	assert.True(t, found1)
+	assert.Equal(t, "value1", val1)
+
+	val2, found2 := cache.Get("key2")
+	assert.True(t, found2)
+	assert.Equal(t, "value2", val2)
+}
+
+func TestAdvancedCache_BalanceCacheLevels(t *testing.T) {
+	config := DefaultCacheConfig()
+	config.Parallelism = 1
+	cache := NewAdvancedCache(config)
+	defer cache.Close()
+
+	// Add some items to different levels
+	cache.Set("key1", "value1", LevelL1)
+	cache.Set("key2", "value2", LevelL2)
+	cache.Set("key3", "value3", LevelL3)
+
+	// Access some items to create different hit patterns
+	cache.Get("key1")
+	cache.Get("key1") // Multiple hits
+	cache.Get("key2")
+
+	// Call balanceCacheLevels directly
+	cache.balanceCacheLevels()
+
+	// Verify that the function doesn't crash and items are still accessible
+	val1, found1 := cache.Get("key1")
+	assert.True(t, found1)
+	assert.Equal(t, "value1", val1)
+
+	val2, found2 := cache.Get("key2")
+	assert.True(t, found2)
+	assert.Equal(t, "value2", val2)
+}
+
+func TestAdvancedCache_GenerateCacheKey(t *testing.T) {
+	cache := NewAdvancedCache(nil)
+	defer cache.Close()
+
+	// Test key generation with multiple components
+	key1 := cache.generateCacheKey("component1", "component2", "component3")
+	key2 := cache.generateCacheKey("component1", "component2", "component3")
+	key3 := cache.generateCacheKey("component1", "component2", "component4")
+
+	// Same components should generate same key
+	assert.Equal(t, key1, key2)
+	// Different components should generate different keys
+	assert.NotEqual(t, key1, key3)
+
+	// Keys should be valid hex strings
+	assert.Len(t, key1, 16) // 64-bit hash = 16 hex chars
+}
+
+func TestAdvancedCache_GenerateHashKey(t *testing.T) {
+	cache := NewAdvancedCache(nil)
+	defer cache.Close()
+
+	// Test hash key generation
+	data1 := []byte("test data 1")
+	data2 := []byte("test data 2")
+	data3 := []byte("test data 1")
+
+	key1 := cache.generateHashKey(data1)
+	key2 := cache.generateHashKey(data2)
+	key3 := cache.generateHashKey(data3)
+
+	// Different data should generate different keys
+	assert.NotEqual(t, key1, key2)
+	// Same data should generate same key
+	assert.Equal(t, key1, key3)
+
+	// Keys should be valid SHA256 hex strings
+	assert.Len(t, key1, 64) // SHA256 = 256 bits = 64 hex chars
+}
+
 func TestAdvancedCache_TTL(t *testing.T) {
 	cache := NewAdvancedCache(nil)
 	defer cache.Close()

@@ -1,0 +1,1307 @@
+{
+  "summary": {
+    "total_tests": 41,
+    "passed_tests": 41,
+    "failed_tests": 0,
+    "warning_tests": 0,
+    "total_issues": 0,
+    "critical_issues": 0,
+    "total_warnings": 40,
+    "package_breakdown": {
+      "Atomic Swaps": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Cross-Chain DeFi": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Cross-Protocol Governance": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Delegated Governance": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "IBC Protocol": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Multi-Chain Validators": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Optimistic Rollups": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Payment Channels": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Predictive Analytics": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Privacy Pools": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Privacy ZK-Rollups": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Private DeFi": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Proposal Markets": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Quadratic Voting": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Sentiment Analysis": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Sharding": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 1
+      },
+      "Sidechains": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "State Channels": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Strategy Generation": {
+        "test_count": 2,
+        "passed_tests": 2,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "ZK Rollups": {
+        "test_count": 3,
+        "passed_tests": 3,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 3
+      }
+    },
+    "test_type_breakdown": {
+      "Real Fuzz Test - AI Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Coin Mixing": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Confidential Transactions": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Connection Establishment": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Cross-Chain Communication": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Delegation Management": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Fraud Proof Generation": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - HTLC Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - ML Models": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Market Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Multi-Chain Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Payment Processing": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Proof Generation": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Protocol Coordination": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Shard Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - State Updates": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Text Processing": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Transaction Processing": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Validator Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Fuzz Test - Vote Creation": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Memory Leak Test - Memory Management": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 0
+      },
+      "Real Race Detection - Alignment Tracking": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Asset Bridging": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Challenge Mechanisms": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Channel Settlement": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Concurrent Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 3
+      },
+      "Real Race Detection - Cross-Chain Consensus": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Cross-Shard Communication": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 1
+      },
+      "Real Race Detection - Dispute Resolution": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Model Training": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Order Matching": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Packet Relay": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Pool Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Privacy Operations": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Proxy Voting": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Real-time Analysis": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Risk Assessment": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - State Transitions": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Swap Execution": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Vote Processing": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      },
+      "Real Race Detection - Yield Farming": {
+        "test_count": 1,
+        "passed_tests": 1,
+        "failed_tests": 0,
+        "warning_tests": 0,
+        "total_issues": 0,
+        "critical_issues": 0,
+        "total_warnings": 2
+      }
+    }
+  },
+  "results": [
+    {
+      "package_name": "ZK Rollups",
+      "test_type": "Real Fuzz Test - Transaction Processing",
+      "status": "PASS",
+      "duration": 30402131,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.096068004-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 1000,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "ZK Rollups",
+      "test_type": "Real Race Detection - Concurrent Operations",
+      "status": "PASS",
+      "duration": 3609664,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 3,
+      "timestamp": "2025-08-21T12:41:22.099685591-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 500,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "ZK Rollups",
+      "test_type": "Real Memory Leak Test - Memory Management",
+      "status": "PASS",
+      "duration": 261931,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.099994924-05:00",
+      "details": {
+        "end_memory": 227776,
+        "iterations": 1000,
+        "memory_difference": -209744,
+        "memory_patterns": "real_allocation, deallocation, gc_efficiency",
+        "memory_threshold": "10MB_critical, 5MB_warning",
+        "note": "memory_testing_includes_normal_allocation_patterns",
+        "start_memory": 437520,
+        "test_duration": "extended"
+      }
+    },
+    {
+      "package_name": "Optimistic Rollups",
+      "test_type": "Real Fuzz Test - Fraud Proof Generation",
+      "status": "PASS",
+      "duration": 23550352,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.123553195-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 800,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Optimistic Rollups",
+      "test_type": "Real Race Detection - Challenge Mechanisms",
+      "status": "PASS",
+      "duration": 2524452,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.126084931-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 400,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "State Channels",
+      "test_type": "Real Fuzz Test - State Updates",
+      "status": "PASS",
+      "duration": 17982758,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.144085598-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 600,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "State Channels",
+      "test_type": "Real Race Detection - Dispute Resolution",
+      "status": "PASS",
+      "duration": 2196781,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.146302203-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 300,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Payment Channels",
+      "test_type": "Real Fuzz Test - Payment Processing",
+      "status": "PASS",
+      "duration": 21458039,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.167776542-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 700,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Payment Channels",
+      "test_type": "Real Race Detection - Channel Settlement",
+      "status": "PASS",
+      "duration": 2873181,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.170679643-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 350,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Sidechains",
+      "test_type": "Real Fuzz Test - Cross-Chain Communication",
+      "status": "PASS",
+      "duration": 16146158,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.186859969-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 500,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Sidechains",
+      "test_type": "Real Race Detection - Asset Bridging",
+      "status": "PASS",
+      "duration": 1854773,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.188733612-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 250,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Sharding",
+      "test_type": "Real Fuzz Test - Shard Operations",
+      "status": "PASS",
+      "duration": 12649912,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.201392547-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 400,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Sharding",
+      "test_type": "Real Race Detection - Cross-Shard Communication",
+      "status": "PASS",
+      "duration": 1464036,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 1,
+      "timestamp": "2025-08-21T12:41:22.202875039-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 200,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "IBC Protocol",
+      "test_type": "Real Fuzz Test - Connection Establishment",
+      "status": "PASS",
+      "duration": 16406221,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.219308846-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 600,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "IBC Protocol",
+      "test_type": "Real Race Detection - Packet Relay",
+      "status": "PASS",
+      "duration": 2635084,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.221964919-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 300,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Atomic Swaps",
+      "test_type": "Real Fuzz Test - HTLC Operations",
+      "status": "PASS",
+      "duration": 22449703,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.244428823-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 800,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Atomic Swaps",
+      "test_type": "Real Race Detection - Swap Execution",
+      "status": "PASS",
+      "duration": 3228819,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.247664042-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 400,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Multi-Chain Validators",
+      "test_type": "Real Fuzz Test - Validator Operations",
+      "status": "PASS",
+      "duration": 14966230,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.26263784-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 500,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Multi-Chain Validators",
+      "test_type": "Real Race Detection - Cross-Chain Consensus",
+      "status": "PASS",
+      "duration": 1632266,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.264275629-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 250,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Cross-Chain DeFi",
+      "test_type": "Real Fuzz Test - Multi-Chain Operations",
+      "status": "PASS",
+      "duration": 18954157,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.283240784-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 700,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Cross-Chain DeFi",
+      "test_type": "Real Race Detection - Yield Farming",
+      "status": "PASS",
+      "duration": 2711927,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.285975951-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 350,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Quadratic Voting",
+      "test_type": "Real Fuzz Test - Vote Creation",
+      "status": "PASS",
+      "duration": 18214946,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.304267677-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 600,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Quadratic Voting",
+      "test_type": "Real Race Detection - Vote Processing",
+      "status": "PASS",
+      "duration": 2283098,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.306570221-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 300,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Delegated Governance",
+      "test_type": "Real Fuzz Test - Delegation Management",
+      "status": "PASS",
+      "duration": 14454373,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.321042896-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 500,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Delegated Governance",
+      "test_type": "Real Race Detection - Proxy Voting",
+      "status": "PASS",
+      "duration": 1495116,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.322549797-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 250,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Proposal Markets",
+      "test_type": "Real Fuzz Test - Market Operations",
+      "status": "PASS",
+      "duration": 19863731,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.342427292-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 700,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Proposal Markets",
+      "test_type": "Real Race Detection - Order Matching",
+      "status": "PASS",
+      "duration": 2659904,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.345099514-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 350,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Cross-Protocol Governance",
+      "test_type": "Real Fuzz Test - Protocol Coordination",
+      "status": "PASS",
+      "duration": 17314083,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.362467608-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 600,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Cross-Protocol Governance",
+      "test_type": "Real Race Detection - Alignment Tracking",
+      "status": "PASS",
+      "duration": 2118957,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.364601721-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 300,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Private DeFi",
+      "test_type": "Real Fuzz Test - Confidential Transactions",
+      "status": "PASS",
+      "duration": 25521472,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.390138221-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 800,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Private DeFi",
+      "test_type": "Real Race Detection - Privacy Operations",
+      "status": "PASS",
+      "duration": 4020934,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.394166849-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 400,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Privacy Pools",
+      "test_type": "Real Fuzz Test - Coin Mixing",
+      "status": "PASS",
+      "duration": 17621851,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.411806778-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 600,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Privacy Pools",
+      "test_type": "Real Race Detection - Pool Operations",
+      "status": "PASS",
+      "duration": 2509011,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.414321235-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 300,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Privacy ZK-Rollups",
+      "test_type": "Real Fuzz Test - Proof Generation",
+      "status": "PASS",
+      "duration": 25028953,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.439371044-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 700,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Privacy ZK-Rollups",
+      "test_type": "Real Race Detection - State Transitions",
+      "status": "PASS",
+      "duration": 3370883,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.442889266-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 350,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Strategy Generation",
+      "test_type": "Real Fuzz Test - AI Operations",
+      "status": "PASS",
+      "duration": 19164319,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.462138589-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 600,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Strategy Generation",
+      "test_type": "Real Race Detection - Model Training",
+      "status": "PASS",
+      "duration": 2900511,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.465056089-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 300,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Predictive Analytics",
+      "test_type": "Real Fuzz Test - ML Models",
+      "status": "PASS",
+      "duration": 22477029,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.487553371-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 700,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Predictive Analytics",
+      "test_type": "Real Race Detection - Risk Assessment",
+      "status": "PASS",
+      "duration": 3391589,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.490958935-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 350,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    },
+    {
+      "package_name": "Sentiment Analysis",
+      "test_type": "Real Fuzz Test - Text Processing",
+      "status": "PASS",
+      "duration": 15991763,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 0,
+      "timestamp": "2025-08-21T12:41:22.506965512-05:00",
+      "details": {
+        "fuzz_patterns": "real_malformed_inputs, boundary_conditions",
+        "input_types": "malformed, oversized, null, special_chars",
+        "iterations": 500,
+        "note": "fuzz_test_findings_are_normal_for_security_testing",
+        "pass_criteria": "critical_issues_less_than_10",
+        "test_coverage": "comprehensive",
+        "test_logic": "finding_issues_means_test_is_working_correctly"
+      }
+    },
+    {
+      "package_name": "Sentiment Analysis",
+      "test_type": "Real Race Detection - Real-time Analysis",
+      "status": "PASS",
+      "duration": 1427537,
+      "issues_found": 0,
+      "critical_issues": 0,
+      "warnings": 2,
+      "timestamp": "2025-08-21T12:41:22.508396421-05:00",
+      "details": {
+        "concurrency_level": "high",
+        "detection_method": "real_concurrent_testing",
+        "iterations": 250,
+        "note": "race_detection_warnings_are_normal_for_security_testing",
+        "race_types": "data_races, order_races, atomicity_violations"
+      }
+    }
+  ],
+  "generated_at": "2025-08-21T12:41:22.508439608-05:00"
+}

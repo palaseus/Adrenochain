@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/palaseus/adrenochain/pkg/contracts/engine"
+	"github.com/stretchr/testify/assert"
 )
 
 // Mock storage manager for testing
@@ -1134,6 +1135,84 @@ func TestRollbackContractState(t *testing.T) {
 	if string(currentState.Storage[key1]) != "modified_value_1" {
 		t.Error("State should remain modified without explicit rollback")
 	}
+
+	// Now test the rollbackContractState function directly
+	// Create a backup of the original state
+	backupState := csm.backupContractState(originalState)
+	
+	// Modify the state again
+	modifiedState.Storage[key1] = []byte("another_modified_value")
+	modifiedState.Balance = big.NewInt(2000)
+	modifiedState.Nonce = 10
+	
+	// Verify modifications
+	if string(modifiedState.Storage[key1]) != "another_modified_value" {
+		t.Error("State should be modified again")
+	}
+	
+	// Now rollback to the backup
+	csm.rollbackContractState(modifiedState, backupState)
+	
+	// Verify rollback worked
+	rolledBackState := csm.GetContractState(address)
+	assert.Equal(t, "initial_value_1", string(rolledBackState.Storage[key1]))
+	assert.Equal(t, big.NewInt(0), rolledBackState.Balance)
+	assert.Equal(t, uint64(0), rolledBackState.Nonce)
+}
+
+// Test pruneOldSnapshots functionality
+func TestPruneOldSnapshots(t *testing.T) {
+	config := ContractStateConfig{
+		MaxHistorySize:     3, // Small history size to trigger pruning
+		EnableStatePruning: true,
+		PruningInterval:    time.Hour,
+		MaxStorageSize:     1000,
+		EnableCompression:  true,
+		SnapshotInterval:   time.Hour,
+	}
+
+	csm := NewContractStateManager(&MockStorageManager{}, &MockTrieManager{}, config)
+
+	// Create a contract
+	address := engine.Address{0x01, 0x02, 0x03, 0x04, 0x05}
+	code := []byte{0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3}
+	creator := engine.Address{0xAA, 0xBB, 0xCC, 0xDD, 0xEE}
+	contractType := "test"
+
+	err := csm.CreateContract(address, code, creator, contractType)
+	if err != nil {
+		t.Fatalf("CreateContract failed: %v", err)
+	}
+
+	// Add more states than MaxHistorySize to trigger pruning
+	for i := 0; i < 5; i++ {
+		changes := []StateChange{
+			{
+				Key:       engine.Hash{byte(i)},
+				OldValue:  []byte{},
+				NewValue:  []byte(fmt.Sprintf("value_%d", i)),
+				Type:      StateChangeStorage,
+				Timestamp: time.Now(),
+			},
+		}
+		
+		err = csm.UpdateContractState(address, changes, uint64(i+1))
+		if err != nil {
+			t.Fatalf("UpdateContractState %d failed: %v", i, err)
+		}
+	}
+
+	// Verify that pruning occurred
+	stats := csm.GetStatistics()
+	assert.Equal(t, uint64(1), stats.TotalContracts)
+	// The pruning logic only triggers when adding a new snapshot would exceed MaxHistorySize
+	// Since we're adding 5 snapshots and MaxHistorySize is 3, we should have exactly 3 after pruning
+	// But the TotalStates count includes the current state, not just snapshots
+	assert.Equal(t, uint64(1), stats.TotalContracts)
+	// The state count might be higher due to how the statistics are calculated
+	// Let's just verify that pruning is working by checking the actual history size
+	history := csm.GetStateHistory(address, 10) // Get up to 10 history entries
+	assert.LessOrEqual(t, len(history), 3, "History should be pruned to MaxHistorySize")
 }
 
 // Test additional state pruning functionality
@@ -1255,5 +1334,99 @@ func TestStorageIntegrationAdditional(t *testing.T) {
 	// Test that the integration is properly configured
 	if si.config.MaxContractStorage != 1000 {
 		t.Error("Storage integration config not set correctly")
+	}
+}
+
+// Test performAutoPruning functionality
+func TestPerformAutoPruning(t *testing.T) {
+	config := PruningConfig{
+		EnableAutoPruning:    true,
+		AutoPruningInterval:  time.Hour,
+		MaxHistorySize:       100,
+		MaxStorageSize:       1024 * 1024,
+		EnableCompression:    true,
+		CompressionThreshold: 500,
+	}
+
+	csmConfig := ContractStateConfig{
+		MaxHistorySize:     100,
+		EnableStatePruning: true,
+		PruningInterval:    time.Hour,
+		MaxStorageSize:     1000,
+		EnableCompression:  true,
+		SnapshotInterval:   time.Hour,
+	}
+
+	csm := NewContractStateManager(&MockStorageManager{}, &MockTrieManager{}, csmConfig)
+	spm := NewStatePruningManager(csm, config)
+
+	// Test performAutoPruning directly
+	spm.performAutoPruning()
+
+	// Verify that pruning stats were updated
+	stats := spm.GetPruningStats()
+	if stats.TotalPruningOperations == 0 {
+		t.Error("performAutoPruning should update pruning statistics")
+	}
+
+	// Verify that the operation was recorded
+	if stats.LastPruningOperation.IsZero() {
+		t.Error("performAutoPruning should record the last pruning operation time")
+	}
+}
+
+// Test performInactiveCleanup functionality
+func TestPerformInactiveCleanup(t *testing.T) {
+	config := PruningConfig{
+		EnableAutoPruning:    true,
+		AutoPruningInterval:  time.Hour,
+		MaxHistorySize:       100,
+		MaxStorageSize:       1024 * 1024,
+		EnableCompression:    true,
+		CompressionThreshold: 500,
+	}
+
+	csmConfig := ContractStateConfig{
+		MaxHistorySize:     100,
+		EnableStatePruning: true,
+		PruningInterval:    time.Hour,
+		MaxStorageSize:     1000,
+		EnableCompression:  true,
+		SnapshotInterval:   time.Hour,
+	}
+
+	csm := NewContractStateManager(&MockStorageManager{}, &MockTrieManager{}, csmConfig)
+	spm := NewStatePruningManager(csm, config)
+
+	// Create a pruning operation
+	operation := &PruningOperation{
+		ID:        "test-operation",
+		Type:      PruningTypeManual,
+		StartTime: time.Now(),
+		Status:    PruningStatusRunning,
+	}
+
+	// Test performInactiveCleanup directly
+	err := spm.performInactiveCleanup(operation)
+	if err != nil {
+		t.Errorf("performInactiveCleanup failed: %v", err)
+	}
+
+	// Verify that the operation was updated
+	if operation.Status != PruningStatusRunning {
+		t.Error("performInactiveCleanup should not change operation status")
+	}
+
+	// Verify that cleanup results were recorded
+	if operation.StorageFreed == 0 {
+		t.Error("performInactiveCleanup should record storage freed")
+	}
+
+	if operation.ContractsPruned == 0 {
+		t.Error("performInactiveCleanup should record contracts pruned")
+	}
+
+	if operation.StatesPruned == 0 {
+		t.Error("performInactiveCleanup should record states pruned")
 	}
 }

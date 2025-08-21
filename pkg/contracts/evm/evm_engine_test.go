@@ -565,28 +565,99 @@ func TestEVMInstructionExecution(t *testing.T) {
 		t.Error("Memory should return correct length")
 	}
 
-	// Test that instructions can be called without crashing
-	// (we don't test specific results since the implementation may be complex)
+	// Test arithmetic operations with proper stack setup
+	// Test ADD instruction
+	evm.stack.Push(big.NewInt(5))
+	evm.stack.Push(big.NewInt(3))
 	evm.executeADD()
-	evm.executeMUL()
-	evm.executeSUB()
-	evm.executeDIV()
-	evm.executePOP()
-	evm.executePC()
-	evm.executeMSIZE()
-	// Note: executeGAS requires gasMeter to be initialized, skip for now
+	result := evm.stack.Peek()
+	if result.Cmp(big.NewInt(8)) != 0 {
+		t.Errorf("ADD: expected 8, got %v", result)
+	}
 
-	// Test JUMP operations (these may not work as expected in test environment)
+	// Test MUL instruction
+	evm.stack.Push(big.NewInt(4))
+	evm.stack.Push(big.NewInt(6))
+	evm.executeMUL()
+	result = evm.stack.Peek()
+	if result.Cmp(big.NewInt(24)) != 0 {
+		t.Errorf("MUL: expected 24, got %v", result)
+	}
+
+	// Test SUB instruction
+	evm.stack.Push(big.NewInt(10))
+	evm.stack.Push(big.NewInt(3))
+	evm.executeSUB()
+	result = evm.stack.Peek()
+	if result.Cmp(big.NewInt(-7)) != 0 {
+		t.Errorf("SUB: expected -7, got %v", result)
+	}
+
+	// Test DIV instruction
+	evm.stack.Push(big.NewInt(15))
+	evm.stack.Push(big.NewInt(3))
+	evm.executeDIV()
+	result = evm.stack.Peek()
+	if result.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("DIV: expected 0, got %v", result)
+	}
+
+	// Test POP instruction
+	evm.executePOP()
+	// POP consumes 1 value
+
+	// Test PC instruction
+	evm.executePC()
+	// PC pushes 1 value
+
+	// Test MSIZE instruction
+	evm.executeMSIZE()
+	// MSIZE pushes 1 value
+
+	// Test MLOAD instruction
+	evm.stack.Push(big.NewInt(0)) // offset
+	stackSizeBeforeMLOAD := evm.stack.Size()
+	evm.executeMLOAD()
+	stackSizeAfterMLOAD := evm.stack.Size()
+	if stackSizeAfterMLOAD != stackSizeBeforeMLOAD {
+		t.Error("MLOAD should consume 1 value and push 1 value, keeping stack size the same")
+	}
+
+	// Test MSTORE instruction
+	evm.stack.Push(big.NewInt(0))  // offset
+	evm.stack.Push(big.NewInt(42)) // value
+	stackSizeBeforeMSTORE := evm.stack.Size()
+	evm.executeMSTORE()
+	stackSizeAfterMSTORE := evm.stack.Size()
+	if stackSizeAfterMSTORE != stackSizeBeforeMSTORE-2 {
+		t.Error("MSTORE should consume two values from stack")
+	}
+
+	// Test GAS instruction
+	evm.gasMeter = engine.NewGasMeter(1000)
+	evm.executeGAS()
+	gasValue := evm.stack.Peek()
+	if gasValue.Cmp(big.NewInt(1000)) != 0 {
+		t.Errorf("GAS: expected 1000, got %v", gasValue)
+	}
+
+	// Test JUMP operations with proper validation
+	// Test JUMP with valid destination
 	evm.stack.Push(big.NewInt(100))
 	evm.executeJUMP(ctx)
+	// JUMP should consume the destination value
 
+	// Test JUMPI with true condition
 	evm.stack.Push(big.NewInt(200))
 	evm.stack.Push(big.NewInt(1))
 	evm.executeJUMPI(ctx)
+	// JUMPI should consume both values
 
+	// Test JUMPI with false condition
 	evm.stack.Push(big.NewInt(300))
 	evm.stack.Push(big.NewInt(0))
 	evm.executeJUMPI(ctx)
+	// JUMPI should consume both values but not jump
 }
 
 func TestEVMBasicInstructions(t *testing.T) {
@@ -684,5 +755,280 @@ func TestEVMMemoryClone(t *testing.T) {
 	cloned.Set(100, []byte{0xFF})
 	if memory.Size() == cloned.Size() {
 		t.Error("Original memory should not be affected by clone modifications")
+	}
+}
+
+func TestEVMExecuteInstruction(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := &MockContractRegistry{}
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Initialize gas meter to prevent panic
+	evm.gasMeter = engine.NewGasMeter(10000)
+
+	// Create execution context for JUMP operations
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Input:      []byte{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test various opcodes
+	testCases := []struct {
+		name        string
+		instruction *Instruction
+		setup       func()
+		validate    func()
+	}{
+		{
+			name:        "STOP instruction",
+			instruction: Instructions[0x00],
+			setup:       func() {},
+			validate: func() {
+				// STOP should halt execution
+			},
+		},
+		{
+			name:        "ADD instruction",
+			instruction: Instructions[0x01],
+			setup: func() {
+				evm.stack.Push(big.NewInt(5))
+				evm.stack.Push(big.NewInt(3))
+			},
+			validate: func() {
+				result := evm.stack.Peek()
+				if result.Cmp(big.NewInt(8)) != 0 {
+					t.Errorf("ADD: expected 8, got %v", result)
+				}
+			},
+		},
+		{
+			name:        "MUL instruction",
+			instruction: Instructions[0x02],
+			setup: func() {
+				evm.stack.Push(big.NewInt(4))
+				evm.stack.Push(big.NewInt(6))
+			},
+			validate: func() {
+				result := evm.stack.Peek()
+				if result.Cmp(big.NewInt(24)) != 0 {
+					t.Errorf("MUL: expected 24, got %v", result)
+				}
+			},
+		},
+		{
+			name:        "SUB instruction",
+			instruction: Instructions[0x03],
+			setup: func() {
+				evm.stack.Push(big.NewInt(10))
+				evm.stack.Push(big.NewInt(3))
+			},
+			validate: func() {
+				result := evm.stack.Peek()
+				if result.Cmp(big.NewInt(-7)) != 0 {
+					t.Errorf("SUB: expected -7, got %v", result)
+				}
+			},
+		},
+		{
+			name:        "DIV instruction",
+			instruction: Instructions[0x04],
+			setup: func() {
+				evm.stack.Push(big.NewInt(15))
+				evm.stack.Push(big.NewInt(3))
+			},
+			validate: func() {
+				result := evm.stack.Peek()
+				if result.Cmp(big.NewInt(0)) != 0 {
+					t.Errorf("DIV: expected 0, got %v", result)
+				}
+			},
+		},
+		{
+			name:        "POP instruction",
+			instruction: Instructions[0x50],
+			setup: func() {
+				evm.stack.Push(big.NewInt(42))
+			},
+			validate: func() {
+				// POP consumes 1 value, so stack size should decrease
+			},
+		},
+		{
+			name:        "PC instruction",
+			instruction: Instructions[0x58],
+			setup:       func() {},
+			validate: func() {
+				// PC pushes 1 value
+			},
+		},
+		{
+			name:        "MSIZE instruction",
+			instruction: Instructions[0x59],
+			setup:       func() {},
+			validate: func() {
+				// MSIZE pushes 1 value
+			},
+		},
+		{
+			name:        "GAS instruction",
+			instruction: Instructions[0x5A],
+			setup:       func() {},
+			validate: func() {
+				// GAS pushes 1 value
+			},
+		},
+		{
+			name:        "REVERT instruction",
+			instruction: &Instruction{Opcode: 0xFD, Name: "REVERT", GasCost: 0, Size: 1, Halts: true, Pops: 0, Pushes: 0},
+			setup:       func() {},
+			validate: func() {
+				// REVERT should halt execution
+			},
+		},
+		{
+			name:        "Unknown opcode",
+			instruction: &Instruction{Opcode: 0xFF, Name: "UNKNOWN", GasCost: 0, Size: 1, Halts: false, Pops: 0, Pushes: 0},
+			setup:       func() {},
+			validate: func() {
+				// Unknown opcode should not halt execution
+			},
+		},
+		{
+			name:        "JUMP instruction",
+			instruction: Instructions[0x56],
+			setup: func() {
+				evm.stack.Push(big.NewInt(100))
+			},
+			validate: func() {
+				// JUMP consumes 1 value
+			},
+		},
+		{
+			name:        "JUMPI instruction with true condition",
+			instruction: Instructions[0x57],
+			setup: func() {
+				evm.stack.Push(big.NewInt(200))
+				evm.stack.Push(big.NewInt(1))
+			},
+			validate: func() {
+				// JUMPI consumes 2 values
+			},
+		},
+		{
+			name:        "JUMPI instruction with false condition",
+			instruction: Instructions[0x57],
+			setup: func() {
+				evm.stack.Push(big.NewInt(300))
+				evm.stack.Push(big.NewInt(0))
+			},
+			validate: func() {
+				// JUMPI consumes 2 values but doesn't jump
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup test state
+			tc.setup()
+
+			// Execute the instruction
+			if tc.instruction.Opcode == 0x56 || tc.instruction.Opcode == 0x57 {
+				evm.executeInstruction(tc.instruction, ctx)
+			} else {
+				evm.executeInstruction(tc.instruction, nil)
+			}
+
+			// Validate results
+			tc.validate()
+		})
+	}
+}
+
+func TestEVMFetchOpcodeAndDecode(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := &MockContractRegistry{}
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Create execution context with contract code
+	ctx := &ExecutionContext{
+		Contract: &engine.Contract{
+			Code: []byte{0x01, 0x02, 0x03, 0x04},
+		},
+	}
+
+	// Test fetchOpcode with valid code
+	evm.pc = 0
+	opcode := evm.fetchOpcode(ctx)
+	if opcode != 0x01 {
+		t.Errorf("Expected opcode 0x01, got 0x%02x", opcode)
+	}
+
+	// Test fetchOpcode with out of bounds
+	evm.pc = 10
+	opcode = evm.fetchOpcode(ctx)
+	if opcode != 0x00 { // Should return STOP (0x00) for out of bounds
+		t.Errorf("Expected opcode 0x00 for out of bounds, got 0x%02x", opcode)
+	}
+
+	// Test decodeInstruction with valid opcode
+	instruction, err := evm.decodeInstruction(0x01)
+	if err != nil {
+		t.Errorf("Expected no error for opcode 0x01, got %v", err)
+	}
+	if instruction == nil {
+		t.Error("Expected non-nil instruction for opcode 0x01")
+	}
+	if instruction.Name != "ADD" {
+		t.Errorf("Expected instruction name 'ADD', got '%s'", instruction.Name)
+	}
+
+	// Test decodeInstruction with unknown opcode
+	instruction, err = evm.decodeInstruction(0xE0) // 0xE0 is not defined in Instructions map
+	if err == nil {
+		t.Error("Expected error for unknown opcode")
+	}
+}
+
+func TestEVMStackEdgeCases(t *testing.T) {
+	stack := NewEVMStack()
+
+	// Test Peek on empty stack - should return 0, not panic
+	result := stack.Peek()
+	if result.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("Expected 0 for empty stack peek, got %v", result)
+	}
+
+	// Test Pop on empty stack - should return 0, not panic
+	result = stack.Pop()
+	if result.Cmp(big.NewInt(0)) != 0 {
+		t.Errorf("Expected 0 for empty stack pop, got %v", result)
+	}
+}
+
+func TestEVMMemoryEdgeCases(t *testing.T) {
+	memory := NewEVMMemory()
+
+	// Test Get with invalid offset
+	data := memory.Get(1000, 10)
+	if len(data) != 10 {
+		t.Error("Memory should return requested size even for invalid offset")
+	}
+
+	// Test Set with large offset
+	memory.Set(1000000, []byte{0x01, 0x02, 0x03})
+
+	// Test Get with zero size
+	data = memory.Get(0, 0)
+	if len(data) != 0 {
+		t.Error("Memory should return empty slice for zero size")
 	}
 }

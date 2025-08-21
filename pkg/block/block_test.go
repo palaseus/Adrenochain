@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -142,10 +143,39 @@ func TestBlockValidation(t *testing.T) {
 	block.Header = nil
 	if err := block.IsValid(); err == nil {
 		t.Error("Block with nil header should fail validation")
+	} else if !strings.Contains(err.Error(), "block header is nil") {
+		t.Errorf("Expected 'block header is nil' error, got: %v", err)
+	}
+
+	// Test invalid header
+	block.Header = &Header{
+		Version:       0, // Invalid version
+		PrevBlockHash: make([]byte, 32),
+		MerkleRoot:    make([]byte, 32),
+		Timestamp:     time.Now(),
+		Difficulty:    1000,
+		Nonce:         0,
+		Height:        1,
+	}
+	if err := block.IsValid(); err == nil {
+		t.Error("Block with invalid header should fail validation")
+	} else if !strings.Contains(err.Error(), "invalid header") {
+		t.Errorf("Expected 'invalid header' error, got: %v", err)
 	}
 
 	// Restore header
 	block.Header = originalHeader
+
+	// Test merkle root mismatch
+	block.Header.MerkleRoot = make([]byte, 32) // Set a different merkle root
+	if err := block.IsValid(); err == nil {
+		t.Error("Block with mismatched merkle root should fail validation")
+	} else if !strings.Contains(err.Error(), "merkle root mismatch") {
+		t.Errorf("Expected merkle root mismatch error, got: %v", err)
+	}
+
+	// Restore correct merkle root
+	block.Header.MerkleRoot = block.CalculateMerkleRoot()
 
 	// Block with empty transactions should pass validation
 	if err := block.IsValid(); err != nil {

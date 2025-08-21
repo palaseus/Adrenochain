@@ -53,6 +53,9 @@ func NewUTXO(txHash []byte, txIndex uint32, value uint64, scriptPubKey []byte, a
 
 // AddUTXO adds a UTXO to the set
 func (us *UTXOSet) AddUTXO(utxo *UTXO) {
+	if utxo == nil {
+		return
+	}
 	key := us.makeKey(utxo.TxHash, utxo.TxIndex)
 	us.utxos[key] = utxo
 
@@ -136,6 +139,13 @@ func (us *UTXOSet) extractAddress(scriptPubKey []byte) string {
 
 // ProcessBlock processes a block and updates the UTXO set
 func (us *UTXOSet) ProcessBlock(block *block.Block) error {
+	if block == nil {
+		return fmt.Errorf("block is nil")
+	}
+	if block.Header == nil {
+		return fmt.Errorf("block header is nil")
+	}
+
 	us.mu.Lock()
 	defer us.mu.Unlock()
 
@@ -336,6 +346,16 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 // This method properly distinguishes between coinbase transactions (first transaction in block)
 // and regular transactions.
 func (us *UTXOSet) ValidateTransactionInBlock(tx *block.Transaction, block *block.Block, txIndex int) error {
+	if tx == nil {
+		return fmt.Errorf("transaction is nil")
+	}
+	if block == nil {
+		return fmt.Errorf("block is nil")
+	}
+	if txIndex < 0 || txIndex >= len(block.Transactions) {
+		return fmt.Errorf("transaction index %d out of bounds for block with %d transactions", txIndex, len(block.Transactions))
+	}
+
 	// Check if this is a coinbase transaction (first transaction in block)
 	isCoinbase := txIndex == 0 && len(block.Transactions) > 0 && tx == block.Transactions[0]
 

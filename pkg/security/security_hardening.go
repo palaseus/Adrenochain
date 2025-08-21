@@ -226,38 +226,47 @@ func (sm *SecurityManager) checkAlertThresholds(eventType, ipAddress string) {
 	
 	// Check if threshold exceeded
 	if threshold, exists := sm.config.AlertThresholds[eventType]; exists && recentEvents >= threshold {
-		sm.LogSecurityEvent(
-			"ALERT_THRESHOLD_EXCEEDED",
-			fmt.Sprintf("Threshold exceeded for %s: %d >= %d", eventType, recentEvents, threshold),
-			ipAddress,
-			"SYSTEM",
-			SeverityHigh,
-			map[string]interface{}{
+		// Create alert event directly to avoid recursive call
+		alertEvent := SecurityEvent{
+			Timestamp:   time.Now(),
+			EventType:   "ALERT_THRESHOLD_EXCEEDED",
+			Description: fmt.Sprintf("Threshold exceeded for %s: %d >= %d", eventType, recentEvents, threshold),
+			IPAddress:   ipAddress,
+			UserID:      "SYSTEM",
+			Severity:    SeverityHigh,
+			Metadata: map[string]interface{}{
 				"event_type": eventType,
 				"count":      recentEvents,
 				"threshold":  threshold,
 			},
-		)
+		}
+		
+		// Add alert event directly to audit log
+		sm.auditLog = append(sm.auditLog, alertEvent)
 	}
 }
 
 // BlockIP blocks an IP address temporarily
 func (sm *SecurityManager) BlockIP(ipAddress string, duration time.Duration) {
 	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	
 	sm.blockedIPs[ipAddress] = time.Now().Add(duration)
+	sm.mu.Unlock()
 	
-	sm.LogSecurityEvent(
-		"IP_BLOCKED",
-		fmt.Sprintf("IP address blocked for %v", duration),
-		ipAddress,
-		"SYSTEM",
-		SeverityMedium,
-		map[string]interface{}{
+	// Create block event directly to avoid recursive call
+	blockEvent := SecurityEvent{
+		Timestamp:   time.Now(),
+		EventType:   "IP_BLOCKED",
+		Description: fmt.Sprintf("IP address blocked for %v", duration),
+		IPAddress:   ipAddress,
+		UserID:      "SYSTEM",
+		Severity:    SeverityMedium,
+		Metadata: map[string]interface{}{
 			"block_duration": duration.String(),
 		},
-	)
+	}
+	
+	// Add block event directly to audit log
+	sm.auditLog = append(sm.auditLog, blockEvent)
 }
 
 // IsIPBlocked checks if an IP address is currently blocked
