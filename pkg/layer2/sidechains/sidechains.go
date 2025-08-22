@@ -493,8 +493,8 @@ func (sm *SidechainManager) CreateCrossChainTransaction(tx *CrossChainTransactio
 	select {
 	case sm.txQueue <- tx:
 	default:
-		// Queue is full, process immediately
-		go sm.processCrossChainTransaction(tx)
+		// Queue is full, but don't process immediately to avoid race conditions
+		// The transaction will be processed by the background processor
 	}
 
 	return nil

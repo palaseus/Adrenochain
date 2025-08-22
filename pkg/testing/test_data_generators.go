@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/palaseus/adrenochain/pkg/bridge"
 	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
 	"github.com/palaseus/adrenochain/pkg/exchange/trading"
-	"github.com/palaseus/adrenochain/pkg/bridge"
 	"github.com/palaseus/adrenochain/pkg/governance"
 )
 
@@ -32,10 +32,10 @@ func NewTestDataGenerators() *TestDataGenerators {
 func (tdg *TestDataGenerators) GenerateTradingPair() *trading.TradingPair {
 	baseAssets := []string{"BTC", "ETH", "ADA", "DOT", "LINK", "UNI", "AAVE", "COMP"}
 	quoteAssets := []string{"USDT", "USDC", "DAI", "BUSD", "TUSD", "FRAX", "GUSD", "HUSD"}
-	
+
 	baseAsset := baseAssets[tdg.randomInt(len(baseAssets))]
 	quoteAsset := quoteAssets[tdg.randomInt(len(quoteAssets))]
-	
+
 	// Generate random parameters
 	minQuantity := big.NewInt(int64(1000 + tdg.randomInt(9000)))
 	maxQuantity := big.NewInt(int64(1000000 + tdg.randomInt(9000000)))
@@ -45,7 +45,7 @@ func (tdg *TestDataGenerators) GenerateTradingPair() *trading.TradingPair {
 	stepSize := big.NewInt(int64(1 + tdg.randomInt(10)))
 	makerFee := big.NewInt(int64(50 + tdg.randomInt(150)))
 	takerFee := big.NewInt(int64(100 + tdg.randomInt(200)))
-	
+
 	pair, err := trading.NewTradingPair(
 		baseAsset, quoteAsset,
 		minQuantity, maxQuantity,
@@ -53,7 +53,7 @@ func (tdg *TestDataGenerators) GenerateTradingPair() *trading.TradingPair {
 		tickSize, stepSize,
 		makerFee, takerFee,
 	)
-	
+
 	if err != nil {
 		// Fallback to default values if generation fails
 		pair, _ = trading.NewTradingPair(
@@ -64,42 +64,51 @@ func (tdg *TestDataGenerators) GenerateTradingPair() *trading.TradingPair {
 			big.NewInt(100), big.NewInt(200),
 		)
 	}
-	
+
 	return pair
 }
 
 // GenerateOrder generates a random order
 func (tdg *TestDataGenerators) GenerateOrder(tradingPair string) *orderbook.Order {
 	tdg.orderCounter++
-	
+
 	sides := []string{"buy", "sell"}
 	types := []string{"limit", "market", "stop_loss", "take_profit"}
-	
+
 	side := sides[tdg.randomInt(len(sides))]
 	orderType := types[tdg.randomInt(len(types))]
-	
+
 	// Generate random quantities and prices
 	quantity := big.NewInt(int64(1000 + tdg.randomInt(9000)))
 	price := big.NewInt(int64(10000 + tdg.randomInt(90000)))
-	
-	// Market orders don't have prices
-	if orderType == "market" {
+
+	// For stop orders, we need both price and stop price
+	// For market orders, we don't need price
+	// For limit orders, we only need price
+	var stopPrice *big.Int
+	if orderType == "stop_loss" || orderType == "take_profit" {
+		// Stop orders need both price and stop price
+		stopPrice = big.NewInt(int64(8000 + tdg.randomInt(12000))) // Stop price around the regular price
+	} else if orderType == "market" {
+		// Market orders don't have prices
 		price = nil
 	}
-	
+
 	order := &orderbook.Order{
-		ID:          fmt.Sprintf("order_%d", tdg.orderCounter),
+		ID:          fmt.Sprintf("order_%d_%d", time.Now().UnixNano(), tdg.orderCounter),
 		TradingPair: tradingPair,
 		Side:        orderbook.OrderSide(side),
 		Type:        orderbook.OrderType(orderType),
 		Quantity:    quantity,
 		Price:       price,
+		StopPrice:   stopPrice, // Add stop price for stop orders
 		UserID:      fmt.Sprintf("user_%d", tdg.randomInt(100)),
+		TimeInForce: orderbook.TimeInForceGTC, // Add required TimeInForce field
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 		Status:      orderbook.OrderStatusPending,
 	}
-	
+
 	return order
 }
 
@@ -109,57 +118,58 @@ func (tdg *TestDataGenerators) GenerateOrderBook(tradingPair string, orderCount 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Generate and add orders
 	for i := 0; i < orderCount; i++ {
 		order := tdg.GenerateOrder(tradingPair)
 		if err := ob.AddOrder(order); err != nil {
 			fmt.Printf("Warning: Failed to add order %s: %v\n", order.ID, err)
+			continue // Skip invalid orders instead of continuing
 		}
 	}
-	
+
 	return ob, nil
 }
 
 // GenerateBridgeTransaction generates a random bridge transaction
 func (tdg *TestDataGenerators) GenerateBridgeTransaction() *bridge.CrossChainTransaction {
 	tdg.txCounter++
-	
+
 	chains := []bridge.ChainID{bridge.ChainIDadrenochain, bridge.ChainIDEthereum, bridge.ChainIDPolygon}
 	assetTypes := []bridge.AssetType{bridge.AssetTypeNative, bridge.AssetTypeERC20, bridge.AssetTypeERC721}
-	
+
 	sourceChain := chains[tdg.randomInt(len(chains))]
 	destChain := chains[tdg.randomInt(len(chains))]
 	// Ensure different chains
 	for destChain == sourceChain {
 		destChain = chains[tdg.randomInt(len(chains))]
 	}
-	
+
 	assetType := assetTypes[tdg.randomInt(len(assetTypes))]
 	amount := big.NewInt(int64(100000000000000000 + tdg.randomInt(900000000000000000))) // 0.1 to 1.0 ETH
-	
+
 	tx := &bridge.CrossChainTransaction{
-		ID:                fmt.Sprintf("bridge_tx_%d", tdg.txCounter),
-		SourceChain:       sourceChain,
-		DestinationChain:  destChain,
-		SourceAddress:     tdg.generateRandomAddress(),
+		ID:                 fmt.Sprintf("bridge_tx_%d", tdg.txCounter),
+		SourceChain:        sourceChain,
+		DestinationChain:   destChain,
+		SourceAddress:      tdg.generateRandomAddress(),
 		DestinationAddress: tdg.generateRandomAddress(),
-		AssetType:         assetType,
-		Amount:            amount,
-		Status:            bridge.TransactionStatusPending,
-		ValidatorID:       fmt.Sprintf("validator_%d", tdg.randomInt(10)),
-		CreatedAt:         time.Now(),
-		UpdatedAt:         time.Now(),
-		Fee:               big.NewInt(int64(1000000000000000 + tdg.randomInt(9000000000000000))), // 0.001 to 0.01 ETH
+		AssetType:          assetType,
+		Amount:             amount,
+		Status:             bridge.TransactionStatusPending,
+		ValidatorID:        fmt.Sprintf("validator_%d", tdg.randomInt(10)),
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+		Fee:                big.NewInt(int64(1000000000000000 + tdg.randomInt(9000000000000000))), // 0.001 to 0.01 ETH
 	}
-	
+
 	return tx
 }
 
 // GenerateProposal generates a random governance proposal
 func (tdg *TestDataGenerators) GenerateProposal() *governance.Proposal {
 	tdg.proposalCounter++
-	
+
 	proposalTypes := []governance.ProposalType{
 		governance.ProposalTypeGeneral,
 		governance.ProposalTypeParameterChange,
@@ -167,11 +177,11 @@ func (tdg *TestDataGenerators) GenerateProposal() *governance.Proposal {
 		governance.ProposalTypeUpgrade,
 		governance.ProposalTypeEmergency,
 	}
-	
+
 	proposalType := proposalTypes[tdg.randomInt(len(proposalTypes))]
 	quorumRequired := big.NewInt(int64(1000000000000000000 + tdg.randomInt(9000000000000000000))) // 1 to 10 ETH
-	minVotingPower := big.NewInt(int64(100000000000000000 + tdg.randomInt(900000000000000000))) // 0.1 to 1.0 ETH
-	
+	minVotingPower := big.NewInt(int64(100000000000000000 + tdg.randomInt(900000000000000000)))   // 0.1 to 1.0 ETH
+
 	proposal := &governance.Proposal{
 		ID:             fmt.Sprintf("proposal_%d", tdg.proposalCounter),
 		Title:          fmt.Sprintf("Test Proposal %d", tdg.proposalCounter),
@@ -186,7 +196,7 @@ func (tdg *TestDataGenerators) GenerateProposal() *governance.Proposal {
 		QuorumRequired: quorumRequired,
 		MinVotingPower: minVotingPower,
 	}
-	
+
 	return proposal
 }
 
@@ -197,20 +207,20 @@ func (tdg *TestDataGenerators) GenerateVote(proposalID string) *governance.Vote 
 		governance.VoteChoiceAgainst,
 		governance.VoteChoiceAbstain,
 	}
-	
+
 	voteChoice := voteChoices[tdg.randomInt(len(voteChoices))]
 	votingPower := big.NewInt(int64(100000000000000000 + tdg.randomInt(900000000000000000))) // 0.1 to 1.0 ETH
-	
+
 	vote := &governance.Vote{
-		ProposalID: proposalID,
-		Voter:      fmt.Sprintf("voter_%d", tdg.randomInt(100)),
-		VoteChoice: voteChoice,
+		ProposalID:  proposalID,
+		Voter:       fmt.Sprintf("voter_%d", tdg.randomInt(100)),
+		VoteChoice:  voteChoice,
 		VotingPower: votingPower,
-		Reason:     fmt.Sprintf("Vote reason for proposal %s", proposalID),
-		Timestamp:  time.Now(),
+		Reason:      fmt.Sprintf("Vote reason for proposal %s", proposalID),
+		Timestamp:   time.Now(),
 		IsDelegated: false,
 	}
-	
+
 	return vote
 }
 
@@ -223,10 +233,10 @@ func (tdg *TestDataGenerators) GenerateTreasuryTransaction() *governance.Treasur
 		governance.TreasuryTransactionTypeInvestment,
 		governance.TreasuryTransactionTypeReward,
 	}
-	
+
 	transactionType := transactionTypes[tdg.randomInt(len(transactionTypes))]
 	amount := big.NewInt(int64(1000000000000000000 + tdg.randomInt(9000000000000000000))) // 1 to 10 ETH
-	
+
 	tx := &governance.TreasuryTransaction{
 		ID:          fmt.Sprintf("treasury_tx_%d", tdg.randomInt(1000)),
 		Type:        transactionType,
@@ -239,14 +249,14 @@ func (tdg *TestDataGenerators) GenerateTreasuryTransaction() *governance.Treasur
 		ExecutedBy:  fmt.Sprintf("executor_%d", tdg.randomInt(10)),
 		CreatedAt:   time.Now(),
 	}
-	
+
 	return tx
 }
 
 // GenerateValidator generates a random validator
 func (tdg *TestDataGenerators) GenerateValidator() *bridge.Validator {
 	stakeAmount := big.NewInt(int64(1000000000000000000 + tdg.randomInt(9000000000000000000))) // 1 to 10 ETH
-	
+
 	validator := &bridge.Validator{
 		ID:             fmt.Sprintf("validator_%d", tdg.randomInt(100)),
 		Address:        tdg.generateRandomAddress(),
@@ -259,7 +269,7 @@ func (tdg *TestDataGenerators) GenerateValidator() *bridge.Validator {
 		TotalValidated: int64(tdg.randomInt(1000)),
 		SuccessRate:    float64(90 + tdg.randomInt(10)), // 90-100%
 	}
-	
+
 	return validator
 }
 
@@ -267,19 +277,19 @@ func (tdg *TestDataGenerators) GenerateValidator() *bridge.Validator {
 func (tdg *TestDataGenerators) GenerateAssetMapping() *bridge.AssetMapping {
 	chains := []bridge.ChainID{bridge.ChainIDadrenochain, bridge.ChainIDEthereum, bridge.ChainIDPolygon}
 	assetTypes := []bridge.AssetType{bridge.AssetTypeNative, bridge.AssetTypeERC20, bridge.AssetTypeERC721, bridge.AssetTypeERC1155}
-	
+
 	sourceChain := chains[tdg.randomInt(len(chains))]
 	destChain := chains[tdg.randomInt(len(chains))]
 	// Ensure different chains
 	for destChain == sourceChain {
 		destChain = chains[tdg.randomInt(len(chains))]
 	}
-	
+
 	assetType := assetTypes[tdg.randomInt(len(assetTypes))]
-	minAmount := big.NewInt(int64(1000000000000000 + tdg.randomInt(9000000000000000))) // 0.001 to 0.01 ETH
-	maxAmount := big.NewInt(int64(1000000000000000000 + tdg.randomInt(9000000000000000000))) // 1 to 10 ETH
+	minAmount := big.NewInt(int64(1000000000000000 + tdg.randomInt(9000000000000000)))        // 0.001 to 0.01 ETH
+	maxAmount := big.NewInt(int64(1000000000000000000 + tdg.randomInt(9000000000000000000)))  // 1 to 10 ETH
 	dailyLimit := big.NewInt(int64(1000000000000000000 + tdg.randomInt(9000000000000000000))) // 1 to 10 ETH
-	
+
 	mapping := &bridge.AssetMapping{
 		ID:               fmt.Sprintf("mapping_%d", tdg.randomInt(1000)),
 		SourceChain:      sourceChain,
@@ -293,46 +303,46 @@ func (tdg *TestDataGenerators) GenerateAssetMapping() *bridge.AssetMapping {
 		MaxAmount:        maxAmount,
 		DailyLimit:       dailyLimit,
 		DailyUsed:        big.NewInt(0),
-		FeePercentage:    float64(1 + tdg.randomInt(5)) / 100.0, // 0.01% to 0.06%
+		FeePercentage:    float64(1+tdg.randomInt(5)) / 100.0, // 0.01% to 0.06%
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}
-	
+
 	return mapping
 }
 
 // GenerateTestDataset generates a comprehensive test dataset
 func (tdg *TestDataGenerators) GenerateTestDataset() *TestDataset {
 	fmt.Println("📊 Generating comprehensive test dataset...")
-	
+
 	dataset := &TestDataset{
-		TradingPairs:    make([]*trading.TradingPair, 0),
-		Orders:          make([]*orderbook.Order, 0),
-		OrderBooks:      make([]*orderbook.OrderBook, 0),
-		BridgeTransactions: make([]*bridge.CrossChainTransaction, 0),
-		Proposals:       make([]*governance.Proposal, 0),
-		Votes:           make([]*governance.Vote, 0),
+		TradingPairs:         make([]*trading.TradingPair, 0),
+		Orders:               make([]*orderbook.Order, 0),
+		OrderBooks:           make([]*orderbook.OrderBook, 0),
+		BridgeTransactions:   make([]*bridge.CrossChainTransaction, 0),
+		Proposals:            make([]*governance.Proposal, 0),
+		Votes:                make([]*governance.Vote, 0),
 		TreasuryTransactions: make([]*governance.TreasuryTransaction, 0),
-		Validators:      make([]*bridge.Validator, 0),
-		AssetMappings:   make([]*bridge.AssetMapping, 0),
+		Validators:           make([]*bridge.Validator, 0),
+		AssetMappings:        make([]*bridge.AssetMapping, 0),
 	}
-	
+
 	// Generate trading pairs
 	for i := 0; i < 10; i++ {
 		pair := tdg.GenerateTradingPair()
 		dataset.TradingPairs = append(dataset.TradingPairs, pair)
 	}
-	
+
 	// Generate orders and order books
 	for i := 0; i < 5; i++ {
 		pair := dataset.TradingPairs[i]
 		tradingPair := fmt.Sprintf("%s/%s", pair.BaseAsset, pair.QuoteAsset)
-		
+
 		// Generate order book with orders
 		ob, err := tdg.GenerateOrderBook(tradingPair, 50)
 		if err == nil {
 			dataset.OrderBooks = append(dataset.OrderBooks, ob)
-			
+
 			// Get orders from order book
 			// This would require access to internal order book methods
 			// For now, we'll generate orders separately
@@ -342,46 +352,46 @@ func (tdg *TestDataGenerators) GenerateTestDataset() *TestDataset {
 			}
 		}
 	}
-	
+
 	// Generate bridge transactions
 	for i := 0; i < 20; i++ {
 		tx := tdg.GenerateBridgeTransaction()
 		dataset.BridgeTransactions = append(dataset.BridgeTransactions, tx)
 	}
-	
+
 	// Generate governance proposals and votes
 	for i := 0; i < 10; i++ {
 		proposal := tdg.GenerateProposal()
 		dataset.Proposals = append(dataset.Proposals, proposal)
-		
+
 		// Generate votes for this proposal
 		for j := 0; j < 15; j++ {
 			vote := tdg.GenerateVote(proposal.ID)
 			dataset.Votes = append(dataset.Votes, vote)
 		}
 	}
-	
+
 	// Generate treasury transactions
 	for i := 0; i < 15; i++ {
 		tx := tdg.GenerateTreasuryTransaction()
 		dataset.TreasuryTransactions = append(dataset.TreasuryTransactions, tx)
 	}
-	
+
 	// Generate validators
 	for i := 0; i < 8; i++ {
 		validator := tdg.GenerateValidator()
 		dataset.Validators = append(dataset.Validators, validator)
 	}
-	
+
 	// Generate asset mappings
 	for i := 0; i < 12; i++ {
 		mapping := tdg.GenerateAssetMapping()
 		dataset.AssetMappings = append(dataset.AssetMappings, mapping)
 	}
-	
+
 	fmt.Printf("✅ Test dataset generated: %d pairs, %d orders, %d proposals, %d validators\n",
 		len(dataset.TradingPairs), len(dataset.Orders), len(dataset.Proposals), len(dataset.Validators))
-	
+
 	return dataset
 }
 
@@ -403,15 +413,15 @@ func (tdg *TestDataGenerators) generateRandomAddress() string {
 
 // TestDataset represents a comprehensive test dataset
 type TestDataset struct {
-	TradingPairs        []*trading.TradingPair
-	Orders              []*orderbook.Order
-	OrderBooks          []*orderbook.OrderBook
-	BridgeTransactions  []*bridge.CrossChainTransaction
-	Proposals           []*governance.Proposal
-	Votes               []*governance.Vote
+	TradingPairs         []*trading.TradingPair
+	Orders               []*orderbook.Order
+	OrderBooks           []*orderbook.OrderBook
+	BridgeTransactions   []*bridge.CrossChainTransaction
+	Proposals            []*governance.Proposal
+	Votes                []*governance.Vote
 	TreasuryTransactions []*governance.TreasuryTransaction
-	Validators          []*bridge.Validator
-	AssetMappings       []*bridge.AssetMapping
+	Validators           []*bridge.Validator
+	AssetMappings        []*bridge.AssetMapping
 }
 
 // GetSummary returns a summary of the test dataset

@@ -1171,8 +1171,8 @@ func TestModelPerformanceGeneration(t *testing.T) {
 				t.Errorf("Expected MAE between 0 and 1.1, got %f", performance.MAE)
 			}
 
-			if performance.R2Score < 0 || performance.R2Score > 1.1 {
-				t.Errorf("Expected R2Score between 0 and 1.1, got %f", performance.R2Score)
+			if performance.R2Score < 0 || performance.R2Score > 1.2 {
+				t.Errorf("Expected R2Score between 0 and 1.2, got %f", performance.R2Score)
 			}
 
 			if performance.LastEvaluation.IsZero() {

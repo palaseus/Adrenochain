@@ -484,6 +484,20 @@ func (h OrderHeap) Less(i, j int) bool {
 	orderI := h[i]
 	orderJ := h[j]
 	
+	// Handle nil prices (market orders)
+	if orderI.Price == nil && orderJ.Price == nil {
+		// Both are market orders, sort by timestamp
+		return orderI.CreatedAt.Before(orderJ.CreatedAt)
+	}
+	if orderI.Price == nil {
+		// orderI is market order, it should come first
+		return true
+	}
+	if orderJ.Price == nil {
+		// orderJ is market order, it should come first
+		return false
+	}
+	
 	if orderI.Side == OrderSideBuy {
 		// Buy orders: higher price first
 		priceCmp := orderI.Price.Cmp(orderJ.Price)

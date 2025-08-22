@@ -1,9 +1,12 @@
 package benchmarking
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
@@ -24,6 +27,14 @@ type BenchmarkResult struct {
 	MemoryPerOp     float64       `json:"memory_per_op_bytes"`
 	Timestamp      time.Time     `json:"timestamp"`
 	Metadata       map[string]interface{} `json:"metadata"`
+}
+
+// BenchmarkReport represents a comprehensive benchmark report
+type BenchmarkReport struct {
+	Timestamp       time.Time           `json:"timestamp"`
+	TotalBenchmarks int                 `json:"total_benchmarks"`
+	Results         []*BenchmarkResult  `json:"results"`
+	Summary         string              `json:"summary"`
 }
 
 // BenchmarkSuite represents a collection of benchmark tests
@@ -1148,4 +1159,175 @@ func formatBytes(bytes uint64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// MainBenchmarkOrchestrator orchestrates all benchmark suites
+type MainBenchmarkOrchestrator struct {
+	Layer2Benchmarks     *Layer2BenchmarkSuite
+	CrossChainBenchmarks *CrossChainBenchmarkSuite
+	GovernanceBenchmarks *GovernanceBenchmarkSuite
+	PrivacyBenchmarks    *PrivacyBenchmarkSuite
+	AllResults           []*BenchmarkResult
+	StartTime            time.Time
+	EndTime              time.Time
+}
+
+// NewMainBenchmarkOrchestrator creates a new benchmark orchestrator
+func NewMainBenchmarkOrchestrator() *MainBenchmarkOrchestrator {
+	return &MainBenchmarkOrchestrator{
+		Layer2Benchmarks:     NewLayer2BenchmarkSuite(),
+		CrossChainBenchmarks: NewCrossChainBenchmarkSuite(),
+		GovernanceBenchmarks: NewGovernanceBenchmarkSuite(),
+		PrivacyBenchmarks:    NewPrivacyBenchmarkSuite(),
+		AllResults:           make([]*BenchmarkResult, 0),
+	}
+}
+
+// RunAllBenchmarks runs all benchmark suites
+func (mbo *MainBenchmarkOrchestrator) RunAllBenchmarks() error {
+	mbo.StartTime = time.Now()
+	
+	fmt.Println("\n🚀 Starting Comprehensive Benchmarking Suite...")
+	
+	// Run Layer 2 Benchmarks
+	fmt.Println("\n📊 Running Layer 2 Benchmarks...")
+	if err := mbo.Layer2Benchmarks.RunAllLayer2Benchmarks(); err != nil {
+		return fmt.Errorf("Layer 2 benchmarks failed: %v", err)
+	}
+	mbo.AllResults = append(mbo.AllResults, mbo.Layer2Benchmarks.GetResults()...)
+	
+	// Run Cross-Chain Benchmarks
+	fmt.Println("\n🔗 Running Cross-Chain Benchmarks...")
+	if err := mbo.CrossChainBenchmarks.RunAllCrossChainBenchmarks(); err != nil {
+		return fmt.Errorf("cross-chain benchmarks failed: %v", err)
+	}
+	mbo.AllResults = append(mbo.AllResults, mbo.CrossChainBenchmarks.GetResults()...)
+	
+	// Run Governance Benchmarks
+	fmt.Println("\n🏛️ Running Governance Benchmarks...")
+	if err := mbo.GovernanceBenchmarks.RunAllGovernanceBenchmarks(); err != nil {
+		return fmt.Errorf("governance benchmarks failed: %v", err)
+	}
+	mbo.AllResults = append(mbo.AllResults, mbo.GovernanceBenchmarks.GetResults()...)
+	
+	// Run Privacy Benchmarks
+	fmt.Println("\n🔒 Running Privacy Benchmarks...")
+	if err := mbo.PrivacyBenchmarks.RunAllPrivacyBenchmarks(); err != nil {
+		return fmt.Errorf("privacy benchmarks failed: %v", err)
+	}
+	mbo.AllResults = append(mbo.AllResults, mbo.PrivacyBenchmarks.GetResults()...)
+	
+	mbo.EndTime = time.Now()
+	
+	fmt.Printf("\n✅ All benchmarks completed successfully! Total: %d results\n", len(mbo.AllResults))
+	return nil
+}
+
+// SaveReportToFile saves the benchmark report to a JSON file in the test_results directory
+func (mbo *MainBenchmarkOrchestrator) SaveReportToFile() error {
+	// Create test_results directory if it doesn't exist
+	testResultsDir := "test_results"
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create test_results directory: %v", err)
+	}
+	
+	// Create benchmark report structure
+	report := BenchmarkReport{
+		Timestamp:        time.Now(),
+		TotalBenchmarks:  len(mbo.AllResults),
+		Results:          mbo.AllResults,
+		Summary:          mbo.GenerateSummary(),
+	}
+	
+	// Generate filename with timestamp
+	filename := fmt.Sprintf("benchmark_report_%s.json", time.Now().Format("20060102_150405"))
+	filepath := filepath.Join(testResultsDir, filename)
+	
+	// Create and write file
+	file, err := os.Create(filepath)
+	if err != nil {
+		return fmt.Errorf("failed to create report file: %v", err)
+	}
+	defer file.Close()
+	
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	
+	if err := encoder.Encode(report); err != nil {
+		return fmt.Errorf("failed to encode report: %v", err)
+	}
+	
+	fmt.Printf("📄 Benchmark report saved to: %s\n", filepath)
+	return nil
+}
+
+// GenerateSummary generates a summary of all benchmark results
+func (mbo *MainBenchmarkOrchestrator) GenerateSummary() string {
+	if len(mbo.AllResults) == 0 {
+		return "No benchmark results available"
+	}
+	
+	var totalDuration time.Duration
+	var totalOperations int64
+	var totalMemory uint64
+	
+	for _, result := range mbo.AllResults {
+		totalDuration += result.Duration
+		totalOperations += result.OperationsCount
+		totalMemory += result.MemoryUsage
+	}
+	
+	summary := fmt.Sprintf("Benchmark Summary:\n")
+	summary += fmt.Sprintf("Total Tests: %d\n", len(mbo.AllResults))
+	summary += fmt.Sprintf("Total Duration: %s\n", totalDuration)
+	summary += fmt.Sprintf("Total Operations: %d\n", totalOperations)
+	summary += fmt.Sprintf("Total Memory Used: %s\n", formatBytes(totalMemory))
+	if totalDuration > 0 {
+		summary += fmt.Sprintf("Average Throughput: %.2f ops/sec\n", float64(totalOperations)/totalDuration.Seconds())
+	}
+	
+	return summary
+}
+
+// PrintSummary prints the benchmark summary to console
+func (mbo *MainBenchmarkOrchestrator) PrintSummary() {
+	fmt.Println(mbo.GenerateSummary())
+}
+
+// GenerateComprehensiveReport generates a comprehensive benchmark report
+func (mbo *MainBenchmarkOrchestrator) GenerateComprehensiveReport() string {
+	if len(mbo.AllResults) == 0 {
+		return "No benchmark results available"
+	}
+	
+	report := fmt.Sprintf("Comprehensive Benchmark Report\n")
+	report += fmt.Sprintf("Generated: %s\n", time.Now().Format("2006-01-02 15:04:05"))
+	report += fmt.Sprintf("Total Results: %d\n\n", len(mbo.AllResults))
+	
+	// Group results by package
+	packageResults := make(map[string][]*BenchmarkResult)
+	for _, result := range mbo.AllResults {
+		packageResults[result.PackageName] = append(packageResults[result.PackageName], result)
+	}
+	
+	for packageName, results := range packageResults {
+		report += fmt.Sprintf("Package: %s\n", packageName)
+		report += fmt.Sprintf("Tests: %d\n", len(results))
+		
+		var packageDuration time.Duration
+		var packageOperations int64
+		for _, result := range results {
+			packageDuration += result.Duration
+			packageOperations += result.OperationsCount
+		}
+		
+		report += fmt.Sprintf("Total Duration: %s\n", packageDuration)
+		report += fmt.Sprintf("Total Operations: %d\n", packageOperations)
+		if packageDuration > 0 {
+			report += fmt.Sprintf("Average Throughput: %.2f ops/sec\n", float64(packageOperations)/packageDuration.Seconds())
+		}
+		report += "\n"
+	}
+	
+	return report
 }

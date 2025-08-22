@@ -237,14 +237,17 @@ func (ith *IntegrationTestHelpers) CreateTestOrders(tradingPair string, count in
 			side = "sell"
 		}
 
+		// Create unique order ID using timestamp and nano time to avoid collisions
+		timestamp := time.Now().UnixNano()
 		order := &orderbook.Order{
-			ID:          fmt.Sprintf("test_order_%d", i),
+			ID:          fmt.Sprintf("test_order_%d_%d", timestamp, i),
 			TradingPair: tradingPair,
 			Side:        orderbook.OrderSide(side),
 			Type:        orderbook.OrderTypeLimit,
 			Quantity:    big.NewInt(int64(1000 + i*100)),
 			Price:       big.NewInt(int64(10000 + i*1000)),
 			UserID:      fmt.Sprintf("user_%d", i%5),
+			TimeInForce: orderbook.TimeInForceGTC, // Add required TimeInForce field
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 			Status:      orderbook.OrderStatusPending,

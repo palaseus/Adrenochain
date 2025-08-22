@@ -31,7 +31,7 @@ PARALLEL_TESTS=true
 FUZZ_TESTS=true
 BENCHMARK_TESTS=true
 SMART_CONTRACT_TESTS=true
-WEEK_11_12_TESTS=true  # Week 11-12: Polish & Production testing
+# WEEK_11_12_TESTS removed - integrated into main test suite
 END_TO_END_TESTS=true  # Complete ecosystem validation
 DERIVATIVES_TESTS=true  # Advanced derivatives & risk management
 ALGORITHMIC_TRADING_TESTS=true  # Algorithmic trading & market making
@@ -215,100 +215,7 @@ run_smart_contract_tests() {
     echo
 }
 
-# Run Week 11-12: Polish & Production tests
-run_week_11_12_tests() {
-    echo -e "${BLUE}🚀 Running Week 11-12: Polish & Production Tests...${NC}"
-    
-    # Ensure test results directory exists
-    mkdir -p "$TEST_RESULTS_DIR"
-    
-    echo -e "${GREEN}✅ Testing Week 11-12 Achievements:${NC}"
-    echo -e "   🎯 End-to-End Ecosystem Testing"
-    echo -e "   📊 Performance Validation"
-    echo -e "   🔒 Security Hardening"
-    echo -e "   🏗️  Build Stability"
-    echo -e "   🧪 Cross-Protocol Integration"
-    
-    # Test the complete adrenochain ecosystem
-    echo -e "   🚀 Running Complete adrenochain Ecosystem Tests..."
-    if go test ./pkg/testing/ -v -run "TestCompleteadrenochainEcosystem" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_ecosystem.log" | grep -q "PASS"; then
-        echo -e "      ✅ Complete ecosystem tests passed"
-    else
-        echo -e "      ❌ Complete ecosystem tests failed"
-        return 1
-    fi
-    
-    # Test specific components
-    echo -e "   🎯 Testing DeFi Protocol Foundation..."
-    if go test ./pkg/testing/ -v -run "TestDeFiProtocolFoundation" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_defi.log" | grep -q "PASS"; then
-        echo -e "      ✅ DeFi protocol foundation tests passed"
-    else
-        echo -e "      ❌ DeFi protocol foundation tests failed"
-        return 1
-    fi
-    
-    echo -e "   💱 Testing Exchange Operations..."
-    if go test ./pkg/testing/ -v -run "TestExchangeOperations" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_exchange.log" | grep -q "PASS"; then
-        echo -e "      ✅ Exchange operations tests passed"
-    else
-        echo -e "      ❌ Exchange operations tests failed"
-        return 1
-    fi
-    
-    echo -e "   🔗 Testing Cross-Protocol Integration..."
-    if go test ./pkg/testing/ -v -run "TestCrossProtocolIntegration" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_integration.log" | grep -q "PASS"; then
-        echo -e "      ✅ Cross-protocol integration tests passed"
-    else
-        echo -e "      ❌ Cross-protocol integration tests failed"
-        return 1
-    fi
-    
-    echo -e "   👤 Testing Complete User Journey..."
-    if go test ./pkg/testing/ -v -run "TestCompleteUserJourney" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_user_journey.log" | grep -q "PASS"; then
-        echo -e "      ✅ User journey tests passed"
-    else
-        echo -e "      ❌ User journey tests failed"
-        return 1
-    fi
-    
-    echo -e "   ⚡ Testing System Stress Testing..."
-    if go test ./pkg/testing/ -v -run "TestSystemStressTesting" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_stress.log" | grep -q "PASS"; then
-        echo -e "      ✅ System stress tests passed"
-    else
-        echo -e "      ❌ System stress tests failed"
-        return 1
-    fi
-    
-    echo -e "   📈 Testing Performance Validation..."
-    if go test ./pkg/testing/ -v -run "TestPerformanceValidation" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_performance.log" | grep -q "PASS"; then
-        echo -e "      ✅ Performance validation tests passed"
-    else
-        echo -e "      ❌ Performance validation tests failed"
-        return 1
-    fi
-    
-    # Run performance benchmarks
-    echo -e "   🏃 Running Performance Benchmarks..."
-    benchmark_output=$(go test ./pkg/testing/ -v -run "TestCompleteadrenochainEcosystem" -bench=. -benchmem 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_benchmarks.log")
-    if echo "$benchmark_output" | grep -q "Benchmark" || echo "$benchmark_output" | grep -q "no test files" || echo "$benchmark_output" | grep -q "PASS"; then
-        echo -e "      ✅ Performance benchmarks completed"
-    else
-        echo -e "      ❌ Performance benchmarks failed"
-        return 1
-    fi
-    
-    # Run race condition detection
-    echo -e "   🏁 Running Race Condition Detection..."
-    if go test -race ./pkg/testing/ -v -run "TestCompleteadrenochainEcosystem" 2>&1 | tee "$TEST_RESULTS_DIR/week_11_12_race_detection.log" | grep -q "PASS"; then
-        echo -e "      ✅ Race condition detection completed"
-    else
-        echo -e "      ❌ Race condition detection failed"
-        return 1
-    fi
-    
-    echo -e "${GREEN}✅ Week 11-12 tests completed${NC}"
-    echo
-}
+# Meta-learning AI tests integrated into main test suite
 
 # Run security tests specifically
 run_security_tests() {
@@ -338,6 +245,31 @@ run_security_tests() {
     
     echo -e "${GREEN}✅ Security tests completed${NC}"
     echo
+}
+
+# Run meta-learning AI tests
+run_meta_learning_tests() {
+    echo -e "${BLUE}🧠 Running Meta-Learning AI Tests...${NC}"
+    
+    # Ensure test results directory exists
+    mkdir -p "$TEST_RESULTS_DIR"
+    
+    echo -e "${GREEN}✅ Testing Meta-Learning AI Capabilities:${NC}"
+    echo -e "   🧠 Meta-Learning: Learn how to learn from new scenarios"
+    echo -e "   🔄 Adaptive Strategies: Dynamic strategy evolution"
+    echo -e "   🛡️  Robustness Framework: Systematic unknown-unknowns"
+    echo -e "   📈 Continuous Learning: Always improving performance"
+    echo -e "   🎯 Target: 60%+ survival against unseen black swans"
+    
+    # Run the meta-learning test script
+    echo -e "   🧠 Running Meta-Learning Black Swan Tests..."
+    if ./scripts/meta_learning_black_swan_test.sh 2>&1 | tee "$TEST_RESULTS_DIR/meta_learning_ai.log"; then
+        echo -e "      ✅ Meta-learning AI tests passed"
+        return 0
+    else
+        echo -e "      ❌ Meta-learning AI tests failed"
+        return 1
+    fi
 }
 
 # Run comprehensive performance benchmarking suite
@@ -813,12 +745,12 @@ generate_test_summary() {
         echo "## 🎯 Success Rate"
         echo
         if [[ ${TOTAL_PACKAGES:-0} -gt 0 ]]; then
-            local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-1}))
+            local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-0}))
             echo "- **Package Success Rate:** ${package_success_rate}%"
         fi
         
         if [[ ${TOTAL_TESTS:-0} -gt 0 ]]; then
-            local test_success_rate=$(((${PASSED_TESTS:-0} * 100) / ${TOTAL_TESTS:-1}))
+            local test_success_rate=$(((${PASSED_TESTS:-0} * 100) / ${TOTAL_TESTS:-0}))
             echo "- **Test Success Rate:** ${test_success_rate}%"
         fi
         echo
@@ -865,7 +797,7 @@ generate_test_summary() {
 print_final_results() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    🎯 Test Suite Complete 🎯                ║"
+    echo "║                   🎯 Test Suite Complete 🎯                 ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
@@ -876,12 +808,12 @@ print_final_results() {
     echo -e "   🔐 Security: ${GREEN}ZK Proofs & Quantum-Resistant Crypto${NC} ✅"
     
     if [[ ${TOTAL_PACKAGES:-0} -gt 0 ]]; then
-        local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-1}))
+        local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-0}))
         echo -e "   📈 Package Success Rate: ${GREEN}${package_success_rate}%${NC}"
     fi
     
     if [[ ${TOTAL_TESTS:-0} -gt 0 ]]; then
-        local test_success_rate=$(((${PASSED_TESTS:-0} * 100) / ${TOTAL_TESTS:-1}))
+        local test_success_rate=$(((${PASSED_TESTS:-0} * 100) / ${TOTAL_TESTS:-0}))
         echo -e "   📈 Test Success Rate: ${GREEN}${test_success_rate}%${NC}"
     fi
     
@@ -943,11 +875,12 @@ main() {
         fi
     fi
     
-    # Run Week 11-12: Polish & Production tests
-    if [[ "$WEEK_11_12_TESTS" == true ]]; then
-        if ! run_week_11_12_tests; then
-            echo -e "${YELLOW}⚠️  Week 11-12 tests failed, continuing with other tests...${NC}"
-        fi
+    # Week 11-12 tests integrated into main test suite
+    
+    # Run meta-learning AI tests
+    echo -e "${BLUE}🧠 Running Meta-Learning AI Tests...${NC}"
+    if ! run_meta_learning_tests; then
+        echo -e "${YELLOW}⚠️  Meta-learning AI tests failed, continuing with other tests...${NC}"
     fi
     
     run_fuzz_tests
@@ -990,7 +923,7 @@ case "${1:-}" in
         echo "  --no-bench     Disable benchmark testing"
         echo "  --contracts    Run only smart contract tests"
         echo "  --no-contracts Disable smart contract tests"
-        echo "  --week11-12    Run only Week 11-12: Polish & Production tests"
+        echo "  --meta-learning Run only meta-learning AI tests"
         echo "  --comprehensive-benchmarks Run comprehensive performance benchmarking"
         echo "  --comprehensive-security  Run comprehensive security validation"
         echo "  --verbose      Enable verbose output"
@@ -999,7 +932,7 @@ case "${1:-}" in
         echo "Examples:"
         echo "  $0                    # Run all tests with default settings"
         echo "  $0 --contracts       # Run only smart contract tests"
-        echo "  $0 --week11-12       # Run only Week 11-12: Polish & Production tests"
+        echo "  $0 --meta-learning   # Run only meta-learning AI tests"
         echo "  $0 --comprehensive-benchmarks # Run only comprehensive performance benchmarking"
         echo "  $0 --comprehensive-security   # Run only comprehensive security validation"
         echo "  $0 --no-race         # Run tests without race detection"
@@ -1032,9 +965,9 @@ case "${1:-}" in
         run_smart_contract_tests
         exit 0
         ;;
-    --week11-12)
-        echo -e "${BLUE}🚀 Running Week 11-12: Polish & Production Tests Only...${NC}"
-        run_week_11_12_tests
+    --meta-learning)
+        echo -e "${BLUE}🧠 Running Meta-Learning AI Tests Only...${NC}"
+        run_meta_learning_tests
         exit 0
         ;;
     --comprehensive-benchmarks)

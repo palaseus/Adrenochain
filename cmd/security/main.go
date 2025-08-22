@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -189,7 +190,13 @@ func calculateSecuritySummary(results []*security.SecurityValidationResult) Secu
 
 // saveSecurityReportToFile saves the security report to a JSON file
 func saveSecurityReportToFile(report SecurityReport) error {
-	filename := fmt.Sprintf("security_report_%s.json", time.Now().Format("20060102_150405"))
+	// Create test_results directory if it doesn't exist
+	testResultsDir := "test_results"
+	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create test_results directory: %v", err)
+	}
+	
+	filename := filepath.Join(testResultsDir, fmt.Sprintf("security_report_%s.json", time.Now().Format("20060102_150405")))
 
 	file, err := os.Create(filename)
 	if err != nil {
