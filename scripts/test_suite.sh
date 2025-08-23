@@ -101,20 +101,20 @@ print_banner() {
     echo -e "${CYAN}"
     cat << "EOF"
     ╔══════════════════════════════════════════════════════════════╗
-    ║                    🚀 adrenochain Test Suite 🚀                ║
+    ║                    🚀 adrenochain Test Suite 🚀              ║
     ║                                                              ║
-    ║  Comprehensive testing for the adrenochain blockchain project   ║
+    ║  Comprehensive testing for the adrenochain blockchain project║
     ║                                                              ║
     ║  Features:                                                   ║
-    ║  • Unit tests with coverage                                 ║
-    ║  • Fuzz testing                                             ║
-    ║  • Benchmark testing                                        ║
-    ║  • Race condition detection                                 ║
-    ║  • Detailed reporting                                       ║
-    ║  • Performance metrics                                      ║
-    ║  • Week 11-12: End-to-End Ecosystem Testing                ║
-    ║  • Advanced Derivatives & Risk Management                   ║
-    ║  • Algorithmic Trading & Market Making                      ║
+    ║  • Unit tests with coverage                                  ║
+    ║  • Fuzz testing                                              ║
+    ║  • Benchmark testing                                         ║
+    ║  • Race condition detection                                  ║
+    ║  • Detailed reporting                                        ║
+    ║  • Performance metrics                                       ║
+    ║  • Week 11-12: End-to-End Ecosystem Testing                  ║
+    ║  • Advanced Derivatives & Risk Management                    ║
+    ║  • Algorithmic Trading & Market Making                       ║
     ╚══════════════════════════════════════════════════════════════╝
 EOF
     echo -e "${NC}"

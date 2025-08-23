@@ -63,6 +63,7 @@ and wallet functionality.`,
 	rootCmd.AddCommand(createTransactionCmd())
 	rootCmd.AddCommand(getBalanceCmd())
 	rootCmd.AddCommand(getBlockchainInfoCmd())
+	rootCmd.AddCommand(getSafeInfoCmd()) // Add new safe command
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -500,7 +501,7 @@ func runNode(cmd *cobra.Command, args []string) error {
 				peerCount := len(net.GetPeers())
 				mempoolCount := mempool.GetTransactionCount()
 
-				if bestBlock != nil {
+				if bestBlock != nil && bestBlock.Header != nil {
 					logger.Info("Status: Height=%d, Hash=%x, Peers=%d, Mempool=%d",
 						chain.GetHeight(),
 						bestBlock.CalculateHash(),
@@ -749,26 +750,111 @@ func getBlockchainInfoCmd() *cobra.Command {
 				dataDir = "./data"
 			}
 
+			// Create storage
 			nodeStorage, err := storageFactory.CreateStorage(storageType, dataDir)
 			if err != nil {
 				return fmt.Errorf("failed to create storage: %w", err)
 			}
-			defer nodeStorage.Close()
 
-			chainConfig := chain.DefaultChainConfig()
-			consensusConfig := consensus.DefaultConsensusConfig()
-			chain, err := chain.NewChain(chainConfig, consensusConfig, nodeStorage)
+			// MINIMAL APPROACH: Read chainstate directly without loading full chain
+			fmt.Printf("Blockchain Information:\n")
+			
+			// Read chainstate directly
+			chainState, err := nodeStorage.GetChainState()
 			if err != nil {
-				return fmt.Errorf("failed to create chain: %w", err)
+				fmt.Printf("Height: 0 (No chain state found)\n")
+				fmt.Printf("Best Block Hash: Not available\n")
+			} else {
+				fmt.Printf("Height: %d\n", chainState.Height)
+				if len(chainState.BestBlockHash) > 0 {
+					fmt.Printf("Best Block Hash: %x\n", chainState.BestBlockHash)
+				} else {
+					fmt.Printf("Best Block Hash: Not available\n")
+				}
+			}
+			
+			// Count block files
+			blockCount := 0
+			if entries, err := os.ReadDir(dataDir); err == nil {
+				for _, entry := range entries {
+					if !entry.IsDir() && len(entry.Name()) == 64 { // Block files are 64 chars
+						blockCount++
+					}
+				}
+			}
+			fmt.Printf("Block Files: %d\n", blockCount)
+			
+			// Storage information
+			fmt.Printf("Storage Type: %s\n", storageType)
+			fmt.Printf("Data Directory: %s\n", dataDir)
+
+			return nil
+		},
+	}
+}
+
+func getSafeInfoCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "safe-info",
+		Short: "Get safe blockchain information",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Load configuration to determine storage type
+			if err := loadConfig(); err != nil {
+				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			bestBlock := chain.GetBestBlock()
-			fmt.Printf("Blockchain Information:\n")
-			fmt.Printf("Height: %d\n", chain.GetHeight())
-			fmt.Printf("Best Block Hash: %x\n", bestBlock.CalculateHash())
-			fmt.Printf("Genesis Block Hash: %x\n", chain.GetGenesisBlock().CalculateHash())
-			fmt.Printf("Difficulty: %d\n", bestBlock.Header.Difficulty)
-			fmt.Printf("Next Difficulty: %d\n", chain.CalculateNextDifficulty())
+			// Create storage using factory
+			storageFactory := storage.NewStorageFactory()
+
+			// Determine storage type from config or use default
+			storageType := storage.StorageTypeFile // Default to file storage
+			configDBType := viper.GetString("storage.db_type")
+			if configDBType == "leveldb" {
+				storageType = storage.StorageTypeLevelDB
+			}
+
+			dataDir := viper.GetString("storage.data_dir")
+			if dataDir == "" {
+				dataDir = "./data"
+			}
+
+			// Create storage
+			nodeStorage, err := storageFactory.CreateStorage(storageType, dataDir)
+			if err != nil {
+				return fmt.Errorf("failed to create storage: %w", err)
+			}
+
+			// MINIMAL APPROACH: Read chainstate directly without loading full chain
+			fmt.Printf("Safe Blockchain Information:\n")
+			
+			// Read chainstate directly
+			chainState, err := nodeStorage.GetChainState()
+			if err != nil {
+				fmt.Printf("Height: 0 (No chain state found)\n")
+				fmt.Printf("Best Block Hash: Not available\n")
+			} else {
+				fmt.Printf("Height: %d\n", chainState.Height)
+				if len(chainState.BestBlockHash) > 0 {
+					fmt.Printf("Best Block Hash: %x\n", chainState.BestBlockHash)
+				} else {
+					fmt.Printf("Best Block Hash: Not available\n")
+				}
+			}
+			
+			// Count block files
+			blockCount := 0
+			if entries, err := os.ReadDir(dataDir); err == nil {
+				for _, entry := range entries {
+					if !entry.IsDir() && len(entry.Name()) == 64 { // Block files are 64 chars
+						blockCount++
+					}
+				}
+			}
+			fmt.Printf("Block Files: %d\n", blockCount)
+			
+			// Storage information
+			fmt.Printf("Storage Type: %s\n", storageType)
+			fmt.Printf("Data Directory: %s\n", dataDir)
 
 			return nil
 		},
