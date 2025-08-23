@@ -255,7 +255,7 @@ func TestCreateLiquidityPool(t *testing.T) {
 	// Create liquidity pool config
 	config := LiquidityPoolConfig{
 		MinLiquidity:       new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(12), nil)), // Reduced to 10^12
-		MaxSlippage:        0.05,                            // 5%
+		MaxSlippage:        0.05,                                                                                   // 5%
 		EnableRebalancing:  true,
 		RebalanceThreshold: 0.1, // 10%
 		SecurityLevel:      SecurityLevelHigh,
@@ -427,7 +427,7 @@ func TestYieldFarmStaking(t *testing.T) {
 func TestLiquidityPoolAddLiquidity(t *testing.T) {
 	config := LiquidityPoolConfig{
 		MinLiquidity:       new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(12), nil)), // Reduced to 10^12
-		MaxSlippage:        0.05,                            // 5%
+		MaxSlippage:        0.05,                                                                                   // 5%
 		EnableRebalancing:  true,
 		RebalanceThreshold: 0.1, // 10%
 		SecurityLevel:      SecurityLevelHigh,
@@ -436,7 +436,7 @@ func TestLiquidityPoolAddLiquidity(t *testing.T) {
 	pool := NewLiquidityPool("network-1", "ETH", "USDC", config)
 
 	// Test adding initial liquidity
-	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)) // 1 ETH
+	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))   // 1 ETH
 	amountB := new(big.Int).Mul(big.NewInt(2000), new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)) // 2000 USDC
 
 	liquidityTokens, err := pool.AddLiquidity(amountA, amountB)
@@ -465,7 +465,7 @@ func TestLiquidityPoolAddLiquidity(t *testing.T) {
 func TestLiquidityPoolSwap(t *testing.T) {
 	config := LiquidityPoolConfig{
 		MinLiquidity:       new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(12), nil)), // Reduced to 10^12
-		MaxSlippage:        0.05,                            // 5%
+		MaxSlippage:        0.05,                                                                                   // 5%
 		EnableRebalancing:  true,
 		RebalanceThreshold: 0.1, // 10%
 		SecurityLevel:      SecurityLevelHigh,
@@ -474,17 +474,17 @@ func TestLiquidityPoolSwap(t *testing.T) {
 	pool := NewLiquidityPool("network-1", "ETH", "USDC", config)
 
 	// Add initial liquidity
-	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)) // 1 ETH
+	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))   // 1 ETH
 	amountB := new(big.Int).Mul(big.NewInt(2000), new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)) // 2000 USDC
 	pool.AddLiquidity(amountA, amountB)
 
 	// Test swapping ETH for USDC
 	swapAmount := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(17), nil)) // 0.1 ETH
-	
+
 	// Debug: Print pool state before swap
 	t.Logf("Pool reserves before swap: A=%s, B=%s", pool.ReserveA.String(), pool.ReserveB.String())
 	t.Logf("Swap amount: %s", swapAmount.String())
-	
+
 	amountOut, err := pool.Swap("ETH", swapAmount)
 	if err != nil {
 		t.Errorf("Failed to swap: %v", err)
@@ -675,9 +675,10 @@ func TestConcurrency(t *testing.T) {
 	// Test concurrent network addition
 	done := make(chan bool, 5)
 	errors := make(chan error, 5)
+	timestamp := time.Now().UnixNano()
 	for i := 0; i < 5; i++ {
 		go func(index int) {
-			network := NewBlockchainNetwork(fmt.Sprintf("Network%d", index), uint64(index+1), "TOKEN", NetworkConfig{})
+			network := NewBlockchainNetwork(fmt.Sprintf("Network%d_%d", index, timestamp), uint64(index+1), "TOKEN", NetworkConfig{})
 			err := defi.AddNetwork(network)
 			if err != nil {
 				errors <- err
@@ -738,7 +739,7 @@ func BenchmarkLiquidityPoolSwap(b *testing.B) {
 	pool := NewLiquidityPool("network-1", "ETH", "USDC", config)
 
 	// Add initial liquidity
-	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)) // 1 ETH
+	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))   // 1 ETH
 	amountB := new(big.Int).Mul(big.NewInt(2000), new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)) // 2000 USDC
 	pool.AddLiquidity(amountA, amountB)
 

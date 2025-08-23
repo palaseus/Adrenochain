@@ -36,16 +36,16 @@ func TestMatchingEngineProcessOrder(t *testing.T) {
 
 	t.Run("process invalid order", func(t *testing.T) {
 		invalidOrder := &Order{
-			ID:            "",
-			UserID:        "user1",
-			TradingPair:   "BTC/USDT",
-			Side:          OrderSideBuy,
-			Type:          OrderTypeLimit,
-			Status:        OrderStatusPending,
-			Quantity:      big.NewInt(100),
-			Price:         big.NewInt(1000),
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
+			ID:          "",
+			UserID:      "user1",
+			TradingPair: "BTC/USDT",
+			Side:        OrderSideBuy,
+			Type:        OrderTypeLimit,
+			Status:      OrderStatusPending,
+			Quantity:    big.NewInt(100),
+			Price:       big.NewInt(1000),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 
 		execution, err := me.ProcessOrder(invalidOrder)
@@ -71,6 +71,361 @@ func TestMatchingEngineProcessOrder(t *testing.T) {
 		assert.Empty(t, execution.PartialFills)
 		assert.Equal(t, big.NewInt(100), execution.RemainingBuy)
 		assert.Nil(t, execution.RemainingSell)
+	})
+
+	t.Run("process order with AddOrder error", func(t *testing.T) {
+		// Create an order with invalid trading pair to trigger AddOrder error
+		order, err := NewOrder(
+			"order1", "user1", "INVALID/PAIR",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1000),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.ProcessOrder(order)
+		assert.Error(t, err)
+		assert.Nil(t, execution)
+	})
+
+	t.Run("process market order", func(t *testing.T) {
+		// Add a sell order first
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+		ob.AddOrder(sellOrder)
+
+		// Process a market buy order
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeMarket,
+			big.NewInt(100), nil, // Market order has no price
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.ProcessOrder(buyOrder)
+		assert.NoError(t, err)
+		assert.NotNil(t, execution)
+		assert.Equal(t, buyOrder.ID, execution.BuyOrder.ID)
+		// The market order should match with the sell order
+		assert.NotEmpty(t, execution.PartialFills)
+		assert.Equal(t, big.NewInt(50), execution.RemainingBuy) // 100 - 50 = 50 remaining
+	})
+}
+
+// TestMatchingEngineErrorHandling tests error handling in the matching engine
+func TestMatchingEngineErrorHandling(t *testing.T) {
+	ob, err := NewOrderBook("BTC/USDT")
+	require.NoError(t, err)
+
+	me := NewMatchingEngine(ob)
+
+	t.Run("match limit buy order with no best ask", func(t *testing.T) {
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1200),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchLimitBuyOrder(buyOrder)
+		assert.Error(t, err)
+		assert.Equal(t, ErrNoMatchingOrders, err)
+		assert.NotNil(t, execution)
+		assert.Equal(t, buyOrder.ID, execution.BuyOrder.ID)
+		assert.Empty(t, execution.PartialFills)
+	})
+
+	t.Run("match limit sell order with no best bid", func(t *testing.T) {
+		sellOrder, err := NewOrder(
+			"sell1", "user1", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(800),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchLimitSellOrder(sellOrder)
+		assert.Error(t, err)
+		assert.Equal(t, ErrNoMatchingOrders, err)
+		assert.NotNil(t, execution)
+	})
+
+	t.Run("match limit buy order with price too low", func(t *testing.T) {
+		// Add a sell order first
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+		ob.AddOrder(sellOrder)
+
+		// Process a buy order with price too low
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1000), // Price < 1100
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchLimitBuyOrder(buyOrder)
+		assert.Error(t, err)
+		assert.Equal(t, ErrNoMatchingOrders, err)
+		assert.NotNil(t, execution)
+		assert.Empty(t, execution.PartialFills)
+	})
+
+	t.Run("match limit sell order with price too high", func(t *testing.T) {
+		// Add a buy order first
+		buyOrder, err := NewOrder(
+			"buy1", "user2", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(900),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+		ob.AddOrder(buyOrder)
+
+		// Process a sell order with price too high
+		sellOrder, err := NewOrder(
+			"sell1", "user1", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1100), // Price > 900
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchLimitSellOrder(sellOrder)
+		assert.Error(t, err)
+		assert.Equal(t, ErrNoMatchingOrders, err)
+		assert.NotNil(t, execution)
+		assert.Empty(t, execution.PartialFills)
+	})
+
+	t.Run("execute trade with error", func(t *testing.T) {
+		// Create orders that will cause executeTrade to fail
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1200),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Test executeTrade with invalid parameters
+		trade, err := me.executeTrade(buyOrder, sellOrder, big.NewInt(0), big.NewInt(1100))
+		assert.Error(t, err)
+		assert.Nil(t, trade)
+	})
+}
+
+// TestMatchingEngineExecuteTradeErrors tests error handling in executeTrade
+func TestMatchingEngineExecuteTradeErrors(t *testing.T) {
+	ob, err := NewOrderBook("BTC/USDT")
+	require.NoError(t, err)
+
+	me := NewMatchingEngine(ob)
+
+	t.Run("execute trade with zero quantity", func(t *testing.T) {
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1200),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Test executeTrade with zero quantity
+		trade, err := me.executeTrade(buyOrder, sellOrder, big.NewInt(0), big.NewInt(1100))
+		assert.Error(t, err)
+		assert.Nil(t, trade)
+		assert.Contains(t, err.Error(), "invalid quantity")
+	})
+
+	t.Run("execute trade with nil price", func(t *testing.T) {
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1200),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Test executeTrade with nil price
+		trade, err := me.executeTrade(buyOrder, sellOrder, big.NewInt(50), nil)
+		assert.Error(t, err)
+		assert.Nil(t, trade)
+		assert.Contains(t, err.Error(), "invalid price")
+	})
+
+	t.Run("execute trade with negative price", func(t *testing.T) {
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1200),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Test executeTrade with negative price
+		trade, err := me.executeTrade(buyOrder, sellOrder, big.NewInt(50), big.NewInt(-100))
+		assert.Error(t, err)
+		assert.Nil(t, trade)
+		assert.Contains(t, err.Error(), "invalid price")
+	})
+}
+
+// TestMatchingEngineSwitchDefaults tests the default cases in switch statements
+func TestMatchingEngineSwitchDefaults(t *testing.T) {
+	ob, err := NewOrderBook("BTC/USDT")
+	require.NoError(t, err)
+
+	me := NewMatchingEngine(ob)
+
+	t.Run("process order with invalid order type", func(t *testing.T) {
+		// Create an order with an invalid order type
+		invalidOrder := &Order{
+			ID:          "invalid1",
+			UserID:      "user1",
+			TradingPair: "BTC/USDT",
+			Side:        OrderSideBuy,
+			Type:        "INVALID_TYPE", // Invalid order type
+			Status:      OrderStatusPending,
+			Quantity:    big.NewInt(100),
+			Price:       big.NewInt(1000),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+
+		execution, err := me.ProcessOrder(invalidOrder)
+		assert.Error(t, err)
+		assert.Nil(t, execution)
+	})
+
+	t.Run("process order with invalid order side", func(t *testing.T) {
+		// Create an order with an invalid order side
+		invalidOrder := &Order{
+			ID:          "invalid2",
+			UserID:      "user1",
+			TradingPair: "BTC/USDT",
+			Side:        "INVALID_SIDE", // Invalid order side
+			Type:        OrderTypeLimit,
+			Status:      OrderStatusPending,
+			Quantity:    big.NewInt(100),
+			Price:       big.NewInt(1000),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+
+		execution, err := me.ProcessOrder(invalidOrder)
+		assert.Error(t, err)
+		assert.Nil(t, execution)
+	})
+}
+
+// TestMatchingEngineMarketOrders tests market order matching
+func TestMatchingEngineMarketOrders(t *testing.T) {
+	ob, err := NewOrderBook("BTC/USDT")
+	require.NoError(t, err)
+
+	me := NewMatchingEngine(ob)
+
+	t.Run("market buy order with no sell orders", func(t *testing.T) {
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeMarket,
+			big.NewInt(100), nil,
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchMarketBuyOrder(buyOrder)
+		assert.NoError(t, err)
+		assert.NotNil(t, execution)
+		assert.Empty(t, execution.PartialFills)
+	})
+
+	t.Run("market sell order with no buy orders", func(t *testing.T) {
+		sellOrder, err := NewOrder(
+			"sell1", "user1", "BTC/USDT",
+			OrderSideSell, OrderTypeMarket,
+			big.NewInt(100), nil,
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchMarketSellOrder(sellOrder)
+		assert.NoError(t, err)
+		assert.NotNil(t, execution)
+		assert.Empty(t, execution.PartialFills)
+	})
+
+	t.Run("market buy order with partial fill", func(t *testing.T) {
+		// Add a sell order with smaller quantity
+		sellOrder, err := NewOrder(
+			"sell1", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(30), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+		ob.AddOrder(sellOrder)
+
+		// Process a market buy order with larger quantity
+		buyOrder, err := NewOrder(
+			"buy1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeMarket,
+			big.NewInt(100), nil,
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		execution, err := me.matchMarketBuyOrder(buyOrder)
+		assert.NoError(t, err)
+		assert.NotNil(t, execution)
+		assert.Len(t, execution.PartialFills, 1)
+		assert.Equal(t, big.NewInt(70), execution.RemainingBuy) // 100 - 30
 	})
 }
 

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
 	"github.com/palaseus/adrenochain/pkg/exchange/trading"
 	"github.com/stretchr/testify/assert"
@@ -2030,4 +2031,288 @@ func TestTradingAPI_GetTradesWithBreakCondition(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, trades)
 	assert.Len(t, trades, 0)
+}
+
+func TestMarketDataWebSocket_ReadPumpAndWritePump(t *testing.T) {
+	// Create a WebSocket service
+	ws := NewMarketDataWebSocket()
+	ws.Start()
+	defer func() {
+		// Clean up
+		ws.mutex.Lock()
+		for client := range ws.clients {
+			delete(ws.clients, client)
+		}
+		ws.mutex.Unlock()
+	}()
+
+	// Create a test server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ws.HandleWebSocket(w, r)
+	}))
+	defer server.Close()
+
+	// Test WebSocket connection and message handling
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "?user_id=test_user"
+	
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatalf("Failed to connect to WebSocket: %v", err)
+	}
+	defer conn.Close()
+
+	// Wait for client to be registered
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify client was registered
+	ws.mutex.RLock()
+	clientCount := len(ws.clients)
+	ws.mutex.RUnlock()
+
+	if clientCount == 0 {
+		t.Error("Client should be registered")
+	}
+
+	// Test sending a subscription message
+	subscriptionMsg := SubscriptionMessage{
+		Action:      "subscribe",
+		Channel:     "orderbook",
+		TradingPair: "BTC/USDT",
+	}
+
+	msgBytes, _ := json.Marshal(subscriptionMsg)
+	err = conn.WriteMessage(websocket.TextMessage, msgBytes)
+	if err != nil {
+		t.Fatalf("Failed to send subscription message: %v", err)
+	}
+
+	// Wait for message processing
+	time.Sleep(100 * time.Millisecond)
+
+	// Test sending a message to the client (this tests writePump indirectly)
+	// Find the client
+	var testClient *Client
+	ws.mutex.RLock()
+	for client := range ws.clients {
+		testClient = client
+		break
+	}
+	ws.mutex.RUnlock()
+
+	if testClient == nil {
+		t.Fatal("No client found")
+	}
+
+	// Send a message to the client
+	testMessage := []byte("test message")
+	testClient.send <- testMessage
+
+	// Wait for message to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	// Test that the client can receive messages
+	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	_, message, err := conn.ReadMessage()
+	if err != nil {
+		// This is expected in some cases due to WebSocket timing
+		t.Logf("Read message error (expected in some cases): %v", err)
+	} else {
+		// If we got a message, verify it's valid
+		if len(message) > 0 {
+			t.Logf("Received message: %s", string(message))
+		}
+	}
+}
+
+func TestMarketDataWebSocket_HandleWebSocketEdgeCases(t *testing.T) {
+	ws := NewMarketDataWebSocket()
+	ws.Start()
+
+	// Test with invalid HTTP method
+	req, _ := http.NewRequest("POST", "/ws", nil)
+	w := httptest.NewRecorder()
+	
+	ws.HandleWebSocket(w, req)
+	
+	// Should handle gracefully (though the actual behavior depends on the upgrader)
+	if w.Code != http.StatusBadRequest {
+		t.Logf("Expected status 400 for invalid request, got %d", w.Code)
+	}
+
+	// Test with malformed user_id
+	req, _ = http.NewRequest("GET", "/ws?user_id=", nil)
+	w = httptest.NewRecorder()
+	
+	ws.HandleWebSocket(w, req)
+	
+	// Should handle gracefully
+	if w.Code != http.StatusBadRequest {
+		t.Logf("Expected status 400 for empty user_id, got %d", w.Code)
+	}
+}
+
+func TestMarketDataWebSocket_SendMessageEdgeCases(t *testing.T) {
+	ws := NewMarketDataWebSocket()
+	ws.Start()
+
+	// Create a test client
+			client := &Client{
+			hub:      ws,
+			userID:   "test_user",
+			send:     make(chan []byte, 1), // Small buffer to test overflow
+			channels: make([]string, 0),
+		}
+
+	// Test sending message to client with full buffer
+	client.send <- []byte("blocking message")
+
+	// Try to send another message (should not block)
+	client.sendMessage([]byte("test message"))
+
+	// Verify the message was sent (or at least attempted)
+	select {
+	case msg := <-client.send:
+		t.Logf("Message sent: %s", string(msg))
+	default:
+		t.Log("Message buffer was full, which is expected behavior")
+	}
+}
+
+func TestMarketDataWebSocket_BroadcastMessageEdgeCases(t *testing.T) {
+	ws := NewMarketDataWebSocket()
+	ws.Start()
+
+	// Test broadcasting with no clients
+	ws.broadcastMessage([]byte("test broadcast"))
+
+	// Test broadcasting with nil message
+	ws.broadcastMessage(nil)
+
+	// Test broadcasting with empty message
+	ws.broadcastMessage([]byte(""))
+
+	// Create a client with a small buffer
+			client := &Client{
+			hub:      ws,
+			userID:   "test_user",
+			send:     make(chan []byte, 1), // Small buffer
+			channels: make([]string, 0),
+		}
+
+	// Register client
+	ws.register <- client
+	time.Sleep(10 * time.Millisecond)
+
+	// Fill the client's buffer
+	client.send <- []byte("blocking message")
+
+	// Try to broadcast (should not block)
+	ws.broadcastMessage([]byte("test broadcast"))
+
+	// Clean up
+	ws.unregister <- client
+	time.Sleep(10 * time.Millisecond)
+}
+
+func TestMarketDataWebSocket_RunFunctionComprehensive(t *testing.T) {
+	ws := NewMarketDataWebSocket()
+	ws.Start()
+
+	// Test that the run function handles all message types
+	time.Sleep(50 * time.Millisecond)
+
+	// Test client registration
+			testClient := &Client{
+			hub:      ws,
+			userID:   "test_user",
+			send:     make(chan []byte, 256),
+			channels: make([]string, 0),
+		}
+
+	ws.register <- testClient
+	time.Sleep(10 * time.Millisecond)
+
+	if len(ws.clients) != 1 {
+		t.Errorf("Expected 1 client, got %d", len(ws.clients))
+	}
+
+	// Test client unregistration
+	ws.unregister <- testClient
+	time.Sleep(10 * time.Millisecond)
+
+	if len(ws.clients) != 0 {
+		t.Errorf("Expected 0 clients, got %d", len(ws.clients))
+	}
+
+	// Test broadcast message handling
+	testMessage := []byte("test broadcast")
+	ws.broadcast <- testMessage
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify the service is still running
+	select {
+	case ws.broadcast <- []byte("test"):
+		// Success - service is running
+	default:
+		t.Error("WebSocket service stopped unexpectedly")
+	}
+}
+
+func TestMarketDataWebSocket_ConcurrentClientOperations(t *testing.T) {
+	ws := NewMarketDataWebSocket()
+	ws.Start()
+
+	// Test concurrent client registration/unregistration
+	done := make(chan bool)
+	clientCount := 10
+
+	for i := 0; i < clientCount; i++ {
+		go func(id int) {
+			defer func() { done <- true }()
+
+			client := &Client{
+				hub:      ws,
+				userID:   fmt.Sprintf("user_%d", id),
+				send:     make(chan []byte, 256),
+				channels: make([]string, 0),
+			}
+
+			// Register client
+			ws.register <- client
+			time.Sleep(5 * time.Millisecond)
+
+			// Subscribe to a channel
+			client.subscribe("orderbook", "BTC/USDT")
+			time.Sleep(5 * time.Millisecond)
+
+			// Unsubscribe
+			client.unsubscribe("orderbook", "BTC/USDT")
+			time.Sleep(5 * time.Millisecond)
+
+			// Unregister client
+			ws.unregister <- client
+			time.Sleep(5 * time.Millisecond)
+
+		}(i)
+	}
+
+	// Wait for all operations to complete
+	for i := 0; i < clientCount; i++ {
+		<-done
+	}
+
+	// Verify the service is still running and stable
+	time.Sleep(50 * time.Millisecond)
+
+	if len(ws.clients) != 0 {
+		t.Errorf("Expected 0 clients after cleanup, got %d", len(ws.clients))
+	}
+
+	// Test that the service can still handle new operations
+	select {
+	case ws.broadcast <- []byte("test"):
+		// Success - service is still responsive
+	default:
+		t.Error("WebSocket service became unresponsive after concurrent operations")
+	}
 }

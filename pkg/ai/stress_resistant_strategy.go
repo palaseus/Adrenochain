@@ -110,7 +110,7 @@ func NewStressResistantStrategy(baseStrategy *Strategy) *StressResistantStrategy
 		RiskManager:           &AdaptiveRiskManager{ID: "risk_mgr", MaxRisk: 0.3, CurrentRisk: 0.1},
 		StressDetector:        &StressDetector{ID: "stress_detector", StressThreshold: 0.7},
 		EmergencyProtocol:     &EmergencyProtocolManager{ID: "emergency", Protocols: make(map[string]string)},
-		RegimeAdaptation:      &RegimeAdaptationEngine{ID: "regime_adapt", CurrentRegime: MarketRegimeSideways},
+		RegimeAdaptation:      &RegimeAdaptationEngine{ID: "regime_adapt", CurrentRegime: MarketRegimeSideways, AdaptationRules: make(map[MarketRegime]string)},
 		VolatilityAnalyzer:    &VolatilityAnalyzer{ID: "vol_analyzer", Threshold: 0.5},
 		LiquidityManager:      &LiquidityManager{ID: "liquidity_mgr", MinLiquidity: 0.2, LiquidityBuffer: 0.1},
 		BlackSwanProtection:   &BlackSwanProtectionSystem{ID: "black_swan_prot", ProtectionLevel: 0.8},

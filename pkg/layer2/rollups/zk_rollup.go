@@ -127,7 +127,7 @@ func NewZKRollup(config ZKRollupConfig) *ZKRollup {
 	if config.VerificationDelay == 0 {
 		config.VerificationDelay = time.Second * 5
 	}
-	
+
 	return &ZKRollup{
 		ID:             generateRollupID(),
 		StateRoot:      [32]byte{},
@@ -325,6 +325,11 @@ func (r *ZKRollup) generateTransactionHash(tx Transaction) [32]byte {
 
 // generateProof generates a ZK proof for a batch
 func (r *ZKRollup) generateProof(batchResult *BatchResult) (*ZKProof, error) {
+	// Validate batch result
+	if batchResult == nil {
+		return nil, fmt.Errorf("batch result cannot be nil")
+	}
+
 	proof := &ZKProof{
 		ID:           fmt.Sprintf("proof_%d_%d", r.BatchNumber, time.Now().Unix()),
 		BatchNumber:  r.BatchNumber,

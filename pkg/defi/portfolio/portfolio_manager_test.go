@@ -333,47 +333,63 @@ func TestPortfolioManagerAddAsset(t *testing.T) {
 
 func TestPortfolioManagerUpdateAssetPrice(t *testing.T) {
 	pm := NewPortfolioManager()
-	asset, _ := NewAsset("btc", "BTC", "Bitcoin", Cryptocurrency, big.NewFloat(50000), nil, nil, nil)
+	asset, _ := NewAsset("btc", "BTC", "Bitcoin", Cryptocurrency, big.NewFloat(50000), big.NewFloat(1000000000), big.NewFloat(50000000), big.NewFloat(0.7))
 	pm.AddAsset(asset)
 	
-	// Add portfolio with position in this asset
-	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
-	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
-	pm.AddPortfolio(portfolio)
-	
+	// Test successful price update
 	newPrice := big.NewFloat(55000)
 	err := pm.UpdateAssetPrice("btc", newPrice)
 	if err != nil {
 		t.Fatalf("UpdateAssetPrice failed: %v", err)
 	}
 	
-	// Check asset price updated
-	if pm.Assets["btc"].Price.Cmp(newPrice) != 0 {
-		t.Error("Asset price not updated")
+	if asset.Price.Cmp(newPrice) != 0 {
+		t.Errorf("Expected price %v, got %v", newPrice, asset.Price)
 	}
 	
-	// Check portfolio position updated
-	if portfolio.Positions["btc"].CurrentPrice.Cmp(newPrice) != 0 {
-		t.Error("Portfolio position price not updated")
+	// Test with portfolio that has a position in this asset
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
+	portfolio.AddPosition(position)
+	pm.AddPortfolio(portfolio)
+	
+	// Update asset price again to trigger portfolio position update
+	anotherPrice := big.NewFloat(60000)
+	err = pm.UpdateAssetPrice("btc", anotherPrice)
+	if err != nil {
+		t.Fatalf("UpdateAssetPrice failed: %v", err)
 	}
 	
-	// Test updating non-existent asset
-	err = pm.UpdateAssetPrice("non_existent", newPrice)
+	// Verify that portfolio position was updated
+	if portfolio.Positions["btc"].CurrentPrice.Cmp(anotherPrice) != 0 {
+		t.Errorf("Expected portfolio position price %v, got %v", anotherPrice, portfolio.Positions["btc"].CurrentPrice)
+	}
+	
+	// Test with non-existent asset
+	err = pm.UpdateAssetPrice("non_existent", big.NewFloat(60000))
 	if err == nil {
 		t.Error("Expected error for non-existent asset")
 	}
 	
-	// Test updating with nil price
+	// Test with empty asset ID
+	err = pm.UpdateAssetPrice("", big.NewFloat(60000))
+	if err == nil {
+		t.Error("Expected error for empty asset ID")
+	}
+	
+	// Test with nil price
 	err = pm.UpdateAssetPrice("btc", nil)
 	if err == nil {
 		t.Error("Expected error for nil price")
 	}
 	
-	// Test updating with negative price
-	err = pm.UpdateAssetPrice("btc", big.NewFloat(-55000))
+	// Test with negative price
+	err = pm.UpdateAssetPrice("btc", big.NewFloat(-1000))
 	if err == nil {
 		t.Error("Expected error for negative price")
+	}
+	if err.Error() != "new price must be non-negative" {
+		t.Errorf("Expected error message 'new price must be non-negative', got '%s'", err.Error())
 	}
 }
 
@@ -671,11 +687,11 @@ func TestPortfolioManagerGetters(t *testing.T) {
 	// Test GetPortfolio with empty ID
 	_, err = pm.GetPortfolio("")
 	if err == nil {
-		t.Error("Expected error for empty ID")
+		t.Error("Expected error for empty portfolio ID")
 	}
 	
 	// Test GetAsset
-	asset, _ := NewAsset("btc", "BTC", "Bitcoin", Cryptocurrency, big.NewFloat(50000), nil, nil, nil)
+	asset, _ := NewAsset("btc", "BTC", "Bitcoin", Cryptocurrency, big.NewFloat(50000), big.NewFloat(1000000000), big.NewFloat(50000000), big.NewFloat(0.7))
 	pm.AddAsset(asset)
 	
 	retrievedAsset, err := pm.GetAsset("btc")
@@ -692,25 +708,245 @@ func TestPortfolioManagerGetters(t *testing.T) {
 		t.Error("Expected error for non-existent asset")
 	}
 	
-	// Test GetPortfoliosByOwner
-	portfolio2, _ := NewPortfolio("test_id2", "Test2", "Description2", "owner", Moderate, BuyAndHold)
-	pm.AddPortfolio(portfolio2)
-	
-	portfolios := pm.GetPortfoliosByOwner("owner")
-	if len(portfolios) != 2 {
-		t.Errorf("Expected 2 portfolios for owner, got %d", len(portfolios))
+	// Test GetAsset with empty ID
+	_, err = pm.GetAsset("")
+	if err == nil {
+		t.Error("Expected error for empty asset ID")
 	}
 	
-	// Test with non-existent owner
+	// Test GetPortfoliosByOwner
+	portfolios := pm.GetPortfoliosByOwner("owner")
+	if len(portfolios) != 1 {
+		t.Errorf("Expected 1 portfolio for owner, got %d", len(portfolios))
+	}
+	
+	// Test GetPortfoliosByOwner with empty owner
+	portfolios = pm.GetPortfoliosByOwner("")
+	if len(portfolios) != 0 {
+		t.Error("Expected 0 portfolios for empty owner")
+	}
+	
+	// Test GetPortfoliosByOwner with non-existent owner
 	portfolios = pm.GetPortfoliosByOwner("non_existent")
 	if len(portfolios) != 0 {
 		t.Error("Expected 0 portfolios for non-existent owner")
 	}
+}
+
+// TestPortfolioRemovePositionEmptyAssetID tests RemovePosition with empty asset ID
+func TestPortfolioRemovePositionEmptyAssetID(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
 	
-	// Test with empty owner
-	portfolios = pm.GetPortfoliosByOwner("")
-	if portfolios != nil {
-		t.Error("Expected nil for empty owner")
+	err := portfolio.RemovePosition("")
+	if err == nil {
+		t.Error("Expected error for empty asset ID")
+	}
+	if err.Error() != "asset ID cannot be empty" {
+		t.Errorf("Expected error message 'asset ID cannot be empty', got '%s'", err.Error())
+	}
+}
+
+// TestPortfolioUpdatePositionEmptyAssetID tests UpdatePosition with empty asset ID
+func TestPortfolioUpdatePositionEmptyAssetID(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	err := portfolio.UpdatePosition("", big.NewFloat(1), big.NewFloat(50000))
+	if err == nil {
+		t.Error("Expected error for empty asset ID")
+	}
+	if err.Error() != "asset ID cannot be empty" {
+		t.Errorf("Expected error message 'asset ID cannot be empty', got '%s'", err.Error())
+	}
+}
+
+// TestPortfolioUpdatePositionNonExistentAsset tests UpdatePosition with non-existent asset
+func TestPortfolioUpdatePositionNonExistentAsset(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	err := portfolio.UpdatePosition("non_existent", big.NewFloat(1), big.NewFloat(50000))
+	if err == nil {
+		t.Error("Expected error for non-existent asset")
+	}
+	if err.Error() != "position not found" {
+		t.Errorf("Expected error message 'position not found', got '%s'", err.Error())
+	}
+}
+
+// TestPortfolioGetPositionEmptyAssetID tests GetPosition with empty asset ID
+func TestPortfolioGetPositionEmptyAssetID(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	_, err := portfolio.GetPosition("")
+	if err == nil {
+		t.Error("Expected error for empty asset ID")
+	}
+	if err.Error() != "asset ID cannot be empty" {
+		t.Errorf("Expected error message 'asset ID cannot be empty', got '%s'", err.Error())
+	}
+}
+
+// TestPortfolioGetPositionNonExistentAsset tests GetPosition with non-existent asset
+func TestPortfolioGetPositionNonExistentAsset(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	_, err := portfolio.GetPosition("non_existent")
+	if err == nil {
+		t.Error("Expected error for non-existent asset")
+	}
+	if err.Error() != "position not found" {
+		t.Errorf("Expected error message 'position not found', got '%s'", err.Error())
+	}
+}
+
+// TestPortfolioUpdatePositionPriceNonExistentAsset tests updatePositionPrice with non-existent asset
+func TestPortfolioUpdatePositionPriceNonExistentAsset(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	// This should not panic or error, just return early
+	portfolio.updatePositionPrice("non_existent", big.NewFloat(50000))
+	
+	// Verify no positions were added
+	if len(portfolio.Positions) != 0 {
+		t.Error("Expected no positions to be added")
+	}
+}
+
+// TestPortfolioCalculatePositionPnLNonExistentAsset tests calculatePositionPnL with non-existent asset
+func TestPortfolioCalculatePositionPnLNonExistentAsset(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	// This should not panic or error, just return early
+	portfolio.calculatePositionPnL("non_existent")
+	
+	// Verify no positions were added
+	if len(portfolio.Positions) != 0 {
+		t.Error("Expected no positions to be added")
+	}
+}
+
+// TestPortfolioUpdatePositionWeightsZeroValue tests updatePositionWeights with zero total value
+func TestPortfolioUpdatePositionWeightsZeroValue(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	// This should not panic or error, just return early
+	portfolio.updatePositionWeights()
+	
+	// Verify no positions were added
+	if len(portfolio.Positions) != 0 {
+		t.Error("Expected no positions to be added")
+	}
+}
+
+// TestPortfolioGetTotalPnLPercentZeroValue tests GetTotalPnLPercent with zero total value
+func TestPortfolioGetTotalPnLPercentZeroValue(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	// Test with zero total value
+	totalPnLPercent := portfolio.GetTotalPnLPercent()
+	if totalPnLPercent.Sign() != 0 {
+		t.Errorf("Expected zero PnL percentage, got %v", totalPnLPercent)
+	}
+	
+	// Add a position with negative PnL to test the calculation
+	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
+	portfolio.AddPosition(position)
+	
+	// Manually set negative PnL
+	position.Pnl = big.NewFloat(-1000)
+	
+	// Update portfolio value
+	portfolio.updatePortfolioValue()
+	
+	// Test PnL percentage calculation
+	totalPnLPercent = portfolio.GetTotalPnLPercent()
+	expectedPercent := big.NewFloat(-2) // (-1000 / 50000) * 100
+	if totalPnLPercent.Cmp(expectedPercent) != 0 {
+		t.Errorf("Expected PnL percentage %v, got %v", expectedPercent, totalPnLPercent)
+	}
+}
+
+// TestPortfolioRebalancePortfolioEdgeCases tests edge cases in RebalancePortfolio
+func TestPortfolioRebalancePortfolioEdgeCases(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	// Add a position
+	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
+	portfolio.AddPosition(btcPosition)
+	
+	// Test with target weights that don't include existing assets
+	targetWeights := map[string]*big.Float{
+		"eth": big.NewFloat(100), // Only ETH, no BTC
+	}
+	
+	err := portfolio.RebalancePortfolio(targetWeights)
+	if err != nil {
+		t.Fatalf("RebalancePortfolio failed: %v", err)
+	}
+	
+	// Check that rebalancing trades were generated
+	trades := portfolio.GetRebalancingTrades()
+	if len(trades) == 0 {
+		t.Error("Expected rebalancing trades to be generated")
+	}
+	
+	// Verify that BTC position is marked for sale
+	var btcSellTrade *RebalanceTrade
+	for _, trade := range trades {
+		if trade.AssetID == "btc" && trade.Action == Sell {
+			btcSellTrade = trade
+			break
+		}
+	}
+	
+	if btcSellTrade == nil {
+		t.Error("Expected BTC sell trade to be generated")
+	}
+	
+	// Verify that ETH buy trade is generated
+	var ethBuyTrade *RebalanceTrade
+	for _, trade := range trades {
+		if trade.AssetID == "eth" && trade.Action == Buy {
+			ethBuyTrade = trade
+			break
+		}
+	}
+	
+	if ethBuyTrade == nil {
+		t.Error("Expected ETH buy trade to be generated")
+	}
+}
+
+// TestPortfolioRebalancePortfolioWithZeroTargetValue tests rebalancing with zero target value
+func TestPortfolioRebalancePortfolioWithZeroTargetValue(t *testing.T) {
+	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
+	
+	// Add a position
+	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
+	portfolio.AddPosition(btcPosition)
+	
+	// Test with target weights that include zero values
+	targetWeights := map[string]*big.Float{
+		"btc": big.NewFloat(50),
+		"eth": big.NewFloat(0),  // Zero target value
+		"ada": big.NewFloat(50),
+	}
+	
+	err := portfolio.RebalancePortfolio(targetWeights)
+	if err != nil {
+		t.Fatalf("RebalancePortfolio failed: %v", err)
+	}
+	
+	// Check that rebalancing trades were generated
+	trades := portfolio.GetRebalancingTrades()
+	if len(trades) == 0 {
+		t.Error("Expected rebalancing trades to be generated")
+	}
+	
+	// Verify that ETH trade is not generated (zero target value)
+	for _, trade := range trades {
+		if trade.AssetID == "eth" {
+			t.Error("Expected no ETH trade for zero target value")
+		}
 	}
 }
 

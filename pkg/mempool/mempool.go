@@ -197,8 +197,13 @@ func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction 
 	feeQueue := make(TransactionHeapMin, mp.byFee.Len())
 	copy(feeQueue, *mp.byFee)
 
-	// Sort by fee rate (highest first)
-	for feeQueue.Len() > 0 && currentSize < maxSize {
+	// Since TransactionHeapMin is a min-heap (lowest fee rate first),
+	// we need to collect all transactions first, then reverse the order
+	// to get highest fee rate first
+	var tempTransactions []*TransactionEntry
+	
+	// Collect all transactions from the min-heap
+	for feeQueue.Len() > 0 {
 		entry := heap.Pop(&feeQueue).(*TransactionEntry)
 
 		// Check if transaction still exists in mempool
@@ -206,6 +211,14 @@ func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction 
 			continue
 		}
 
+		tempTransactions = append(tempTransactions, entry)
+	}
+
+	// Sort by fee rate (highest first) and add to result
+	// We'll use a simple sort since we're dealing with a small number of transactions
+	for i := len(tempTransactions) - 1; i >= 0; i-- {
+		entry := tempTransactions[i]
+		
 		// Check if adding this transaction would exceed block size
 		if currentSize+entry.Size > maxSize {
 			break
@@ -562,6 +575,7 @@ func (mp *Mempool) IsTransactionValid(tx *block.Transaction) error {
 	}
 
 	// Check if UTXO is already spent in mempool (even in test mode)
+	// This check should always run to maintain mempool consistency
 	if !tx.IsCoinbase() {
 		for i, input := range tx.Inputs {
 			if mp.isUTXOSpentInMempool(input.PrevTxHash, input.PrevTxIndex) {

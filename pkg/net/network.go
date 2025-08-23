@@ -12,13 +12,13 @@ import (
 
 	libp2p "github.com/libp2p/go-libp2p"
 
-	"github.com/palaseus/adrenochain/pkg/chain"
-	"github.com/palaseus/adrenochain/pkg/mempool"
-	proto_net "github.com/palaseus/adrenochain/pkg/proto/net"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/palaseus/adrenochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/mempool"
+	proto_net "github.com/palaseus/adrenochain/pkg/proto/net"
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -41,27 +41,39 @@ func (n *Network) Disconnected(net network.Network, conn network.Conn) {
 }
 
 func (n *Network) OpenedStream(net network.Network, s network.Stream) {
-	// fmt.Printf("Opened stream from: %s\n", s.Conn().RemotePeer().String())
+	if s != nil && s.Conn() != nil {
+		fmt.Printf("Opened stream from: %s\n", s.Conn().RemotePeer().String())
+	}
 }
 
 func (n *Network) ClosedStream(net network.Network, s network.Stream) {
-	// fmt.Printf("Closed stream from: %s\n", s.Conn().RemotePeer().String())
+	if s != nil && s.Conn() != nil {
+		fmt.Printf("Closed stream from: %s\n", s.Conn().RemotePeer().String())
+	}
 }
 
 func (n *Network) OpenedConn(net network.Network, conn network.Conn) {
-	// fmt.Printf("Opened connection to: %s\n", conn.RemotePeer().String())
+	if conn != nil {
+		fmt.Printf("Opened connection to: %s\n", conn.RemotePeer().String())
+	}
 }
 
 func (n *Network) ClosedConn(net network.Network, conn network.Conn) {
-	// fmt.Printf("Closed connection to: %s\n", conn.RemotePeer().String())
+	if conn != nil {
+		fmt.Printf("Closed connection to: %s\n", conn.RemotePeer().String())
+	}
 }
 
 func (n *Network) Listen(net network.Network, multiaddr multiaddr.Multiaddr) {
-	// fmt.Printf("Network listening on: %s\n", multiaddr.String())
+	if multiaddr != nil {
+		fmt.Printf("Network listening on: %s\n", multiaddr.String())
+	}
 }
 
 func (n *Network) ListenClose(net network.Network, multiaddr multiaddr.Multiaddr) {
-	// fmt.Printf("Network stopped listening on: %s\n", multiaddr.String())
+	if multiaddr != nil {
+		fmt.Printf("Network stopped listening on: %s\n", multiaddr.String())
+	}
 }
 
 // HandlePeerFound is called when a new peer is found via mDNS
@@ -254,7 +266,12 @@ func (n *Network) startPeerDiscovery() error {
 func (n *Network) connectToBootstrapPeers() {
 	var wg sync.WaitGroup
 	for _, peerAddr := range n.bootstrapPeers {
-		peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
+		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
+		if err != nil || peerinfo == nil {
+			fmt.Printf("Failed to parse bootstrap peer address %s: %v\n", peerAddr, err)
+			continue
+		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -296,9 +313,19 @@ func (n *Network) GetHost() host.Host {
 	return n.host
 }
 
-// GetPeers returns a list of connected peers
-func (n *Network) GetPeers() []peer.ID {
-	return n.host.Peerstore().Peers()
+// GetPeers returns a list of connected peers as strings
+func (n *Network) GetPeers() []string {
+	peerIDs := n.host.Peerstore().Peers()
+	peers := make([]string, len(peerIDs))
+	for i, peerID := range peerIDs {
+		peers[i] = peerID.String()
+	}
+	return peers
+}
+
+// GetPeerCount returns the number of connected peers
+func (n *Network) GetPeerCount() int {
+	return len(n.host.Peerstore().Peers())
 }
 
 // GetContext returns the network's context

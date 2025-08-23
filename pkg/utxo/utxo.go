@@ -342,6 +342,102 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 	return nil
 }
 
+// ValidateTransactionBusinessLogic validates only the business logic of a transaction
+// (fees, dust, outputs vs inputs) without performing signature verification.
+// This is useful for testing business logic scenarios where signature creation would be complex.
+func (us *UTXOSet) ValidateTransactionBusinessLogic(tx *block.Transaction) error {
+	if tx == nil {
+		return fmt.Errorf("transaction is nil")
+	}
+
+	// Transactions with no inputs are potentially coinbase transactions
+	if len(tx.Inputs) == 0 {
+		if len(tx.Outputs) == 0 {
+			return fmt.Errorf("transaction with no inputs must have at least one output")
+		}
+		// Validate outputs
+		for i, output := range tx.Outputs {
+			if output.Value == 0 {
+				return fmt.Errorf("output %d has zero value", i)
+			}
+			if len(output.ScriptPubKey) == 0 {
+				return fmt.Errorf("output %d has empty script public key", i)
+			}
+		}
+		return nil // Transactions with no inputs are valid if they have valid outputs
+	}
+
+	// Regular transactions must have outputs
+	if len(tx.Outputs) == 0 {
+		return fmt.Errorf("transaction has no outputs")
+	}
+
+	// Check for duplicate inputs (double-spend prevention)
+	inputSet := make(map[string]bool)
+	for _, input := range tx.Inputs {
+		inputKey := fmt.Sprintf("%x:%d", input.PrevTxHash, input.PrevTxIndex)
+		if inputSet[inputKey] {
+			return fmt.Errorf("duplicate input: %s", inputKey)
+		}
+		inputSet[inputKey] = true
+	}
+
+	// Calculate total input value (skip signature verification)
+	totalInput := uint64(0)
+	for _, input := range tx.Inputs {
+		// Check if UTXO exists and is not already spent
+		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
+		if utxo == nil {
+			return fmt.Errorf("input UTXO not found: %x:%d", input.PrevTxHash, input.PrevTxIndex)
+		}
+
+		// Check if UTXO is coinbase and has matured (if applicable)
+		if utxo.IsCoinbase {
+			// For now, we'll allow coinbase UTXOs to be spent immediately
+			// In a real implementation, you might want to enforce maturity requirements
+		}
+
+		// Skip signature verification for business logic testing
+
+		totalInput += utxo.Value
+	}
+
+	// Calculate total output value and validate outputs
+	totalOutput := uint64(0)
+	for i, output := range tx.Outputs {
+		if err := output.IsValid(); err != nil {
+			return fmt.Errorf("invalid output %d: %w", i, err)
+		}
+		totalOutput += output.Value
+	}
+
+	// Check if outputs exceed inputs (including fees)
+	if totalOutput > totalInput {
+		return fmt.Errorf("output value %d exceeds input value %d", totalOutput, totalInput)
+	}
+
+	// Validate that the fee is reasonable
+	fee := totalInput - totalOutput
+	if fee < tx.Fee {
+		return fmt.Errorf("actual fee %d is less than specified fee %d", fee, tx.Fee)
+	}
+
+	// Additional security checks
+	if fee > totalInput/2 {
+		return fmt.Errorf("fee %d is unreasonably high (more than 50%% of input value %d)", fee, totalInput)
+	}
+
+	// Check for dust outputs (very small outputs that are uneconomical)
+	const dustThreshold = 546 // Satoshis, equivalent to Bitcoin's dust threshold
+	for i, output := range tx.Outputs {
+		if output.Value < dustThreshold {
+			return fmt.Errorf("output %d value %d is below dust threshold %d", i, output.Value, dustThreshold)
+		}
+	}
+
+	return nil
+}
+
 // ValidateTransactionInBlock validates a transaction in the context of a block.
 // This method properly distinguishes between coinbase transactions (first transaction in block)
 // and regular transactions.

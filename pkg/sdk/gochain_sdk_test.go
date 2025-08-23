@@ -11,6 +11,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/defi/governance"
 	"github.com/palaseus/adrenochain/pkg/defi/lending"
 	"github.com/palaseus/adrenochain/pkg/defi/oracle"
+	"github.com/palaseus/adrenochain/pkg/defi/tokens"
 	"github.com/palaseus/adrenochain/pkg/defi/yield"
 )
 
@@ -269,6 +270,278 @@ func TestCreateToken_ERC1155(t *testing.T) {
 
 	if result.Owner != createTestAddress(3) {
 		t.Error("Token owner not set correctly")
+	}
+}
+
+// TestCreateToken_ERC20_WithCustomConfig tests ERC20 token creation with custom config
+func TestCreateToken_ERC20_WithCustomConfig(t *testing.T) {
+	config := SDKConfig{}
+	sdk := NewadrenochainSDK(config)
+
+	ctx := context.Background()
+	customConfig := tokens.TokenConfig{
+		MaxSupply:            big.NewInt(1000000000),
+		TransferFee:          big.NewInt(100),
+		TransferFeeRecipient: createTestAddress(99),
+		Mintable:             true,
+		Burnable:             true,
+		Pausable:             false,
+		Blacklistable:        true,
+	}
+	
+	tokenConfig := TokenCreationConfig{
+		Name:          "Custom Token",
+		Symbol:        "CUST",
+		Decimals:      6,
+		TotalSupply:   big.NewInt(500000000),
+		Owner:         createTestAddress(1),
+		ERC20Config:   &customConfig,
+	}
+
+	result, err := sdk.CreateToken(ctx, TokenTypeERC20, tokenConfig)
+	if err != nil {
+		t.Fatalf("CreateToken failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("CreateToken returned nil result")
+	}
+
+	if result.Type != TokenTypeERC20 {
+		t.Error("Token type not set correctly")
+	}
+
+	if result.Name != "Custom Token" {
+		t.Error("Token name not set correctly")
+	}
+
+	if result.Symbol != "CUST" {
+		t.Error("Token symbol not set correctly")
+	}
+
+	if result.Decimals != 6 {
+		t.Error("Token decimals not set correctly")
+	}
+
+	if result.TotalSupply.Cmp(big.NewInt(500000000)) != 0 {
+		t.Error("Token total supply not set correctly")
+	}
+
+	if result.Owner != createTestAddress(1) {
+		t.Error("Token owner not set correctly")
+	}
+
+	// Verify that custom config was used
+	if result.Config == nil {
+		t.Fatal("Token config not set")
+	}
+
+	configResult, ok := result.Config.(tokens.TokenConfig)
+	if !ok {
+		t.Fatal("Token config type assertion failed")
+	}
+
+	if configResult.MaxSupply.Cmp(big.NewInt(1000000000)) != 0 {
+		t.Error("Custom max supply not set correctly")
+	}
+
+	if configResult.TransferFee.Cmp(big.NewInt(100)) != 0 {
+		t.Error("Custom transfer fee not set correctly")
+	}
+
+	if configResult.TransferFeeRecipient != createTestAddress(99) {
+		t.Error("Custom transfer fee recipient not set correctly")
+	}
+
+	if !configResult.Mintable {
+		t.Error("Custom mintable flag not set correctly")
+	}
+
+	if !configResult.Burnable {
+		t.Error("Custom burnable flag not set correctly")
+	}
+
+	if configResult.Pausable {
+		t.Error("Custom pausable flag not set correctly")
+	}
+
+	if !configResult.Blacklistable {
+		t.Error("Custom blacklistable flag not set correctly")
+	}
+}
+
+// TestCreateToken_ERC721_WithCustomConfig tests ERC721 token creation with custom config
+func TestCreateToken_ERC721_WithCustomConfig(t *testing.T) {
+	config := SDKConfig{}
+	sdk := NewadrenochainSDK(config)
+
+	ctx := context.Background()
+	customConfig := tokens.ERC721TokenConfig{
+		MaxSupply:     big.NewInt(10000),
+		Mintable:      true,
+		Burnable:      true,
+		Pausable:      true,
+		Blacklistable: false,
+		MetadataURI:   false,
+	}
+	
+	tokenConfig := TokenCreationConfig{
+		Name:         "Custom NFT",
+		Symbol:       "CNFT",
+		BaseURI:      "https://custom.com/metadata/",
+		Owner:        createTestAddress(2),
+		ERC721Config: &customConfig,
+	}
+
+	result, err := sdk.CreateToken(ctx, TokenTypeERC721, tokenConfig)
+	if err != nil {
+		t.Fatalf("CreateToken failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("CreateToken returned nil result")
+	}
+
+	if result.Type != TokenTypeERC721 {
+		t.Error("Token type not set correctly")
+	}
+
+	if result.Name != "Custom NFT" {
+		t.Error("Token name not set correctly")
+	}
+
+	if result.Symbol != "CNFT" {
+		t.Error("Token symbol not set correctly")
+	}
+
+	if result.BaseURI != "https://custom.com/metadata/" {
+		t.Error("Token base URI not set correctly")
+	}
+
+	if result.Owner != createTestAddress(2) {
+		t.Error("Token owner not set correctly")
+	}
+
+	// Verify that custom config was used
+	if result.Config == nil {
+		t.Fatal("Token config not set")
+	}
+
+	configResult, ok := result.Config.(tokens.ERC721TokenConfig)
+	if !ok {
+		t.Fatal("Token config type assertion failed")
+	}
+
+	if configResult.MaxSupply.Cmp(big.NewInt(10000)) != 0 {
+		t.Error("Custom max supply not set correctly")
+	}
+
+	if !configResult.Mintable {
+		t.Error("Custom mintable flag not set correctly")
+	}
+
+	if !configResult.Burnable {
+		t.Error("Custom burnable flag not set correctly")
+	}
+
+	if !configResult.Pausable {
+		t.Error("Custom pausable flag not set correctly")
+	}
+
+	if configResult.Blacklistable {
+		t.Error("Custom blacklistable flag not set correctly")
+	}
+
+	if configResult.MetadataURI {
+		t.Error("Custom metadata URI flag not set correctly")
+	}
+}
+
+// TestCreateToken_ERC1155_WithCustomConfig tests ERC1155 token creation with custom config
+func TestCreateToken_ERC1155_WithCustomConfig(t *testing.T) {
+	config := SDKConfig{}
+	sdk := NewadrenochainSDK(config)
+
+	ctx := context.Background()
+	customConfig := tokens.ERC1155TokenConfig{
+		MaxSupply: map[uint64]*big.Int{
+			1: big.NewInt(1000),
+			2: big.NewInt(2000),
+		},
+		Mintable:      true,
+		Burnable:      false,
+		Pausable:      true,
+		Blacklistable: true,
+		MetadataURI:   false,
+	}
+	
+	tokenConfig := TokenCreationConfig{
+		URI:           "https://custom1155.com/metadata/",
+		Owner:         createTestAddress(3),
+		ERC1155Config: &customConfig,
+	}
+
+	result, err := sdk.CreateToken(ctx, TokenTypeERC1155, tokenConfig)
+	if err != nil {
+		t.Fatalf("CreateToken failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("CreateToken returned nil result")
+	}
+
+	if result.Type != TokenTypeERC1155 {
+		t.Error("Token type not set correctly")
+	}
+
+	if result.URI != "https://custom1155.com/metadata/" {
+		t.Error("Token URI not set correctly")
+	}
+
+	if result.Owner != createTestAddress(3) {
+		t.Error("Token owner not set correctly")
+	}
+
+	// Verify that custom config was used
+	if result.Config == nil {
+		t.Fatal("Token config not set")
+	}
+
+	configResult, ok := result.Config.(tokens.ERC1155TokenConfig)
+	if !ok {
+		t.Fatal("Token config type assertion failed")
+	}
+
+	if len(configResult.MaxSupply) != 2 {
+		t.Error("Custom max supply map not set correctly")
+	}
+
+	if configResult.MaxSupply[1].Cmp(big.NewInt(1000)) != 0 {
+		t.Error("Custom max supply for token 1 not set correctly")
+	}
+
+	if configResult.MaxSupply[2].Cmp(big.NewInt(2000)) != 0 {
+		t.Error("Custom max supply for token 2 not set correctly")
+	}
+
+	if !configResult.Mintable {
+		t.Error("Custom mintable flag not set correctly")
+	}
+
+	if configResult.Burnable {
+		t.Error("Custom burnable flag not set correctly")
+	}
+
+	if !configResult.Pausable {
+		t.Error("Custom pausable flag not set correctly")
+	}
+
+	if !configResult.Blacklistable {
+		t.Error("Custom blacklistable flag not set correctly")
+	}
+
+	if configResult.MetadataURI {
+		t.Error("Custom metadata URI flag not set correctly")
 	}
 }
 

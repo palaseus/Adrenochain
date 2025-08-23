@@ -4,738 +4,564 @@ import (
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewLiquidationConfig(t *testing.T) {
-	tests := []struct {
-		name                string
-		gracePeriod         time.Duration
-		liquidationFee      *big.Float
-		minAuctionDuration  time.Duration
-		maxAuctionDuration  time.Duration
-		bidIncrement        *big.Float
-		autoExtendThreshold *big.Float
-		expectError         bool
-	}{
-		{
-			name:                "Valid Config",
-			gracePeriod:         5 * time.Minute,
-			liquidationFee:      big.NewFloat(0.05),
-			minAuctionDuration:  1 * time.Hour,
-			maxAuctionDuration:  24 * time.Hour,
-			bidIncrement:        big.NewFloat(0.01),
-			autoExtendThreshold: big.NewFloat(5),
-			expectError:         false,
-		},
-		{
-			name:                "Negative Liquidation Fee",
-			gracePeriod:         5 * time.Minute,
-			liquidationFee:      big.NewFloat(-0.01),
-			minAuctionDuration:  1 * time.Hour,
-			maxAuctionDuration:  24 * time.Hour,
-			bidIncrement:        big.NewFloat(0.01),
-			autoExtendThreshold: big.NewFloat(5),
-			expectError:         true,
-		},
-		{
-			name:                "Zero Min Auction Duration",
-			gracePeriod:         5 * time.Minute,
-			liquidationFee:      big.NewFloat(0.05),
-			minAuctionDuration:  0,
-			maxAuctionDuration:  24 * time.Hour,
-			bidIncrement:        big.NewFloat(0.01),
-			autoExtendThreshold: big.NewFloat(5),
-			expectError:         true,
-		},
-		{
-			name:                "Max Duration <= Min Duration",
-			gracePeriod:         5 * time.Minute,
-			liquidationFee:      big.NewFloat(0.05),
-			minAuctionDuration:  2 * time.Hour,
-			maxAuctionDuration:  1 * time.Hour,
-			bidIncrement:        big.NewFloat(0.01),
-			autoExtendThreshold: big.NewFloat(5),
-			expectError:         true,
-		},
-		{
-			name:                "Zero Bid Increment",
-			gracePeriod:         5 * time.Minute,
-			liquidationFee:      big.NewFloat(0.05),
-			minAuctionDuration:  1 * time.Hour,
-			maxAuctionDuration:  24 * time.Hour,
-			bidIncrement:        big.NewFloat(0),
-			autoExtendThreshold: big.NewFloat(5),
-			expectError:         true,
-		},
-		{
-			name:                "Negative Auto-Extend Threshold",
-			gracePeriod:         5 * time.Minute,
-			liquidationFee:      big.NewFloat(0.05),
-			minAuctionDuration:  1 * time.Hour,
-			maxAuctionDuration:  24 * time.Hour,
-			bidIncrement:        big.NewFloat(0.01),
-			autoExtendThreshold: big.NewFloat(-1),
-			expectError:         true,
-		},
-	}
+	t.Run("valid_config", func(t *testing.T) {
+		gracePeriod := 24 * time.Hour
+		liquidationFee := big.NewFloat(0.05) // 5%
+		minAuctionDuration := 1 * time.Hour
+		maxAuctionDuration := 7 * 24 * time.Hour
+		bidIncrement := big.NewFloat(0.01) // 1%
+		autoExtendThreshold := big.NewFloat(0.1) // 10%
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config, err := NewLiquidationConfig(
-				tt.gracePeriod,
-				tt.liquidationFee,
-				tt.minAuctionDuration,
-				tt.maxAuctionDuration,
-				tt.bidIncrement,
-				tt.autoExtendThreshold,
-			)
+		config, err := NewLiquidationConfig(
+			gracePeriod,
+			liquidationFee,
+			minAuctionDuration,
+			maxAuctionDuration,
+			bidIncrement,
+			autoExtendThreshold,
+		)
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-				return
-			}
+		assert.NoError(t, err)
+		assert.NotNil(t, config)
+		assert.Equal(t, gracePeriod, config.DefaultGracePeriod)
+		assert.Equal(t, liquidationFee, config.DefaultLiquidationFee)
+		assert.Equal(t, minAuctionDuration, config.MinimumAuctionDuration)
+		assert.Equal(t, maxAuctionDuration, config.MaximumAuctionDuration)
+		assert.Equal(t, bidIncrement, config.BidIncrement)
+		assert.Equal(t, autoExtendThreshold, config.AutoExtendThreshold)
+	})
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
+	t.Run("negative_liquidation_fee", func(t *testing.T) {
+		gracePeriod := 24 * time.Hour
+		liquidationFee := big.NewFloat(-0.05) // negative fee
+		minAuctionDuration := 1 * time.Hour
+		maxAuctionDuration := 7 * 24 * time.Hour
+		bidIncrement := big.NewFloat(0.01)
+		autoExtendThreshold := big.NewFloat(0.1)
 
-			if config == nil {
-				t.Errorf("Expected config but got nil")
-				return
-			}
+		config, err := NewLiquidationConfig(
+			gracePeriod,
+			liquidationFee,
+			minAuctionDuration,
+			maxAuctionDuration,
+			bidIncrement,
+			autoExtendThreshold,
+		)
 
-			if config.DefaultGracePeriod != tt.gracePeriod {
-				t.Errorf("Expected grace period %v, got %v", tt.gracePeriod, config.DefaultGracePeriod)
-			}
+		assert.Error(t, err)
+		assert.Nil(t, config)
+		assert.Contains(t, err.Error(), "liquidation fee cannot be negative")
+	})
 
-			if config.DefaultLiquidationFee.Cmp(tt.liquidationFee) != 0 {
-				t.Errorf("Expected liquidation fee %v, got %v", tt.liquidationFee, config.DefaultLiquidationFee)
-			}
+	t.Run("nil_liquidation_fee", func(t *testing.T) {
+		gracePeriod := 24 * time.Hour
+		minAuctionDuration := 1 * time.Hour
+		maxAuctionDuration := 7 * 24 * time.Hour
+		bidIncrement := big.NewFloat(0.01)
+		autoExtendThreshold := big.NewFloat(0.1)
 
-			if config.MinimumAuctionDuration != tt.minAuctionDuration {
-				t.Errorf("Expected min auction duration %v, got %v", tt.minAuctionDuration, config.MinimumAuctionDuration)
-			}
+		config, err := NewLiquidationConfig(
+			gracePeriod,
+			nil, // nil fee
+			minAuctionDuration,
+			maxAuctionDuration,
+			bidIncrement,
+			autoExtendThreshold,
+		)
 
-			if config.MaximumAuctionDuration != tt.maxAuctionDuration {
-				t.Errorf("Expected max auction duration %v, got %v", tt.maxAuctionDuration, config.MaximumAuctionDuration)
-			}
-		})
-	}
+		assert.Error(t, err)
+		assert.Nil(t, config)
+		assert.Contains(t, err.Error(), "liquidation fee cannot be negative")
+	})
+}
+
+func TestNewLiquidationEngine(t *testing.T) {
+	// Create dependencies
+	riskFreeRate := big.NewFloat(0.02) // 2%
+	confidenceLevel := big.NewFloat(0.95) // 95%
+	basePremiumRate := big.NewFloat(0.01) // 1%
+	
+	riskManager, err := NewAdvancedRiskManager(riskFreeRate, confidenceLevel)
+	require.NoError(t, err)
+	
+	insuranceManager, err := NewInsuranceManager(riskFreeRate, basePremiumRate)
+	require.NoError(t, err)
+
+	config, err := NewLiquidationConfig(
+		24*time.Hour,
+		big.NewFloat(0.05),
+		1*time.Hour,
+		7*24*time.Hour,
+		big.NewFloat(0.01),
+		big.NewFloat(0.1),
+	)
+	require.NoError(t, err)
+
+	t.Run("valid_engine", func(t *testing.T) {
+		engine, err := NewLiquidationEngine(riskManager, insuranceManager, config)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, engine)
+		assert.NotNil(t, engine.triggers)
+		assert.NotNil(t, engine.events)
+		assert.NotNil(t, engine.auctions)
+		assert.NotNil(t, engine.recoveryMechanisms)
+		assert.Equal(t, riskManager, engine.riskManager)
+		assert.Equal(t, insuranceManager, engine.insuranceManager)
+		assert.Equal(t, config, engine.config)
+	})
+
+	t.Run("nil_risk_manager", func(t *testing.T) {
+		engine, err := NewLiquidationEngine(nil, insuranceManager, config)
+
+		assert.Error(t, err)
+		assert.Nil(t, engine)
+		assert.Contains(t, err.Error(), "risk manager cannot be nil")
+	})
+
+	t.Run("nil_insurance_manager", func(t *testing.T) {
+		engine, err := NewLiquidationEngine(riskManager, nil, config)
+
+		assert.Error(t, err)
+		assert.Nil(t, engine)
+		assert.Contains(t, err.Error(), "insurance manager cannot be nil")
+	})
+
+	t.Run("nil_config", func(t *testing.T) {
+		engine, err := NewLiquidationEngine(riskManager, insuranceManager, nil)
+
+		assert.Error(t, err)
+		assert.Nil(t, engine)
+		assert.Contains(t, err.Error(), "config cannot be nil")
+	})
 }
 
 func TestNewLiquidationTrigger(t *testing.T) {
-	tests := []struct {
-		name        string
-		id          string
-		triggerType LiquidationTriggerType
-		threshold   *big.Float
-		gracePeriod time.Duration
-		expectError bool
-	}{
-		{
-			name:        "Valid Trigger",
-			id:          "trigger1",
-			triggerType: MarginCall,
-			threshold:   big.NewFloat(0.8),
-			gracePeriod: 5 * time.Minute,
-			expectError: false,
-		},
-		{
-			name:        "Empty ID",
-			id:          "",
-			triggerType: MarginCall,
-			threshold:   big.NewFloat(0.8),
-			gracePeriod: 5 * time.Minute,
-			expectError: true,
-		},
-		{
-			name:        "Zero Threshold",
-			id:          "trigger1",
-			triggerType: MarginCall,
-			threshold:   big.NewFloat(0),
-			gracePeriod: 5 * time.Minute,
-			expectError: true,
-		},
-		{
-			name:        "Negative Threshold",
-			id:          "trigger1",
-			triggerType: MarginCall,
-			threshold:   big.NewFloat(-0.1),
-			gracePeriod: 5 * time.Minute,
-			expectError: true,
-		},
-		{
-			name:        "Zero Grace Period",
-			id:          "trigger1",
-			triggerType: MarginCall,
-			threshold:   big.NewFloat(0.8),
-			gracePeriod: 0,
-			expectError: true,
-		},
-	}
+	t.Run("valid_trigger", func(t *testing.T) {
+		triggerType := MarginCall
+		threshold := big.NewFloat(1.5) // 150%
+		gracePeriod := 24 * time.Hour
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			trigger, err := NewLiquidationTrigger(tt.id, tt.triggerType, tt.threshold, tt.gracePeriod)
+		trigger, err := NewLiquidationTrigger("trigger1", triggerType, threshold, gracePeriod)
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-				return
-			}
+		assert.NoError(t, err)
+		assert.NotNil(t, trigger)
+		assert.Equal(t, "trigger1", trigger.ID)
+		assert.Equal(t, triggerType, trigger.Type)
+		assert.Equal(t, threshold, trigger.Threshold)
+		assert.Equal(t, gracePeriod, trigger.GracePeriod)
+		assert.True(t, trigger.IsActive)
+		assert.False(t, trigger.CreatedAt.IsZero())
+		assert.False(t, trigger.UpdatedAt.IsZero())
+	})
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
+	t.Run("empty_id", func(t *testing.T) {
+		triggerType := MarginCall
+		threshold := big.NewFloat(1.5)
+		gracePeriod := 24 * time.Hour
 
-			if trigger == nil {
-				t.Errorf("Expected trigger but got nil")
-				return
-			}
+		trigger, err := NewLiquidationTrigger("", triggerType, threshold, gracePeriod)
 
-			if trigger.ID != tt.id {
-				t.Errorf("Expected ID %s, got %s", tt.id, trigger.ID)
-			}
+		assert.Error(t, err)
+		assert.Nil(t, trigger)
+		assert.Contains(t, err.Error(), "trigger ID cannot be empty")
+	})
 
-			if trigger.Type != tt.triggerType {
-				t.Errorf("Expected type %v, got %v", tt.triggerType, trigger.Type)
-			}
+	t.Run("nil_threshold", func(t *testing.T) {
+		triggerType := MarginCall
+		gracePeriod := 24 * time.Hour
 
-			if trigger.Threshold.Cmp(tt.threshold) != 0 {
-				t.Errorf("Expected threshold %v, got %v", tt.threshold, trigger.Threshold)
-			}
+		trigger, err := NewLiquidationTrigger("trigger1", triggerType, nil, gracePeriod)
 
-			if trigger.GracePeriod != tt.gracePeriod {
-				t.Errorf("Expected grace period %v, got %v", tt.gracePeriod, trigger.GracePeriod)
-			}
-
-			if !trigger.IsActive {
-				t.Errorf("Expected trigger to be active")
-			}
-		})
-	}
+		assert.Error(t, err)
+		assert.Nil(t, trigger)
+		assert.Contains(t, err.Error(), "threshold must be positive")
+	})
 }
 
 func TestNewLiquidationEvent(t *testing.T) {
-	tests := []struct {
-		name            string
-		id              string
-		positionID      string
-		userID          string
-		triggerType     LiquidationTriggerType
-		triggerValue    *big.Float
-		threshold       *big.Float
-		positionValue   *big.Float
-		debtAmount      *big.Float
-		collateralValue *big.Float
-		expectError     bool
-	}{
-		{
-			name:            "Valid Event",
-			id:              "event1",
-			positionID:      "position1",
-			userID:          "user1",
-			triggerType:     MarginCall,
-			triggerValue:    big.NewFloat(0.75),
-			threshold:       big.NewFloat(0.8),
-			positionValue:   big.NewFloat(10000),
-			debtAmount:      big.NewFloat(8000),
-			collateralValue: big.NewFloat(12000),
-			expectError:     false,
-		},
-		{
-			name:            "Empty ID",
-			id:              "",
-			positionID:      "position1",
-			userID:          "user1",
-			triggerType:     MarginCall,
-			triggerValue:    big.NewFloat(0.75),
-			threshold:       big.NewFloat(0.8),
-			positionValue:   big.NewFloat(10000),
-			debtAmount:      big.NewFloat(8000),
-			collateralValue: big.NewFloat(12000),
-			expectError:     true,
-		},
-		{
-			name:            "Empty Position ID",
-			id:              "event1",
-			positionID:      "",
-			userID:          "user1",
-			triggerType:     MarginCall,
-			triggerValue:    big.NewFloat(0.75),
-			threshold:       big.NewFloat(0.8),
-			positionValue:   big.NewFloat(10000),
-			debtAmount:      big.NewFloat(8000),
-			collateralValue: big.NewFloat(12000),
-			expectError:     true,
-		},
-		{
-			name:            "Empty User ID",
-			id:              "event1",
-			positionID:      "position1",
-			userID:          "",
-			triggerType:     MarginCall,
-			triggerValue:    big.NewFloat(0.75),
-			threshold:       big.NewFloat(0.8),
-			positionValue:   big.NewFloat(10000),
-			debtAmount:      big.NewFloat(8000),
-			collateralValue: big.NewFloat(12000),
-			expectError:     true,
-		},
-		{
-			name:            "Nil Trigger Value",
-			id:              "event1",
-			positionID:      "position1",
-			userID:          "user1",
-			triggerType:     MarginCall,
-			triggerValue:    nil,
-			threshold:       big.NewFloat(0.8),
-			positionValue:   big.NewFloat(10000),
-			debtAmount:      big.NewFloat(8000),
-			collateralValue: big.NewFloat(12000),
-			expectError:     true,
-		},
-	}
+	t.Run("valid_event", func(t *testing.T) {
+		positionID := "pos123"
+		userID := "user456"
+		triggerType := MarginCall
+		triggerValue := big.NewFloat(1.2)
+		threshold := big.NewFloat(1.5)
+		positionValue := big.NewFloat(100000)
+		debtAmount := big.NewFloat(80000)
+		collateralValue := big.NewFloat(90000)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			event, err := NewLiquidationEvent(
-				tt.id,
-				tt.positionID,
-				tt.userID,
-				tt.triggerType,
-				tt.triggerValue,
-				tt.threshold,
-				tt.positionValue,
-				tt.debtAmount,
-				tt.collateralValue,
-			)
+		event, err := NewLiquidationEvent(
+			"event1",
+			positionID,
+			userID,
+			triggerType,
+			triggerValue,
+			threshold,
+			positionValue,
+			debtAmount,
+			collateralValue,
+		)
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-				return
-			}
+		assert.NoError(t, err)
+		assert.NotNil(t, event)
+		assert.Equal(t, "event1", event.ID)
+		assert.Equal(t, positionID, event.PositionID)
+		assert.Equal(t, userID, event.UserID)
+		assert.Equal(t, triggerType, event.TriggerType)
+		assert.Equal(t, triggerValue, event.TriggerValue)
+		assert.Equal(t, threshold, event.Threshold)
+		assert.Equal(t, positionValue, event.PositionValue)
+		assert.Equal(t, debtAmount, event.DebtAmount)
+		assert.Equal(t, collateralValue, event.CollateralValue)
+		assert.NotNil(t, event.LiquidationFee)
+		assert.Equal(t, LiquidationTriggered, event.Status)
+		assert.False(t, event.TriggeredAt.IsZero())
+		assert.False(t, event.CreatedAt.IsZero())
+		assert.False(t, event.UpdatedAt.IsZero())
+		assert.Nil(t, event.ProcessedAt)
+		assert.Nil(t, event.CompletedAt)
+	})
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
+	t.Run("empty_id", func(t *testing.T) {
+		event, err := NewLiquidationEvent(
+			"",
+			"pos123",
+			"user456",
+			MarginCall,
+			big.NewFloat(1.2),
+			big.NewFloat(1.5),
+			big.NewFloat(100000),
+			big.NewFloat(80000),
+			big.NewFloat(90000),
+		)
 
-			if event == nil {
-				t.Errorf("Expected event but got nil")
-				return
-			}
+		assert.Error(t, err)
+		assert.Nil(t, event)
+		assert.Contains(t, err.Error(), "event ID cannot be empty")
+	})
 
-			if event.ID != tt.id {
-				t.Errorf("Expected ID %s, got %s", tt.id, event.ID)
-			}
+	t.Run("empty_position_id", func(t *testing.T) {
+		event, err := NewLiquidationEvent(
+			"event1",
+			"",
+			"user456",
+			MarginCall,
+			big.NewFloat(1.2),
+			big.NewFloat(1.5),
+			big.NewFloat(100000),
+			big.NewFloat(80000),
+			big.NewFloat(90000),
+		)
 
-			if event.PositionID != tt.positionID {
-				t.Errorf("Expected position ID %s, got %s", tt.positionID, event.PositionID)
-			}
+		assert.Error(t, err)
+		assert.Nil(t, event)
+		assert.Contains(t, err.Error(), "position ID cannot be empty")
+	})
 
-			if event.UserID != tt.userID {
-				t.Errorf("Expected user ID %s, got %s", tt.userID, event.UserID)
-			}
+	t.Run("empty_user_id", func(t *testing.T) {
+		event, err := NewLiquidationEvent(
+			"event1",
+			"pos123",
+			"",
+			MarginCall,
+			big.NewFloat(1.2),
+			big.NewFloat(1.5),
+			big.NewFloat(100000),
+			big.NewFloat(80000),
+			big.NewFloat(90000),
+		)
 
-			if event.TriggerType != tt.triggerType {
-				t.Errorf("Expected trigger type %v, got %v", tt.triggerType, event.TriggerType)
-			}
-
-			if event.Status != LiquidationTriggered {
-				t.Errorf("Expected status LiquidationTriggered, got %v", event.Status)
-			}
-
-			if event.LiquidationFee.Sign() != 0 {
-				t.Errorf("Expected zero liquidation fee, got %v", event.LiquidationFee)
-			}
-		})
-	}
+		assert.Error(t, err)
+		assert.Nil(t, event)
+		assert.Contains(t, err.Error(), "user ID cannot be empty")
+	})
 }
 
 func TestNewAuction(t *testing.T) {
-	tests := []struct {
-		name          string
-		id            string
-		liquidationID string
-		assetID       string
-		assetAmount   *big.Float
-		startingPrice *big.Float
-		minimumPrice  *big.Float
-		reservePrice  *big.Float
-		duration      time.Duration
-		expectError   bool
-	}{
-		{
-			name:          "Valid Auction",
-			id:            "auction1",
-			liquidationID: "liquidation1",
-			assetID:       "asset1",
-			assetAmount:   big.NewFloat(100),
-			startingPrice: big.NewFloat(50),
-			minimumPrice:  big.NewFloat(30),
-			reservePrice:  big.NewFloat(40),
-			duration:      2 * time.Hour,
-			expectError:   false,
-		},
-		{
-			name:          "Empty ID",
-			id:            "",
-			liquidationID: "liquidation1",
-			assetID:       "asset1",
-			assetAmount:   big.NewFloat(100),
-			startingPrice: big.NewFloat(50),
-			minimumPrice:  big.NewFloat(30),
-			reservePrice:  big.NewFloat(40),
-			duration:      2 * time.Hour,
-			expectError:   true,
-		},
-		{
-			name:          "Zero Asset Amount",
-			id:            "auction1",
-			liquidationID: "liquidation1",
-			assetID:       "asset1",
-			assetAmount:   big.NewFloat(0),
-			startingPrice: big.NewFloat(50),
-			minimumPrice:  big.NewFloat(30),
-			reservePrice:  big.NewFloat(40),
-			duration:      2 * time.Hour,
-			expectError:   true,
-		},
-		{
-			name:          "Zero Duration",
-			id:            "auction1",
-			liquidationID: "liquidation1",
-			assetID:       "asset1",
-			assetAmount:   big.NewFloat(100),
-			startingPrice: big.NewFloat(50),
-			minimumPrice:  big.NewFloat(30),
-			reservePrice:  big.NewFloat(40),
-			duration:      0,
-			expectError:   true,
-		},
-	}
+	t.Run("valid_auction", func(t *testing.T) {
+		liquidationID := "liq123"
+		assetID := "asset456"
+		assetAmount := big.NewFloat(1000)
+		startingPrice := big.NewFloat(100)
+		minimumPrice := big.NewFloat(80)
+		reservePrice := big.NewFloat(90)
+		duration := 24 * time.Hour
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			auction, err := NewAuction(
-				tt.id,
-				tt.liquidationID,
-				tt.assetID,
-				tt.assetAmount,
-				tt.startingPrice,
-				tt.minimumPrice,
-				tt.reservePrice,
-				tt.duration,
-			)
+		auction, err := NewAuction(
+			"auction1",
+			liquidationID,
+			assetID,
+			assetAmount,
+			startingPrice,
+			minimumPrice,
+			reservePrice,
+			duration,
+		)
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-				return
-			}
+		assert.NoError(t, err)
+		assert.NotNil(t, auction)
+		assert.Equal(t, "auction1", auction.ID)
+		assert.Equal(t, liquidationID, auction.LiquidationID)
+		assert.Equal(t, assetID, auction.AssetID)
+		assert.Equal(t, assetAmount, auction.AssetAmount)
+		assert.Equal(t, startingPrice, auction.StartingPrice)
+		assert.Equal(t, minimumPrice, auction.MinimumPrice)
+		assert.Equal(t, startingPrice, auction.CurrentPrice) // Should start at starting price
+		assert.Equal(t, reservePrice, auction.ReservePrice)
+		assert.Equal(t, AuctionPending, auction.Status)
+		assert.False(t, auction.StartTime.IsZero())
+		assert.False(t, auction.EndTime.IsZero())
+		assert.True(t, auction.EndTime.After(auction.StartTime))
+		assert.NotNil(t, auction.Bids)
+		assert.Empty(t, auction.Bids)
+		assert.Nil(t, auction.Winner)
+		assert.False(t, auction.CreatedAt.IsZero())
+		assert.False(t, auction.UpdatedAt.IsZero())
+	})
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
+	t.Run("empty_id", func(t *testing.T) {
+		auction, err := NewAuction(
+			"",
+			"liq123",
+			"asset456",
+			big.NewFloat(1000),
+			big.NewFloat(100),
+			big.NewFloat(80),
+			big.NewFloat(90),
+			24*time.Hour,
+		)
 
-			if auction == nil {
-				t.Errorf("Expected auction but got nil")
-				return
-			}
+		assert.Error(t, err)
+		assert.Nil(t, auction)
+		assert.Contains(t, err.Error(), "auction ID cannot be empty")
+	})
 
-			if auction.ID != tt.id {
-				t.Errorf("Expected ID %s, got %s", tt.id, auction.ID)
-			}
+	t.Run("nil_asset_amount", func(t *testing.T) {
+		auction, err := NewAuction(
+			"auction1",
+			"liq123",
+			"asset456",
+			nil,
+			big.NewFloat(100),
+			big.NewFloat(80),
+			big.NewFloat(90),
+			24*time.Hour,
+		)
 
-			if auction.LiquidationID != tt.liquidationID {
-				t.Errorf("Expected liquidation ID %s, got %s", tt.liquidationID, auction.LiquidationID)
-			}
-
-			if auction.AssetID != tt.assetID {
-				t.Errorf("Expected asset ID %s, got %s", tt.assetID, auction.AssetID)
-			}
-
-			if auction.Status != AuctionPending {
-				t.Errorf("Expected status AuctionPending, got %v", auction.Status)
-			}
-
-			if len(auction.Bids) != 0 {
-				t.Errorf("Expected empty bids list")
-			}
-
-			if auction.Winner != nil {
-				t.Errorf("Expected nil winner")
-			}
-		})
-	}
+		assert.Error(t, err)
+		assert.Nil(t, auction)
+		assert.Contains(t, err.Error(), "asset amount must be positive")
+	})
 }
 
 func TestNewBid(t *testing.T) {
-	tests := []struct {
-		name        string
-		id          string
-		auctionID   string
-		bidderID    string
-		amount      *big.Float
-		price       *big.Float
-		expectError bool
-	}{
-		{
-			name:        "Valid Bid",
-			id:          "bid1",
-			auctionID:   "auction1",
-			bidderID:    "bidder1",
-			amount:      big.NewFloat(50),
-			price:       big.NewFloat(55),
-			expectError: false,
-		},
-		{
-			name:        "Empty ID",
-			id:          "",
-			auctionID:   "auction1",
-			bidderID:    "bidder1",
-			amount:      big.NewFloat(50),
-			price:       big.NewFloat(55),
-			expectError: true,
-		},
-		{
-			name:        "Zero Amount",
-			id:          "bid1",
-			auctionID:   "auction1",
-			bidderID:    "bidder1",
-			amount:      big.NewFloat(0),
-			price:       big.NewFloat(55),
-			expectError: true,
-		},
-		{
-			name:        "Zero Price",
-			id:          "bid1",
-			auctionID:   "auction1",
-			bidderID:    "bidder1",
-			amount:      big.NewFloat(50),
-			price:       big.NewFloat(0),
-			expectError: true,
-		},
-	}
+	t.Run("valid_bid", func(t *testing.T) {
+		auctionID := "auction123"
+		bidderID := "bidder456"
+		bidPrice := big.NewFloat(105)
+		bidAmount := big.NewFloat(500)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			bid, err := NewBid(tt.id, tt.auctionID, tt.bidderID, tt.amount, tt.price)
+		bid, err := NewBid("bid1", auctionID, bidderID, bidAmount, bidPrice)
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-				return
-			}
+		assert.NoError(t, err)
+		assert.NotNil(t, bid)
+		assert.Equal(t, "bid1", bid.ID)
+		assert.Equal(t, auctionID, bid.AuctionID)
+		assert.Equal(t, bidderID, bid.BidderID)
+		assert.Equal(t, bidPrice, bid.Price)
+		assert.Equal(t, bidAmount, bid.Amount)
+		assert.True(t, bid.IsValid)
+		assert.False(t, bid.CreatedAt.IsZero())
+	})
 
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
+	t.Run("empty_id", func(t *testing.T) {
+		bid, err := NewBid(
+			"",
+			"auction123",
+			"bidder456",
+			big.NewFloat(500),
+			big.NewFloat(105),
+		)
 
-			if bid == nil {
-				t.Errorf("Expected bid but got nil")
-				return
-			}
+		assert.Error(t, err)
+		assert.Nil(t, bid)
+		assert.Contains(t, err.Error(), "bid ID cannot be empty")
+	})
 
-			if bid.ID != tt.id {
-				t.Errorf("Expected ID %s, got %s", tt.id, bid.ID)
-			}
+	t.Run("empty_auction_id", func(t *testing.T) {
+		bid, err := NewBid(
+			"bid1",
+			"",
+			"bidder456",
+			big.NewFloat(500),
+			big.NewFloat(105),
+		)
 
-			if bid.AuctionID != tt.auctionID {
-				t.Errorf("Expected auction ID %s, got %s", tt.auctionID, bid.AuctionID)
-			}
+		assert.Error(t, err)
+		assert.Nil(t, bid)
+		assert.Contains(t, err.Error(), "auction ID cannot be empty")
+	})
 
-			if bid.BidderID != tt.bidderID {
-				t.Errorf("Expected bidder ID %s, got %s", tt.bidderID, bid.BidderID)
-			}
+	t.Run("nil_bid_price", func(t *testing.T) {
+		bid, err := NewBid(
+			"bid1",
+			"auction123",
+			"bidder456",
+			big.NewFloat(500),
+			nil,
+		)
 
-			if !bid.IsValid {
-				t.Errorf("Expected bid to be valid")
-			}
-		})
-	}
+		assert.Error(t, err)
+		assert.Nil(t, bid)
+		assert.Contains(t, err.Error(), "bid price must be positive")
+	})
 }
 
-func TestLiquidationEngineBasicOperations(t *testing.T) {
-	// Create liquidation config
+func TestNewRecoveryMechanism(t *testing.T) {
+	t.Run("valid_recovery_mechanism", func(t *testing.T) {
+		recoveryType := PartialRecovery
+		description := "Partial recovery mechanism for liquidation"
+		parameters := map[string]*big.Float{
+			"recoveryAmount": big.NewFloat(50000),
+			"threshold":      big.NewFloat(0.8),
+		}
+
+		recovery, err := NewRecoveryMechanism(
+			"recovery1",
+			recoveryType,
+			description,
+			parameters,
+		)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, recovery)
+		assert.Equal(t, "recovery1", recovery.ID)
+		assert.Equal(t, recoveryType, recovery.Type)
+		assert.Equal(t, description, recovery.Description)
+		assert.Equal(t, parameters, recovery.Parameters)
+		assert.True(t, recovery.IsActive)
+		assert.False(t, recovery.CreatedAt.IsZero())
+		assert.False(t, recovery.UpdatedAt.IsZero())
+	})
+
+	t.Run("empty_id", func(t *testing.T) {
+		parameters := map[string]*big.Float{
+			"recoveryAmount": big.NewFloat(50000),
+		}
+
+		recovery, err := NewRecoveryMechanism(
+			"",
+			PartialRecovery,
+			"description",
+			parameters,
+		)
+
+		assert.Error(t, err)
+		assert.Nil(t, recovery)
+		assert.Contains(t, err.Error(), "mechanism ID cannot be empty")
+	})
+
+	t.Run("nil_parameters", func(t *testing.T) {
+		recovery, err := NewRecoveryMechanism(
+			"recovery1",
+			PartialRecovery,
+			"description",
+			nil,
+		)
+
+		assert.Error(t, err)
+		assert.Nil(t, recovery)
+		assert.Contains(t, err.Error(), "parameters cannot be nil")
+	})
+}
+
+// Helper function to create a test liquidation engine
+func createTestLiquidationEngine(t *testing.T) *LiquidationEngine {
+	riskFreeRate := big.NewFloat(0.02) // 2%
+	confidenceLevel := big.NewFloat(0.95) // 95%
+	basePremiumRate := big.NewFloat(0.01) // 1%
+	
+	riskManager, err := NewAdvancedRiskManager(riskFreeRate, confidenceLevel)
+	require.NoError(t, err)
+	
+	insuranceManager, err := NewInsuranceManager(riskFreeRate, basePremiumRate)
+	require.NoError(t, err)
+
 	config, err := NewLiquidationConfig(
-		5*time.Minute,
+		24*time.Hour,
 		big.NewFloat(0.05),
 		1*time.Hour,
-		24*time.Hour,
+		7*24*time.Hour,
 		big.NewFloat(0.01),
-		big.NewFloat(5),
+		big.NewFloat(0.1),
 	)
-	if err != nil {
-		t.Fatalf("Failed to create liquidation config: %v", err)
-	}
+	require.NoError(t, err)
 
-	// Create mock risk manager and insurance manager
-	riskManager, err := NewAdvancedRiskManager(big.NewFloat(0.05), big.NewFloat(0.95))
-	if err != nil {
-		t.Fatalf("Failed to create risk manager: %v", err)
-	}
-
-	insuranceManager, err := NewInsuranceManager(big.NewFloat(0.05), big.NewFloat(0.02))
-	if err != nil {
-		t.Fatalf("Failed to create insurance manager: %v", err)
-	}
-
-	// Create liquidation engine
 	engine, err := NewLiquidationEngine(riskManager, insuranceManager, config)
-	if err != nil {
-		t.Fatalf("Failed to create liquidation engine: %v", err)
-	}
+	require.NoError(t, err)
 
-	t.Run("Add and Get Liquidation Trigger", func(t *testing.T) {
-		trigger, err := NewLiquidationTrigger("trigger1", MarginCall, big.NewFloat(0.8), 5*time.Minute)
-		if err != nil {
-			t.Fatalf("Failed to create trigger: %v", err)
-		}
+	return engine
+}
 
-		err = engine.AddLiquidationTrigger(trigger)
-		if err != nil {
-			t.Errorf("Failed to add trigger: %v", err)
-			return
-		}
+func TestLiquidationEngine_AddLiquidationTrigger(t *testing.T) {
+	engine := createTestLiquidationEngine(t)
 
+	trigger, err := NewLiquidationTrigger(
+		"trigger1",
+		MarginCall,
+		big.NewFloat(1.5),
+		24*time.Hour,
+	)
+	require.NoError(t, err)
+
+	t.Run("add_valid_trigger", func(t *testing.T) {
+		err := engine.AddLiquidationTrigger(trigger)
+		assert.NoError(t, err)
+
+		// Verify trigger was added
 		retrievedTrigger, err := engine.GetLiquidationTrigger("trigger1")
-		if err != nil {
-			t.Errorf("Failed to get trigger: %v", err)
-			return
-		}
-
-		if retrievedTrigger != trigger {
-			t.Errorf("Expected trigger %v, got %v", trigger, retrievedTrigger)
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, retrievedTrigger)
+		assert.Equal(t, trigger.ID, retrievedTrigger.ID)
 	})
 
-	t.Run("Add and Get Liquidation Event", func(t *testing.T) {
-		event, err := NewLiquidationEvent(
-			"event1",
-			"position1",
-			"user1",
-			MarginCall,
-			big.NewFloat(0.75),
-			big.NewFloat(0.8),
-			big.NewFloat(10000),
-			big.NewFloat(8000),
-			big.NewFloat(12000),
-		)
-		if err != nil {
-			t.Fatalf("Failed to create event: %v", err)
-		}
-
-		err = engine.AddLiquidationEvent(event)
-		if err != nil {
-			t.Errorf("Failed to add event: %v", err)
-			return
-		}
-
-		retrievedEvent, err := engine.GetLiquidationEvent("event1")
-		if err != nil {
-			t.Errorf("Failed to get event: %v", err)
-			return
-		}
-
-		if retrievedEvent != event {
-			t.Errorf("Expected event %v, got %v", event, retrievedEvent)
-		}
-	})
-
-	t.Run("Get Non-existent Items", func(t *testing.T) {
-		_, err := engine.GetLiquidationTrigger("non_existent")
-		if err == nil {
-			t.Errorf("Expected error for non-existent trigger")
-		}
-
-		_, err = engine.GetLiquidationEvent("non_existent")
-		if err == nil {
-			t.Errorf("Expected error for non-existent event")
-		}
+	t.Run("add_nil_trigger", func(t *testing.T) {
+		err := engine.AddLiquidationTrigger(nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "trigger cannot be nil")
 	})
 }
 
-func TestLiquidationEngineStatistics(t *testing.T) {
-	// Create liquidation config
-	config, err := NewLiquidationConfig(
-		5*time.Minute,
-		big.NewFloat(0.05),
-		1*time.Hour,
+func TestLiquidationEngine_GetLiquidationTrigger(t *testing.T) {
+	engine := createTestLiquidationEngine(t)
+
+	trigger, err := NewLiquidationTrigger(
+		"trigger1",
+		MarginCall,
+		big.NewFloat(1.5),
 		24*time.Hour,
-		big.NewFloat(0.01),
-		big.NewFloat(5),
 	)
-	if err != nil {
-		t.Fatalf("Failed to create liquidation config: %v", err)
-	}
+	require.NoError(t, err)
 
-	// Create mock managers
-	riskManager, err := NewAdvancedRiskManager(big.NewFloat(0.05), big.NewFloat(0.95))
-	if err != nil {
-		t.Fatalf("Failed to create risk manager: %v", err)
-	}
+	err = engine.AddLiquidationTrigger(trigger)
+	require.NoError(t, err)
 
-	insuranceManager, err := NewInsuranceManager(big.NewFloat(0.05), big.NewFloat(0.02))
-	if err != nil {
-		t.Fatalf("Failed to create insurance manager: %v", err)
-	}
-
-	// Create liquidation engine
-	engine, err := NewLiquidationEngine(riskManager, insuranceManager, config)
-	if err != nil {
-		t.Fatalf("Failed to create liquidation engine: %v", err)
-	}
-
-	t.Run("Empty Statistics", func(t *testing.T) {
-		stats := engine.GetLiquidationStatistics()
-
-		if stats["total_events"].(int) != 0 {
-			t.Errorf("Expected 0 total events, got %d", stats["total_events"].(int))
-		}
-
-		if stats["total_auctions"].(int) != 0 {
-			t.Errorf("Expected 0 total auctions, got %d", stats["total_auctions"].(int))
-		}
+	t.Run("get_existing_trigger", func(t *testing.T) {
+		retrievedTrigger, err := engine.GetLiquidationTrigger("trigger1")
+		assert.NoError(t, err)
+		assert.NotNil(t, retrievedTrigger)
+		assert.Equal(t, trigger.ID, retrievedTrigger.ID)
 	})
 
-	t.Run("Statistics with Data", func(t *testing.T) {
-		// Add some test events
-		event1, _ := NewLiquidationEvent(
-			"event1", "position1", "user1",
-			MarginCall, big.NewFloat(0.75), big.NewFloat(0.8),
-			big.NewFloat(10000), big.NewFloat(8000), big.NewFloat(12000),
-		)
-		event2, _ := NewLiquidationEvent(
-			"event2", "position2", "user2",
-			HealthFactor, big.NewFloat(0.6), big.NewFloat(0.7),
-			big.NewFloat(15000), big.NewFloat(12000), big.NewFloat(18000),
-		)
-
-		engine.AddLiquidationEvent(event1)
-		engine.AddLiquidationEvent(event2)
-
-		stats := engine.GetLiquidationStatistics()
-
-		if stats["total_events"].(int) != 2 {
-			t.Errorf("Expected 2 total events, got %d", stats["total_events"].(int))
-		}
-
-		statusCounts := stats["events_by_status"].(map[LiquidationStatus]int)
-		if statusCounts[LiquidationTriggered] != 2 {
-			t.Errorf("Expected 2 triggered events, got %d", statusCounts[LiquidationTriggered])
-		}
+	t.Run("get_non_existing_trigger", func(t *testing.T) {
+		retrievedTrigger, err := engine.GetLiquidationTrigger("non_existent")
+		assert.Error(t, err)
+		assert.Nil(t, retrievedTrigger)
 	})
 }

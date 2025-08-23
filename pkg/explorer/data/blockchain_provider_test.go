@@ -33,18 +33,19 @@ func (ms *MockStorage) Write(key, value []byte) error {
 }
 
 func (ms *MockStorage) Read(key []byte) ([]byte, error) {
-	if string(key) == "latest_block" {
+	keyStr := string(key)
+	if keyStr == "latest_block" {
 		return ms.latestBlock, nil
 	}
 	// Handle height-based keys
-	if string(key) == "blockchain_height" {
+	if keyStr == "blockchain_height" {
 		// Return the stored height if available, otherwise return 0
 		if heightData, exists := ms.blocks["blockchain_height"]; exists {
 			return heightData, nil
 		}
 		return []byte{0, 0, 0, 0, 0, 0, 0, 0}, nil
 	}
-	return ms.blocks[string(key)], nil
+	return ms.blocks[keyStr], nil
 }
 
 func (ms *MockStorage) Delete(key []byte) error {
@@ -67,18 +68,29 @@ func (ms *MockStorage) StoreBlock(b *block.Block) error {
 	blockHash := b.CalculateHash()
 	ms.blocks[string(blockHash)] = data
 
-	// Update blockchain height
+	// Update blockchain height only if this block's height is higher
 	currentHeight := uint64(0)
 	if b.Header != nil {
 		currentHeight = b.Header.Height
 	}
 
-	// Store height as 8 bytes (uint64) in big-endian format
-	heightBytes := make([]byte, 8)
-	for i := 0; i < 8; i++ {
-		heightBytes[i] = byte(currentHeight >> ((7 - i) * 8))
+	// Get existing height
+	existingHeight := uint64(0)
+	if existingHeightData, exists := ms.blocks["blockchain_height"]; exists && len(existingHeightData) >= 8 {
+		for i := 0; i < 8; i++ {
+			existingHeight |= uint64(existingHeightData[i]) << ((7 - i) * 8)
+		}
 	}
-	ms.blocks["blockchain_height"] = heightBytes
+
+	// Only update if current height is higher
+	if currentHeight > existingHeight {
+		// Store height as 8 bytes (uint64) in big-endian format
+		heightBytes := make([]byte, 8)
+		for i := 0; i < 8; i++ {
+			heightBytes[i] = byte(currentHeight >> ((7 - i) * 8))
+		}
+		ms.blocks["blockchain_height"] = heightBytes
+	}
 
 	// Also store block by height for GetBlockByHeight to work
 	heightKey := fmt.Sprintf("height_%d", currentHeight)
@@ -670,4 +682,197 @@ func (m *MockUTXOStore) GetAddressUTXOs(address string) ([]*service.UTXO, error)
 		return []*service.UTXO{}, nil
 	}
 	return utxos, nil
+}
+
+func TestBlockchainProvider_ChainNilChecks(t *testing.T) {
+	storage := NewMockStorage()
+	provider := NewBlockchainProvider(nil, storage, nil) // nil chain
+
+	t.Run("get block with nil chain", func(t *testing.T) {
+		// Test GetBlock when chain is nil
+		block, err := provider.GetBlock([]byte("test_hash"))
+		assert.Error(t, err)
+		assert.Nil(t, block)
+		assert.Contains(t, err.Error(), "block not found")
+	})
+
+	t.Run("get latest block with nil chain", func(t *testing.T) {
+		// Test GetLatestBlock when chain is nil
+		block, err := provider.GetLatestBlock()
+		assert.Error(t, err)
+		assert.Nil(t, block)
+		assert.Contains(t, err.Error(), "no blocks found")
+	})
+
+	t.Run("get block height with nil chain", func(t *testing.T) {
+		// Test GetBlockHeight when chain is nil
+		height := provider.GetBlockHeight()
+		assert.Equal(t, uint64(0), height)
+	})
+
+	t.Run("get address balance with nil chain", func(t *testing.T) {
+		// Test GetAddressBalance when chain is nil
+		balance, err := provider.GetAddressBalance("test_address")
+		assert.Error(t, err)
+		assert.Equal(t, uint64(0), balance)
+		assert.Contains(t, err.Error(), "UTXO store not available")
+	})
+
+	t.Run("get address transactions with nil chain", func(t *testing.T) {
+		// Test GetAddressTransactions when chain is nil
+		transactions, err := provider.GetAddressTransactions("test_address", 10, 0)
+		assert.NoError(t, err)
+		assert.Empty(t, transactions)
+	})
+}
+
+func TestBlockchainProvider_StorageErrors(t *testing.T) {
+	// Create a mock storage that returns errors
+	mockStorage := &MockStorageWithErrors{}
+	provider := NewBlockchainProvider(nil, mockStorage, nil)
+
+	t.Run("get block height with storage error", func(t *testing.T) {
+		// Test GetBlockHeight when storage.Read returns error
+		height := provider.GetBlockHeight()
+		assert.Equal(t, uint64(0), height)
+	})
+
+	t.Run("get block height with nil data", func(t *testing.T) {
+		// Test GetBlockHeight when storage.Read returns nil data
+		mockStorage.SetReadResult(nil, nil) // nil data, no error
+		height := provider.GetBlockHeight()
+		assert.Equal(t, uint64(0), height)
+	})
+
+	t.Run("get block height with short data", func(t *testing.T) {
+		// Test GetBlockHeight when storage.Read returns data shorter than 8 bytes
+		mockStorage.SetReadResult([]byte{1, 2, 3}, nil) // only 3 bytes
+		height := provider.GetBlockHeight()
+		assert.Equal(t, uint64(0), height)
+	})
+}
+
+func TestBlockchainProvider_SimpleEdgeCases(t *testing.T) {
+	storage := NewMockStorage()
+	provider := NewBlockchainProvider(nil, storage, nil)
+
+	t.Run("get address transactions with various limits and offsets", func(t *testing.T) {
+		// Set up a simple blockchain height
+		heightData := make([]byte, 8)
+		heightData[7] = 5 // height = 5
+		storage.Write([]byte("blockchain_height"), heightData)
+
+		// Test with limit <= startHeight (covers line 266 in GetAddressTransactions)
+		transactions, err := provider.GetAddressTransactions("test_address", 5, 0)
+		assert.NoError(t, err)
+		assert.Empty(t, transactions) // No transactions found
+
+		// Test with large offset that makes startHeight = 0 (covers line 260)
+		transactions, err = provider.GetAddressTransactions("test_address", 1, 100)
+		assert.NoError(t, err)
+		assert.Empty(t, transactions)
+	})
+
+	t.Run("transaction involves address", func(t *testing.T) {
+		// Test transactionInvolvesAddress directly
+		tx := &block.Transaction{
+			Inputs: []*block.TxInput{
+				{ScriptSig: []byte("test_address")},
+			},
+			Outputs: []*block.TxOutput{
+				{ScriptPubKey: []byte("other_address")},
+			},
+		}
+
+		// Test with address in input
+		result := provider.transactionInvolvesAddress(tx, "test_address")
+		assert.True(t, result)
+
+		// Test with address in output
+		tx2 := &block.Transaction{
+			Inputs: []*block.TxInput{
+				{ScriptSig: []byte("other_address")},
+			},
+			Outputs: []*block.TxOutput{
+				{ScriptPubKey: []byte("test_address")},
+			},
+		}
+		result = provider.transactionInvolvesAddress(tx2, "test_address")
+		assert.True(t, result)
+
+		// Test with address not found
+		result = provider.transactionInvolvesAddress(tx, "nonexistent_address")
+		assert.False(t, result)
+
+		// Test with nil script data
+		tx3 := &block.Transaction{
+			Inputs: []*block.TxInput{
+				{ScriptSig: nil},
+			},
+			Outputs: []*block.TxOutput{
+				{ScriptPubKey: nil},
+			},
+		}
+		result = provider.transactionInvolvesAddress(tx3, "test_address")
+		assert.False(t, result)
+	})
+
+	t.Run("address balance with utxo store", func(t *testing.T) {
+		// Test GetAddressBalance when UTXO store is available
+		utxoStore := utxo.NewUTXOSet()
+		providerWithUTXO := NewBlockchainProvider(nil, storage, utxoStore)
+
+		// This should NOT trigger the "UTXO store not available" error
+		// Instead it should call GetAddressUTXOs which returns empty by default
+		balance, err := providerWithUTXO.GetAddressBalance("test_address")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(0), balance)
+	})
+}
+
+// MockStorageWithErrors is a mock storage that can be configured to return errors
+type MockStorageWithErrors struct {
+	readResult []byte
+	readError  error
+}
+
+func (m *MockStorageWithErrors) SetReadResult(data []byte, err error) {
+	m.readResult = data
+	m.readError = err
+}
+
+func (m *MockStorageWithErrors) Write(key, value []byte) error {
+	return nil
+}
+
+func (m *MockStorageWithErrors) Read(key []byte) ([]byte, error) {
+	return m.readResult, m.readError
+}
+
+func (m *MockStorageWithErrors) Delete(key []byte) error {
+	return nil
+}
+
+func (m *MockStorageWithErrors) Has(key []byte) (bool, error) {
+	return false, nil
+}
+
+func (m *MockStorageWithErrors) StoreBlock(b *block.Block) error {
+	return nil
+}
+
+func (m *MockStorageWithErrors) GetBlock(hash []byte) (*block.Block, error) {
+	return nil, nil
+}
+
+func (m *MockStorageWithErrors) StoreChainState(state *storage.ChainState) error {
+	return nil
+}
+
+func (m *MockStorageWithErrors) GetChainState() (*storage.ChainState, error) {
+	return nil, nil
+}
+
+func (m *MockStorageWithErrors) Close() error {
+	return nil
 }

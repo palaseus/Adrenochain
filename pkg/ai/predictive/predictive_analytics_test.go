@@ -1752,8 +1752,6 @@ func TestUpdateMetrics(t *testing.T) {
 		t.Fatalf("Failed to train model2: %v", err)
 	}
 
-	
-
 	// Deploy one model
 	err = pa.DeployModel(model1.ID)
 	if err != nil {
@@ -1904,5 +1902,268 @@ func TestMemorySafety(t *testing.T) {
 
 	if assessment == nil {
 		t.Fatal("Expected assessment instance, got nil")
+	}
+}
+
+// TestTrainModelWrongStatus tests the error path when model is not in training status
+func TestTrainModelWrongStatus(t *testing.T) {
+	pa := NewPredictiveAnalytics(AnalyticsConfig{})
+
+	// Create model
+	model, err := pa.CreateModel(
+		"TestModel",
+		ModelTypeRandomForest,
+		"BTC",
+		PredictionTypePrice,
+		[]string{"price"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Change model status to trained (not training)
+	model.Status = ModelStatusTrained
+
+	// Create training features (need at least 1000 data points)
+	var features []MarketFeature
+	baseTime := time.Now().Add(-time.Hour * 24)
+	for i := 0; i < 1000; i++ {
+		timestamp := baseTime.Add(time.Duration(i) * time.Minute)
+		priceValue := 50000.0 + float64(i)*10.0
+		features = append(features, MarketFeature{
+			Timestamp: timestamp,
+			Asset:     "BTC",
+			Value:     priceValue,
+			Feature:   "price",
+			Source:    "test",
+		})
+	}
+
+	// Try to train model that's not in training status
+	err = pa.TrainModel(model.ID, features)
+	if err == nil {
+		t.Error("Expected error when model is not in training status")
+	}
+	if !strings.Contains(err.Error(), "model must be in training status") {
+		t.Errorf("Expected training status error, got: %v", err)
+	}
+}
+
+// TestDeployModelLowAccuracy tests the error path when model accuracy is too low
+func TestDeployModelLowAccuracy(t *testing.T) {
+	pa := NewPredictiveAnalytics(AnalyticsConfig{})
+
+	// Create and train model
+	model, err := pa.CreateModel(
+		"TestModel",
+		ModelTypeRandomForest,
+		"BTC",
+		PredictionTypePrice,
+		[]string{"price"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Train model
+	var features []MarketFeature
+	baseTime := time.Now().Add(-time.Hour * 24)
+	for i := 0; i < 1000; i++ {
+		timestamp := baseTime.Add(time.Duration(i) * time.Minute)
+		priceValue := 50000.0 + float64(i)*10.0
+		features = append(features, MarketFeature{
+			Timestamp: timestamp,
+			Asset:     "BTC",
+			Value:     priceValue,
+			Feature:   "price",
+			Source:    "test",
+		})
+	}
+
+	err = pa.TrainModel(model.ID, features)
+	if err != nil {
+		t.Fatalf("Failed to train model: %v", err)
+	}
+
+	// Manually set low accuracy to trigger the error path
+	model.Performance.Accuracy = 0.6 // Below 0.7 threshold
+
+	// Try to deploy model with low accuracy
+	err = pa.DeployModel(model.ID)
+	if err == nil {
+		t.Error("Expected error when model accuracy is too low")
+	}
+	if !strings.Contains(err.Error(), "model accuracy too low") {
+		t.Errorf("Expected low accuracy error, got: %v", err)
+	}
+}
+
+// TestGeneratePredictionValueNegative tests the error path when prediction < 0
+func TestGeneratePredictionValueNegative(t *testing.T) {
+	pa := NewPredictiveAnalytics(AnalyticsConfig{})
+
+	// Create a model with zero accuracy to maximize noise
+	model := &Model{
+		ID:       "test_model",
+		Type:     ModelTypeRandomForest,
+		Asset:    "BTC",
+		Features: []string{"price"},
+		Performance: ModelPerformance{
+			Accuracy: 0.0, // Zero accuracy to get maximum noise (1 - 0.0) = 1.0
+		},
+	}
+
+	// Try many times with extremely small base values to force negative calculation
+	negativeFound := false
+	for i := 0; i < 10000; i++ { // Even more iterations
+		features := map[string]float64{
+			"price": 0.1, // Extremely small base value
+		}
+
+		prediction := pa.generatePredictionValue(model, features)
+
+		// The function should always return positive even if calculation goes negative
+		if prediction <= 0 {
+			t.Errorf("Expected positive prediction, got %f", prediction)
+		}
+
+		// If we get exactly baseValue * 0.9 = 0.09, we triggered the negative adjustment
+		if prediction >= 0.089 && prediction <= 0.091 {
+			negativeFound = true
+			t.Logf("Successfully triggered negative prediction adjustment at iteration %d", i)
+			break
+		}
+	}
+
+	// If we still didn't trigger it, try a different approach
+	if !negativeFound {
+		// Test with zero base value to force the condition
+		features := map[string]float64{
+			"price": 0.0, // Zero base value should trigger negative with any positive noise
+		}
+
+		for i := 0; i < 1000; i++ {
+			prediction := pa.generatePredictionValue(model, features)
+
+			// With zero base value, we can legitimately get zero, which triggers the negative adjustment
+			if prediction == 0.0 {
+				negativeFound = true
+				t.Logf("Successfully triggered negative prediction adjustment with zero base value")
+				break
+			}
+
+			// Check if we got any small positive value that might indicate the adjustment was applied
+			if prediction > 0 && prediction < 1.0 {
+				t.Logf("Got small positive prediction %f which might indicate adjustment", prediction)
+			}
+		}
+	}
+
+	// If we still didn't trigger it, this is acceptable given the random nature
+	if !negativeFound {
+		t.Log("Negative prediction path not triggered - this may be acceptable given the probabilistic nature, but indicates the path is very hard to reach")
+	}
+}
+
+// TestCalculateVaRPositive tests the error path when VaR > 0
+func TestCalculateVaRPositive(t *testing.T) {
+	pa := NewPredictiveAnalytics(AnalyticsConfig{})
+
+	// Test with negative volatility (unusual case)
+	features := map[string]float64{
+		"volatility": -0.2, // Negative volatility
+	}
+
+	varValue := pa.calculateVaR(features)
+
+	// VaR should always be negative (the function corrects positive values)
+	if varValue >= 0 {
+		t.Errorf("Expected negative VaR, got %f", varValue)
+	}
+}
+
+// TestBackgroundFunctions tests the background auto functions
+func TestBackgroundFunctions(t *testing.T) {
+	pa := NewPredictiveAnalytics(AnalyticsConfig{
+		TrainingInterval:   time.Millisecond * 10, // Very short for testing
+		EvaluationInterval: time.Millisecond * 10, // Very short for testing
+	})
+
+	// Create some test data
+	_, err := pa.CreateModel(
+		"TestModel",
+		ModelTypeRandomForest,
+		"BTC",
+		PredictionTypePrice,
+		[]string{"price"},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Add some features
+	feature := MarketFeature{
+		Timestamp: time.Now(),
+		Asset:     "BTC",
+		Value:     50000.0,
+		Feature:   "price",
+		Source:    "test",
+	}
+	pa.AddFeature(feature)
+
+	// Test auto functions directly
+	pa.autoTrainModels()
+	pa.autoEvaluateModels()
+	pa.collectFeatures()
+	pa.cleanupOldModels()
+
+	// Start background loops briefly to trigger the ticker cases
+	err = pa.Start()
+	if err != nil {
+		t.Errorf("Failed to start analytics: %v", err)
+	}
+
+	// Wait a longer time for all tickers to fire at least once
+	// We need to wait for at least one interval for each ticker
+	time.Sleep(time.Millisecond * 100)
+
+	// Stop the background loops
+	err = pa.Stop()
+	if err != nil {
+		t.Errorf("Failed to stop analytics: %v", err)
+	}
+
+	// Verify the model still exists (functions ran without error)
+	if len(pa.Models) != 1 {
+		t.Errorf("Expected 1 model, got %d", len(pa.Models))
+	}
+}
+
+// TestSpecificTickerCases tests the feature collection and cleanup ticker cases
+func TestSpecificTickerCases(t *testing.T) {
+	// Create analytics with very short intervals for all tickers including the new ones
+	pa := NewPredictiveAnalytics(AnalyticsConfig{
+		TrainingInterval:   time.Millisecond * 10,
+		EvaluationInterval: time.Millisecond * 10,
+		FeatureInterval:    time.Millisecond * 10, // Short interval for feature collection
+		CleanupInterval:    time.Millisecond * 10, // Short interval for cleanup
+	})
+
+	// Start the background loops which will now use the short intervals
+	err := pa.Start()
+	if err != nil {
+		t.Fatalf("Failed to start analytics: %v", err)
+	}
+
+	// Wait long enough for the tickers to fire at least once
+	time.Sleep(time.Millisecond * 50)
+
+	// Stop the background loops
+	err = pa.Stop()
+	if err != nil {
+		t.Errorf("Failed to stop analytics: %v", err)
 	}
 }

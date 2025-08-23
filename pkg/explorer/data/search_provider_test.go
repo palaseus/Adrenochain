@@ -17,6 +17,7 @@ type MockBlockchainDataProvider struct {
 	blocks       map[string]*block.Block
 	transactions map[string]*block.Transaction
 	addresses    map[string]uint64
+	blockHeight  uint64 // Configurable block height for testing
 }
 
 func NewMockBlockchainDataProvider() *MockBlockchainDataProvider {
@@ -74,6 +75,12 @@ func (m *MockBlockchainDataProvider) GetLatestBlock() (*block.Block, error) {
 }
 
 func (m *MockBlockchainDataProvider) GetBlockHeight() uint64 {
+	// If a custom block height is set, use it
+	if m.blockHeight > 0 {
+		return m.blockHeight
+	}
+
+	// Otherwise, calculate from blocks
 	var maxHeight uint64
 	for _, block := range m.blocks {
 		if block.Header != nil && block.Header.Height > maxHeight {
@@ -81,6 +88,10 @@ func (m *MockBlockchainDataProvider) GetBlockHeight() uint64 {
 		}
 	}
 	return maxHeight
+}
+
+func (m *MockBlockchainDataProvider) SetBlockHeight(height uint64) {
+	m.blockHeight = height
 }
 
 func (m *MockBlockchainDataProvider) GetTransaction(hash []byte) (*block.Transaction, error) {
@@ -668,4 +679,32 @@ func TestSimpleSearchProvider_Performance(t *testing.T) {
 	assert.True(t, searchDuration < 100*time.Millisecond, "Search took too long: %v", searchDuration)
 
 	t.Logf("Performance: Searched 1000 blocks in %v", searchDuration)
+}
+
+func TestSimpleSearchProvider_EndHeightEdgeCases(t *testing.T) {
+	provider := NewMockBlockchainDataProvider()
+	searchProvider := NewSimpleSearchProvider(provider)
+
+	t.Run("search blocks with endHeight < 0", func(t *testing.T) {
+		// Create a scenario where endHeight < 0 (large limit compared to offset)
+		// This should trigger the endHeight = 0 assignment on line 165
+
+		// Set a low blockchain height
+		provider.SetBlockHeight(5)
+
+		// Use a large limit (100) with small offset (0), making endHeight = 5 - 100 = -95
+		blocks, err := searchProvider.SearchBlocks("test", 100, 0)
+		assert.NoError(t, err)
+		assert.Empty(t, blocks) // No blocks will match
+	})
+
+	t.Run("search transactions with endHeight < 0", func(t *testing.T) {
+		// Similar test for SearchTransactions
+		provider.SetBlockHeight(3)
+
+		// Use a large limit (50) with small offset (0), making endHeight = 3 - 50 = -47
+		transactions, err := searchProvider.SearchTransactions("test", 50, 0)
+		assert.NoError(t, err)
+		assert.Empty(t, transactions)
+	})
 }

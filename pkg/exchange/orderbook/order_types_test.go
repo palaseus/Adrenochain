@@ -1080,3 +1080,92 @@ func BenchmarkOrderClone(b *testing.B) {
 		order.Clone()
 	}
 }
+
+// TestOrderRejectEdgeCases tests edge cases in order rejection
+func TestOrderRejectEdgeCases(t *testing.T) {
+	t.Run("reject order with different statuses", func(t *testing.T) {
+		// Test rejecting a cancelled order
+		order, err := NewOrder(
+			"order1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1000),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Cancel the order first
+		order.Cancel()
+		assert.Equal(t, OrderStatusCancelled, order.Status)
+
+		// Try to reject a cancelled order
+		err = order.Reject()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already cancelled")
+		assert.Equal(t, OrderStatusCancelled, order.Status) // Status should not change
+	})
+
+	t.Run("reject order successfully", func(t *testing.T) {
+		order, err := NewOrder(
+			"order2", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(50), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Reject the order
+		err = order.Reject()
+		assert.NoError(t, err)
+		assert.Equal(t, OrderStatusRejected, order.Status)
+	})
+}
+
+// TestOrderStatusEdgeCases tests edge cases in order status handling
+func TestOrderStatusEdgeCases(t *testing.T) {
+	t.Run("order status transitions", func(t *testing.T) {
+		order, err := NewOrder(
+			"order1", "user1", "BTC/USDT",
+			OrderSideBuy, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1000),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Test status transitions
+		assert.Equal(t, OrderStatusPending, order.Status)
+
+		// Fill the order
+		order.Fill(big.NewInt(100), big.NewInt(1000))
+		assert.Equal(t, OrderStatusFilled, order.Status)
+
+		// Try to cancel a filled order
+		err = order.Cancel()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already filled")
+		assert.Equal(t, OrderStatusFilled, order.Status) // Status should not change
+
+		// Try to reject a filled order
+		err = order.Reject()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already filled")
+		assert.Equal(t, OrderStatusFilled, order.Status) // Status should not change
+	})
+
+	t.Run("order with zero remaining quantity", func(t *testing.T) {
+		order, err := NewOrder(
+			"order2", "user2", "BTC/USDT",
+			OrderSideSell, OrderTypeLimit,
+			big.NewInt(100), big.NewInt(1100),
+			TimeInForceGTC, nil, nil,
+		)
+		require.NoError(t, err)
+
+		// Fill the order completely
+		order.Fill(big.NewInt(100), big.NewInt(1100))
+		assert.Equal(t, OrderStatusFilled, order.Status)
+		assert.Equal(t, 0, order.RemainingQuantity.Cmp(big.NewInt(0)))
+
+		// Test CanFill with zero remaining quantity
+		assert.False(t, order.CanFill())
+	})
+}

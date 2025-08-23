@@ -203,22 +203,22 @@ func TestProcessBatch(t *testing.T) {
 // TestProcessBatchValidationFailure tests batch validation failure
 func TestProcessBatchValidationFailure(t *testing.T) {
 	rollup := NewZKRollup(ZKRollupConfig{})
-	
+
 	// Create a rollup with a custom batch processor that always fails validation
 	rollup.BatchProcessor = &FailingBatchProcessor{}
-	
+
 	tx := createValidTransaction("tx1")
 	err := rollup.AddTransaction(tx)
 	if err != nil {
 		t.Fatalf("failed to add transaction: %v", err)
 	}
-	
+
 	// Try to process batch - should fail validation
 	_, err = rollup.ProcessBatch()
 	if err == nil {
 		t.Error("expected error when batch validation fails")
 	}
-	
+
 	if !contains(err.Error(), "batch validation failed") {
 		t.Errorf("expected validation error, got: %s", err.Error())
 	}
@@ -227,22 +227,22 @@ func TestProcessBatchValidationFailure(t *testing.T) {
 // TestProcessBatchProcessingFailure tests batch processing failure
 func TestProcessBatchProcessingFailure(t *testing.T) {
 	rollup := NewZKRollup(ZKRollupConfig{})
-	
+
 	// Create a rollup with a custom batch processor that always fails processing
 	rollup.BatchProcessor = &ProcessingFailingBatchProcessor{}
-	
+
 	tx := createValidTransaction("tx1")
 	err := rollup.AddTransaction(tx)
 	if err != nil {
 		t.Fatalf("failed to add transaction: %v", err)
 	}
-	
+
 	// Try to process batch - should fail processing
 	_, err = rollup.ProcessBatch()
 	if err == nil {
 		t.Error("expected error when batch processing fails")
 	}
-	
+
 	if !contains(err.Error(), "batch processing failed") {
 		t.Errorf("expected processing error, got: %s", err.Error())
 	}
@@ -251,22 +251,22 @@ func TestProcessBatchProcessingFailure(t *testing.T) {
 // TestProcessBatchStateUpdateFailure tests state update failure
 func TestProcessBatchStateUpdateFailure(t *testing.T) {
 	rollup := NewZKRollup(ZKRollupConfig{})
-	
+
 	// Create a rollup with a custom state manager that always fails
 	rollup.StateManager = &FailingStateManager{}
-	
+
 	tx := createValidTransaction("tx1")
 	err := rollup.AddTransaction(tx)
 	if err != nil {
 		t.Fatalf("failed to add transaction: %v", err)
 	}
-	
+
 	// Try to process batch - should fail state update
 	_, err = rollup.ProcessBatch()
 	if err == nil {
 		t.Error("expected error when state update fails")
 	}
-	
+
 	if !contains(err.Error(), "state update failed") {
 		t.Errorf("expected state update error, got: %s", err.Error())
 	}
@@ -275,22 +275,22 @@ func TestProcessBatchStateUpdateFailure(t *testing.T) {
 // TestProcessBatchProofVerificationFailure tests proof verification failure
 func TestProcessBatchProofVerificationFailure(t *testing.T) {
 	rollup := NewZKRollup(ZKRollupConfig{})
-	
+
 	// Create a rollup with a custom proof verifier that always fails verification
 	rollup.Verifier = &VerificationFailingProofVerifier{}
-	
+
 	tx := createValidTransaction("tx1")
 	err := rollup.AddTransaction(tx)
 	if err != nil {
 		t.Fatalf("failed to add transaction: %v", err)
 	}
-	
+
 	// Try to process batch - should fail proof verification
 	_, err = rollup.ProcessBatch()
 	if err == nil {
 		t.Error("expected error when proof verification fails")
 	}
-	
+
 	if !contains(err.Error(), "proof verification failed") {
 		t.Errorf("expected proof verification error, got: %s", err.Error())
 	}
@@ -299,7 +299,7 @@ func TestProcessBatchProofVerificationFailure(t *testing.T) {
 // TestUpdateMetricsEdgeCases tests edge cases in updateMetrics
 func TestUpdateMetricsEdgeCases(t *testing.T) {
 	rollup := NewZKRollup(ZKRollupConfig{})
-	
+
 	// Test first batch (should set average time directly)
 	batchResult := &BatchResult{
 		BatchNumber:    1,
@@ -309,17 +309,17 @@ func TestUpdateMetricsEdgeCases(t *testing.T) {
 		ProcessingTime: time.Millisecond * 100,
 		Success:        true,
 	}
-	
+
 	rollup.updateMetrics(batchResult, time.Millisecond*100)
-	
+
 	if rollup.metrics.TotalBatches != 1 {
 		t.Errorf("expected 1 total batch, got %d", rollup.metrics.TotalBatches)
 	}
-	
+
 	if rollup.metrics.AverageBatchTime != time.Millisecond*100 {
 		t.Errorf("expected 100ms average time, got %v", rollup.metrics.AverageBatchTime)
 	}
-	
+
 	// Test second batch (should calculate average)
 	batchResult2 := &BatchResult{
 		BatchNumber:    2,
@@ -329,19 +329,19 @@ func TestUpdateMetricsEdgeCases(t *testing.T) {
 		ProcessingTime: time.Millisecond * 200,
 		Success:        true,
 	}
-	
+
 	rollup.updateMetrics(batchResult2, time.Millisecond*200)
-	
+
 	if rollup.metrics.TotalBatches != 2 {
 		t.Errorf("expected 2 total batches, got %d", rollup.metrics.TotalBatches)
 	}
-	
+
 	// Average should be (100 + 200) / 2 = 150ms
 	expectedAvg := time.Millisecond * 150
 	if rollup.metrics.AverageBatchTime != expectedAvg {
 		t.Errorf("expected %v average time, got %v", expectedAvg, rollup.metrics.AverageBatchTime)
 	}
-	
+
 	if rollup.metrics.TotalGasUsed != 63000 {
 		t.Errorf("expected 63000 total gas, got %d", rollup.metrics.TotalGasUsed)
 	}
@@ -592,7 +592,7 @@ func TestGenerateRollupID(t *testing.T) {
 func TestMockImplementations(t *testing.T) {
 	// Test MockStateManager
 	stateManager := NewMockStateManager()
-	
+
 	key := [32]byte{1, 2, 3, 4}
 	value, err := stateManager.GetState(key)
 	if err != nil {
@@ -614,13 +614,13 @@ func TestMockImplementations(t *testing.T) {
 	if stateRoot != [32]byte{1, 2, 3, 4} {
 		t.Errorf("expected [1,2,3,4], got %v", stateRoot)
 	}
-	
+
 	// Test RollbackState
 	err = stateManager.RollbackState()
 	if err != nil {
 		t.Errorf("mock state manager RollbackState failed: %v", err)
 	}
-	
+
 	// Test GetStateRoot
 	root := stateManager.GetStateRoot()
 	if root != [32]byte{1, 2, 3, 4} {
@@ -629,7 +629,7 @@ func TestMockImplementations(t *testing.T) {
 
 	// Test MockProofVerifier
 	verifier := NewMockProofVerifier()
-	
+
 	proof := &ZKProof{
 		ID:           "test_proof",
 		BatchNumber:  0,
@@ -664,7 +664,7 @@ func TestMockImplementations(t *testing.T) {
 
 	// Test MockBatchProcessor
 	processor := NewMockBatchProcessor()
-	
+
 	transactions := []Transaction{
 		createValidTransaction("tx1"),
 		createValidTransaction("tx2"),
@@ -749,16 +749,16 @@ func TestSecurityLevels(t *testing.T) {
 // Helper function to create valid transactions for testing
 func createValidTransaction(id string) Transaction {
 	return Transaction{
-		ID:        id,
-		From:      [20]byte{1, 2, 3, 4, 5},
-		To:        [20]byte{6, 7, 8, 9, 10},
-		Value:     big.NewInt(1000000),
-		Data:      []byte("test data"),
-		Nonce:     1,
-		Signature: []byte("test signature"),
-		Timestamp: time.Now(),
-		GasLimit:  21000,
-		GasPrice:  big.NewInt(20000000000), // 20 gwei
+		ID:         id,
+		From:       [20]byte{1, 2, 3, 4, 5},
+		To:         [20]byte{6, 7, 8, 9, 10},
+		Value:      big.NewInt(1000000),
+		Data:       []byte("test data"),
+		Nonce:      1,
+		Signature:  []byte("test signature"),
+		Timestamp:  time.Now(),
+		GasLimit:   21000,
+		GasPrice:   big.NewInt(20000000000), // 20 gwei
 		RollupHash: [32]byte{},
 	}
 }
@@ -842,6 +842,35 @@ func (f *FailingStateManager) GetStateRoot() [32]byte {
 	return [32]byte{}
 }
 
+type ErroringProofVerifier struct{}
+
+func (e *ErroringProofVerifier) VerifyProof(proof *ZKProof) (bool, error) {
+	return false, fmt.Errorf("mock proof verification error")
+}
+
+func (e *ErroringProofVerifier) GenerateVerificationKey() ([]byte, error) {
+	return nil, fmt.Errorf("mock key generation error")
+}
+
+func (e *ErroringProofVerifier) ValidatePublicInputs(inputs []*big.Int) bool {
+	return false
+}
+
+type NilBatchResultProcessor struct{}
+
+func (n *NilBatchResultProcessor) ProcessBatch(transactions []Transaction) (*BatchResult, error) {
+	// Return nil batch result to trigger proof generation failure
+	return nil, nil
+}
+
+func (n *NilBatchResultProcessor) ValidateBatch(transactions []Transaction) error {
+	return nil
+}
+
+func (n *NilBatchResultProcessor) OptimizeBatch(transactions []Transaction) ([]Transaction, error) {
+	return transactions, nil
+}
+
 // Helper function to check if string contains substring
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
@@ -850,7 +879,7 @@ func contains(s, substr string) bool {
 // Benchmark tests for performance
 func BenchmarkAddTransaction(b *testing.B) {
 	rollup := NewZKRollup(ZKRollupConfig{MaxBatchSize: 10000})
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		tx := createValidTransaction(fmt.Sprintf("tx%d", i))
@@ -860,13 +889,13 @@ func BenchmarkAddTransaction(b *testing.B) {
 
 func BenchmarkProcessBatch(b *testing.B) {
 	rollup := NewZKRollup(ZKRollupConfig{MaxBatchSize: 1000})
-	
+
 	// Pre-populate with transactions
 	for i := 0; i < 1000; i++ {
 		tx := createValidTransaction(fmt.Sprintf("tx%d", i))
 		rollup.AddTransaction(tx)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		rollup.ProcessBatch()
@@ -876,9 +905,57 @@ func BenchmarkProcessBatch(b *testing.B) {
 func BenchmarkGenerateTransactionHash(b *testing.B) {
 	rollup := NewZKRollup(ZKRollupConfig{})
 	tx := createValidTransaction("benchmark_tx")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		rollup.generateTransactionHash(tx)
+	}
+}
+
+// TestProcessBatchProofGenerationFailure tests proof generation failure
+func TestProcessBatchProofGenerationFailure(t *testing.T) {
+	rollup := NewZKRollup(ZKRollupConfig{})
+
+	// Create a rollup with a custom batch processor that returns nil batch result
+	rollup.BatchProcessor = &NilBatchResultProcessor{}
+
+	tx := createValidTransaction("tx1")
+	err := rollup.AddTransaction(tx)
+	if err != nil {
+		t.Fatalf("failed to add transaction: %v", err)
+	}
+
+	// Try to process batch - should fail proof generation
+	_, err = rollup.ProcessBatch()
+	if err == nil {
+		t.Error("expected error when proof generation fails")
+	}
+
+	if !contains(err.Error(), "proof generation failed") {
+		t.Errorf("expected proof generation error, got: %s", err.Error())
+	}
+}
+
+// TestProcessBatchProofVerificationError tests proof verification error (not failure)
+func TestProcessBatchProofVerificationError(t *testing.T) {
+	rollup := NewZKRollup(ZKRollupConfig{})
+
+	// Create a rollup with a custom proof verifier that returns an error during verification
+	rollup.Verifier = &ErroringProofVerifier{}
+
+	tx := createValidTransaction("tx1")
+	err := rollup.AddTransaction(tx)
+	if err != nil {
+		t.Fatalf("failed to add transaction: %v", err)
+	}
+
+	// Try to process batch - should fail proof verification with error
+	_, err = rollup.ProcessBatch()
+	if err == nil {
+		t.Error("expected error when proof verification returns error")
+	}
+
+	if !contains(err.Error(), "proof verification failed") {
+		t.Errorf("expected proof verification error, got: %s", err.Error())
 	}
 }

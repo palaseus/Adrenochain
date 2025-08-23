@@ -147,3 +147,104 @@ func TestRouteNotFound(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// TestTemplateHelperFunctions tests the template helper functions
+func TestTemplateHelperFunctions(t *testing.T) {
+	t.Run("formatHash", func(t *testing.T) {
+		// Test empty hash
+		result := formatHash([]byte{})
+		assert.Equal(t, "N/A", result)
+
+		// Test short hash
+		result = formatHash([]byte{1, 2, 3, 4})
+		assert.Equal(t, "01020304", result)
+
+		// Test long hash
+		longHash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+		result = formatHash(longHash)
+		assert.Equal(t, "01020304...090a0b0c", result)
+	})
+
+	t.Run("formatAddress", func(t *testing.T) {
+		// Test short address
+		result := formatAddress("123456789")
+		assert.Equal(t, "123456789", result)
+
+		// Test long address
+		longAddr := "1234567890123456789012345678901234567890"
+		result = formatAddress(longAddr)
+		assert.Equal(t, "12345678...7890", result)
+	})
+
+	t.Run("formatAmount", func(t *testing.T) {
+		// Test zero amount
+		result := formatAmount(0)
+		assert.Equal(t, "0", result)
+
+		// Test small amount
+		result = formatAmount(100000000) // 1.00000000
+		assert.Equal(t, "1.00000000", result)
+
+		// Test larger amount
+		result = formatAmount(123456789000000000) // 1234567890.00000000
+		assert.Equal(t, "1234567890.00000000", result)
+	})
+
+	t.Run("formatTime", func(t *testing.T) {
+		// Test int64 timestamp
+		result := formatTime(int64(1640995200))
+		assert.Equal(t, "1640995200", result)
+
+		// Test string time
+		result = formatTime("2022-01-01")
+		assert.Equal(t, "2022-01-01", result)
+
+		// Test other type
+		result = formatTime(123.45)
+		assert.Equal(t, "123.45", result)
+	})
+
+	t.Run("formatDifficulty", func(t *testing.T) {
+		// Test zero difficulty
+		result := formatDifficulty(0)
+		assert.Equal(t, "0", result)
+
+		// Test small difficulty
+		result = formatDifficulty(1500)
+		assert.Equal(t, "1.50 K", result)
+
+		// Test medium difficulty
+		result = formatDifficulty(2500000)
+		assert.Equal(t, "2.50 M", result)
+
+		// Test large difficulty
+		result = formatDifficulty(1500000000)
+		assert.Equal(t, "1.50 G", result)
+
+		// Test very small difficulty
+		result = formatDifficulty(500)
+		assert.Equal(t, "500", result)
+	})
+
+	t.Run("math_operations", func(t *testing.T) {
+		// Test addition
+		assert.Equal(t, 5, add(2, 3))
+		assert.Equal(t, -1, add(-2, 1))
+
+		// Test subtraction
+		assert.Equal(t, 1, sub(3, 2))
+		assert.Equal(t, -5, sub(-2, 3))
+
+		// Test multiplication
+		assert.Equal(t, 6, mul(2, 3))
+		assert.Equal(t, -6, mul(2, -3))
+
+		// Test division
+		assert.Equal(t, 2, div(6, 3))
+		assert.Equal(t, 0, div(6, 0)) // Division by zero returns 0
+
+		// Test modulo
+		assert.Equal(t, 1, mod(7, 3))
+		assert.Equal(t, 0, mod(6, 0)) // Modulo by zero returns 0
+	})
+}

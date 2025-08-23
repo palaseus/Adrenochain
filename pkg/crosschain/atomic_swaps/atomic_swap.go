@@ -149,13 +149,13 @@ func NewAtomicSwap(chainA, chainB, assetA, assetB string, amountA, amountB *big.
 
 // InitiateSwap initiates the atomic swap process
 func (as *AtomicSwap) InitiateSwap() error {
-	as.mu.Lock()
-	defer as.mu.Unlock()
-
 	// Debug: Check if swap object is valid
 	if as == nil {
 		return fmt.Errorf("swap object is nil")
 	}
+
+	as.mu.Lock()
+	defer as.mu.Unlock()
 
 	if as.Status != SwapStatusInitiated {
 		return fmt.Errorf("swap %s cannot be initiated, current status: %d", as.ID, as.Status)

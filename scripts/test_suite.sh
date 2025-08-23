@@ -247,6 +247,29 @@ run_security_tests() {
     echo
 }
 
+# Run live node integration tests
+run_live_node_integration_tests() {
+    echo -e "${BLUE}🚀 Running Live Node Integration Tests...${NC}"
+    
+    echo -e "${GREEN}✅ Testing Live Blockchain Network:${NC}"
+    echo -e "   🌐 Multi-Node P2P Network"
+    echo -e "   ⛏️  Live Mining & Consensus"
+    echo -e "   💰 Real Transaction Processing"
+    echo -e "   🔄 Network Synchronization"
+    echo -e "   📊 Stress Testing & Performance"
+    echo -e "   🧹 Resource Cleanup & Management"
+    
+    # Run the live node integration test
+    echo -e "   🚀 Running Live Node Integration Test..."
+    if go test -v -timeout=4m -run TestLiveNodeIntegration ./pkg/testing/ 2>&1 | tee "$TEST_RESULTS_DIR/live_node_integration.log"; then
+        echo -e "      ✅ Live node integration test passed"
+        return 0
+    else
+        echo -e "      ❌ Live node integration test failed"
+        return 1
+    fi
+}
+
 # Run meta-learning AI tests
 run_meta_learning_tests() {
     echo -e "${BLUE}🧠 Running Meta-Learning AI Tests...${NC}"
@@ -698,7 +721,7 @@ generate_test_summary() {
         echo
         echo "| Metric | Count |"
         echo "|--------|-------|"
-        echo "| **Total Packages** | $TOTAL_PACKAGES |"
+        echo "| **Tested Packages** | $(($PASSED_PACKAGES + $FAILED_PACKAGES)) |"
         echo "| **Passed Packages** | $PASSED_PACKAGES |"
         echo "| **Failed Packages** | $FAILED_PACKAGES |"
         echo "| **Total Tests** | $TOTAL_TESTS |"
@@ -744,8 +767,9 @@ generate_test_summary() {
         echo
         echo "## 🎯 Success Rate"
         echo
-        if [[ ${TOTAL_PACKAGES:-0} -gt 0 ]]; then
-            local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-0}))
+        local tested_packages=$((${PASSED_PACKAGES:-0} + ${FAILED_PACKAGES:-0}))
+        if [[ $tested_packages -gt 0 ]]; then
+            local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / $tested_packages))
             echo "- **Package Success Rate:** ${package_success_rate}%"
         fi
         
@@ -797,18 +821,19 @@ generate_test_summary() {
 print_final_results() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                   🎯 Test Suite Complete 🎯                 ║"
+    echo "║                   🎯 Test Suite Complete 🎯                  ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
     echo -e "${BLUE}📊 Final Results Summary:${NC}"
-    echo -e "   📦 Packages: ${GREEN}${PASSED_PACKAGES:-0} passed${NC}, ${RED}${FAILED_PACKAGES:-0} failed${NC}, ${YELLOW}$((${TOTAL_PACKAGES:-0} - ${PASSED_PACKAGES:-0} - ${FAILED_PACKAGES:-0})) skipped${NC} (Total: ${TOTAL_PACKAGES:-0})"
+    echo -e "   📦 Packages: ${GREEN}${PASSED_PACKAGES:-0} passed${NC}, ${RED}${FAILED_PACKAGES:-0} failed${NC} (Total: $((${PASSED_PACKAGES:-0} + ${FAILED_PACKAGES:-0})))"
     echo -e "   🧪 Tests: ${GREEN}${PASSED_TESTS:-0} passed${NC}, ${RED}${FAILED_TESTS:-0} failed${NC}, ${YELLOW}${SKIPPED_TESTS:-0} skipped${NC} (Total: ${TOTAL_TESTS:-0} from successful packages)"
     echo -e "   🧪 Fuzz Tests: ${GREEN}$FUZZ_TESTS_COUNT${NC}, Benchmark Tests: ${GREEN}$BENCHMARK_TESTS_COUNT${NC}"
     echo -e "   🔐 Security: ${GREEN}ZK Proofs & Quantum-Resistant Crypto${NC} ✅"
     
-    if [[ ${TOTAL_PACKAGES:-0} -gt 0 ]]; then
-        local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / ${TOTAL_PACKAGES:-0}))
+    local tested_packages=$((${PASSED_PACKAGES:-0} + ${FAILED_PACKAGES:-0}))
+    if [[ $tested_packages -gt 0 ]]; then
+        local package_success_rate=$(((${PASSED_PACKAGES:-0} * 100) / $tested_packages))
         echo -e "   📈 Package Success Rate: ${GREEN}${package_success_rate}%${NC}"
     fi
     
@@ -886,6 +911,7 @@ main() {
     run_fuzz_tests
     run_benchmark_tests
     run_security_tests # Added security tests
+    run_live_node_integration_tests # Added live node integration tests
     
     # Run comprehensive testing suites
     echo -e "${BLUE}🚀 Running Comprehensive Testing Suites...${NC}"
@@ -926,6 +952,7 @@ case "${1:-}" in
         echo "  --meta-learning Run only meta-learning AI tests"
         echo "  --comprehensive-benchmarks Run comprehensive performance benchmarking"
         echo "  --comprehensive-security  Run comprehensive security validation"
+        echo "  --live-nodes             Run only live node integration tests"
         echo "  --verbose      Enable verbose output"
         echo "  --timeout N    Set test timeout (default: 300s)"
         echo
@@ -935,6 +962,7 @@ case "${1:-}" in
         echo "  $0 --meta-learning   # Run only meta-learning AI tests"
         echo "  $0 --comprehensive-benchmarks # Run only comprehensive performance benchmarking"
         echo "  $0 --comprehensive-security   # Run only comprehensive security validation"
+        echo "  $0 --live-nodes      # Run only live node integration tests"
         echo "  $0 --no-race         # Run tests without race detection"
         echo "  $0 --timeout 600s    # Run tests with 10 minute timeout"
         echo "  $0 --no-coverage     # Run tests without coverage"
@@ -978,6 +1006,11 @@ case "${1:-}" in
     --comprehensive-security)
         echo -e "${BLUE}🔒 Running Comprehensive Security Validation Only...${NC}"
         run_comprehensive_security_validation
+        exit 0
+        ;;
+    --live-nodes)
+        echo -e "${BLUE}🚀 Running Live Node Integration Tests Only...${NC}"
+        run_live_node_integration_tests
         exit 0
         ;;
     --verbose)

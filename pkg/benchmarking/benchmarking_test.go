@@ -151,15 +151,17 @@ func TestMainBenchmarkOrchestrator_Concurrency(t *testing.T) {
 				Metadata:        map[string]interface{}{"goroutine_id": id},
 			}
 
-			orchestrator.AllResults = append(orchestrator.AllResults, result)
+			// Use the thread-safe method instead of direct append
+			orchestrator.AddResult(result)
 		}(i)
 	}
 
 	wg.Wait()
 
-	// Verify all results were added
-	if len(orchestrator.AllResults) != numGoroutines {
-		t.Errorf("Expected %d results, got %d", numGoroutines, len(orchestrator.AllResults))
+	// Verify all results were added using the thread-safe method
+	resultCount := orchestrator.GetResultCount()
+	if resultCount != numGoroutines {
+		t.Errorf("Expected %d results, got %d", numGoroutines, resultCount)
 	}
 }
 

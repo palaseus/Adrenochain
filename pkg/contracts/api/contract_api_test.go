@@ -1004,10 +1004,10 @@ func TestCallContractEdgeCases(t *testing.T) {
 	// Test with valid contract address (first register the contract)
 	contractAddr := engine.Address{0x01}
 	api.registerContract(ContractTypeERC20, contractAddr, []interface{}{})
-	
+
 	method := "transfer"
 	args := []interface{}{engine.Address{0x02}, big.NewInt(100)}
-	
+
 	result, err := api.CallContract(context.Background(), contractAddr, method, args, 100000, big.NewInt(20000000000))
 	if err != nil {
 		t.Errorf("CallContract should succeed with valid input: %v", err)
@@ -1035,5 +1035,59 @@ func TestCallContractEdgeCases(t *testing.T) {
 	_, err = api.CallContract(context.Background(), contractAddr, "", args, 100000, big.NewInt(20000000000))
 	if err != ErrInvalidMethod {
 		t.Errorf("Expected ErrInvalidMethod, got: %v", err)
+	}
+
+	// Test with zero gas limit to trigger default gas limit path
+	result, err = api.CallContract(context.Background(), contractAddr, method, args, 0, big.NewInt(20000000000))
+	if err != nil {
+		t.Errorf("CallContract should succeed with zero gas limit: %v", err)
+	}
+	if result.GasUsed != 1000000 { // Default gas limit
+		t.Errorf("Expected default gas limit 1000000, got %d", result.GasUsed)
+	}
+}
+
+// TestDeployContractRegisterFailure tests registerContract failure path
+func TestDeployContractRegisterFailure(t *testing.T) {
+	config := APIConfig{
+		MaxGasLimit:     1000000,
+		MaxContractSize: 1000,
+	}
+	mockEngine := &MockContractEngine{}
+	api := NewContractAPI(mockEngine, config)
+
+	// Test registerContract directly with empty address to trigger the error path
+	err := api.registerContract(ContractTypeERC20, engine.Address{}, []interface{}{})
+	if err != ErrInvalidContractAddress {
+		t.Errorf("Expected ErrInvalidContractAddress, got %v", err)
+	}
+
+	// Test registerContract with valid address (should succeed)
+	validAddr := engine.Address{0x01}
+	err = api.registerContract(ContractTypeERC20, validAddr, []interface{}{})
+	if err != nil {
+		t.Errorf("Expected no error with valid address, got %v", err)
+	}
+}
+
+// TestDeployContractAddressGenerationFailure tests the error path when generateContractAddress returns empty address
+func TestDeployContractAddressGenerationFailure(t *testing.T) {
+	config := APIConfig{
+		MaxGasLimit:     1000000,
+		MaxContractSize: 1000,
+	}
+	mockEngine := &MockContractEngine{}
+	api := NewContractAPI(mockEngine, config)
+
+	// Set TotalContracts to 255 to trigger the overflow condition in generateContractAddress
+	api.TotalContracts = 255
+
+	bytecode := []byte{0x60, 0x00, 0x52}
+	args := []interface{}{}
+
+	// This should fail because generateContractAddress will return empty address
+	_, err := api.DeployContract(context.Background(), ContractTypeERC20, bytecode, args, 100000, big.NewInt(20000000000))
+	if err != ErrInvalidContractAddress {
+		t.Errorf("Expected ErrInvalidContractAddress when TotalContracts >= 255, got %v", err)
 	}
 }

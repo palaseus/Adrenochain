@@ -417,6 +417,11 @@ func (api *ContractAPI) registerContract(
 	contractAddress engine.Address,
 	constructorArgs []interface{},
 ) error {
+	// Validate contract address
+	if contractAddress == (engine.Address{}) {
+		return ErrInvalidContractAddress
+	}
+
 	// This would integrate with the actual contract registry
 	// For now, we just track the deployment and register in appropriate maps
 
@@ -443,6 +448,13 @@ func (api *ContractAPI) generateContractAddress() engine.Address {
 	// In a real implementation, this would generate a proper address
 	// For now, return a unique placeholder address
 	var addr engine.Address
+
+	// Check for overflow/invalid state
+	if api.TotalContracts >= 255 {
+		// Return empty address to trigger error in registerContract
+		return engine.Address{}
+	}
+
 	addr[0] = byte(api.TotalContracts + 1) // Make it unique
 	return addr
 }

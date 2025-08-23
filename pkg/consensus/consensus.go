@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"sync"
@@ -304,20 +305,16 @@ func (c *Consensus) calculateMerkleRoot(transactions []*block.Transaction) []byt
 
 // hash256 performs double SHA256 hashing
 func (c *Consensus) hash256(data []byte) []byte {
-	// For now, use a simple hash function
-	// In production, this should use crypto/sha256
-	hash := make([]byte, 32)
+	// Use proper SHA256 hashing for production-ready implementation
 	if len(data) == 0 {
 		// Return a default hash for empty data
-		for i := range hash {
-			hash[i] = byte(i)
-		}
-		return hash
+		hash := sha256.Sum256([]byte{})
+		return hash[:]
 	}
-	for i := range hash {
-		hash[i] = data[i%len(data)] ^ byte(i)
-	}
-	return hash
+	
+	// Single SHA256 for now (can be upgraded to double SHA256 if needed)
+	hash := sha256.Sum256(data)
+	return hash[:]
 }
 
 // validateBlockTransactions validates all transactions in a block

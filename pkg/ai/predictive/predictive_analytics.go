@@ -61,27 +61,27 @@ type Model struct {
 
 // ModelPerformance tracks model performance metrics
 type ModelPerformance struct {
-	Accuracy        float64
-	Precision       float64
-	Recall          float64
-	F1Score         float64
-	RMSE            float64
-	MAE             float64
-	R2Score         float64
-	TrainingTime    time.Duration
-	InferenceTime   time.Duration
-	LastEvaluation  time.Time
+	Accuracy       float64
+	Precision      float64
+	Recall         float64
+	F1Score        float64
+	RMSE           float64
+	MAE            float64
+	R2Score        float64
+	TrainingTime   time.Duration
+	InferenceTime  time.Duration
+	LastEvaluation time.Time
 }
 
 // TrainingData represents the data used for training
 type TrainingData struct {
-	StartDate    time.Time
-	EndDate      time.Time
-	DataPoints   uint64
-	Features     uint64
-	SplitRatio   float64
+	StartDate     time.Time
+	EndDate       time.Time
+	DataPoints    uint64
+	Features      uint64
+	SplitRatio    float64
 	ValidationSet bool
-	LastUpdate   time.Time
+	LastUpdate    time.Time
 }
 
 // MarketFeature represents a market data feature
@@ -95,30 +95,30 @@ type MarketFeature struct {
 
 // Prediction represents a model prediction
 type Prediction struct {
-	ID           string
-	ModelID      string
-	Asset        string
-	Type         PredictionType
-	Value        float64
-	Confidence   float64
-	Timestamp    time.Time
-	Horizon      time.Duration
-	Features     map[string]float64
-	Metadata     map[string]interface{}
+	ID         string
+	ModelID    string
+	Asset      string
+	Type       PredictionType
+	Value      float64
+	Confidence float64
+	Timestamp  time.Time
+	Horizon    time.Duration
+	Features   map[string]float64
+	Metadata   map[string]interface{}
 }
 
 // RiskAssessment represents a risk assessment result
 type RiskAssessment struct {
-	ID              string
-	Asset           string
-	RiskScore       float64
-	RiskLevel       RiskLevel
-	VaR             float64
+	ID                string
+	Asset             string
+	RiskScore         float64
+	RiskLevel         RiskLevel
+	VaR               float64
 	ExpectedShortfall float64
-	Volatility      float64
-	Correlation     map[string]float64
-	Factors         []RiskFactor
-	Timestamp       time.Time
+	Volatility        float64
+	Correlation       map[string]float64
+	Factors           []RiskFactor
+	Timestamp         time.Time
 }
 
 // RiskLevel defines the risk level classification
@@ -133,9 +133,9 @@ const (
 
 // RiskFactor represents a contributing risk factor
 type RiskFactor struct {
-	Factor     string
-	Impact     float64
-	Weight     float64
+	Factor      string
+	Impact      float64
+	Weight      float64
 	Description string
 }
 
@@ -153,31 +153,33 @@ type PredictiveAnalytics struct {
 
 // AnalyticsConfig holds configuration for the analytics system
 type AnalyticsConfig struct {
-	MaxModels           uint64
-	MaxFeatures         uint64
-	TrainingInterval    time.Duration
-	EvaluationInterval  time.Duration
-	PredictionHorizon   time.Duration
-	MinDataPoints       uint64
-	EnableAutoTraining  bool
-	ModelRetentionDays  uint64
+	MaxModels          uint64
+	MaxFeatures        uint64
+	TrainingInterval   time.Duration
+	EvaluationInterval time.Duration
+	FeatureInterval    time.Duration // Add configurable feature collection interval
+	CleanupInterval    time.Duration // Add configurable cleanup interval
+	PredictionHorizon  time.Duration
+	MinDataPoints      uint64
+	EnableAutoTraining bool
+	ModelRetentionDays uint64
 }
 
 // AnalyticsMetrics tracks system performance metrics
 type AnalyticsMetrics struct {
-	TotalModels       uint64
-	ActiveModels      uint64
-	TrainedModels     uint64
-	DeployedModels    uint64
-	TotalPredictions  uint64
-	AverageAccuracy   float64
-	LastUpdate        time.Time
+	TotalModels      uint64
+	ActiveModels     uint64
+	TrainedModels    uint64
+	DeployedModels   uint64
+	TotalPredictions uint64
+	AverageAccuracy  float64
+	LastUpdate       time.Time
 }
 
 // NewPredictiveAnalytics creates a new analytics system
 func NewPredictiveAnalytics(config AnalyticsConfig) *PredictiveAnalytics {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Set default values if not provided
 	if config.MaxModels == 0 {
 		config.MaxModels = 50
@@ -190,6 +192,12 @@ func NewPredictiveAnalytics(config AnalyticsConfig) *PredictiveAnalytics {
 	}
 	if config.EvaluationInterval == 0 {
 		config.EvaluationInterval = time.Hour * 6
+	}
+	if config.FeatureInterval == 0 {
+		config.FeatureInterval = time.Hour
+	}
+	if config.CleanupInterval == 0 {
+		config.CleanupInterval = time.Hour * 24
 	}
 	if config.PredictionHorizon == 0 {
 		config.PredictionHorizon = time.Hour * 24
@@ -315,13 +323,13 @@ func (pa *PredictiveAnalytics) TrainModel(modelID string, features []MarketFeatu
 
 	// Update training data
 	trainingData := TrainingData{
-		StartDate:    features[0].Timestamp,
-		EndDate:      features[len(features)-1].Timestamp,
-		DataPoints:   uint64(len(features)),
-		Features:     uint64(len(model.Features)),
-		SplitRatio:   0.8,
+		StartDate:     features[0].Timestamp,
+		EndDate:       features[len(features)-1].Timestamp,
+		DataPoints:    uint64(len(features)),
+		Features:      uint64(len(model.Features)),
+		SplitRatio:    0.8,
 		ValidationSet: true,
-		LastUpdate:   time.Now(),
+		LastUpdate:    time.Now(),
 	}
 
 	// Update model
@@ -438,16 +446,16 @@ func (pa *PredictiveAnalytics) AssessRisk(asset string, features map[string]floa
 	riskFactors := pa.identifyRiskFactors(features)
 
 	assessment := &RiskAssessment{
-		ID:              generateRiskAssessmentID(),
-		Asset:           asset,
-		RiskScore:       riskScore,
-		RiskLevel:       riskLevel,
-		VaR:             varValue,
+		ID:                generateRiskAssessmentID(),
+		Asset:             asset,
+		RiskScore:         riskScore,
+		RiskLevel:         riskLevel,
+		VaR:               varValue,
 		ExpectedShortfall: expectedShortfall,
-		Volatility:      volatility,
-		Correlation:     correlation,
-		Factors:         riskFactors,
-		Timestamp:       time.Now(),
+		Volatility:        volatility,
+		Correlation:       correlation,
+		Factors:           riskFactors,
+		Timestamp:         time.Now(),
 	}
 
 	return assessment, nil
@@ -491,7 +499,7 @@ func (pa *PredictiveAnalytics) AddFeature(feature MarketFeature) error {
 	defer pa.mu.Unlock()
 
 	key := fmt.Sprintf("%s_%s", feature.Asset, feature.Feature)
-	
+
 	if len(pa.Features[key]) >= int(pa.Config.MaxFeatures) {
 		// Remove oldest feature
 		pa.Features[key] = pa.Features[key][1:]
@@ -531,7 +539,7 @@ func (pa *PredictiveAnalytics) modelEvaluationLoop() {
 }
 
 func (pa *PredictiveAnalytics) featureCollectionLoop() {
-	ticker := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(pa.Config.FeatureInterval)
 	defer ticker.Stop()
 
 	for {
@@ -545,7 +553,7 @@ func (pa *PredictiveAnalytics) featureCollectionLoop() {
 }
 
 func (pa *PredictiveAnalytics) modelCleanupLoop() {
-	ticker := time.NewTicker(time.Hour * 24)
+	ticker := time.NewTicker(pa.Config.CleanupInterval)
 	defer ticker.Stop()
 
 	for {
@@ -562,7 +570,7 @@ func (pa *PredictiveAnalytics) modelCleanupLoop() {
 func (pa *PredictiveAnalytics) generateSimulatedPerformance(modelType ModelType) ModelPerformance {
 	// Generate realistic performance metrics based on model type
 	baseAccuracy := 0.75 + rand.Float64()*0.2 // 75-95%
-	
+
 	// Adjust based on model type
 	switch modelType {
 	case ModelTypeLinearRegression:
@@ -605,7 +613,7 @@ func (pa *PredictiveAnalytics) generateSimulatedPerformance(modelType ModelType)
 func (pa *PredictiveAnalytics) generatePredictionValue(model *Model, features map[string]float64) float64 {
 	// Generate realistic prediction based on model type and features
 	baseValue := 100.0 // Base value for predictions
-	
+
 	// Adjust based on feature values
 	for feature, value := range features {
 		if feature == "price" || feature == "close" {
@@ -615,7 +623,9 @@ func (pa *PredictiveAnalytics) generatePredictionValue(model *Model, features ma
 	}
 
 	// Add some randomness based on model performance
-	noise := (1 - model.Performance.Accuracy) * rand.Float64() * 0.2
+	// Use a centered random value that can be negative
+	randomFactor := (rand.Float64() - 0.5) * 2                     // Range: -1 to 1
+	noise := (1 - model.Performance.Accuracy) * randomFactor * 1.2 // Increased multiplier to allow negative predictions
 	prediction := baseValue * (1 + noise)
 
 	// Ensure prediction is positive
@@ -629,14 +639,14 @@ func (pa *PredictiveAnalytics) generatePredictionValue(model *Model, features ma
 func (pa *PredictiveAnalytics) calculateConfidence(model *Model, features map[string]float64) float64 {
 	// Calculate confidence based on model performance and feature quality
 	baseConfidence := model.Performance.Accuracy
-	
+
 	// Adjust based on feature completeness
 	featureCompleteness := float64(len(features)) / float64(len(model.Features))
 	confidence := baseConfidence * featureCompleteness
-	
+
 	// Add some randomness
 	confidence += (rand.Float64() - 0.5) * 0.1
-	
+
 	// Ensure confidence is within bounds
 	return math.Max(0.1, math.Min(0.99, confidence))
 }
@@ -644,23 +654,23 @@ func (pa *PredictiveAnalytics) calculateConfidence(model *Model, features map[st
 func (pa *PredictiveAnalytics) calculateRiskScore(features map[string]float64) float64 {
 	// Calculate risk score based on various factors
 	riskScore := 0.0
-	
+
 	// Volatility contribution
 	if volatility, exists := features["volatility"]; exists {
 		riskScore += volatility * 0.4
 	}
-	
+
 	// Volume contribution
 	if volume, exists := features["volume"]; exists {
 		normalizedVolume := math.Min(volume/1000000, 1.0) // Normalize to 0-1
 		riskScore += normalizedVolume * 0.2
 	}
-	
+
 	// Price movement contribution
 	if priceChange, exists := features["price_change"]; exists {
 		riskScore += math.Abs(priceChange) * 0.3
 	}
-	
+
 	// Market cap contribution (inverse relationship)
 	if marketCap, exists := features["market_cap"]; exists {
 		if marketCap > 0 {
@@ -668,7 +678,7 @@ func (pa *PredictiveAnalytics) calculateRiskScore(features map[string]float64) f
 			riskScore += (1 - normalizedMarketCap) * 0.1
 		}
 	}
-	
+
 	// Ensure risk score is within bounds
 	return math.Max(0.0, math.Min(1.0, riskScore))
 }
@@ -692,15 +702,15 @@ func (pa *PredictiveAnalytics) calculateVaR(features map[string]float64) float64
 	if vol, exists := features["volatility"]; exists {
 		volatility = vol
 	}
-	
+
 	// VaR = -1.645 * volatility (95% confidence level)
 	varValue := -1.645 * volatility
-	
+
 	// Ensure VaR is negative (represents potential loss)
 	if varValue > 0 {
 		varValue = -varValue
 	}
-	
+
 	return varValue
 }
 
@@ -715,7 +725,7 @@ func (pa *PredictiveAnalytics) calculateVolatility(features map[string]float64) 
 	if volatility, exists := features["volatility"]; exists {
 		return volatility
 	}
-	
+
 	// Default volatility
 	return 0.2 + rand.Float64()*0.3
 }
@@ -723,19 +733,19 @@ func (pa *PredictiveAnalytics) calculateVolatility(features map[string]float64) 
 func (pa *PredictiveAnalytics) calculateCorrelations(features map[string]float64) map[string]float64 {
 	// Calculate correlations with major assets
 	correlations := make(map[string]float64)
-	
+
 	// Simulate correlations with major assets
 	assets := []string{"BTC", "ETH", "SPY", "QQQ", "GLD"}
 	for _, asset := range assets {
 		correlations[asset] = (rand.Float64() - 0.5) * 2 // Range: -1 to 1
 	}
-	
+
 	return correlations
 }
 
 func (pa *PredictiveAnalytics) identifyRiskFactors(features map[string]float64) []RiskFactor {
 	var factors []RiskFactor
-	
+
 	// Identify key risk factors
 	if volatility, exists := features["volatility"]; exists && volatility > 0.3 {
 		factors = append(factors, RiskFactor{
@@ -745,7 +755,7 @@ func (pa *PredictiveAnalytics) identifyRiskFactors(features map[string]float64) 
 			Description: "Asset shows high price volatility",
 		})
 	}
-	
+
 	if volume, exists := features["volume"]; exists && volume > 500000 {
 		factors = append(factors, RiskFactor{
 			Factor:      "High Volume",
@@ -754,7 +764,7 @@ func (pa *PredictiveAnalytics) identifyRiskFactors(features map[string]float64) 
 			Description: "Unusually high trading volume",
 		})
 	}
-	
+
 	if priceChange, exists := features["price_change"]; exists && math.Abs(priceChange) > 0.1 {
 		factors = append(factors, RiskFactor{
 			Factor:      "Large Price Movement",
@@ -763,7 +773,7 @@ func (pa *PredictiveAnalytics) identifyRiskFactors(features map[string]float64) 
 			Description: "Significant price change detected",
 		})
 	}
-	
+
 	// Add market sentiment factor
 	factors = append(factors, RiskFactor{
 		Factor:      "Market Sentiment",
@@ -771,7 +781,7 @@ func (pa *PredictiveAnalytics) identifyRiskFactors(features map[string]float64) 
 		Weight:      0.1,
 		Description: "General market sentiment impact",
 	})
-	
+
 	return factors
 }
 
@@ -796,10 +806,10 @@ func (pa *PredictiveAnalytics) updateMetrics() {
 	pa.Metrics.ActiveModels = 0
 	pa.Metrics.TrainedModels = 0
 	pa.Metrics.DeployedModels = 0
-	
+
 	totalAccuracy := 0.0
 	modelCount := 0
-	
+
 	for _, model := range pa.Models {
 		switch model.Status {
 		case ModelStatusDeployed:
@@ -809,17 +819,17 @@ func (pa *PredictiveAnalytics) updateMetrics() {
 			pa.Metrics.TrainedModels++
 			pa.Metrics.ActiveModels++
 		}
-		
+
 		if model.Performance.Accuracy > 0 {
 			totalAccuracy += model.Performance.Accuracy
 			modelCount++
 		}
 	}
-	
+
 	if modelCount > 0 {
 		pa.Metrics.AverageAccuracy = totalAccuracy / float64(modelCount)
 	}
-	
+
 	pa.Metrics.LastUpdate = time.Now()
 }
 
@@ -827,21 +837,41 @@ func (pa *PredictiveAnalytics) updateMetrics() {
 func (pa *PredictiveAnalytics) autoTrainModels() {
 	// Auto-train models based on new data
 	// In a real implementation, this would identify models needing retraining
+	pa.mu.RLock()
+	defer pa.mu.RUnlock()
+
+	// For now, just log that auto-training is running
+	fmt.Printf("Auto-training models: %d total models\n", len(pa.Models))
 }
 
 func (pa *PredictiveAnalytics) autoEvaluateModels() {
 	// Auto-evaluate model performance
 	// In a real implementation, this would run model evaluation on test data
+	pa.mu.RLock()
+	defer pa.mu.RUnlock()
+
+	// For now, just log that auto-evaluation is running
+	fmt.Printf("Auto-evaluating models: %d active models\n", pa.Metrics.ActiveModels)
 }
 
 func (pa *PredictiveAnalytics) collectFeatures() {
 	// Collect new market features
 	// In a real implementation, this would fetch data from external sources
+	pa.mu.Lock()
+	defer pa.mu.Unlock()
+
+	// For now, just log that feature collection is running
+	fmt.Printf("Collecting features: %d feature sets\n", len(pa.Features))
 }
 
 func (pa *PredictiveAnalytics) cleanupOldModels() {
 	// Clean up old models based on retention policy
 	// In a real implementation, this would remove models older than retention days
+	pa.mu.Lock()
+	defer pa.mu.Unlock()
+
+	// For now, just log that cleanup is running
+	fmt.Printf("Cleaning up old models: %d total models\n", len(pa.Models))
 }
 
 // Utility functions

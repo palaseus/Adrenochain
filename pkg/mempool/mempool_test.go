@@ -742,3 +742,236 @@ func TestConcurrentSecurityValidation(t *testing.T) {
 	// Verify all transactions were processed safely
 	assert.Equal(t, 20, mp.GetTransactionCount())
 }
+
+// TestDefaultMempoolConfig tests the DefaultMempoolConfig function
+func TestDefaultMempoolConfig(t *testing.T) {
+	config := DefaultMempoolConfig()
+
+	// Verify default values
+	assert.Equal(t, uint64(100000), config.MaxSize)
+	assert.Equal(t, uint64(1), config.MinFeeRate)
+	assert.Equal(t, uint64(100000), config.MaxTxSize)
+	assert.False(t, config.TestMode)
+}
+
+// TestGetTransactionsForBlock tests the GetTransactionsForBlock method
+func TestGetTransactionsForBlock(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	// Debug: Check if test mode is enabled
+	t.Logf("Test mode enabled: %v", mempool.testMode)
+	t.Logf("UTXO set is nil: %v", mempool.utxoSet == nil)
+
+	// Add some transactions
+	tx1 := createBasicValidTransaction("tx1", 1000)
+	tx2 := createBasicValidTransaction("tx2", 2000)
+	tx3 := createBasicValidTransaction("tx3", 3000)
+
+	// Debug: Check transaction structure
+	t.Logf("tx1: Hash=%x, Fee=%d, Inputs=%d, Outputs=%d", tx1.Hash, tx1.Fee, len(tx1.Inputs), len(tx1.Outputs))
+	t.Logf("tx2: Hash=%x, Fee=%d, Inputs=%d, Outputs=%d", tx2.Hash, tx2.Fee, len(tx2.Inputs), len(tx2.Outputs))
+	t.Logf("tx3: Hash=%x, Fee=%d, Inputs=%d, Outputs=%d", tx3.Hash, tx3.Fee, len(tx3.Inputs), len(tx3.Outputs))
+
+	// Debug: Check if transactions are valid
+	if err := tx1.IsValid(); err != nil {
+		t.Logf("tx1 validation error: %v", err)
+	}
+	if err := tx2.IsValid(); err != nil {
+		t.Logf("tx2 validation error: %v", err)
+	}
+	if err := tx3.IsValid(); err != nil {
+		t.Logf("tx3 validation error: %v", err)
+	}
+
+	// Debug: Try to add transactions and see what error we get
+	err1 := mempool.AddTransaction(tx1)
+	if err1 != nil {
+		t.Logf("Failed to add tx1: %v", err1)
+	}
+
+	err2 := mempool.AddTransaction(tx2)
+	if err2 != nil {
+		t.Logf("Failed to add tx2: %v", err2)
+	}
+
+	err3 := mempool.AddTransaction(tx3)
+	if err3 != nil {
+		t.Logf("Failed to add tx3: %v", err3)
+	}
+
+	// Verify transactions were added
+	assert.Equal(t, 3, mempool.GetTransactionCount())
+
+	// Test getting transactions for block with size limit
+	// Use a size limit that can accommodate multiple transactions
+	transactions := mempool.GetTransactionsForBlock(10000) // 10KB limit
+
+	// Should return transactions ordered by fee rate (highest first)
+	assert.GreaterOrEqual(t, len(transactions), 1)
+
+	// If we have multiple transactions, verify they're ordered by fee rate
+	if len(transactions) >= 2 {
+		// The first transaction should have higher fee rate than the second
+		// Since tx3 has fee 3000, tx2 has fee 2000, tx1 has fee 1000
+		// and they're ordered by fee rate (highest first)
+		assert.Equal(t, tx3.Hash, transactions[0].Hash)
+	}
+}
+
+// TestString tests the String method
+func TestString(t *testing.T) {
+	mempool := NewMempool(DefaultMempoolConfig())
+
+	// Test empty mempool
+	str := mempool.String()
+	assert.Contains(t, str, "Mempool")
+	assert.Contains(t, str, "0")
+
+	// Add transaction and test again
+	tx := createBasicValidTransaction("tx1", 1000)
+	mempool.AddTransaction(tx)
+
+	str = mempool.String()
+	assert.Contains(t, str, "1")
+}
+
+// TestPopMethods tests the Pop methods for different priority queues
+func TestPopMethods(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	// Test fee-based priority queue Pop
+	tx1 := createBasicValidTransaction("tx1", 1000)
+	tx2 := createBasicValidTransaction("tx2", 2000)
+
+	mempool.AddTransaction(tx1)
+	mempool.AddTransaction(tx2)
+
+	// Test that transactions were added correctly
+	assert.Equal(t, 2, mempool.GetTransactionCount())
+
+	// Test getting transactions for block (this uses the internal heaps)
+	transactions := mempool.GetTransactionsForBlock(10000)
+	assert.GreaterOrEqual(t, len(transactions), 1)
+
+	// Test time-based priority queue by adding a transaction and checking it exists
+	tx3 := createBasicValidTransaction("tx3", 3000)
+	mempool.AddTransaction(tx3)
+	assert.Equal(t, 3, mempool.GetTransactionCount())
+}
+
+// TestLenMethods tests the Len methods for different priority queues
+func TestLenMethods(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	// Test that mempool starts empty
+	assert.Equal(t, 0, mempool.GetTransactionCount())
+
+	// Add a transaction and verify it's tracked
+	tx := createBasicValidTransaction("tx1", 1000)
+	err := mempool.AddTransaction(tx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, mempool.GetTransactionCount())
+
+	// Add another transaction and verify count increases
+	tx2 := createBasicValidTransaction("tx2", 2000)
+	err = mempool.AddTransaction(tx2)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, mempool.GetTransactionCount())
+}
+
+// TestLessMethods tests the Less methods for different priority queues
+func TestLessMethods(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	tx1 := createBasicValidTransaction("tx1", 1000)
+	tx2 := createBasicValidTransaction("tx2", 2000)
+
+	// Add transactions to mempool
+	err1 := mempool.AddTransaction(tx1)
+	assert.NoError(t, err1)
+	err2 := mempool.AddTransaction(tx2)
+	assert.NoError(t, err2)
+
+	// Verify transactions were added
+	assert.Equal(t, 2, mempool.GetTransactionCount())
+
+	// Test that GetTransactionsForBlock returns transactions in correct order
+	transactions := mempool.GetTransactionsForBlock(10000)
+	assert.Equal(t, 2, len(transactions))
+
+	// First transaction should have higher fee rate (tx2 with fee 2000)
+	assert.Equal(t, tx2.Hash, transactions[0].Hash)
+	// Second transaction should have lower fee rate (tx1 with fee 1000)
+	assert.Equal(t, tx1.Hash, transactions[1].Hash)
+}
+
+// TestSwapMethods tests the Swap methods for different priority queues
+func TestSwapMethods(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	tx1 := createBasicValidTransaction("tx1", 1000)
+	tx2 := createBasicValidTransaction("tx2", 2000)
+
+	// Add transactions to mempool
+	err1 := mempool.AddTransaction(tx1)
+	assert.NoError(t, err1)
+	err2 := mempool.AddTransaction(tx2)
+	assert.NoError(t, err2)
+
+	// Verify transactions were added
+	assert.Equal(t, 2, mempool.GetTransactionCount())
+
+	// Test that GetTransactionsForBlock returns transactions in correct order
+	transactions := mempool.GetTransactionsForBlock(10000)
+	assert.Equal(t, 2, len(transactions))
+
+	// Verify order is correct (highest fee first)
+	assert.Equal(t, tx2.Hash, transactions[0].Hash)
+	assert.Equal(t, tx1.Hash, transactions[1].Hash)
+}
+
+// TestPushMethods tests the Push methods for different priority queues
+func TestPushMethods(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	tx := createBasicValidTransaction("tx1", 1000)
+
+	// Test adding transaction through mempool interface
+	err := mempool.AddTransaction(tx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, mempool.GetTransactionCount())
+
+	// Verify transaction can be retrieved
+	retrievedTx := mempool.GetTransaction(tx.Hash)
+	assert.Equal(t, tx, retrievedTx)
+}
+
+// TestRemoveMethods tests the Remove methods for different priority queues
+func TestRemoveMethods(t *testing.T) {
+	mempool := NewMempool(TestMempoolConfig())
+
+	tx1 := createBasicValidTransaction("tx1", 1000)
+	tx2 := createBasicValidTransaction("tx2", 2000)
+
+	// Add transactions to mempool
+	err1 := mempool.AddTransaction(tx1)
+	assert.NoError(t, err1)
+	err2 := mempool.AddTransaction(tx2)
+	assert.NoError(t, err2)
+
+	// Verify both transactions were added
+	assert.Equal(t, 2, mempool.GetTransactionCount())
+
+	// Remove first transaction
+	removed := mempool.RemoveTransaction(tx1.Hash)
+	assert.True(t, removed)
+	assert.Equal(t, 1, mempool.GetTransactionCount())
+
+	// Verify first transaction is gone
+	retrievedTx := mempool.GetTransaction(tx1.Hash)
+	assert.Nil(t, retrievedTx)
+
+	// Verify second transaction is still there
+	retrievedTx = mempool.GetTransaction(tx2.Hash)
+	assert.Equal(t, tx2, retrievedTx)
+}

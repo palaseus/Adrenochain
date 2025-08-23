@@ -1872,3 +1872,68 @@ func TestRecordErrorComprehensive(t *testing.T) {
 	assert.Greater(t, state.RetryCount, 0)
 	t.Logf("Final retry count: %d", state.RetryCount)
 }
+
+// TestLowCoverageFunctions tests functions that currently have low coverage
+func TestLowCoverageFunctions(t *testing.T) {
+	host := createTestHost(t)
+	defer host.Close()
+
+	chain := NewMockChain()
+	storage := &MockStorage{}
+	config := DefaultSyncConfig()
+
+	sp := NewSyncProtocol(host, chain, chain, storage, config)
+
+	t.Run("requestHeaders", func(t *testing.T) {
+		peerID := peer.ID("test-peer")
+		req := &netproto.BlockHeadersRequest{
+			StartHeight: 100,
+			Count:       10,
+		}
+		
+		// Test with valid peer
+		headers, err := sp.requestHeaders(peerID, req)
+		assert.Error(t, err) // Should fail due to network issues in test
+		assert.Nil(t, headers)
+	})
+
+	t.Run("requestBlock", func(t *testing.T) {
+		peerID := peer.ID("test-peer")
+		req := &netproto.BlockRequest{
+			BlockHash: make([]byte, 32),
+		}
+		
+		// Test with valid peer
+		block, err := sp.requestBlock(peerID, req)
+		assert.Error(t, err) // Should fail due to network issues in test
+		assert.Nil(t, block)
+	})
+
+	t.Run("isTestEnvironment", func(t *testing.T) {
+		// Test the test environment detection
+		isTest := isTestEnvironment()
+		assert.True(t, isTest) // Should be true in test environment
+	})
+
+	t.Run("exchangeSyncInfo", func(t *testing.T) {
+		peerID := peer.ID("test-peer")
+		
+		// Test exchange sync info
+		err := sp.exchangeSyncInfo(peerID)
+		assert.Error(t, err) // Should fail due to network issues in test
+	})
+
+	t.Run("sendSyncRequest_edge_cases", func(t *testing.T) {
+		peerID := peer.ID("test-peer")
+		
+		// Test with nil request
+		_, err := sp.sendSyncRequest(context.Background(), peerID, nil)
+		assert.Error(t, err)
+
+		// Test with context cancellation
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err = sp.sendSyncRequest(ctx, peerID, &netproto.SyncRequest{})
+		assert.Error(t, err)
+	})
+}

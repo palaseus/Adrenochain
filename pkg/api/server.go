@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/wallet"
-	"github.com/gorilla/mux"
 )
 
 // ChainInterface defines the interface for blockchain operations
@@ -29,29 +29,38 @@ type WalletInterface interface {
 	GetAllAccounts() []*wallet.Account
 }
 
+// NetworkInterface defines the interface for network operations
+type NetworkInterface interface {
+	GetPeers() []string
+	GetPeerCount() int
+}
+
 // Server represents the HTTP API server
 type Server struct {
-	router *mux.Router
-	chain  ChainInterface
-	wallet WalletInterface
-	port   int
+	router  *mux.Router
+	chain   ChainInterface
+	wallet  WalletInterface
+	network NetworkInterface
+	port    int
 }
 
 // ServerConfig holds configuration for the API server
 type ServerConfig struct {
-	Port   int
-	Chain  ChainInterface
-	Wallet WalletInterface
+	Port    int
+	Chain   ChainInterface
+	Wallet  WalletInterface
+	Network NetworkInterface
 }
 
 // NewServer creates a new API server
 func NewServer(config *ServerConfig) *Server {
 	router := mux.NewRouter()
 	server := &Server{
-		router: router,
-		chain:  config.Chain,
-		wallet: config.Wallet,
-		port:   config.Port,
+		router:  router,
+		chain:   config.Chain,
+		wallet:  config.Wallet,
+		network: config.Network,
+		port:    config.Port,
 	}
 
 	server.setupRoutes()
@@ -421,11 +430,22 @@ func (s *Server) getAccountsHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getPeersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// For now, return empty list since we don't have network access in this context
-	// In a real implementation, you'd access the network layer
+	if s.network == nil {
+		// Fallback if network is not available
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"peers": []interface{}{},
+			"count": 0,
+		})
+		return
+	}
+
+	// Get actual peer information from network
+	peers := s.network.GetPeers()
+	peerCount := s.network.GetPeerCount()
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"peers": []interface{}{},
-		"count": 0,
+		"peers": peers,
+		"count": peerCount,
 	})
 }
 

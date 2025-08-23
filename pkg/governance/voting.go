@@ -379,6 +379,11 @@ func (vs *VotingSystem) GetVotesForProposal(proposalID string) []*Vote {
 		return nil
 	}
 
+	// Return empty slice for proposals with no votes
+	if len(votes) == 0 {
+		return []*Vote{}
+	}
+
 	var result []*Vote
 	for _, vote := range votes {
 		result = append(result, vote)

@@ -746,3 +746,32 @@ func BenchmarkGetStatus(b *testing.B) {
 		swap.GetStatus()
 	}
 }
+
+// TestInitiateSwapNilObject tests initiating a nil swap object
+func TestInitiateSwapNilObject(t *testing.T) {
+	var swap *AtomicSwap
+	// This should trigger the nil check in InitiateSwap
+	err := swap.InitiateSwap()
+	if err == nil {
+		t.Error("expected error for nil swap object")
+	}
+	if !strings.Contains(err.Error(), "swap object is nil") {
+		t.Errorf("expected 'swap object is nil' error, got: %v", err)
+	}
+}
+
+// TestFundSwapAWrongStatus tests funding swap A with wrong status
+func TestFundSwapAWrongStatus(t *testing.T) {
+	swap := createTestSwap()
+
+	// Change status to something other than Initiated to trigger the error
+	swap.Status = SwapStatusCompleted
+
+	err := swap.FundSwapA()
+	if err == nil {
+		t.Error("expected error for funding swap A with wrong status")
+	}
+	if !strings.Contains(err.Error(), "cannot be funded on chain A") {
+		t.Errorf("expected 'cannot be funded on chain A' error, got: %v", err)
+	}
+}
