@@ -12,7 +12,6 @@ import (
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/health"
 	"github.com/palaseus/adrenochain/pkg/logger"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,10 +53,10 @@ func (mm *MockMempool) GetTransactionCount() int {
 
 // MockNetwork is a mock implementation of the network for testing
 type MockNetwork struct {
-	peers []peer.ID
+	peers []string
 }
 
-func (mn *MockNetwork) GetPeers() []peer.ID {
+func (mn *MockNetwork) GetPeers() []string {
 	return mn.peers
 }
 
@@ -137,7 +136,7 @@ func TestNewService(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 0}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(nil, mockChain, mockMempool, mockNetwork)
 	assert.NotNil(t, service)
@@ -164,8 +163,7 @@ func TestServiceStartStop(t *testing.T) {
 	mockMempool := &MockMempool{txnCount: 3}
 
 	// Create mock peer ID
-	peer1, _ := peer.Decode("QmPeer1")
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer1}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -238,7 +236,7 @@ func TestHealthCheckersRegistration(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 0}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1", "QmPeer2"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -276,7 +274,7 @@ func TestHealthCheckResults(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 50}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2"), peer.ID("QmPeer3")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1", "QmPeer2", "QmPeer3"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -325,7 +323,7 @@ func TestMetricsCollection(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 25}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1", "QmPeer2"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -372,7 +370,7 @@ func TestHealthEndpointResponse(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 10}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -422,7 +420,7 @@ func TestMetricsEndpointResponse(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 5}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1"), peer.ID("QmPeer2")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1", "QmPeer2"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -467,7 +465,7 @@ func TestPrometheusEndpointResponse(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 0}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -508,7 +506,7 @@ func TestServiceLogging(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 0}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -539,7 +537,7 @@ func TestServiceContextCancellation(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 0}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 
@@ -577,7 +575,7 @@ func TestMetricsReset(t *testing.T) {
 		},
 	}
 	mockMempool := &MockMempool{txnCount: 10}
-	mockNetwork := &MockNetwork{peers: []peer.ID{peer.ID("QmPeer1")}}
+	mockNetwork := &MockNetwork{peers: []string{"QmPeer1"}}
 
 	service := NewService(config, mockChain, mockMempool, mockNetwork)
 

@@ -14,7 +14,6 @@ import (
 	"github.com/palaseus/adrenochain/pkg/chain"
 	"github.com/palaseus/adrenochain/pkg/health"
 	"github.com/palaseus/adrenochain/pkg/logger"
-	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // ChainInterface defines the interface for blockchain operations
@@ -32,7 +31,7 @@ type MempoolInterface interface {
 
 // NetworkInterface defines the interface for network operations
 type NetworkInterface interface {
-	GetPeers() []peer.ID
+	GetPeers() []string
 }
 
 // SimpleHealthChecker is a simple health checker for testing
