@@ -91,3 +91,25 @@ adrenochain
 
 # Documentation and planning files
 TODO.md
+COMPREHENSIVE_AUDIT_REPORT.md
+AUDIT_REPORT.md
+
+# Test files and generated content
+test.pdf
+*.pdf
+
+# Generated config during audit process
+pkg/config/
+
+# PDF test files (generated during testing)
+pkg/pdf/*_test.go
+
+# Backup files from development
+*.bak
+*.backup
+
+# Test result logs
+test_results/*.log
+
+# Database files
+data/*.db

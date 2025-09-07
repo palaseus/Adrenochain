@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package testing
 
 import (
@@ -81,8 +84,8 @@ type LiveTestResults struct {
 	ConsensusRounds     int
 	NetworkLatency      time.Duration
 	TotalTestDuration   time.Duration
-	InitialBlockHeight  uint64           // Track initial height
-	FinalBlockHeight    uint64           // Track final height
+	InitialBlockHeight  uint64 // Track initial height
+	FinalBlockHeight    uint64 // Track final height
 	mu                  sync.RWMutex
 }
 
@@ -459,35 +462,35 @@ func TestLiveNodeIntegration(t *testing.T) {
 	default:
 		t.Run("network_setup", suite.testNetworkSetup)
 	}
-	
+
 	select {
 	case <-ctx.Done():
 		t.Fatal("Test context cancelled or timed out")
 	default:
 		t.Run("node_communication", suite.testNodeCommunication)
 	}
-	
+
 	select {
 	case <-ctx.Done():
 		t.Fatal("Test context cancelled or timed out")
 	default:
 		t.Run("mining_and_consensus", suite.testMiningAndConsensus)
 	}
-	
+
 	select {
 	case <-ctx.Done():
 		t.Fatal("Test context cancelled or timed out")
 	default:
 		t.Run("transaction_processing", suite.testTransactionProcessing)
 	}
-	
+
 	select {
 	case <-ctx.Done():
 		t.Fatal("Test context cancelled or timed out")
 	default:
 		t.Run("network_synchronization", suite.testNetworkSynchronization)
 	}
-	
+
 	select {
 	case <-ctx.Done():
 		t.Fatal("Test context cancelled or timed out")
@@ -496,17 +499,17 @@ func TestLiveNodeIntegration(t *testing.T) {
 	}
 
 	suite.results.TotalTestDuration = time.Since(startTime)
-	
+
 	// Final validation - ensure test completed successfully
 	t.Log("=== FINAL TEST VALIDATION ===")
 	t.Logf("Test completed in %v", suite.results.TotalTestDuration)
-	t.Logf("Final block heights - Initial: %d, Final: %d, Produced: %d", 
+	t.Logf("Final block heights - Initial: %d, Final: %d, Produced: %d",
 		suite.results.InitialBlockHeight, suite.results.FinalBlockHeight, suite.results.BlocksProduced)
 	t.Logf("P2P connections established: %d", suite.results.P2PConnections)
-	t.Logf("Transactions processed: %d created, %d mined", 
+	t.Logf("Transactions processed: %d created, %d mined",
 		suite.results.TransactionsCreated, suite.results.TransactionsMined)
 	t.Log("=== TEST VALIDATION COMPLETE ===")
-	
+
 	suite.printResults()
 }
 
@@ -610,7 +613,7 @@ func (suite *LiveIntegrationTestSuite) testMiningAndConsensus(t *testing.T) {
 	// Calculate actual blocks produced (difference from initial height)
 	suite.results.BlocksProduced = int(maxHeight - suite.results.InitialBlockHeight)
 	suite.results.FinalBlockHeight = maxHeight
-	t.Logf("Initial height: %d, Final height: %d, Blocks produced: %d", 
+	t.Logf("Initial height: %d, Final height: %d, Blocks produced: %d",
 		suite.results.InitialBlockHeight, maxHeight, suite.results.BlocksProduced)
 
 	// Check consensus - all nodes should have similar heights
@@ -648,7 +651,7 @@ func (suite *LiveIntegrationTestSuite) testTransactionProcessing(t *testing.T) {
 	for i := 0; i < transactionCount; i++ {
 		// Create a coinbase transaction (no inputs required)
 		tx := &block.Transaction{
-			Version:  1,                  // Set explicit version
+			Version: 1,                  // Set explicit version
 			Inputs:  []*block.TxInput{}, // Coinbase has no inputs
 			Outputs: []*block.TxOutput{
 				{
@@ -656,7 +659,7 @@ func (suite *LiveIntegrationTestSuite) testTransactionProcessing(t *testing.T) {
 					ScriptPubKey: []byte(fmt.Sprintf("recipient_%d", i)),
 				},
 			},
-			LockTime: 0, // Set explicit lock time
+			LockTime: 0,  // Set explicit lock time
 			Fee:      50, // Add sufficient fee to meet minimum fee rate (1 per byte)
 		}
 
@@ -814,7 +817,7 @@ func (suite *LiveIntegrationTestSuite) testStressTesting(t *testing.T) {
 	// Create burst of transactions
 	for i := 0; i < burstSize; i++ {
 		tx := &block.Transaction{
-			Version:  1,                  // Set explicit version
+			Version: 1,                  // Set explicit version
 			Inputs:  []*block.TxInput{}, // Coinbase has no inputs
 			Outputs: []*block.TxOutput{
 				{
@@ -822,7 +825,7 @@ func (suite *LiveIntegrationTestSuite) testStressTesting(t *testing.T) {
 					ScriptPubKey: []byte(fmt.Sprintf("stress_recipient_%d", i)),
 				},
 			},
-			LockTime: 0, // Set explicit lock time
+			LockTime: 0,  // Set explicit lock time
 			Fee:      50, // Add sufficient fee to meet minimum fee rate (1 per byte)
 		}
 		tx.Hash = tx.CalculateHash()

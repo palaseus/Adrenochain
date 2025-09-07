@@ -841,7 +841,7 @@ func (pa *PredictiveAnalytics) autoTrainModels() {
 	defer pa.mu.RUnlock()
 
 	// For now, just log that auto-training is running
-	fmt.Printf("Auto-training models: %d total models\n", len(pa.Models))
+	
 }
 
 func (pa *PredictiveAnalytics) autoEvaluateModels() {
@@ -851,7 +851,7 @@ func (pa *PredictiveAnalytics) autoEvaluateModels() {
 	defer pa.mu.RUnlock()
 
 	// For now, just log that auto-evaluation is running
-	fmt.Printf("Auto-evaluating models: %d active models\n", pa.Metrics.ActiveModels)
+	
 }
 
 func (pa *PredictiveAnalytics) collectFeatures() {
@@ -861,7 +861,7 @@ func (pa *PredictiveAnalytics) collectFeatures() {
 	defer pa.mu.Unlock()
 
 	// For now, just log that feature collection is running
-	fmt.Printf("Collecting features: %d feature sets\n", len(pa.Features))
+	
 }
 
 func (pa *PredictiveAnalytics) cleanupOldModels() {
@@ -871,7 +871,7 @@ func (pa *PredictiveAnalytics) cleanupOldModels() {
 	defer pa.mu.Unlock()
 
 	// For now, just log that cleanup is running
-	fmt.Printf("Cleaning up old models: %d total models\n", len(pa.Models))
+	
 }
 
 // Utility functions

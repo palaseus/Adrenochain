@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -12,6 +13,15 @@ import (
 func bigIntFromString(s string) *big.Int {
 	v, _ := big.NewInt(0).SetString(s, 10)
 	return v
+}
+
+// mustParseBigInt is a helper function for tests
+func mustParseBigInt(s string) *big.Int {
+	result, ok := big.NewInt(0).SetString(s, 10)
+	if !ok {
+		panic(fmt.Sprintf("invalid big int: %s", s))
+	}
+	return result
 }
 
 func TestMustParseBigInt(t *testing.T) {

@@ -56,6 +56,15 @@ func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 	if utxo == nil {
 		return
 	}
+
+	// Validate UTXO data (allow some flexibility for testing)
+	if len(utxo.TxHash) == 0 {
+		return // Invalid transaction hash (empty)
+	}
+	if len(utxo.Address) == 0 {
+		return // Invalid address (empty)
+	}
+
 	key := us.makeKey(utxo.TxHash, utxo.TxIndex)
 	us.utxos[key] = utxo
 
@@ -750,28 +759,75 @@ func (us *UTXOSet) String() string {
 }
 
 // getTxSignatureData creates the data to be signed for a transaction
+// FIXED: Now uses proper serialization instead of byte() truncation
 func (us *UTXOSet) getTxSignatureData(tx *block.Transaction) []byte {
 	data := make([]byte, 0)
 
-	// Version
-	data = append(data, byte(tx.Version))
+	// Version (4 bytes, little-endian)
+	versionBytes := make([]byte, 4)
+	versionBytes[0] = byte(tx.Version)
+	versionBytes[1] = byte(tx.Version >> 8)
+	versionBytes[2] = byte(tx.Version >> 16)
+	versionBytes[3] = byte(tx.Version >> 24)
+	data = append(data, versionBytes...)
 
 	// Inputs (excluding signatures)
 	for _, input := range tx.Inputs {
 		data = append(data, input.PrevTxHash...)
-		data = append(data, byte(input.PrevTxIndex))
-		data = append(data, byte(input.Sequence))
+
+		// PrevTxIndex (4 bytes, little-endian)
+		indexBytes := make([]byte, 4)
+		indexBytes[0] = byte(input.PrevTxIndex)
+		indexBytes[1] = byte(input.PrevTxIndex >> 8)
+		indexBytes[2] = byte(input.PrevTxIndex >> 16)
+		indexBytes[3] = byte(input.PrevTxIndex >> 24)
+		data = append(data, indexBytes...)
+
+		// Sequence (4 bytes, little-endian)
+		seqBytes := make([]byte, 4)
+		seqBytes[0] = byte(input.Sequence)
+		seqBytes[1] = byte(input.Sequence >> 8)
+		seqBytes[2] = byte(input.Sequence >> 16)
+		seqBytes[3] = byte(input.Sequence >> 24)
+		data = append(data, seqBytes...)
 	}
 
 	// Outputs
 	for _, output := range tx.Outputs {
-		data = append(data, byte(output.Value))
+		// Value (8 bytes, little-endian)
+		valueBytes := make([]byte, 8)
+		valueBytes[0] = byte(output.Value)
+		valueBytes[1] = byte(output.Value >> 8)
+		valueBytes[2] = byte(output.Value >> 16)
+		valueBytes[3] = byte(output.Value >> 24)
+		valueBytes[4] = byte(output.Value >> 32)
+		valueBytes[5] = byte(output.Value >> 40)
+		valueBytes[6] = byte(output.Value >> 48)
+		valueBytes[7] = byte(output.Value >> 56)
+		data = append(data, valueBytes...)
+
 		data = append(data, output.ScriptPubKey...)
 	}
 
-	// Lock time and fee
-	data = append(data, byte(tx.LockTime))
-	data = append(data, byte(tx.Fee))
+	// Lock time (4 bytes, little-endian)
+	lockTimeBytes := make([]byte, 4)
+	lockTimeBytes[0] = byte(tx.LockTime)
+	lockTimeBytes[1] = byte(tx.LockTime >> 8)
+	lockTimeBytes[2] = byte(tx.LockTime >> 16)
+	lockTimeBytes[3] = byte(tx.LockTime >> 24)
+	data = append(data, lockTimeBytes...)
+
+	// Fee (8 bytes, little-endian)
+	feeBytes := make([]byte, 8)
+	feeBytes[0] = byte(tx.Fee)
+	feeBytes[1] = byte(tx.Fee >> 8)
+	feeBytes[2] = byte(tx.Fee >> 16)
+	feeBytes[3] = byte(tx.Fee >> 24)
+	feeBytes[4] = byte(tx.Fee >> 32)
+	feeBytes[5] = byte(tx.Fee >> 40)
+	feeBytes[6] = byte(tx.Fee >> 48)
+	feeBytes[7] = byte(tx.Fee >> 56)
+	data = append(data, feeBytes...)
 
 	// Hash the data
 	hash := sha256.Sum256(data)

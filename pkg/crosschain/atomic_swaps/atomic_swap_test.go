@@ -159,14 +159,11 @@ func TestNewAtomicSwapInsufficientAmount(t *testing.T) {
 		MinAmount: big.NewInt(1000000000000000000), // 1 ETH
 	}
 
-	// This should panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for insufficient amount A")
-		}
-	}()
-
-	NewAtomicSwap("ethereum", "bitcoin", "ETH", "BTC", amountA, amountB, participantA, participantB, config)
+	// This should return an invalid swap
+	swap := NewAtomicSwap("ethereum", "bitcoin", "ETH", "BTC", amountA, amountB, participantA, participantB, config)
+	if swap.Status != SwapStatusExpired || swap.ID != "invalid" {
+		t.Error("expected invalid swap for insufficient amount A")
+	}
 }
 
 // TestNewAtomicSwapExcessiveAmount tests creation with excessive amount
@@ -180,14 +177,11 @@ func TestNewAtomicSwapExcessiveAmount(t *testing.T) {
 		MaxAmount: big.NewInt(0).Mul(big.NewInt(1000000000000000000), big.NewInt(100)), // 100 ETH
 	}
 
-	// This should panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for excessive amount B")
-		}
-	}()
-
-	NewAtomicSwap("ethereum", "bitcoin", "ETH", "BTC", amountA, amountB, participantA, participantB, config)
+	// This should return an invalid swap
+	swap := NewAtomicSwap("ethereum", "bitcoin", "ETH", "BTC", amountA, amountB, participantA, participantB, config)
+	if swap.Status != SwapStatusExpired || swap.ID != "invalid" {
+		t.Error("expected invalid swap for excessive amount B")
+	}
 }
 
 // TestInitiateSwap tests initiating a swap

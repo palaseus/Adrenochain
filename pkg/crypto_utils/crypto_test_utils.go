@@ -92,7 +92,7 @@ func (ctu *CryptoTestUtils) CreateSignedTransaction(
 		// Sign the data
 		signature, err := ctu.SignData(signatureData, keyPair.PrivateKey)
 		if err != nil {
-			ctu.t.Fatalf("Failed to sign input %d: %v", err)
+			ctu.t.Fatalf("Failed to sign input %d: %v", i, err)
 		}
 
 		// Create script signature: [public_key(65)][signature(64)]
@@ -109,33 +109,78 @@ func (ctu *CryptoTestUtils) CreateSignedTransaction(
 }
 
 // CreateSignatureData creates the data to be signed for a specific input (exported for debugging)
-// This method MUST match the exact serialization format used by getTxSignatureData in pkg/utxo/utxo.go
-// WARNING: The original getTxSignatureData in utxo.go has a bug - it only uses byte() cast which truncates values!
-// We're matching that exact behavior to ensure signatures verify correctly.
+// FIXED: Now matches the corrected serialization format used by getTxSignatureData in pkg/utxo/utxo.go
+// This method now uses proper little-endian serialization instead of byte() truncation
 func (ctu *CryptoTestUtils) CreateSignatureData(tx *block.Transaction, inputIndex int) []byte {
 	data := make([]byte, 0)
 
-	// Version (matching utxo.go getTxSignatureData format - using only lowest byte)
-	data = append(data, byte(tx.Version))
+	// Version (4 bytes, little-endian)
+	versionBytes := make([]byte, 4)
+	versionBytes[0] = byte(tx.Version)
+	versionBytes[1] = byte(tx.Version >> 8)
+	versionBytes[2] = byte(tx.Version >> 16)
+	versionBytes[3] = byte(tx.Version >> 24)
+	data = append(data, versionBytes...)
 
-	// Inputs (excluding signatures, matching utxo.go format)
+	// Inputs (excluding signatures)
 	for _, input := range tx.Inputs {
 		data = append(data, input.PrevTxHash...)
-		data = append(data, byte(input.PrevTxIndex)) // Only lowest byte (matches utxo.go)
-		data = append(data, byte(input.Sequence))    // Only lowest byte (matches utxo.go)
+
+		// PrevTxIndex (4 bytes, little-endian)
+		indexBytes := make([]byte, 4)
+		indexBytes[0] = byte(input.PrevTxIndex)
+		indexBytes[1] = byte(input.PrevTxIndex >> 8)
+		indexBytes[2] = byte(input.PrevTxIndex >> 16)
+		indexBytes[3] = byte(input.PrevTxIndex >> 24)
+		data = append(data, indexBytes...)
+
+		// Sequence (4 bytes, little-endian)
+		seqBytes := make([]byte, 4)
+		seqBytes[0] = byte(input.Sequence)
+		seqBytes[1] = byte(input.Sequence >> 8)
+		seqBytes[2] = byte(input.Sequence >> 16)
+		seqBytes[3] = byte(input.Sequence >> 24)
+		data = append(data, seqBytes...)
 	}
 
-	// Outputs (matching utxo.go format)
+	// Outputs
 	for _, output := range tx.Outputs {
-		data = append(data, byte(output.Value)) // Only lowest byte (matches utxo.go bug!)
+		// Value (8 bytes, little-endian)
+		valueBytes := make([]byte, 8)
+		valueBytes[0] = byte(output.Value)
+		valueBytes[1] = byte(output.Value >> 8)
+		valueBytes[2] = byte(output.Value >> 16)
+		valueBytes[3] = byte(output.Value >> 24)
+		valueBytes[4] = byte(output.Value >> 32)
+		valueBytes[5] = byte(output.Value >> 40)
+		valueBytes[6] = byte(output.Value >> 48)
+		valueBytes[7] = byte(output.Value >> 56)
+		data = append(data, valueBytes...)
+
 		data = append(data, output.ScriptPubKey...)
 	}
 
-	// Lock time and fee (matching utxo.go format - using only lowest byte)
-	data = append(data, byte(tx.LockTime)) // Only lowest byte (matches utxo.go)
-	data = append(data, byte(tx.Fee))      // Only lowest byte (matches utxo.go)
+	// Lock time (4 bytes, little-endian)
+	lockTimeBytes := make([]byte, 4)
+	lockTimeBytes[0] = byte(tx.LockTime)
+	lockTimeBytes[1] = byte(tx.LockTime >> 8)
+	lockTimeBytes[2] = byte(tx.LockTime >> 16)
+	lockTimeBytes[3] = byte(tx.LockTime >> 24)
+	data = append(data, lockTimeBytes...)
 
-	// Hash the data (matching utxo.go format)
+	// Fee (8 bytes, little-endian)
+	feeBytes := make([]byte, 8)
+	feeBytes[0] = byte(tx.Fee)
+	feeBytes[1] = byte(tx.Fee >> 8)
+	feeBytes[2] = byte(tx.Fee >> 16)
+	feeBytes[3] = byte(tx.Fee >> 24)
+	feeBytes[4] = byte(tx.Fee >> 32)
+	feeBytes[5] = byte(tx.Fee >> 40)
+	feeBytes[6] = byte(tx.Fee >> 48)
+	feeBytes[7] = byte(tx.Fee >> 56)
+	data = append(data, feeBytes...)
+
+	// Hash the data
 	hash := sha256.Sum256(data)
 	return hash[:]
 }

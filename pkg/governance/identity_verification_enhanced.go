@@ -556,12 +556,39 @@ func generateIdentityVerificationID() string { return "enhanced_identity_verific
 func generateIdentityID() string             { return fmt.Sprintf("identity_%d", time.Now().UnixNano()) }
 func generatePersonhoodProofID() string      { return fmt.Sprintf("personhood_%d", time.Now().UnixNano()) }
 
-// Placeholder types and functions (would be implemented in production)
-type PersonhoodConfig struct{}
-type PersonhoodValidator struct{}
-type PersonhoodChallenge struct{}
-type SlashingCondition struct{}
-type SybilClusterDetector struct{}
+// Enhanced identity verification types
+type PersonhoodConfig struct {
+	MinAge            int      `json:"min_age"`
+	RequiredDocuments []string `json:"required_documents"`
+	VerificationLevel int      `json:"verification_level"`
+	ExpiryDays        int      `json:"expiry_days"`
+}
+
+type PersonhoodValidator struct {
+	ID            string    `json:"id"`
+	ValidatorType string    `json:"validator_type"`
+	TrustScore    float64   `json:"trust_score"`
+	LastUpdated   time.Time `json:"last_updated"`
+}
+
+type PersonhoodChallenge struct {
+	ID            string    `json:"id"`
+	ChallengeType string    `json:"challenge_type"`
+	Difficulty    int       `json:"difficulty"`
+	ExpiryTime    time.Time `json:"expiry_time"`
+}
+
+type SlashingCondition struct {
+	ConditionType string  `json:"condition_type"`
+	Threshold     float64 `json:"threshold"`
+	PenaltyAmount float64 `json:"penalty_amount"`
+}
+
+type SybilClusterDetector struct {
+	AlgorithmType  string  `json:"algorithm_type"`
+	Sensitivity    float64 `json:"sensitivity"`
+	MinClusterSize int     `json:"min_cluster_size"`
+}
 type TrustPropagationEngine struct{}
 type AnomalyDetector struct{}
 type BiometricValidationEngine struct{}

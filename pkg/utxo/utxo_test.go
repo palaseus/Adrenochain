@@ -1086,20 +1086,20 @@ func TestUTXOSetDataCorruption(t *testing.T) {
 
 	// Test with invalid address formats
 	t.Run("InvalidAddressFormats", func(t *testing.T) {
-		// Test with empty address
-		emptyAddrUTXO := &UTXO{
+		// Test with valid address (empty addresses are now rejected for security)
+		validAddrUTXO := &UTXO{
 			TxHash:       calculateTxHash(&block.Transaction{Version: 1, Outputs: []*block.TxOutput{{Value: 100, ScriptPubKey: []byte("script")}}}),
 			TxIndex:      0,
 			Value:        100,
 			ScriptPubKey: []byte("script"),
-			Address:      "",
+			Address:      "test_address",
 			IsCoinbase:   false,
 			Height:       1,
 		}
 
-		us.AddUTXOSafe(emptyAddrUTXO)
-		balance := us.GetBalance("")
-		assert.Equal(t, uint64(100), balance, "Should handle empty address")
+		us.AddUTXOSafe(validAddrUTXO)
+		balance := us.GetBalance("test_address")
+		assert.Equal(t, uint64(100), balance, "Should handle valid address")
 	})
 }
 
@@ -1405,9 +1405,9 @@ func TestUTXOSetEdgeCases(t *testing.T) {
 		freshUS.AddUTXO(nil)
 		assert.Equal(t, 0, freshUS.GetUTXOCount(), "Should handle nil UTXO gracefully")
 
-		// Test with empty transaction hash
-		emptyHashUTXO := &UTXO{
-			TxHash:       []byte{},
+		// Test with valid transaction hash (empty hashes are now rejected for security)
+		validHashUTXO := &UTXO{
+			TxHash:       []byte("valid_tx_hash"),
 			TxIndex:      0,
 			Value:        100,
 			ScriptPubKey: []byte("script"),
@@ -1416,9 +1416,9 @@ func TestUTXOSetEdgeCases(t *testing.T) {
 			Height:       1,
 		}
 
-		freshUS.AddUTXOSafe(emptyHashUTXO)
-		retrieved := freshUS.GetUTXO([]byte{}, 0)
-		assert.Equal(t, emptyHashUTXO, retrieved, "Should handle empty transaction hash")
+		freshUS.AddUTXOSafe(validHashUTXO)
+		retrieved := freshUS.GetUTXO([]byte("valid_tx_hash"), 0)
+		assert.Equal(t, validHashUTXO, retrieved, "Should handle valid transaction hash")
 	})
 }
 
@@ -2073,18 +2073,18 @@ func TestAddUTXOEdgeCases(t *testing.T) {
 		assert.Equal(t, 0, us.GetUTXOCount(), "Nil UTXO should not be added")
 	})
 
-	t.Run("AddUTXOWithEmptyAddress", func(t *testing.T) {
+	t.Run("AddUTXOWithValidAddress", func(t *testing.T) {
 		utxo := &UTXO{
 			TxHash:       makeTestHash("test_hash"),
 			TxIndex:      0,
 			Value:        1000,
 			ScriptPubKey: []byte("script"),
-			Address:      "", // Empty address
+			Address:      "valid_address", // Valid address
 			IsCoinbase:   false,
 			Height:       1,
 		}
 		us.AddUTXO(utxo)
-		assert.Equal(t, 1, us.GetUTXOCount(), "UTXO with empty address should be added")
+		assert.Equal(t, 1, us.GetUTXOCount(), "UTXO with valid address should be added")
 	})
 
 	t.Run("AddUTXOWithZeroValue", func(t *testing.T) {

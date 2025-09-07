@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // MultiNodePDFTest orchestrates a multi-node PDF storage test
@@ -79,9 +80,8 @@ func NewMultiNodePDFTest(nodeCount int) *MultiNodePDFTest {
 
 // StartNodes initializes and starts all PDF storage nodes
 func (mnt *MultiNodePDFTest) StartNodes() error {
-	fmt.Println("🚀 Starting Multi-Node PDF Storage Network...")
-	fmt.Printf("📊 Network Configuration: %d nodes, Base Port: %d\n",
-		mnt.networkConfig.NodeCount, mnt.networkConfig.BasePort)
+	// Multi-Node PDF Storage Network starting
+	// Network Configuration: nodes and base port configured
 
 	// Set the start time when the test actually begins
 	mnt.testResults.StartTime = time.Now()
@@ -101,7 +101,7 @@ func (mnt *MultiNodePDFTest) StartNodes() error {
 	}
 
 	// Wait for network to stabilize
-	fmt.Println("⏳ Waiting for network to stabilize...")
+	// Waiting for network to stabilize
 	time.Sleep(5 * time.Second)
 
 	// Connect nodes to form network
@@ -109,7 +109,7 @@ func (mnt *MultiNodePDFTest) StartNodes() error {
 		return fmt.Errorf("failed to connect nodes: %w", err)
 	}
 
-	fmt.Println("✅ Multi-node network started successfully!")
+	// Multi-node network started successfully
 	return nil
 }
 
@@ -123,7 +123,9 @@ func (mnt *MultiNodePDFTest) initializeNode(nodeID int) error {
 	}
 
 	// Create data directory
-	if err := os.MkdirAll(node.DataDir, 0755); err != nil {
+	config := config.DefaultSystemConfig()
+	filePerms := os.FileMode(config.Storage.FilePermissions)
+	if err := os.MkdirAll(node.DataDir, filePerms); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
@@ -146,20 +148,20 @@ func (mnt *MultiNodePDFTest) startNode(nodeID int) error {
 	node.IsRunning = true
 	node.mu.Unlock()
 
-	fmt.Printf("✅ Node %d started on port %d\n", nodeID, node.Port)
+	// Node started on port
 	return nil
 }
 
 // connectNodes establishes connections between nodes
 func (mnt *MultiNodePDFTest) connectNodes() error {
-	fmt.Println("🔗 Establishing connections between nodes...")
+	// Establishing connections between nodes
 
 	for i := 0; i < mnt.networkConfig.NodeCount; i++ {
 		for j := 0; j < mnt.networkConfig.NodeCount; j++ {
 			if i != j {
-				peerAddr := fmt.Sprintf("localhost:%d", mnt.networkConfig.BasePort+j)
+				peerAddr := fmt.Sprintf("127.0.0.1:%d", mnt.networkConfig.BasePort+j)
 				mnt.nodes[i].PeerAddresses = append(mnt.nodes[i].PeerAddresses, peerAddr)
-				fmt.Printf("🔗 Node %d connected to Node %d\n", i, j)
+				// Node connected to peer
 			}
 		}
 	}
@@ -169,25 +171,25 @@ func (mnt *MultiNodePDFTest) connectNodes() error {
 
 // TestPDFPropagation tests PDF upload and propagation across the network
 func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
-	fmt.Println("\n📄 Testing PDF Upload and Network Propagation...")
+	// Testing PDF Upload and Network Propagation
 
 	// Read test PDF file
-	pdfPath := "./test.pdf"
+	pdfPath := "../../test.pdf"
 	pdfContent, err := os.ReadFile(pdfPath)
 	if err != nil {
 		return fmt.Errorf("failed to read test PDF: %w", err)
 	}
 
-	pdfSize := len(pdfContent)
-	fmt.Printf("📊 Test PDF: %s (%d bytes, %.2f MB)\n", pdfPath, pdfSize, float64(pdfSize)/(1024*1024))
+	_ = len(pdfContent) // pdfSize
+	// Test PDF loaded with size information
 
 	// Calculate PDF hash
 	pdfHash := sha256.Sum256(pdfContent)
 	pdfHashStr := hex.EncodeToString(pdfHash[:])
-	fmt.Printf("🔐 PDF Hash: %s\n", pdfHashStr)
+	// PDF Hash calculated
 
 	// Upload PDF to Node 0
-	fmt.Println("\n📤 Uploading PDF to Node 0...")
+	// Uploading PDF to Node 0
 	uploadStart := time.Now()
 
 	metadata := PDFMetadata{
@@ -217,20 +219,19 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 
 	uploadTime := time.Since(uploadStart)
 	mnt.testResults.PDFUploadTime = uploadTime
-	fmt.Printf("✅ PDF uploaded to Node 0 in %v\n", uploadTime)
-	fmt.Printf("   Document ID: %s\n", storedPDF.DocumentID)
+	// PDF uploaded to Node 0 successfully
 
 	// Simulate network propagation by copying to other nodes
-	fmt.Println("\n⏳ Simulating network propagation...")
+	// Simulating network propagation
 	time.Sleep(2 * time.Second)
 
 	// Test propagation to other nodes
-	fmt.Println("\n🔍 Testing PDF propagation to other nodes...")
+	// Testing PDF propagation to other nodes
 	propagationStart := time.Now()
 
 	successCount := 0
 	for i := 1; i < mnt.networkConfig.NodeCount; i++ {
-		fmt.Printf("   Testing Node %d... ", i)
+		// Testing Node
 
 		// Copy PDF to this node (simulating network propagation)
 		_, err := mnt.nodes[i].PDFStorage.StorePDF(
@@ -240,7 +241,7 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 			metadata,
 		)
 		if err != nil {
-			fmt.Printf("❌ Failed: %v\n", err)
+			// Node test failed
 			mnt.testResults.Errors = append(mnt.testResults.Errors,
 				fmt.Sprintf("Node %d failed to store PDF: %v", i, err))
 			continue
@@ -249,7 +250,7 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 		// Try to retrieve PDF from this node
 		content, retrievedMetadata, err := mnt.nodes[i].PDFStorage.GetPDF(storedPDF.DocumentID)
 		if err != nil {
-			fmt.Printf("❌ Failed to retrieve: %v\n", err)
+			// Failed to retrieve PDF
 			mnt.testResults.Errors = append(mnt.testResults.Errors,
 				fmt.Sprintf("Node %d failed to retrieve PDF: %v", i, err))
 			continue
@@ -260,31 +261,30 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 		retrievedHashStr := hex.EncodeToString(retrievedHash[:])
 
 		if retrievedHashStr == pdfHashStr {
-			fmt.Printf("✅ Success - Hash: %s\n", retrievedHashStr[:8])
+			// Success - Hash verified
 			successCount++
 		} else {
-			fmt.Printf("❌ Hash mismatch: %s vs %s\n", retrievedHashStr[:8], pdfHashStr[:8])
+			// Hash mismatch detected
 			mnt.testResults.Errors = append(mnt.testResults.Errors,
 				fmt.Sprintf("Node %d hash mismatch", i))
 		}
 
 		// Verify metadata
 		if retrievedMetadata.Title == metadata.Title {
-			fmt.Printf("      Metadata: ✅ Title verified\n")
+			// Metadata title verified
 		} else {
-			fmt.Printf("      Metadata: ❌ Title mismatch\n")
+			// Metadata title mismatch
 		}
 	}
 
 	propagationTime := time.Since(propagationStart)
 	mnt.testResults.PropagationTime = propagationTime
 
-	propagationRate := float64(successCount) / float64(mnt.networkConfig.NodeCount-1) * 100
-	fmt.Printf("\n📊 Propagation Results: %d/%d nodes successful (%.1f%%)\n",
-		successCount, mnt.networkConfig.NodeCount-1, propagationRate)
+	_ = float64(successCount) / float64(mnt.networkConfig.NodeCount-1) * 100 // propagationRate
+	// Propagation results calculated
 
 	// Test consensus simulation
-	fmt.Println("\n⛓️  Testing storage consensus...")
+	// Testing storage consensus
 	consensusStart := time.Now()
 
 	// Wait for operations to complete
@@ -296,9 +296,9 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 		// List PDFs to check storage
 		pdfs, err := mnt.nodes[i].PDFStorage.ListPDFs()
 		if err != nil {
-			fmt.Printf("   Node %d: Error listing PDFs: %v\n", i, err)
+			// Node error listing PDFs
 		} else {
-			fmt.Printf("   Node %d: %d PDFs stored\n", i, len(pdfs))
+			// Node PDFs stored
 			totalStored += len(pdfs)
 		}
 	}
@@ -308,7 +308,7 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 	mnt.testResults.TotalBlocks = totalStored / mnt.networkConfig.NodeCount
 
 	// Benchmark network performance
-	fmt.Println("\n📈 Benchmarking storage performance...")
+
 	mnt.benchmarkStorage()
 
 	return nil
@@ -316,7 +316,6 @@ func (mnt *MultiNodePDFTest) TestPDFPropagation() error {
 
 // benchmarkStorage performs storage performance benchmarks
 func (mnt *MultiNodePDFTest) benchmarkStorage() {
-	fmt.Println("   Running storage benchmarks...")
 
 	// Simple storage round-trip test
 	for i := 0; i < mnt.networkConfig.NodeCount; i++ {
@@ -333,8 +332,6 @@ func (mnt *MultiNodePDFTest) benchmarkStorage() {
 		}
 	}
 
-	fmt.Printf("   Storage Latency: %v\n", mnt.testResults.NetworkLatency)
-
 	// Calculate storage efficiency
 	totalStorage := 0
 	for i := 0; i < mnt.networkConfig.NodeCount; i++ {
@@ -343,19 +340,17 @@ func (mnt *MultiNodePDFTest) benchmarkStorage() {
 	}
 
 	mnt.testResults.StorageEfficiency = float64(totalStorage) / float64(mnt.networkConfig.NodeCount)
-	fmt.Printf("   Storage Efficiency: %.2f bytes per node\n", mnt.testResults.StorageEfficiency)
 
 	// Calculate consensus efficiency
 	if mnt.testResults.ConsensusTime > 0 {
 		mnt.testResults.ConsensusEfficiency = float64(mnt.testResults.TotalBlocks) /
 			mnt.testResults.ConsensusTime.Seconds()
-		fmt.Printf("   Consensus Efficiency: %.2f operations/second\n", mnt.testResults.ConsensusEfficiency)
+
 	}
 }
 
 // StopNodes gracefully shuts down all nodes
 func (mnt *MultiNodePDFTest) StopNodes() {
-	fmt.Println("\n🛑 Shutting down multi-node network...")
 
 	// Signal all nodes to stop
 	close(mnt.stopChan)
@@ -366,7 +361,7 @@ func (mnt *MultiNodePDFTest) StopNodes() {
 			mnt.nodes[i].mu.Lock()
 			if mnt.nodes[i].IsRunning {
 				mnt.nodes[i].IsRunning = false
-				fmt.Printf("   Node %d stopped\n", i)
+
 			}
 			mnt.nodes[i].mu.Unlock()
 		}
@@ -379,45 +374,20 @@ func (mnt *MultiNodePDFTest) StopNodes() {
 
 	mnt.testResults.Success = len(mnt.testResults.Errors) == 0
 
-	fmt.Println("✅ Multi-node network shutdown complete")
 }
 
 // PrintResults displays comprehensive test results
 func (mnt *MultiNodePDFTest) PrintResults() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("📊 MULTI-NODE PDF TEST RESULTS")
-	fmt.Println(strings.Repeat("=", 80))
 
-	fmt.Printf("🏗️  Network Configuration:\n")
-	fmt.Printf("   Total Nodes: %d\n", mnt.testResults.TotalNodes)
-	fmt.Printf("   Base Port: %d\n", mnt.networkConfig.BasePort)
-	fmt.Printf("   Difficulty: %d\n", mnt.networkConfig.Difficulty)
-	fmt.Printf("   Block Time: %v\n", mnt.networkConfig.BlockTime)
-
-	fmt.Printf("\n⏱️  Performance Metrics:\n")
-	fmt.Printf("   Total Test Duration: %v\n", mnt.testResults.EndTime.Sub(mnt.testResults.StartTime))
-	fmt.Printf("   PDF Upload Time: %v\n", mnt.testResults.PDFUploadTime)
-	fmt.Printf("   Network Propagation Time: %v\n", mnt.testResults.PropagationTime)
-	fmt.Printf("   Consensus Time: %v\n", mnt.testResults.ConsensusTime)
-	fmt.Printf("   Storage Latency: %v\n", mnt.testResults.NetworkLatency)
-
-	fmt.Printf("\n📈 Storage Metrics:\n")
-	fmt.Printf("   Total Operations: %d\n", mnt.testResults.TotalBlocks)
-	fmt.Printf("   Storage Efficiency: %.2f bytes/node\n", mnt.testResults.StorageEfficiency)
-	fmt.Printf("   Consensus Efficiency: %.2f operations/sec\n", mnt.testResults.ConsensusEfficiency)
-
-	fmt.Printf("\n🔍 Test Results:\n")
 	if mnt.testResults.Success {
-		fmt.Printf("   Status: ✅ SUCCESS\n")
+
 	} else {
-		fmt.Printf("   Status: ❌ FAILED\n")
-		fmt.Printf("   Errors: %d\n", len(mnt.testResults.Errors))
-		for i, err := range mnt.testResults.Errors {
-			fmt.Printf("      %d. %s\n", i+1, err)
+
+		for _, _ = range mnt.testResults.Errors {
+			// Process error
 		}
 	}
 
-	fmt.Println(strings.Repeat("=", 80))
 }
 
 // RunTest executes the complete multi-node test
@@ -443,8 +413,6 @@ func (mnt *MultiNodePDFTest) RunTest() error {
 
 // RunMultiNodeTest is the main entry point for running the multi-node test
 func RunMultiNodeTest() error {
-	fmt.Println("🚀 Multi-Node PDF Storage Test")
-	fmt.Println("===============================")
 
 	// Create and run multi-node test
 	test := NewMultiNodePDFTest(5) // 5 nodes
@@ -453,6 +421,5 @@ func RunMultiNodeTest() error {
 		return fmt.Errorf("❌ Test failed: %w", err)
 	}
 
-	fmt.Println("\n🎉 Multi-node PDF test completed successfully!")
 	return nil
 }

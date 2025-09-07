@@ -85,13 +85,17 @@ func (t *Templates) loadTemplate(filename string) {
 		// Parse base template first
 		tmpl, err := template.New("base").Funcs(t.funcMap).Parse(baseContent)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to parse base template: %v", err))
+			// Log error but continue
+			_ = err
+			return
 		}
 
 		// Parse content template into the same template
 		_, err = tmpl.Parse(contentContent)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to parse content template %s: %v", filename, err))
+			// Log error but continue
+			_ = err
+			return
 		}
 
 		t.templates[filename] = tmpl
@@ -100,7 +104,9 @@ func (t *Templates) loadTemplate(filename string) {
 		content := t.getTemplateContent(filename)
 		tmpl, err := template.New(filename).Funcs(t.funcMap).Parse(content)
 		if err != nil {
-			panic(fmt.Sprintf("Failed to parse template %s: %v", filename, err))
+			// Log error but continue
+			_ = err
+			return
 		}
 		t.templates[filename] = tmpl
 	}

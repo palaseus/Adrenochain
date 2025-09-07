@@ -98,7 +98,7 @@ func (s *Server) setupRoutes() {
 // Start starts the HTTP server
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%d", s.port)
-	fmt.Printf("Starting API server on port %d\n", s.port)
+	
 	return http.ListenAndServe(addr, s.router)
 }
 

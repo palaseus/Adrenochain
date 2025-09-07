@@ -22,7 +22,7 @@ func NewPrivacyBenchmarkSuite() *PrivacyBenchmarkSuite {
 
 // RunAllPrivacyBenchmarks runs comprehensive benchmarks for all privacy packages
 func (bs *PrivacyBenchmarkSuite) RunAllPrivacyBenchmarks() error {
-	fmt.Println("🚀 Starting Privacy Package Performance Benchmarks...")
+	
 
 	// Benchmark Private DeFi Package
 	if err := bs.benchmarkPrivateDeFi(); err != nil {
@@ -39,13 +39,13 @@ func (bs *PrivacyBenchmarkSuite) RunAllPrivacyBenchmarks() error {
 		return fmt.Errorf("privacy ZK-rollups benchmarks failed: %v", err)
 	}
 
-	fmt.Println("✅ All Privacy Package Benchmarks Completed Successfully!")
+	
 	return nil
 }
 
 // benchmarkPrivateDeFi runs benchmarks for the Private DeFi Package
 func (bs *PrivacyBenchmarkSuite) benchmarkPrivateDeFi() error {
-	fmt.Println("📊 Benchmarking Private DeFi Package...")
+	
 
 	// Benchmark 1: Confidential Transaction Performance
 	result := bs.benchmarkConfidentialTransactions()
@@ -67,13 +67,13 @@ func (bs *PrivacyBenchmarkSuite) benchmarkPrivateDeFi() error {
 	result = bs.benchmarkPrivateDeFiMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Private DeFi benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkPrivacyPools runs benchmarks for the Privacy Pools Package
 func (bs *PrivacyBenchmarkSuite) benchmarkPrivacyPools() error {
-	fmt.Println("📊 Benchmarking Privacy Pools Package...")
+	
 
 	// Benchmark 1: Coin Mixing Performance
 	result := bs.benchmarkCoinMixing()
@@ -95,13 +95,13 @@ func (bs *PrivacyBenchmarkSuite) benchmarkPrivacyPools() error {
 	result = bs.benchmarkPrivacyPoolsMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Privacy Pools benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkPrivacyZKRollups runs benchmarks for the Privacy ZK-Rollups Package
 func (bs *PrivacyBenchmarkSuite) benchmarkPrivacyZKRollups() error {
-	fmt.Println("📊 Benchmarking Privacy ZK-Rollups Package...")
+	
 
 	// Benchmark 1: Privacy-Preserving Scaling Performance
 	result := bs.benchmarkPrivacyPreservingScaling()
@@ -123,7 +123,7 @@ func (bs *PrivacyBenchmarkSuite) benchmarkPrivacyZKRollups() error {
 	result = bs.benchmarkPrivacyZKRollupsMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Privacy ZK-Rollups benchmarks completed")
+	
 	return nil
 }
 

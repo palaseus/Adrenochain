@@ -22,7 +22,7 @@ func NewCrossChainBenchmarkSuite() *CrossChainBenchmarkSuite {
 
 // RunAllCrossChainBenchmarks runs comprehensive benchmarks for all cross-chain packages
 func (bs *CrossChainBenchmarkSuite) RunAllCrossChainBenchmarks() error {
-	fmt.Println("🚀 Starting Cross-Chain Package Performance Benchmarks...")
+	
 	
 	// Benchmark IBC Protocol Package
 	if err := bs.benchmarkIBCProtocol(); err != nil {
@@ -44,13 +44,13 @@ func (bs *CrossChainBenchmarkSuite) RunAllCrossChainBenchmarks() error {
 		return fmt.Errorf("cross-chain DeFi benchmarks failed: %v", err)
 	}
 	
-	fmt.Println("✅ All Cross-Chain Package Benchmarks Completed Successfully!")
+	
 	return nil
 }
 
 // benchmarkIBCProtocol runs benchmarks for the IBC Protocol Package
 func (bs *CrossChainBenchmarkSuite) benchmarkIBCProtocol() error {
-	fmt.Println("📊 Benchmarking IBC Protocol Package...")
+	
 	
 	// Benchmark 1: Connection Establishment Performance
 	result := bs.benchmarkIBCConnectionEstablishment()
@@ -72,13 +72,13 @@ func (bs *CrossChainBenchmarkSuite) benchmarkIBCProtocol() error {
 	result = bs.benchmarkIBCMemoryEfficiency()
 	bs.AddResult(result)
 	
-	fmt.Println("✅ IBC Protocol benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkAtomicSwaps runs benchmarks for the Atomic Swaps Package
 func (bs *CrossChainBenchmarkSuite) benchmarkAtomicSwaps() error {
-	fmt.Println("📊 Benchmarking Atomic Swaps Package...")
+	
 	
 	// Benchmark 1: HTLC Creation Performance
 	result := bs.benchmarkAtomicSwapHTLCCreation()
@@ -100,13 +100,13 @@ func (bs *CrossChainBenchmarkSuite) benchmarkAtomicSwaps() error {
 	result = bs.benchmarkAtomicSwapMemory()
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Atomic Swaps benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkMultiChainValidators runs benchmarks for the Multi-Chain Validators Package
 func (bs *CrossChainBenchmarkSuite) benchmarkMultiChainValidators() error {
-	fmt.Println("📊 Benchmarking Multi-Chain Validators Package...")
+	
 	
 	// Benchmark 1: Validator Registration Performance
 	result := bs.benchmarkValidatorRegistration()
@@ -128,13 +128,13 @@ func (bs *CrossChainBenchmarkSuite) benchmarkMultiChainValidators() error {
 	result = bs.benchmarkValidatorMemory()
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Multi-Chain Validators benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkCrossChainDeFi runs benchmarks for the Cross-Chain DeFi Package
 func (bs *CrossChainBenchmarkSuite) benchmarkCrossChainDeFi() error {
-	fmt.Println("📊 Benchmarking Cross-Chain DeFi Package...")
+	
 	
 	// Benchmark 1: Multi-Chain Lending Performance
 	result := bs.benchmarkMultiChainLending()
@@ -156,7 +156,7 @@ func (bs *CrossChainBenchmarkSuite) benchmarkCrossChainDeFi() error {
 	result = bs.benchmarkDeFiMemory()
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Cross-Chain DeFi benchmarks completed")
+	
 	return nil
 }
 

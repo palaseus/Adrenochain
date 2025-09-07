@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // Storage implements a file-based storage for blocks and chain state.
@@ -22,7 +23,8 @@ type StorageConfig struct {
 
 // DefaultStorageConfig returns the default storage configuration.
 func DefaultStorageConfig() *StorageConfig {
-	return &StorageConfig{DataDir: "./data"}
+	systemConfig := config.DefaultSystemConfig()
+	return &StorageConfig{DataDir: systemConfig.Storage.DataDir}
 }
 
 // WithDataDir sets the data directory for the storage config.
@@ -34,11 +36,13 @@ func (c *StorageConfig) WithDataDir(dataDir string) *StorageConfig {
 }
 
 // NewStorage creates a new file-based storage.
-func NewStorage(config *StorageConfig) (*Storage, error) {
-	if err := os.MkdirAll(config.DataDir, 0755); err != nil {
+func NewStorage(storageConfig *StorageConfig) (*Storage, error) {
+	systemConfig := config.DefaultSystemConfig()
+	filePerms := os.FileMode(systemConfig.Storage.FilePermissions)
+	if err := os.MkdirAll(storageConfig.DataDir, filePerms); err != nil {
 		return nil, err
 	}
-	return &Storage{dataDir: config.DataDir}, nil
+	return &Storage{dataDir: storageConfig.DataDir}, nil
 }
 
 // StoreBlock stores a block to a file.

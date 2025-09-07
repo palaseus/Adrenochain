@@ -17,6 +17,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/palaseus/adrenochain/pkg/chain"
+	"github.com/palaseus/adrenochain/pkg/config"
+	"github.com/palaseus/adrenochain/pkg/logger"
 	"github.com/palaseus/adrenochain/pkg/mempool"
 	proto_net "github.com/palaseus/adrenochain/pkg/proto/net"
 
@@ -33,46 +35,50 @@ import (
 
 // Notifiee methods for network.Notifiee interface
 func (n *Network) Connected(net network.Network, conn network.Conn) {
-	fmt.Printf("Connected to: %s/p2p/%s\n", conn.RemoteMultiaddr(), conn.RemotePeer().String())
+	if n.logger != nil {
+		n.logger.Info("Connected to peer: %s at %s", conn.RemotePeer().String(), conn.RemoteMultiaddr().String())
+	}
 }
 
 func (n *Network) Disconnected(net network.Network, conn network.Conn) {
-	fmt.Printf("Disconnected from: %s/p2p/%s\n", conn.RemoteMultiaddr(), conn.RemotePeer().String())
+	if n.logger != nil {
+		n.logger.Info("Disconnected from peer: %s at %s", conn.RemotePeer().String(), conn.RemoteMultiaddr().String())
+	}
 }
 
 func (n *Network) OpenedStream(net network.Network, s network.Stream) {
-	if s != nil && s.Conn() != nil {
-		fmt.Printf("Opened stream from: %s\n", s.Conn().RemotePeer().String())
+	if s != nil && s.Conn() != nil && n.logger != nil {
+		n.logger.Debug("Opened stream from peer: %s", s.Conn().RemotePeer().String())
 	}
 }
 
 func (n *Network) ClosedStream(net network.Network, s network.Stream) {
-	if s != nil && s.Conn() != nil {
-		fmt.Printf("Closed stream from: %s\n", s.Conn().RemotePeer().String())
+	if s != nil && s.Conn() != nil && n.logger != nil {
+		n.logger.Debug("Closed stream from peer: %s", s.Conn().RemotePeer().String())
 	}
 }
 
 func (n *Network) OpenedConn(net network.Network, conn network.Conn) {
-	if conn != nil {
-		fmt.Printf("Opened connection to: %s\n", conn.RemotePeer().String())
+	if conn != nil && n.logger != nil {
+		n.logger.Debug("Opened connection to peer: %s", conn.RemotePeer().String())
 	}
 }
 
 func (n *Network) ClosedConn(net network.Network, conn network.Conn) {
-	if conn != nil {
-		fmt.Printf("Closed connection to: %s\n", conn.RemotePeer().String())
+	if conn != nil && n.logger != nil {
+		n.logger.Debug("Closed connection to peer: %s", conn.RemotePeer().String())
 	}
 }
 
 func (n *Network) Listen(net network.Network, multiaddr multiaddr.Multiaddr) {
-	if multiaddr != nil {
-		fmt.Printf("Network listening on: %s\n", multiaddr.String())
+	if multiaddr != nil && n.logger != nil {
+		n.logger.Info("Network listening on: %s", multiaddr.String())
 	}
 }
 
 func (n *Network) ListenClose(net network.Network, multiaddr multiaddr.Multiaddr) {
-	if multiaddr != nil {
-		fmt.Printf("Network stopped listening on: %s\n", multiaddr.String())
+	if multiaddr != nil && n.logger != nil {
+		n.logger.Info("Network stopped listening on: %s", multiaddr.String())
 	}
 }
 
@@ -82,11 +88,15 @@ func (n *Network) HandlePeerFound(peerInfo peer.AddrInfo) {
 	defer n.mu.Unlock()
 
 	if _, found := n.peers[peerInfo.ID]; !found {
-		fmt.Printf("Discovered new peer: %s\n", peerInfo.ID.String())
+		if n.logger != nil {
+			n.logger.Info("Discovered new peer: %s", peerInfo.ID.String())
+		}
 
 		// Check peer limit before adding
 		if len(n.peers) >= n.config.MaxPeers {
-			fmt.Printf("Skipping connection to %s: MaxPeers limit reached (%d)\n", peerInfo.ID.String(), n.config.MaxPeers)
+			if n.logger != nil {
+				n.logger.Warn("Skipping connection due to peer limit, peer: %s, max_peers: %d", peerInfo.ID.String(), n.config.MaxPeers)
+			}
 			return
 		}
 
@@ -100,7 +110,9 @@ func (n *Network) HandlePeerFound(peerInfo peer.AddrInfo) {
 		// Attempt to connect to the discovered peer
 		go func() {
 			if err := n.host.Connect(n.ctx, peerInfo); err != nil {
-				fmt.Printf("Failed to connect to discovered peer %s: %v\n", peerInfo.ID.String(), err)
+				if n.logger != nil {
+					n.logger.Error("Failed to connect to discovered peer %s: %v", peerInfo.ID.String(), err)
+				}
 			}
 		}()
 	}
@@ -120,6 +132,35 @@ type Network struct {
 	chain          *chain.Chain
 	mempool        *mempool.Mempool
 	privKey        crypto.PrivKey // Private key of the host
+	logger         *logger.Logger // Logger for structured logging
+
+	// Performance improvements
+	connectionPool   map[peer.ID]*ConnectionPool
+	bandwidthLimiter *BandwidthLimiter
+	messageQueue     chan *Message
+}
+
+// ConnectionPool manages connections to a peer
+type ConnectionPool struct {
+	connections []network.Conn
+	maxConns    int
+	mu          sync.RWMutex
+}
+
+// BandwidthLimiter controls bandwidth usage
+type BandwidthLimiter struct {
+	bytesPerSecond int64
+	lastUpdate     time.Time
+	bytesUsed      int64
+	mu             sync.Mutex
+}
+
+// Message represents a network message
+type Message struct {
+	Type    string
+	Data    []byte
+	PeerID  peer.ID
+	Timeout time.Duration
 }
 
 // PeerInfo holds information about a connected peer
@@ -143,19 +184,26 @@ type NetworkConfig struct {
 
 // DefaultNetworkConfig returns the default network configuration
 func DefaultNetworkConfig() *NetworkConfig {
+	systemConfig := config.DefaultSystemConfig()
 	return &NetworkConfig{
 		ListenPort:        0, // Random port
 		BootstrapPeers:    []string{},
 		EnableMDNS:        true,
 		EnableRelay:       false,
-		MaxPeers:          50,
-		ConnectionTimeout: 30 * time.Second,
+		MaxPeers:          systemConfig.Network.MaxPeers,
+		ConnectionTimeout: systemConfig.Network.ConnectionTimeout,
 	}
 }
 
 // NewNetwork creates a new P2P network
 func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Mempool) (*Network, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Initialize logger
+	networkLogger := logger.NewLogger(&logger.Config{
+		Prefix: "network",
+		Level:  logger.INFO,
+	})
 
 	// Generate a new key pair
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, rand.Reader)
@@ -223,6 +271,7 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		chain:          chain,
 		mempool:        mempool,
 		privKey:        priv,
+		logger:         networkLogger,
 	}
 
 	// Set up event handlers
@@ -268,7 +317,7 @@ func (n *Network) connectToBootstrapPeers() {
 	for _, peerAddr := range n.bootstrapPeers {
 		peerinfo, err := peer.AddrInfoFromP2pAddr(peerAddr)
 		if err != nil || peerinfo == nil {
-			fmt.Printf("Failed to parse bootstrap peer address %s: %v\n", peerAddr, err)
+
 			continue
 		}
 
@@ -282,14 +331,14 @@ func (n *Network) connectToBootstrapPeers() {
 			n.mu.RUnlock()
 
 			if currentPeers >= maxPeers {
-				fmt.Printf("Skipping bootstrap connection to %s: MaxPeers limit reached (%d)\n", peerinfo.ID.String(), maxPeers)
+
 				return
 			}
 
 			if err := n.host.Connect(n.ctx, *peerinfo); err != nil {
-				fmt.Printf("Failed to connect to bootstrap peer %s: %v\n", peerinfo.ID.String(), err)
+
 			} else {
-				fmt.Printf("Connected to bootstrap peer: %s\n", peerinfo.ID.String())
+
 			}
 		}()
 	}

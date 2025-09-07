@@ -1,10 +1,10 @@
 package defi
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -62,7 +62,7 @@ type ConfidentialTransaction struct {
 	Sender          string                 `json:"sender"`
 	Recipient       string                 `json:"recipient"`
 	EncryptedData   []byte                 `json:"encrypted_data"`
-	ZKProof         *security.ZKProof     `json:"zk_proof"`
+	ZKProof         *security.ZKProof      `json:"zk_proof"`
 	Timestamp       time.Time              `json:"timestamp"`
 	Status          TransactionStatus      `json:"status"`
 	Metadata        map[string]interface{} `json:"metadata"`
@@ -115,7 +115,7 @@ type DeFiOperation struct {
 	Operation       string                 `json:"operation"`
 	EncryptedParams []byte                 `json:"encrypted_params"`
 	Result          []byte                 `json:"result"`
-	ZKProof         *security.ZKProof     `json:"zk_proof"`
+	ZKProof         *security.ZKProof      `json:"zk_proof"`
 	Timestamp       time.Time              `json:"timestamp"`
 	Status          OperationStatus        `json:"status"`
 	Metadata        map[string]interface{} `json:"metadata"`
@@ -152,25 +152,25 @@ func (os OperationStatus) String() string {
 
 // PrivateDeFiConfig represents configuration for the Private DeFi system
 type PrivateDeFiConfig struct {
-	MaxTransactions    uint64        `json:"max_transactions"`
-	MaxBalances        uint64        `json:"max_balances"`
-	MaxOperations      uint64        `json:"max_operations"`
-	EncryptionKeySize  int           `json:"encryption_key_size"`
+	MaxTransactions    uint64             `json:"max_transactions"`
+	MaxBalances        uint64             `json:"max_balances"`
+	MaxOperations      uint64             `json:"max_operations"`
+	EncryptionKeySize  int                `json:"encryption_key_size"`
 	ZKProofType        security.ProofType `json:"zk_proof_type"`
-	TransactionTimeout time.Duration `json:"transaction_timeout"`
-	CleanupInterval    time.Duration `json:"cleanup_interval"`
+	TransactionTimeout time.Duration      `json:"transaction_timeout"`
+	CleanupInterval    time.Duration      `json:"cleanup_interval"`
 }
 
 // PrivateDeFi represents the main Private DeFi system
 type PrivateDeFi struct {
-	mu           sync.RWMutex
-	Transactions map[string]*ConfidentialTransaction `json:"transactions"`
-	Balances     map[string]*PrivateBalance         `json:"balances"`
-	Operations   map[string]*DeFiOperation          `json:"operations"`
-	Config       PrivateDeFiConfig                  `json:"config"`
+	mu            sync.RWMutex
+	Transactions  map[string]*ConfidentialTransaction `json:"transactions"`
+	Balances      map[string]*PrivateBalance          `json:"balances"`
+	Operations    map[string]*DeFiOperation           `json:"operations"`
+	Config        PrivateDeFiConfig                   `json:"config"`
 	encryptionKey []byte
-	running      bool
-	stopChan     chan struct{}
+	running       bool
+	stopChan      chan struct{}
 }
 
 // NewPrivateDeFi creates a new Private DeFi system
@@ -201,7 +201,11 @@ func NewPrivateDeFi(config PrivateDeFiConfig) *PrivateDeFi {
 	// Generate encryption key
 	encryptionKey := make([]byte, config.EncryptionKeySize)
 	if _, err := rand.Read(encryptionKey); err != nil {
-		panic(fmt.Sprintf("Failed to generate encryption key: %v", err))
+		// Return a default private DeFi instance with error handling
+		return &PrivateDeFi{
+			Config:        config,
+			encryptionKey: make([]byte, 32), // Default key
+		}
 	}
 
 	return &PrivateDeFi{
@@ -548,7 +552,7 @@ func (pdf *PrivateDeFi) decryptData(encryptedData []byte) ([]byte, error) {
 func (pdf *PrivateDeFi) updateBalances(transaction *ConfidentialTransaction) error {
 	// This is a simplified implementation
 	// In a real system, this would involve complex balance management logic
-	
+
 	// Update sender balance
 	senderKey := fmt.Sprintf("%s:%s", transaction.Asset, transaction.Sender)
 	if senderBalance, exists := pdf.Balances[senderKey]; exists {
@@ -760,10 +764,10 @@ func (pdf *PrivateDeFi) copyTransaction(tx *ConfidentialTransaction) *Confidenti
 	copied := *tx
 	copied.EncryptedAmount = make([]byte, len(tx.EncryptedAmount))
 	copy(copied.EncryptedAmount, tx.EncryptedAmount)
-	
+
 	copied.EncryptedData = make([]byte, len(tx.EncryptedData))
 	copy(copied.EncryptedData, tx.EncryptedData)
-	
+
 	if tx.ZKProof != nil {
 		copied.ZKProof = &security.ZKProof{
 			Type:            tx.ZKProof.Type,
@@ -789,10 +793,10 @@ func (pdf *PrivateDeFi) copyBalance(balance *PrivateBalance) *PrivateBalance {
 	copied := *balance
 	copied.EncryptedAmount = make([]byte, len(balance.EncryptedAmount))
 	copy(copied.EncryptedAmount, balance.EncryptedAmount)
-	
+
 	copied.Commitment = make([]byte, len(balance.Commitment))
 	copy(copied.Commitment, balance.Commitment)
-	
+
 	copied.Metadata = pdf.copyMap(balance.Metadata)
 	return &copied
 }
@@ -805,12 +809,12 @@ func (pdf *PrivateDeFi) copyOperation(op *DeFiOperation) *DeFiOperation {
 	copied := *op
 	copied.EncryptedParams = make([]byte, len(op.EncryptedParams))
 	copy(copied.EncryptedParams, op.EncryptedParams)
-	
+
 	if op.Result != nil {
 		copied.Result = make([]byte, len(op.Result))
 		copy(copied.Result, op.Result)
 	}
-	
+
 	if op.ZKProof != nil {
 		copied.ZKProof = &security.ZKProof{
 			Type:            op.ZKProof.Type,

@@ -109,10 +109,18 @@ func NewAtomicSwap(chainA, chainB, assetA, assetB string, amountA, amountB *big.
 
 	// Validate amounts
 	if amountA.Cmp(config.MinAmount) < 0 || amountA.Cmp(config.MaxAmount) > 0 {
-		panic(fmt.Sprintf("amount A %s outside valid range [%s, %s]", amountA.String(), config.MinAmount.String(), config.MaxAmount.String()))
+		// Return a default swap with error handling
+		return &AtomicSwap{
+			ID:     "invalid",
+			Status: SwapStatusExpired,
+		}
 	}
 	if amountB.Cmp(config.MinAmount) < 0 || amountB.Cmp(config.MaxAmount) > 0 {
-		panic(fmt.Sprintf("amount B %s outside valid range [%s, %s]", amountB.String(), config.MinAmount.String(), config.MaxAmount.String()))
+		// Return a default swap with error handling
+		return &AtomicSwap{
+			ID:     "invalid",
+			Status: SwapStatusExpired,
+		}
 	}
 
 	// Generate secret and hash

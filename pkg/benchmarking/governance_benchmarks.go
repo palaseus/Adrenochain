@@ -22,7 +22,7 @@ func NewGovernanceBenchmarkSuite() *GovernanceBenchmarkSuite {
 
 // RunAllGovernanceBenchmarks runs comprehensive benchmarks for all governance packages
 func (bs *GovernanceBenchmarkSuite) RunAllGovernanceBenchmarks() error {
-	fmt.Println("🚀 Starting Governance Package Performance Benchmarks...")
+	
 
 	// Benchmark Quadratic Voting Package
 	if err := bs.benchmarkQuadraticVoting(); err != nil {
@@ -44,13 +44,13 @@ func (bs *GovernanceBenchmarkSuite) RunAllGovernanceBenchmarks() error {
 		return fmt.Errorf("cross-protocol governance benchmarks failed: %v", err)
 	}
 
-	fmt.Println("✅ All Governance Package Benchmarks Completed Successfully!")
+	
 	return nil
 }
 
 // benchmarkQuadraticVoting runs benchmarks for the Quadratic Voting Package
 func (bs *GovernanceBenchmarkSuite) benchmarkQuadraticVoting() error {
-	fmt.Println("📊 Benchmarking Quadratic Voting Package...")
+	
 
 	// Benchmark 1: Vote Creation Performance
 	result := bs.benchmarkQuadraticVoteCreation()
@@ -72,13 +72,13 @@ func (bs *GovernanceBenchmarkSuite) benchmarkQuadraticVoting() error {
 	result = bs.benchmarkQuadraticMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Quadratic Voting benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkDelegatedGovernance runs benchmarks for the Delegated Governance Package
 func (bs *GovernanceBenchmarkSuite) benchmarkDelegatedGovernance() error {
-	fmt.Println("📊 Benchmarking Delegated Governance Package...")
+	
 
 	// Benchmark 1: Delegation Creation Performance
 	result := bs.benchmarkDelegationCreation()
@@ -100,13 +100,13 @@ func (bs *GovernanceBenchmarkSuite) benchmarkDelegatedGovernance() error {
 	result = bs.benchmarkDelegatedMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Delegated Governance benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkProposalMarkets runs benchmarks for the Proposal Markets Package
 func (bs *GovernanceBenchmarkSuite) benchmarkProposalMarkets() error {
-	fmt.Println("📊 Benchmarking Proposal Markets Package...")
+	
 
 	// Benchmark 1: Market Creation Performance
 	result := bs.benchmarkMarketCreation()
@@ -128,13 +128,13 @@ func (bs *GovernanceBenchmarkSuite) benchmarkProposalMarkets() error {
 	result = bs.benchmarkMarketsMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Proposal Markets benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkCrossProtocolGovernance runs benchmarks for the Cross-Protocol Governance Package
 func (bs *GovernanceBenchmarkSuite) benchmarkCrossProtocolGovernance() error {
-	fmt.Println("📊 Benchmarking Cross-Protocol Governance Package...")
+	
 
 	// Benchmark 1: Protocol Registration Performance
 	result := bs.benchmarkProtocolRegistration()
@@ -156,7 +156,7 @@ func (bs *GovernanceBenchmarkSuite) benchmarkCrossProtocolGovernance() error {
 	result = bs.benchmarkCrossProtocolMemory()
 	bs.AddResult(result)
 
-	fmt.Println("✅ Cross-Protocol Governance benchmarks completed")
+	
 	return nil
 }
 

@@ -23,7 +23,7 @@ func NewLayer2BenchmarkSuite() *Layer2BenchmarkSuite {
 
 // RunAllLayer2Benchmarks runs comprehensive benchmarks for all Layer 2 packages
 func (bs *Layer2BenchmarkSuite) RunAllLayer2Benchmarks() error {
-	fmt.Println("🚀 Starting Layer 2 Package Performance Benchmarks...")
+	
 	
 	// Benchmark ZK Rollups Package
 	if err := bs.benchmarkZKRollups(); err != nil {
@@ -55,13 +55,13 @@ func (bs *Layer2BenchmarkSuite) RunAllLayer2Benchmarks() error {
 		return fmt.Errorf("sharding benchmarks failed: %v", err)
 	}
 	
-	fmt.Println("✅ All Layer 2 Package Benchmarks Completed Successfully!")
+	
 	return nil
 }
 
 // benchmarkZKRollups runs benchmarks for the ZK Rollups Package
 func (bs *Layer2BenchmarkSuite) benchmarkZKRollups() error {
-	fmt.Println("📊 Benchmarking ZK Rollups Package...")
+	
 	
 	// Benchmark 1: Transaction Addition Performance
 	result := bs.benchmarkZKTransactionAddition()
@@ -83,67 +83,67 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKRollups() error {
 	result = bs.benchmarkZKMemoryEfficiency()
 	bs.AddResult(result)
 	
-	fmt.Println("✅ ZK Rollups benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkOptimisticRollups runs benchmarks for the Optimistic Rollups Package
 func (bs *Layer2BenchmarkSuite) benchmarkOptimisticRollups() error {
-	fmt.Println("📊 Benchmarking Optimistic Rollups Package...")
+	
 	
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Optimistic Rollups", "Transaction Processing", 5000)
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Optimistic Rollups benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkStateChannels runs benchmarks for the State Channels Package
 func (bs *Layer2BenchmarkSuite) benchmarkStateChannels() error {
-	fmt.Println("📊 Benchmarking State Channels Package...")
+	
 	
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("State Channels", "Channel Operations", 3000)
 	bs.AddResult(result)
 	
-	fmt.Println("✅ State Channels benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkPaymentChannels runs benchmarks for the Payment Channels Package
 func (bs *Layer2BenchmarkSuite) benchmarkPaymentChannels() error {
-	fmt.Println("📊 Benchmarking Payment Channels Package...")
+	
 	
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Payment Channels", "Payment Processing", 4000)
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Payment Channels benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkSidechains runs benchmarks for the Sidechains Package
 func (bs *Layer2BenchmarkSuite) benchmarkSidechains() error {
-	fmt.Println("📊 Benchmarking Sidechains Package...")
+	
 	
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Sidechains", "Cross-Chain Operations", 2000)
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Sidechains benchmarks completed")
+	
 	return nil
 }
 
 // benchmarkSharding runs benchmarks for the Sharding Package
 func (bs *Layer2BenchmarkSuite) benchmarkSharding() error {
-	fmt.Println("📊 Benchmarking Sharding Package...")
+	
 	
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Sharding", "Shard Operations", 2500)
 	bs.AddResult(result)
 	
-	fmt.Println("✅ Sharding benchmarks completed")
+	
 	return nil
 }
 

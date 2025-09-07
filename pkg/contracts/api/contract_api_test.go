@@ -955,8 +955,8 @@ func TestGetCurrentTimestamp(t *testing.T) {
 
 	// Test that timestamp is returned
 	timestamp := api.getCurrentTimestamp()
-	if timestamp != 0 {
-		t.Error("Mock timestamp should be 0")
+	if timestamp <= 0 {
+		t.Error("Timestamp should be greater than 0")
 	}
 }
 
@@ -1079,15 +1079,15 @@ func TestDeployContractAddressGenerationFailure(t *testing.T) {
 	mockEngine := &MockContractEngine{}
 	api := NewContractAPI(mockEngine, config)
 
-	// Set TotalContracts to 255 to trigger the overflow condition in generateContractAddress
-	api.TotalContracts = 255
+	// Set TotalContracts to a high value to test address generation
+	api.TotalContracts = 1000
 
 	bytecode := []byte{0x60, 0x00, 0x52}
 	args := []interface{}{}
 
-	// This should fail because generateContractAddress will return empty address
+	// This should succeed with the new hash-based address generation
 	_, err := api.DeployContract(context.Background(), ContractTypeERC20, bytecode, args, 100000, big.NewInt(20000000000))
-	if err != ErrInvalidContractAddress {
-		t.Errorf("Expected ErrInvalidContractAddress when TotalContracts >= 255, got %v", err)
+	if err != nil {
+		t.Errorf("Expected successful deployment with hash-based address generation, got error: %v", err)
 	}
 }

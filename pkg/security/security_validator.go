@@ -34,7 +34,7 @@ func NewSecurityValidator() *SecurityValidator {
 
 // RunAllSecurityValidations executes comprehensive security validation for all packages
 func (sv *SecurityValidator) RunAllSecurityValidations() error {
-	fmt.Println("🔒 Starting Comprehensive Security Validation Suite...")
+	
 
 	// Run Layer 2 Security Validations
 	if err := sv.validateLayer2Security(); err != nil {
@@ -61,13 +61,13 @@ func (sv *SecurityValidator) RunAllSecurityValidations() error {
 		return fmt.Errorf("AI/ML security validation failed: %v", err)
 	}
 
-	fmt.Println("✅ All Security Validations Completed Successfully!")
+	
 	return nil
 }
 
 // validateLayer2Security runs security validation for Layer 2 packages
 func (sv *SecurityValidator) validateLayer2Security() error {
-	fmt.Println("🔒 Validating Layer 2 Security...")
+	
 
 	// ZK Rollups Security
 	result := sv.runFuzzTest("ZK Rollups", "Transaction Processing", 1000)
@@ -114,13 +114,13 @@ func (sv *SecurityValidator) validateLayer2Security() error {
 	result = sv.runRaceDetection("Sharding", "Cross-Shard Communication", 200)
 	sv.AddResult(result)
 
-	fmt.Println("✅ Layer 2 Security validation completed")
+	
 	return nil
 }
 
 // validateCrossChainSecurity runs security validation for cross-chain packages
 func (sv *SecurityValidator) validateCrossChainSecurity() error {
-	fmt.Println("🔒 Validating Cross-Chain Security...")
+	
 
 	// IBC Protocol Security
 	result := sv.runFuzzTest("IBC Protocol", "Connection Establishment", 600)
@@ -150,13 +150,13 @@ func (sv *SecurityValidator) validateCrossChainSecurity() error {
 	result = sv.runRaceDetection("Cross-Chain DeFi", "Yield Farming", 350)
 	sv.AddResult(result)
 
-	fmt.Println("✅ Cross-Chain Security validation completed")
+	
 	return nil
 }
 
 // validateGovernanceSecurity runs security validation for governance packages
 func (sv *SecurityValidator) validateGovernanceSecurity() error {
-	fmt.Println("🔒 Validating Governance Security...")
+	
 
 	// Quadratic Voting Security
 	result := sv.runFuzzTest("Quadratic Voting", "Vote Creation", 600)
@@ -186,13 +186,13 @@ func (sv *SecurityValidator) validateGovernanceSecurity() error {
 	result = sv.runRaceDetection("Cross-Protocol Governance", "Alignment Tracking", 300)
 	sv.AddResult(result)
 
-	fmt.Println("✅ Governance Security validation completed")
+	
 	return nil
 }
 
 // validatePrivacySecurity runs security validation for privacy packages
 func (sv *SecurityValidator) validatePrivacySecurity() error {
-	fmt.Println("🔒 Validating Privacy Security...")
+	
 
 	// Private DeFi Security
 	result := sv.runFuzzTest("Private DeFi", "Confidential Transactions", 800)
@@ -215,13 +215,13 @@ func (sv *SecurityValidator) validatePrivacySecurity() error {
 	result = sv.runRaceDetection("Privacy ZK-Rollups", "State Transitions", 350)
 	sv.AddResult(result)
 
-	fmt.Println("✅ Privacy Security validation completed")
+	
 	return nil
 }
 
 // validateAIMLSecurity runs security validation for AI/ML packages
 func (sv *SecurityValidator) validateAIMLSecurity() error {
-	fmt.Println("🔒 Validating AI/ML Security...")
+	
 
 	// Strategy Generation Security
 	result := sv.runFuzzTest("Strategy Generation", "AI Operations", 600)
@@ -244,7 +244,7 @@ func (sv *SecurityValidator) validateAIMLSecurity() error {
 	result = sv.runRaceDetection("Sentiment Analysis", "Real-time Analysis", 250)
 	sv.AddResult(result)
 
-	fmt.Println("✅ AI/ML Security validation completed")
+	
 	return nil
 }
 

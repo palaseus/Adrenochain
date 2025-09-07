@@ -508,14 +508,55 @@ func (mm *AIMarketMaker) calculateSharpeRatio() float64 {
 	// Assume risk-free rate of 0 for simplicity
 	pnl, _ := mm.Metrics.TotalPnL.Float64()
 
-	// Simplified volatility calculation
-	volatility := 0.1 // Placeholder - would be calculated from historical data
+	// Calculate actual volatility from market states
+	volatility := mm.calculateActualVolatility()
 
 	if volatility == 0 {
 		return 0.0
 	}
 
 	return pnl / volatility
+}
+
+func (mm *AIMarketMaker) calculateActualVolatility() float64 {
+	if len(mm.MarketStates) == 0 {
+		return 0.1 // Default volatility
+	}
+
+	// Calculate weighted average volatility across all markets
+	totalWeight := 0.0
+	weightedVolatility := 0.0
+	validStates := 0
+
+	for _, state := range mm.MarketStates {
+		if state != nil && state.Volatility > 0 {
+			// Weight by volume (higher volume = higher weight)
+			volumeWeight := float64(state.Volume24h.Int64()) / 1000000.0 // Normalize to reasonable range
+			if volumeWeight > 1.0 {
+				volumeWeight = 1.0
+			}
+
+			weightedVolatility += state.Volatility * volumeWeight
+			totalWeight += volumeWeight
+			validStates++
+		}
+	}
+
+	if totalWeight == 0 || validStates == 0 {
+		// Fallback to simple average if no volume data
+		sum := 0.0
+		for _, state := range mm.MarketStates {
+			if state != nil && state.Volatility > 0 {
+				sum += state.Volatility
+			}
+		}
+		if validStates > 0 {
+			return sum / float64(validStates)
+		}
+		return 0.1 // Default volatility
+	}
+
+	return weightedVolatility / totalWeight
 }
 
 func (mm *AIMarketMaker) getMarketStates() map[string]*MarketState {
@@ -535,13 +576,42 @@ func (mm *AIMarketMaker) getMarketStates() map[string]*MarketState {
 }
 
 func (mm *AIMarketMaker) predictOptimalLiquidity(marketStates map[string]*MarketState) map[string]*big.Int {
-	// Placeholder for ML-based liquidity prediction
-	// In a real implementation, this would use trained models
 	optimalDistribution := make(map[string]*big.Int)
 
-	for marketID := range marketStates {
-		// Simple heuristic: distribute liquidity evenly
-		optimalDistribution[marketID] = big.NewInt(1000000000000000000) // 1 ETH
+	if len(marketStates) == 0 {
+		return optimalDistribution
+	}
+
+	// Calculate total available liquidity
+	totalLiquidity, _ := big.NewInt(0).SetString("10000000000000000000", 10) // 10 ETH base liquidity
+	availableLiquidity := new(big.Int).Set(totalLiquidity)
+
+	// Calculate weights based on volume and volatility
+	weights := make(map[string]float64)
+	totalWeight := 0.0
+
+	for marketID, state := range marketStates {
+		if state != nil {
+			// Weight by volume and inverse volatility (higher volume, lower volatility = higher weight)
+			volumeWeight := float64(state.Volume24h.Int64()) / 1000000.0
+			volatilityWeight := 1.0 / (1.0 + state.Volatility) // Lower volatility = higher weight
+
+			weight := volumeWeight * volatilityWeight
+			weights[marketID] = weight
+			totalWeight += weight
+		}
+	}
+
+	// Distribute liquidity based on weights
+	for marketID, weight := range weights {
+		if totalWeight > 0 {
+			allocation := float64(availableLiquidity.Int64()) * (weight / totalWeight)
+			optimalDistribution[marketID] = big.NewInt(int64(allocation))
+		} else {
+			// Equal distribution if no weights
+			equalShare := availableLiquidity.Int64() / int64(len(marketStates))
+			optimalDistribution[marketID] = big.NewInt(equalShare)
+		}
 	}
 
 	return optimalDistribution

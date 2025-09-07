@@ -18,15 +18,15 @@ type GovernanceCoordinator struct {
 
 // GovernanceConfig represents governance configuration
 type GovernanceConfig struct {
-	Quorum                 *big.Int        `json:"quorum"`
-	VotingPeriod           time.Duration   `json:"voting_period"`
-	MaxTransactionAmount   *big.Int        `json:"max_transaction_amount"`
-	DailyLimit             *big.Int        `json:"daily_limit"`
-	MinProposalPower       *big.Int        `json:"min_proposal_power"`
-	MultisigAddresses      []string        `json:"multisig_addresses"`
-	RequiredSignatures     int             `json:"required_signatures"`
-	EmergencyThreshold     *big.Int        `json:"emergency_threshold"`
-	SnapshotInterval       time.Duration   `json:"snapshot_interval"`
+	Quorum               *big.Int      `json:"quorum"`
+	VotingPeriod         time.Duration `json:"voting_period"`
+	MaxTransactionAmount *big.Int      `json:"max_transaction_amount"`
+	DailyLimit           *big.Int      `json:"daily_limit"`
+	MinProposalPower     *big.Int      `json:"min_proposal_power"`
+	MultisigAddresses    []string      `json:"multisig_addresses"`
+	RequiredSignatures   int           `json:"required_signatures"`
+	EmergencyThreshold   *big.Int      `json:"emergency_threshold"`
+	SnapshotInterval     time.Duration `json:"snapshot_interval"`
 }
 
 // NewGovernanceCoordinator creates a new governance coordinator
@@ -36,8 +36,8 @@ func NewGovernanceCoordinator(config *GovernanceConfig) *GovernanceCoordinator {
 	}
 
 	coordinator := &GovernanceCoordinator{
-		config:          config,
-		eventHandlers:   make(map[string][]func(interface{})),
+		config:        config,
+		eventHandlers: make(map[string][]func(interface{})),
 	}
 
 	// Initialize voting system
@@ -57,23 +57,32 @@ func NewGovernanceCoordinator(config *GovernanceConfig) *GovernanceCoordinator {
 // getDefaultGovernanceConfig returns default governance configuration
 func getDefaultGovernanceConfig() *GovernanceConfig {
 	return &GovernanceConfig{
-		Quorum:                 mustParseBigInt("1000000000000000000000"), // 1000 tokens
-		VotingPeriod:           7 * 24 * time.Hour,                       // 7 days
-		MaxTransactionAmount:   mustParseBigInt("100000000000000000000"),  // 100 tokens
-		DailyLimit:             mustParseBigInt("1000000000000000000000"), // 1000 tokens
-		MinProposalPower:       mustParseBigInt("100000000000000000000"),  // 100 tokens
-		MultisigAddresses:      []string{},
-		RequiredSignatures:     3,
-		EmergencyThreshold:     mustParseBigInt("10000000000000000000000"), // 10000 tokens
-		SnapshotInterval:       24 * time.Hour,                            // 24 hours
+		Quorum:               parseBigIntSafe("1000000000000000000000"), // 1000 tokens
+		VotingPeriod:         7 * 24 * time.Hour,                        // 7 days
+		MaxTransactionAmount: parseBigIntSafe("100000000000000000000"),  // 100 tokens
+		DailyLimit:           parseBigIntSafe("1000000000000000000000"), // 1000 tokens
+		MinProposalPower:     parseBigIntSafe("100000000000000000000"),  // 100 tokens
+		MultisigAddresses:    []string{},
+		RequiredSignatures:   3,
+		EmergencyThreshold:   parseBigIntSafe("10000000000000000000000"), // 10000 tokens
+		SnapshotInterval:     24 * time.Hour,                             // 24 hours
 	}
 }
 
-// mustParseBigInt parses a string to big.Int, panics on error
-func mustParseBigInt(s string) *big.Int {
+// parseBigInt parses a string to big.Int, returns error on failure
+func parseBigInt(s string) (*big.Int, error) {
 	result, ok := new(big.Int).SetString(s, 10)
 	if !ok {
-		panic("failed to parse big.Int: " + s)
+		return nil, fmt.Errorf("failed to parse big.Int: %s", s)
+	}
+	return result, nil
+}
+
+// parseBigIntSafe parses a string to big.Int, returns zero value on error
+func parseBigIntSafe(s string) *big.Int {
+	result, err := parseBigInt(s)
+	if err != nil {
+		return big.NewInt(0)
 	}
 	return result
 }

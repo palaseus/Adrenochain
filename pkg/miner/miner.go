@@ -192,7 +192,7 @@ func (m *Miner) mineBlocks() {
 			// Try to mine a new block
 			if err := m.mineNextBlock(); err != nil {
 				// Log error but continue mining
-				fmt.Printf("Mining error: %v\n", err)
+				
 			}
 
 			// Mark mining as complete
@@ -236,7 +236,7 @@ func (m *Miner) mineNextBlock() error {
 	if err := m.chain.AddBlock(newBlock); err != nil {
 		if err.Error() == "block already exists" {
 			// This can happen due to race conditions, log but don't treat as critical error
-			fmt.Printf("Block already exists (race condition): %v\n", err)
+			
 			return err
 		}
 		return fmt.Errorf("failed to add block to chain: %w", err)
@@ -247,7 +247,7 @@ func (m *Miner) mineNextBlock() error {
 		m.onBlockMined(newBlock)
 	}
 
-	fmt.Printf("Mined new block: %s\n", newBlock.String())
+	
 
 	return nil
 }

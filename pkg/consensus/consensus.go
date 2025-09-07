@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // ChainReader defines the methods from the chain that the consensus package needs
@@ -47,14 +48,15 @@ type ConsensusConfig struct {
 
 // DefaultConsensusConfig returns the default consensus configuration.
 func DefaultConsensusConfig() *ConsensusConfig {
+	systemConfig := config.DefaultSystemConfig()
 	return &ConsensusConfig{
-		TargetBlockTime:              10 * time.Second,
-		DifficultyAdjustmentInterval: 2016,
-		MaxDifficulty:                256,
-		MinDifficulty:                1,
-		DifficultyAdjustmentFactor:   4.0,
-		FinalityDepth:                100,   // 100 blocks for finality
-		CheckpointInterval:           10000, // Checkpoint every 10,000 blocks
+		TargetBlockTime:              systemConfig.Consensus.TargetBlockTime,
+		DifficultyAdjustmentInterval: systemConfig.Consensus.DifficultyAdjustmentInterval,
+		MaxDifficulty:                systemConfig.Consensus.MaxDifficulty,
+		MinDifficulty:                systemConfig.Consensus.MinDifficulty,
+		DifficultyAdjustmentFactor:   systemConfig.Consensus.DifficultyAdjustmentFactor,
+		FinalityDepth:                systemConfig.Consensus.FinalityDepth,
+		CheckpointInterval:           systemConfig.Consensus.CheckpointInterval,
 	}
 }
 
@@ -311,7 +313,7 @@ func (c *Consensus) hash256(data []byte) []byte {
 		hash := sha256.Sum256([]byte{})
 		return hash[:]
 	}
-	
+
 	// Single SHA256 for now (can be upgraded to double SHA256 if needed)
 	hash := sha256.Sum256(data)
 	return hash[:]
@@ -421,7 +423,7 @@ func (c *Consensus) hashLessThan(hash1, hash2 []byte) bool {
 	if len(hash1) != len(hash2) {
 		return false
 	}
-	
+
 	for i := 0; i < len(hash1); i++ {
 		if hash1[i] < hash2[i] {
 			return true
@@ -536,9 +538,6 @@ func (c *Consensus) adjustDifficulty() {
 
 	c.difficulty = newDifficulty
 	c.lastAdjustment = time.Now()
-
-	fmt.Printf("Difficulty adjusted from %d to %d (actual time: %v, expected time: %v)\n",
-		oldDifficulty, c.difficulty, actualTime, expectedTime)
 }
 
 // GetDifficulty returns the current mining difficulty.

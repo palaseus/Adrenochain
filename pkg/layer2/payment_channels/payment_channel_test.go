@@ -119,14 +119,11 @@ func TestNewPaymentChannelInsufficientDeposit(t *testing.T) {
 		MinDeposit: big.NewInt(1000000000000000000), // 1 ETH
 	}
 
-	// This should panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for insufficient deposit")
-		}
-	}()
-
-	NewPaymentChannel(participantA, participantB, deposit, config)
+	// This should return an invalid channel
+	channel := NewPaymentChannel(participantA, participantB, deposit, config)
+	if channel.ID != "invalid" || channel.IsOpen {
+		t.Error("expected invalid channel for insufficient deposit")
+	}
 }
 
 // TestOpenChannel tests opening a channel
@@ -637,12 +634,12 @@ func TestGetBalanceInvalidParticipant(t *testing.T) {
 func TestUpdateMetrics(t *testing.T) {
 	channel := createTestChannel()
 
-		// Make a payment to trigger metrics update
+	// Make a payment to trigger metrics update
 	amount := big.NewInt(50000000000000000) // 0.05 ETH (within limits)
 	direction := PaymentDirectionAToB
 	signatureA := []byte("signature_a")
 	signatureB := []byte("signature_b")
-	
+
 	err := channel.MakePayment(amount, direction, nil, signatureA, signatureB)
 	if err != nil {
 		t.Fatalf("failed to make payment: %v", err)
@@ -709,32 +706,32 @@ func TestPaymentDirections(t *testing.T) {
 func TestConcurrency(t *testing.T) {
 	channel := createTestChannel()
 
-			// Test concurrent payments
-		done := make(chan bool, 10)
-		for i := 0; i < 10; i++ {
-			go func(id int) {
-				amount := big.NewInt(int64(10000000000000000 + id*1000000000000000)) // 0.01 ETH + small increments
-				direction := PaymentDirectionAToB
-				signatureA := []byte("signature_a")
-				signatureB := []byte("signature_b")
-				
-				err := channel.MakePayment(amount, direction, nil, signatureA, signatureB)
-				if err != nil {
-					t.Errorf("failed to make payment %d: %v", id, err)
-				}
-				done <- true
-			}(i)
-		}
-		
-		// Wait for all goroutines to complete
-		for i := 0; i < 10; i++ {
-			<-done
-		}
-		
-		// Check final state
-		if channel.PaymentNumber != 10 {
-			t.Errorf("expected 10 payments, got %d", channel.PaymentNumber)
-		}
+	// Test concurrent payments
+	done := make(chan bool, 10)
+	for i := 0; i < 10; i++ {
+		go func(id int) {
+			amount := big.NewInt(int64(10000000000000000 + id*1000000000000000)) // 0.01 ETH + small increments
+			direction := PaymentDirectionAToB
+			signatureA := []byte("signature_a")
+			signatureB := []byte("signature_b")
+
+			err := channel.MakePayment(amount, direction, nil, signatureA, signatureB)
+			if err != nil {
+				t.Errorf("failed to make payment %d: %v", id, err)
+			}
+			done <- true
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+
+	// Check final state
+	if channel.PaymentNumber != 10 {
+		t.Errorf("expected 10 payments, got %d", channel.PaymentNumber)
+	}
 }
 
 // TestMockSignatureVerifier tests mock signature verifier
@@ -769,11 +766,11 @@ func TestSignatureValidationErrors(t *testing.T) {
 	amount := big.NewInt(50000000000000000) // 0.05 ETH
 	direction := PaymentDirectionAToB
 	data := []byte("test data")
-	
+
 	// Test with empty signature A
 	emptySignatureA := []byte{}
 	signatureB := []byte("valid_signature_b")
-	
+
 	err := channel.MakePayment(amount, direction, data, emptySignatureA, signatureB)
 	if err == nil {
 		t.Error("expected error for empty signature A")
@@ -781,11 +778,11 @@ func TestSignatureValidationErrors(t *testing.T) {
 	if !strings.Contains(err.Error(), "participant A signature invalid") {
 		t.Errorf("expected 'participant A signature invalid' error, got: %v", err)
 	}
-	
+
 	// Test with empty signature B
 	signatureA := []byte("valid_signature_a")
 	emptySignatureB := []byte{}
-	
+
 	err = channel.MakePayment(amount, direction, data, signatureA, emptySignatureB)
 	if err == nil {
 		t.Error("expected error for empty signature B")

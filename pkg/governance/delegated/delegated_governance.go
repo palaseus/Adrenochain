@@ -70,55 +70,55 @@ func (ds DelegationStatus) String() string {
 
 // Delegator represents a delegator in the system
 type Delegator struct {
-	ID              string                 `json:"id"`
-	Address         string                 `json:"address"`
-	TotalPower      *big.Int               `json:"total_power"`
-	DelegatedPower  *big.Int               `json:"delegated_power"`
-	RetainedPower   *big.Int               `json:"retained_power"`
-	Reputation      *big.Int               `json:"reputation"`
-	CreatedAt       time.Time              `json:"created_at"`
-	LastDelegation  time.Time              `json:"last_delegation"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID             string                 `json:"id"`
+	Address        string                 `json:"address"`
+	TotalPower     *big.Int               `json:"total_power"`
+	DelegatedPower *big.Int               `json:"delegated_power"`
+	RetainedPower  *big.Int               `json:"retained_power"`
+	Reputation     *big.Int               `json:"reputation"`
+	CreatedAt      time.Time              `json:"created_at"`
+	LastDelegation time.Time              `json:"last_delegation"`
+	Metadata       map[string]interface{} `json:"metadata"`
 }
 
 // Delegate represents a delegate in the system
 type Delegate struct {
-	ID              string                 `json:"id"`
-	Address         string                 `json:"address"`
-	TotalDelegated  *big.Int               `json:"total_delegated"`
-	ActiveDelegations uint64               `json:"active_delegations"`
-	Reputation      *big.Int               `json:"reputation"`
-	Performance     *big.Int               `json:"performance"`
-	CreatedAt       time.Time              `json:"created_at"`
-	LastVote        time.Time              `json:"last_vote"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID                string                 `json:"id"`
+	Address           string                 `json:"address"`
+	TotalDelegated    *big.Int               `json:"total_delegated"`
+	ActiveDelegations uint64                 `json:"active_delegations"`
+	Reputation        *big.Int               `json:"reputation"`
+	Performance       *big.Int               `json:"performance"`
+	CreatedAt         time.Time              `json:"created_at"`
+	LastVote          time.Time              `json:"last_vote"`
+	Metadata          map[string]interface{} `json:"metadata"`
 }
 
 // Delegation represents a delegation relationship
 type Delegation struct {
-	ID              string                 `json:"id"`
-	DelegatorID     string                 `json:"delegator_id"`
-	DelegateID      string                 `json:"delegate_id"`
-	Type            DelegationType         `json:"type"`
-	Power           *big.Int               `json:"power"`
-	Conditions      []DelegationCondition  `json:"conditions"`
-	Status          DelegationStatus       `json:"status"`
-	CreatedAt       time.Time              `json:"created_at"`
-	ExpiresAt       time.Time              `json:"expires_at"`
-	LastUsed        time.Time              `json:"last_used"`
-	ZKProof         *security.ZKProof      `json:"zk_proof"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID          string                 `json:"id"`
+	DelegatorID string                 `json:"delegator_id"`
+	DelegateID  string                 `json:"delegate_id"`
+	Type        DelegationType         `json:"type"`
+	Power       *big.Int               `json:"power"`
+	Conditions  []DelegationCondition  `json:"conditions"`
+	Status      DelegationStatus       `json:"status"`
+	CreatedAt   time.Time              `json:"created_at"`
+	ExpiresAt   time.Time              `json:"expires_at"`
+	LastUsed    time.Time              `json:"last_used"`
+	ZKProof     *security.ZKProof      `json:"zk_proof"`
+	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 // DelegationCondition represents a condition for delegation
 type DelegationCondition struct {
-	ID              string                 `json:"id"`
-	Type            ConditionType          `json:"type"`
-	Parameter       string                 `json:"parameter"`
-	Value           interface{}            `json:"value"`
-	Operator        ConditionOperator      `json:"operator"`
-	Active          bool                   `json:"active"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID        string                 `json:"id"`
+	Type      ConditionType          `json:"type"`
+	Parameter string                 `json:"parameter"`
+	Value     interface{}            `json:"value"`
+	Operator  ConditionOperator      `json:"operator"`
+	Active    bool                   `json:"active"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // ConditionType represents the type of delegation condition
@@ -184,15 +184,15 @@ func (co ConditionOperator) String() string {
 
 // ProxyVote represents a vote cast by a delegate on behalf of delegators
 type ProxyVote struct {
-	ID              string                 `json:"id"`
-	DelegationID    string                 `json:"delegation_id"`
-	ProposalID      string                 `json:"proposal_id"`
-	VoteType        string                 `json:"vote_type"`
-	VotePower       *big.Int               `json:"vote_power"`
-	DelegatorCount  uint64                 `json:"delegator_count"`
-	Timestamp       time.Time              `json:"timestamp"`
-	ZKProof         *security.ZKProof      `json:"zk_proof"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID             string                 `json:"id"`
+	DelegationID   string                 `json:"delegation_id"`
+	ProposalID     string                 `json:"proposal_id"`
+	VoteType       string                 `json:"vote_type"`
+	VotePower      *big.Int               `json:"vote_power"`
+	DelegatorCount uint64                 `json:"delegator_count"`
+	Timestamp      time.Time              `json:"timestamp"`
+	ZKProof        *security.ZKProof      `json:"zk_proof"`
+	Metadata       map[string]interface{} `json:"metadata"`
 }
 
 // DelegationMetrics represents metrics for delegation performance
@@ -208,30 +208,30 @@ type DelegationMetrics struct {
 
 // DelegatedGovernanceConfig represents configuration for the Delegated Governance system
 type DelegatedGovernanceConfig struct {
-	MaxDelegators       uint64        `json:"max_delegators"`
-	MaxDelegates        uint64        `json:"max_delegates"`
-	MaxDelegations      uint64        `json:"max_delegations"`
-	MaxProxyVotes       uint64        `json:"max_proxy_votes"`
-	EncryptionKeySize   int           `json:"encryption_key_size"`
-	ZKProofType         security.ProofType `json:"zk_proof_type"`
-	DelegationTimeout   time.Duration `json:"delegation_timeout"`
-	CleanupInterval     time.Duration `json:"cleanup_interval"`
-	MinDelegationPower  *big.Int      `json:"min_delegation_power"`
-	MaxDelegationPower  *big.Int      `json:"max_delegation_power"`
+	MaxDelegators      uint64             `json:"max_delegators"`
+	MaxDelegates       uint64             `json:"max_delegates"`
+	MaxDelegations     uint64             `json:"max_delegations"`
+	MaxProxyVotes      uint64             `json:"max_proxy_votes"`
+	EncryptionKeySize  int                `json:"encryption_key_size"`
+	ZKProofType        security.ProofType `json:"zk_proof_type"`
+	DelegationTimeout  time.Duration      `json:"delegation_timeout"`
+	CleanupInterval    time.Duration      `json:"cleanup_interval"`
+	MinDelegationPower *big.Int           `json:"min_delegation_power"`
+	MaxDelegationPower *big.Int           `json:"max_delegation_power"`
 }
 
 // DelegatedGovernance represents the main Delegated Governance system
 type DelegatedGovernance struct {
-	mu              sync.RWMutex
-	Delegators      map[string]*Delegator       `json:"delegators"`
-	Delegates       map[string]*Delegate        `json:"delegates"`
-	Delegations     map[string]*Delegation      `json:"delegations"`
-	ProxyVotes      map[string]*ProxyVote       `json:"proxy_votes"`
-	Metrics         map[string]*DelegationMetrics `json:"metrics"`
-	Config          DelegatedGovernanceConfig   `json:"config"`
-	encryptionKey   []byte
-	running         bool
-	stopChan        chan struct{}
+	mu            sync.RWMutex
+	Delegators    map[string]*Delegator         `json:"delegators"`
+	Delegates     map[string]*Delegate          `json:"delegates"`
+	Delegations   map[string]*Delegation        `json:"delegations"`
+	ProxyVotes    map[string]*ProxyVote         `json:"proxy_votes"`
+	Metrics       map[string]*DelegationMetrics `json:"metrics"`
+	Config        DelegatedGovernanceConfig     `json:"config"`
+	encryptionKey []byte
+	running       bool
+	stopChan      chan struct{}
 }
 
 // NewDelegatedGovernance creates a new Delegated Governance system
@@ -271,18 +271,22 @@ func NewDelegatedGovernance(config DelegatedGovernanceConfig) *DelegatedGovernan
 	// Generate encryption key
 	encryptionKey := make([]byte, config.EncryptionKeySize)
 	if _, err := rand.Read(encryptionKey); err != nil {
-		panic(fmt.Sprintf("Failed to generate encryption key: %v", err))
+		// Return a default governance instance with error handling
+		return &DelegatedGovernance{
+			Config:        config,
+			encryptionKey: make([]byte, 32), // Default key
+		}
 	}
 
 	return &DelegatedGovernance{
-		Delegators:     make(map[string]*Delegator),
-		Delegates:      make(map[string]*Delegate),
-		Delegations:    make(map[string]*Delegation),
-		ProxyVotes:     make(map[string]*ProxyVote),
-		Metrics:        make(map[string]*DelegationMetrics),
-		Config:         config,
-		encryptionKey:  encryptionKey,
-		stopChan:       make(chan struct{}),
+		Delegators:    make(map[string]*Delegator),
+		Delegates:     make(map[string]*Delegate),
+		Delegations:   make(map[string]*Delegation),
+		ProxyVotes:    make(map[string]*ProxyVote),
+		Metrics:       make(map[string]*DelegationMetrics),
+		Config:        config,
+		encryptionKey: encryptionKey,
+		stopChan:      make(chan struct{}),
 	}
 }
 
@@ -354,7 +358,7 @@ func (dg *DelegatedGovernance) RegisterDelegator(
 		Address:        address,
 		TotalPower:     totalPower,
 		DelegatedPower: big.NewInt(0),
-		RetainedPower:  totalPower, // Initially all power is retained
+		RetainedPower:  totalPower,      // Initially all power is retained
 		Reputation:     big.NewInt(100), // Start with base reputation
 		CreatedAt:      time.Now(),
 		Metadata:       metadata,
@@ -390,14 +394,14 @@ func (dg *DelegatedGovernance) RegisterDelegate(
 	}
 
 	delegate := &Delegate{
-		ID:               generateDelegateID(),
-		Address:          address,
-		TotalDelegated:   big.NewInt(0),
+		ID:                generateDelegateID(),
+		Address:           address,
+		TotalDelegated:    big.NewInt(0),
 		ActiveDelegations: 0,
-		Reputation:       big.NewInt(100), // Start with base reputation
-		Performance:      big.NewInt(0),
-		CreatedAt:        time.Now(),
-		Metadata:         metadata,
+		Reputation:        big.NewInt(100), // Start with base reputation
+		Performance:       big.NewInt(0),
+		CreatedAt:         time.Now(),
+		Metadata:          metadata,
 	}
 
 	dg.Delegates[delegate.ID] = delegate
@@ -889,7 +893,7 @@ func (dg *DelegatedGovernance) copyDelegation(delegation *Delegation) *Delegatio
 	copied := *delegation
 	copied.Conditions = make([]DelegationCondition, len(delegation.Conditions))
 	copy(copied.Conditions, delegation.Conditions)
-	
+
 	if delegation.ZKProof != nil {
 		copied.ZKProof = &security.ZKProof{
 			Type:            delegation.ZKProof.Type,

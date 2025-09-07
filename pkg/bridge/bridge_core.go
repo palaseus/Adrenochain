@@ -11,17 +11,17 @@ import (
 
 // Bridge represents the main bridge instance
 type Bridge struct {
-	config                    *BridgeConfig
-	validators               map[string]*Validator
-	transactions             map[string]*CrossChainTransaction
-	assetMappings            map[string]*AssetMapping
-	validatorSet             map[string]bool // Active validator addresses
-	mutex                    sync.RWMutex
-	lastBlockNumber          map[ChainID]*big.Int
-	eventHandlers            map[string][]func(interface{})
-	validatorManager         *ValidatorManager
-	crossChainTxManager      *CrossChainTransactionManager
-	securityManager          *SecurityManager
+	config              *BridgeConfig
+	validators          map[string]*Validator
+	transactions        map[string]*CrossChainTransaction
+	assetMappings       map[string]*AssetMapping
+	validatorSet        map[string]bool // Active validator addresses
+	mutex               sync.RWMutex
+	lastBlockNumber     map[ChainID]*big.Int
+	eventHandlers       map[string][]func(interface{})
+	validatorManager    *ValidatorManager
+	crossChainTxManager *CrossChainTransactionManager
+	securityManager     *SecurityManager
 }
 
 // NewBridge creates a new bridge instance
@@ -51,11 +51,11 @@ func NewBridge(config *BridgeConfig) *Bridge {
 	return bridge
 }
 
-// mustParseBigInt parses a string to big.Int, panics on error
-func mustParseBigInt(s string) *big.Int {
+// parseBigIntSafe parses a string to big.Int, returns zero value on error
+func parseBigIntSafe(s string) *big.Int {
 	result, ok := new(big.Int).SetString(s, 10)
 	if !ok {
-		panic("failed to parse big.Int: " + s)
+		return big.NewInt(0)
 	}
 	return result
 }
@@ -71,7 +71,7 @@ func getDefaultConfig() *BridgeConfig {
 		MinTransactionAmount:  big.NewInt(1000000000000000),    // 0.001 ETH
 		TransactionTimeout:    24 * time.Hour,
 		GasLimit:              big.NewInt(500000),
-		MaxDailyVolume:        mustParseBigInt("10000000000000000000"), // 10 ETH
+		MaxDailyVolume:        parseBigIntSafe("10000000000000000000"), // 10 ETH
 		DailyVolumeUsed:       big.NewInt(0),
 		FeeCollector:          "",
 		EmergencyPaused:       false,
@@ -87,14 +87,14 @@ func (b *Bridge) initializeDefaultAssetMappings() {
 		ID:               "adrenochain_ethereum_native",
 		SourceChain:      ChainIDadrenochain,
 		DestinationChain: ChainIDEthereum,
-		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token
-		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token
+		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token placeholder
+		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token placeholder
 		AssetType:        AssetTypeNative,
 		Decimals:         18,
 		IsActive:         true,
 		MinAmount:        big.NewInt(1000000000000000),            // 0.001
 		MaxAmount:        big.NewInt(1000000000000000000),         // 1
-		DailyLimit:       mustParseBigInt("10000000000000000000"), // 10
+		DailyLimit:       parseBigIntSafe("10000000000000000000"), // 10
 		DailyUsed:        big.NewInt(0),
 		FeePercentage:    0.1, // 0.1%
 		CreatedAt:        time.Now(),
@@ -106,14 +106,14 @@ func (b *Bridge) initializeDefaultAssetMappings() {
 		ID:               "ethereum_adrenochain_native",
 		SourceChain:      ChainIDEthereum,
 		DestinationChain: ChainIDadrenochain,
-		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token
-		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token
+		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token placeholder
+		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token placeholder
 		AssetType:        AssetTypeNative,
 		Decimals:         18,
 		IsActive:         true,
 		MinAmount:        big.NewInt(1000000000000000),            // 0.001
 		MaxAmount:        big.NewInt(1000000000000000000),         // 1
-		DailyLimit:       mustParseBigInt("10000000000000000000"), // 10
+		DailyLimit:       parseBigIntSafe("10000000000000000000"), // 10
 		DailyUsed:        big.NewInt(0),
 		FeePercentage:    0.1, // 0.1%
 		CreatedAt:        time.Now(),
@@ -413,11 +413,11 @@ func (b *Bridge) validateChains(sourceChain, destinationChain ChainID) error {
 
 	// Validate chain IDs
 	validChains := map[ChainID]bool{
-		ChainIDadrenochain:  true,
-		ChainIDEthereum: true,
-		ChainIDPolygon:  true,
-		ChainIDArbitrum: true,
-		ChainIDOptimism: true,
+		ChainIDadrenochain: true,
+		ChainIDEthereum:    true,
+		ChainIDPolygon:     true,
+		ChainIDArbitrum:    true,
+		ChainIDOptimism:    true,
 	}
 
 	if !validChains[sourceChain] {

@@ -109,14 +109,11 @@ func TestNewStateChannelInsufficientDeposit(t *testing.T) {
 		MinDeposit: big.NewInt(1000000000000000000), // 1 ETH
 	}
 
-	// This should panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for insufficient deposit")
-		}
-	}()
-
-	NewStateChannel(participantA, participantB, deposit, config)
+	// This should return an invalid channel
+	channel := NewStateChannel(participantA, participantB, deposit, config)
+	if channel.ID != "invalid" || channel.IsOpen {
+		t.Error("expected invalid channel for insufficient deposit")
+	}
 }
 
 // TestOpenChannel tests opening a channel

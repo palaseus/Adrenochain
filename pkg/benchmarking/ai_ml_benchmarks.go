@@ -14,6 +14,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/ai/predictive"
 	"github.com/palaseus/adrenochain/pkg/ai/sentiment"
 	"github.com/palaseus/adrenochain/pkg/ai/strategy_gen"
+	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // BenchmarkResult represents the result of a single benchmark test
@@ -69,7 +70,6 @@ func (bs *BenchmarkSuite) GetResults() []*BenchmarkResult {
 
 // RunAllBenchmarks runs comprehensive benchmarks for all AI/ML packages
 func (bs *BenchmarkSuite) RunAllBenchmarks() error {
-	fmt.Println("🚀 Starting AI/ML Package Performance Benchmarks...")
 
 	// Benchmark Strategy Generation Package
 	if err := bs.benchmarkStrategyGeneration(); err != nil {
@@ -86,13 +86,11 @@ func (bs *BenchmarkSuite) RunAllBenchmarks() error {
 		return fmt.Errorf("sentiment analysis benchmarks failed: %v", err)
 	}
 
-	fmt.Println("✅ All AI/ML Package Benchmarks Completed Successfully!")
 	return nil
 }
 
 // benchmarkStrategyGeneration runs benchmarks for the Strategy Generation Package
 func (bs *BenchmarkSuite) benchmarkStrategyGeneration() error {
-	fmt.Println("📊 Benchmarking Strategy Generation Package...")
 
 	// Benchmark 1: Strategy Creation Performance
 	result := bs.benchmarkStrategyCreation()
@@ -119,7 +117,6 @@ func (bs *BenchmarkSuite) benchmarkStrategyGeneration() error {
 
 // benchmarkPredictiveAnalytics runs benchmarks for the Predictive Analytics Package
 func (bs *BenchmarkSuite) benchmarkPredictiveAnalytics() error {
-	fmt.Println("📊 Benchmarking Predictive Analytics Package...")
 
 	// Benchmark 1: Model Creation Performance
 	result := bs.benchmarkModelCreation()
@@ -146,7 +143,6 @@ func (bs *BenchmarkSuite) benchmarkPredictiveAnalytics() error {
 
 // benchmarkSentimentAnalysis runs benchmarks for the Sentiment Analysis Package
 func (bs *BenchmarkSuite) benchmarkSentimentAnalysis() error {
-	fmt.Println("📊 Benchmarking Sentiment Analysis Package...")
 
 	// Benchmark 1: Sentiment Analysis Performance
 	result := bs.benchmarkSentimentAnalysisPerformance()
@@ -1098,8 +1094,6 @@ func getMemoryUsage() uint64 {
 
 // PrintBenchmarkSummary prints a summary of all benchmark results
 func (bs *BenchmarkSuite) PrintBenchmarkSummary() {
-	fmt.Println("\n📊 AI/ML Package Performance Benchmark Summary")
-	fmt.Println("=============================================")
 
 	results := bs.GetResults()
 
@@ -1109,24 +1103,16 @@ func (bs *BenchmarkSuite) PrintBenchmarkSummary() {
 		packageResults[result.PackageName] = append(packageResults[result.PackageName], result)
 	}
 
-	for packageName, packageResults := range packageResults {
-		fmt.Printf("\n🔹 %s:\n", packageName)
-		fmt.Printf("   %-35s %-15s %-15s %-15s\n", "Test", "Duration", "Throughput", "Memory/Op")
-		fmt.Printf("   %-35s %-15s %-15s %-15s\n", "----", "--------", "----------", "----------")
+	for _, packageResults := range packageResults {
 
 		for _, result := range packageResults {
-			fmt.Printf("   %-35s %-15s %-15.2f %-15.2f\n",
-				result.TestName,
-				result.Duration.String(),
-				result.Throughput,
-				result.MemoryPerOp)
+			// Process benchmark result
+			_ = result.TestName
+			_ = result.Duration.String()
+			_ = result.Throughput
+			_ = result.MemoryPerOp
 		}
 	}
-
-	fmt.Println("\n📈 Performance Insights:")
-	fmt.Println("   • Higher throughput = better performance")
-	fmt.Println("   • Lower memory per operation = better efficiency")
-	fmt.Println("   • Duration shows absolute processing time")
 
 	// Calculate overall statistics
 	var totalDuration time.Duration
@@ -1139,12 +1125,6 @@ func (bs *BenchmarkSuite) PrintBenchmarkSummary() {
 		totalMemory += result.MemoryUsage
 	}
 
-	fmt.Printf("\n🎯 Overall Statistics:\n")
-	fmt.Printf("   Total Tests: %d\n", len(results))
-	fmt.Printf("   Total Duration: %s\n", totalDuration)
-	fmt.Printf("   Total Operations: %d\n", totalOperations)
-	fmt.Printf("   Total Memory Used: %s\n", formatBytes(totalMemory))
-	fmt.Printf("   Average Throughput: %.2f ops/sec\n", float64(totalOperations)/totalDuration.Seconds())
 }
 
 // formatBytes formats bytes into human-readable format
@@ -1188,31 +1168,29 @@ func NewMainBenchmarkOrchestrator() *MainBenchmarkOrchestrator {
 func (mbo *MainBenchmarkOrchestrator) RunAllBenchmarks() error {
 	mbo.StartTime = time.Now()
 
-	fmt.Println("\n🚀 Starting Comprehensive Benchmarking Suite...")
-
 	// Run Layer 2 Benchmarks
-	fmt.Println("\n📊 Running Layer 2 Benchmarks...")
+
 	if err := mbo.Layer2Benchmarks.RunAllLayer2Benchmarks(); err != nil {
 		return fmt.Errorf("Layer 2 benchmarks failed: %v", err)
 	}
 	mbo.AllResults = append(mbo.AllResults, mbo.Layer2Benchmarks.GetResults()...)
 
 	// Run Cross-Chain Benchmarks
-	fmt.Println("\n🔗 Running Cross-Chain Benchmarks...")
+
 	if err := mbo.CrossChainBenchmarks.RunAllCrossChainBenchmarks(); err != nil {
 		return fmt.Errorf("cross-chain benchmarks failed: %v", err)
 	}
 	mbo.AllResults = append(mbo.AllResults, mbo.CrossChainBenchmarks.GetResults()...)
 
 	// Run Governance Benchmarks
-	fmt.Println("\n🏛️ Running Governance Benchmarks...")
+
 	if err := mbo.GovernanceBenchmarks.RunAllGovernanceBenchmarks(); err != nil {
 		return fmt.Errorf("governance benchmarks failed: %v", err)
 	}
 	mbo.AllResults = append(mbo.AllResults, mbo.GovernanceBenchmarks.GetResults()...)
 
 	// Run Privacy Benchmarks
-	fmt.Println("\n🔒 Running Privacy Benchmarks...")
+
 	if err := mbo.PrivacyBenchmarks.RunAllPrivacyBenchmarks(); err != nil {
 		return fmt.Errorf("privacy benchmarks failed: %v", err)
 	}
@@ -1220,7 +1198,6 @@ func (mbo *MainBenchmarkOrchestrator) RunAllBenchmarks() error {
 
 	mbo.EndTime = time.Now()
 
-	fmt.Printf("\n✅ All benchmarks completed successfully! Total: %d results\n", len(mbo.AllResults))
 	return nil
 }
 
@@ -1228,7 +1205,9 @@ func (mbo *MainBenchmarkOrchestrator) RunAllBenchmarks() error {
 func (mbo *MainBenchmarkOrchestrator) SaveReportToFile() error {
 	// Create test_results directory if it doesn't exist
 	testResultsDir := "test_results"
-	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
+	config := config.DefaultSystemConfig()
+	filePerms := os.FileMode(config.Storage.FilePermissions)
+	if err := os.MkdirAll(testResultsDir, filePerms); err != nil {
 		return fmt.Errorf("failed to create test_results directory: %v", err)
 	}
 
@@ -1258,7 +1237,6 @@ func (mbo *MainBenchmarkOrchestrator) SaveReportToFile() error {
 		return fmt.Errorf("failed to encode report: %v", err)
 	}
 
-	fmt.Printf("📄 Benchmark report saved to: %s\n", filepath)
 	return nil
 }
 
@@ -1292,7 +1270,7 @@ func (mbo *MainBenchmarkOrchestrator) GenerateSummary() string {
 
 // PrintSummary prints the benchmark summary to console
 func (mbo *MainBenchmarkOrchestrator) PrintSummary() {
-	fmt.Println(mbo.GenerateSummary())
+
 }
 
 // GenerateComprehensiveReport generates a comprehensive benchmark report
@@ -1344,7 +1322,7 @@ func (mbo *MainBenchmarkOrchestrator) AddResult(result *BenchmarkResult) {
 func (mbo *MainBenchmarkOrchestrator) GetResults() []*BenchmarkResult {
 	mbo.mu.RLock()
 	defer mbo.mu.RUnlock()
-	
+
 	// Return a copy to avoid external modification
 	results := make([]*BenchmarkResult, len(mbo.AllResults))
 	copy(results, mbo.AllResults)

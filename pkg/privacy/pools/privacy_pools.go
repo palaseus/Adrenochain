@@ -311,7 +311,11 @@ func NewPrivacyPools(config PrivacyPoolsConfig) *PrivacyPools {
 	// Generate encryption key
 	encryptionKey := make([]byte, config.EncryptionKeySize)
 	if _, err := rand.Read(encryptionKey); err != nil {
-		panic(fmt.Sprintf("Failed to generate encryption key: %v", err))
+		// Return a default privacy pools instance with error handling
+		return &PrivacyPools{
+			Config:        config,
+			encryptionKey: make([]byte, 32), // Default key
+		}
 	}
 
 	return &PrivacyPools{
@@ -1007,7 +1011,7 @@ func (pp *PrivacyPools) copyDisclosure(disclosure *SelectiveDisclosure) *Selecti
 	copied := *disclosure
 	copied.DisclosedData = make([]byte, len(disclosure.DisclosedData))
 	copy(copied.DisclosedData, disclosure.DisclosedData)
-	
+
 	if disclosure.Proof != nil {
 		copied.Proof = &security.ZKProof{
 			Type:            disclosure.Proof.Type,

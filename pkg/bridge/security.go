@@ -11,50 +11,50 @@ import (
 
 // SecurityManager handles bridge security measures
 type SecurityManager struct {
-	bridge              *Bridge
-	rateLimiters        map[string]*RateLimiter
-	fraudDetector       *FraudDetector
-	emergencyControls   *EmergencyControls
-	securityEvents      []*SecurityEvent
-	mutex               sync.RWMutex
-	maxSecurityEvents   int
+	bridge            *Bridge
+	rateLimiters      map[string]*RateLimiter
+	fraudDetector     *FraudDetector
+	emergencyControls *EmergencyControls
+	securityEvents    []*SecurityEvent
+	mutex             sync.RWMutex
+	maxSecurityEvents int
 }
 
 // RateLimiter implements rate limiting for bridge operations
 type RateLimiter struct {
-	address        string
-	windowSize     time.Duration
-	maxRequests    int
-	requests       []time.Time
-	mutex          sync.RWMutex
+	address     string
+	windowSize  time.Duration
+	maxRequests int
+	requests    []time.Time
+	mutex       sync.RWMutex
 }
 
 // FraudDetector detects suspicious bridge activities
 type FraudDetector struct {
-	suspiciousPatterns map[string]*SuspiciousPattern
+	suspiciousPatterns   map[string]*SuspiciousPattern
 	blacklistedAddresses map[string]bool
-	anomalyThresholds map[string]float64
-	mutex             sync.RWMutex
+	anomalyThresholds    map[string]float64
+	mutex                sync.RWMutex
 }
 
 // SuspiciousPattern represents a pattern that might indicate fraud
 type SuspiciousPattern struct {
-	ID          string    `json:"id"`
-	Pattern     string    `json:"pattern"`
-	RiskScore   float64   `json:"risk_score"`
-	Threshold   float64   `json:"threshold"`
-	CreatedAt   time.Time `json:"created_at"`
-	IsActive    bool      `json:"is_active"`
+	ID        string    `json:"id"`
+	Pattern   string    `json:"pattern"`
+	RiskScore float64   `json:"risk_score"`
+	Threshold float64   `json:"threshold"`
+	CreatedAt time.Time `json:"created_at"`
+	IsActive  bool      `json:"is_active"`
 }
 
 // EmergencyControls handles emergency bridge operations
 type EmergencyControls struct {
-	isEmergencyPaused bool
-	pausedBy          string
-	pausedAt          *time.Time
-	pauseReason       string
+	isEmergencyPaused  bool
+	pausedBy           string
+	pausedAt           *time.Time
+	pauseReason        string
 	emergencyThreshold *big.Int
-	mutex             sync.RWMutex
+	mutex              sync.RWMutex
 }
 
 // SecurityEvent represents a security-related event
@@ -73,7 +73,7 @@ type SecurityEvent struct {
 type SecurityEventType string
 
 const (
-	SecurityEventTypeRateLimitExceeded SecurityEventType = "rate_limit_exceeded"
+	SecurityEventTypeRateLimitExceeded  SecurityEventType = "rate_limit_exceeded"
 	SecurityEventTypeSuspiciousActivity SecurityEventType = "suspicious_activity"
 	SecurityEventTypeLargeTransfer      SecurityEventType = "large_transfer"
 	SecurityEventTypeEmergencyPause     SecurityEventType = "emergency_pause"
@@ -84,9 +84,9 @@ const (
 type SecuritySeverity string
 
 const (
-	SecuritySeverityLow    SecuritySeverity = "low"
-	SecuritySeverityMedium SecuritySeverity = "medium"
-	SecuritySeverityHigh   SecuritySeverity = "high"
+	SecuritySeverityLow      SecuritySeverity = "low"
+	SecuritySeverityMedium   SecuritySeverity = "medium"
+	SecuritySeverityHigh     SecuritySeverity = "high"
 	SecuritySeverityCritical SecuritySeverity = "critical"
 )
 
@@ -115,17 +115,17 @@ func NewRateLimiter(address string, windowSize time.Duration, maxRequests int) *
 // NewFraudDetector creates a new fraud detector
 func NewFraudDetector() *FraudDetector {
 	return &FraudDetector{
-		suspiciousPatterns: make(map[string]*SuspiciousPattern),
+		suspiciousPatterns:   make(map[string]*SuspiciousPattern),
 		blacklistedAddresses: make(map[string]bool),
-		anomalyThresholds: make(map[string]float64),
+		anomalyThresholds:    make(map[string]float64),
 	}
 }
 
 // NewEmergencyControls creates new emergency controls
 func NewEmergencyControls() *EmergencyControls {
 	return &EmergencyControls{
-		isEmergencyPaused: false,
-		emergencyThreshold: mustParseBigInt("10000000000000000000"), // 10 ETH
+		isEmergencyPaused:  false,
+		emergencyThreshold: func() *big.Int { val, _ := big.NewInt(0).SetString("10000000000000000000", 10); return val }(), // 10 ETH
 	}
 }
 
@@ -157,7 +157,7 @@ func (sm *SecurityManager) CheckTransferSecurity(
 
 	// Check rate limits
 	if err := sm.CheckRateLimit(sourceAddress); err != nil {
-		sm.recordSecurityEvent(SecurityEventTypeRateLimitExceeded, SecuritySeverityMedium, 
+		sm.recordSecurityEvent(SecurityEventTypeRateLimitExceeded, SecuritySeverityMedium,
 			fmt.Sprintf("Rate limit exceeded for address %s", sourceAddress), sourceAddress, amount)
 		return err
 	}
@@ -201,10 +201,10 @@ func (sm *SecurityManager) AddSuspiciousPattern(
 // BlacklistAddress blacklists an address
 func (sm *SecurityManager) BlacklistAddress(address string, reason string) error {
 	sm.fraudDetector.BlacklistAddress(address)
-	
+
 	sm.recordSecurityEvent(SecurityEventTypeFraudDetected, SecuritySeverityHigh,
 		fmt.Sprintf("Address %s blacklisted: %s", address, reason), address, nil)
-	
+
 	return nil
 }
 
@@ -292,7 +292,7 @@ func (rl *RateLimiter) CheckLimit() error {
 	defer rl.mutex.Unlock()
 
 	now := time.Now()
-	
+
 	// Remove expired requests
 	validRequests := make([]time.Time, 0)
 	for _, reqTime := range rl.requests {
@@ -350,7 +350,7 @@ func (fd *FraudDetector) AddPattern(pattern string, riskScore float64, threshold
 	defer fd.mutex.Unlock()
 
 	patternID := fmt.Sprintf("pattern_%d", time.Now().UnixNano())
-	
+
 	fd.suspiciousPatterns[patternID] = &SuspiciousPattern{
 		ID:        patternID,
 		Pattern:   pattern,
@@ -406,7 +406,7 @@ func (fd *FraudDetector) matchesPattern(
 ) bool {
 	// Simple pattern matching implementation
 	// In a real system, this would use more sophisticated ML-based detection
-	
+
 	switch pattern.Pattern {
 	case "high_frequency":
 		// Check for high frequency transfers

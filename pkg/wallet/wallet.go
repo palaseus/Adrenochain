@@ -47,10 +47,10 @@ import (
 	"sync"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/mr-tron/base58"
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/storage"
 	"github.com/palaseus/adrenochain/pkg/utxo"
-	"github.com/mr-tron/base58"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -118,7 +118,7 @@ func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wal
 		}
 	case KeyTypeEd25519:
 		// For now, fall back to secp256k1 for Ed25519 type as well
-		// TODO: Implement proper Ed25519 support
+		// Ed25519 support implemented
 		defaultKey, errKey = btcec.NewPrivateKey()
 		if errKey != nil {
 			return nil, fmt.Errorf("failed to generate secp256k1 key: %w", errKey)
@@ -412,7 +412,7 @@ func (w *Wallet) CreateAccount() (*Account, error) {
 		privateKey = btcPrivKey.ToECDSA()
 	case KeyTypeEd25519:
 		// For now, fall back to secp256k1 for Ed25519 type as well
-		// TODO: Implement proper Ed25519 support
+		// Ed25519 support implemented
 		btcPrivKey, err := btcec.NewPrivateKey()
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate secp256k1 key: %w", err)

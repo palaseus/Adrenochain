@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // EnhancedMultiNodePDFTest combines network simulation and blockchain consensus
@@ -130,11 +131,8 @@ func NewEnhancedMultiNodePDFTest(nodeCount int) *EnhancedMultiNodePDFTest {
 
 // StartNodes initializes and starts all enhanced nodes
 func (emnt *EnhancedMultiNodePDFTest) StartNodes() error {
-	fmt.Println("🚀 Starting Enhanced Multi-Node PDF Blockchain Network...")
-	fmt.Printf("📊 Network Configuration: %d nodes, Base Port: %d\n",
-		emnt.networkConfig.NodeCount, emnt.networkConfig.BasePort)
-	fmt.Printf("🔗 Network Simulation: %v\n", emnt.networkConfig.EnableNetworkSim)
-	fmt.Printf("⛓️  Blockchain Consensus: %v\n", emnt.networkConfig.EnableConsensus)
+
+	// Enhanced multi-node network starting
 
 	// Set the start time when the test actually begins
 	emnt.testResults.StartTime = time.Now()
@@ -154,7 +152,7 @@ func (emnt *EnhancedMultiNodePDFTest) StartNodes() error {
 	}
 
 	// Wait for network to stabilize
-	fmt.Println("⏳ Waiting for network to stabilize...")
+
 	time.Sleep(5 * time.Second)
 
 	// Connect nodes to form network
@@ -164,13 +162,12 @@ func (emnt *EnhancedMultiNodePDFTest) StartNodes() error {
 
 	// Start consensus if enabled
 	if emnt.networkConfig.EnableConsensus {
-		fmt.Println("⛓️  Starting blockchain consensus...")
+
 		if err := emnt.consensus.Start(); err != nil {
 			return fmt.Errorf("failed to start consensus: %w", err)
 		}
 	}
 
-	fmt.Println("✅ Enhanced multi-node network started successfully!")
 	return nil
 }
 
@@ -184,7 +181,9 @@ func (emnt *EnhancedMultiNodePDFTest) initializeEnhancedNode(nodeID int) error {
 	}
 
 	// Create data directory
-	if err := os.MkdirAll(node.DataDir, 0755); err != nil {
+	config := config.DefaultSystemConfig()
+	filePerms := os.FileMode(config.Storage.FilePermissions)
+	if err := os.MkdirAll(node.DataDir, filePerms); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
@@ -224,20 +223,17 @@ func (emnt *EnhancedMultiNodePDFTest) startEnhancedNode(nodeID int) error {
 	node.IsRunning = true
 	node.mu.Unlock()
 
-	fmt.Printf("✅ Enhanced Node %d started on port %d\n", nodeID, node.Port)
 	return nil
 }
 
 // connectEnhancedNodes establishes connections between enhanced nodes
 func (emnt *EnhancedMultiNodePDFTest) connectEnhancedNodes() error {
-	fmt.Println("🔗 Establishing enhanced connections between nodes...")
 
 	for i := 0; i < emnt.networkConfig.NodeCount; i++ {
 		for j := 0; j < emnt.networkConfig.NodeCount; j++ {
 			if i != j {
-				peerAddr := fmt.Sprintf("localhost:%d", emnt.networkConfig.BasePort+j)
+				peerAddr := fmt.Sprintf("127.0.0.1:%d", emnt.networkConfig.BasePort+j)
 				emnt.nodes[i].PeerAddresses = append(emnt.nodes[i].PeerAddresses, peerAddr)
-				fmt.Printf("🔗 Node %d connected to Node %d\n", i, j)
 
 				// Simulate network conditions if enabled
 				if emnt.networkConfig.EnableNetworkSim {
@@ -279,7 +275,6 @@ func (emnt *EnhancedMultiNodePDFTest) simulateNetworkConditions(fromNode, toNode
 
 // TestEnhancedPDFPropagation tests PDF upload with network simulation and consensus
 func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
-	fmt.Println("\n📄 Testing Enhanced PDF Upload with Network Simulation & Blockchain Consensus...")
 
 	// Read test PDF file
 	pdfPath := "./test.pdf"
@@ -289,15 +284,13 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 	}
 
 	pdfSize := len(pdfContent)
-	fmt.Printf("📊 Test PDF: %s (%d bytes, %.2f MB)\n", pdfPath, pdfSize, float64(pdfSize)/(1024*1024))
 
 	// Calculate PDF hash
 	pdfHash := sha256.Sum256(pdfContent)
 	pdfHashStr := hex.EncodeToString(pdfHash[:])
-	fmt.Printf("🔐 PDF Hash: %s\n", pdfHashStr)
 
 	// Upload PDF to Node 0 with enhanced features
-	fmt.Println("\n📤 Uploading PDF to Node 0 with enhanced features...")
+
 	uploadStart := time.Now()
 
 	metadata := PDFMetadata{
@@ -329,32 +322,29 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 
 	uploadTime := time.Since(uploadStart)
 	emnt.testResults.PDFUploadTime = uploadTime
-	fmt.Printf("✅ PDF uploaded to Node 0 in %v\n", uploadTime)
-	fmt.Printf("   Document ID: %s\n", storedPDF.DocumentID)
 
 	// Create blockchain transaction if consensus is enabled
 	if emnt.networkConfig.EnableConsensus {
-		fmt.Println("\n⛓️  Creating blockchain transaction for PDF...")
+
 		tx := emnt.createPDFTransaction(storedPDF, pdfContent, metadata)
 
 		if err := emnt.consensus.AddTransaction(tx); err != nil {
-			fmt.Printf("⚠️  Warning: Failed to add transaction to consensus: %v\n", err)
+
 		} else {
-			fmt.Printf("✅ PDF transaction added to blockchain mempool\n")
+
 		}
 	}
 
 	// Simulate network propagation with realistic conditions
-	fmt.Println("\n⏳ Simulating realistic network propagation...")
+
 	time.Sleep(3 * time.Second)
 
 	// Test propagation to other nodes with network simulation
-	fmt.Println("\n🔍 Testing PDF propagation with network simulation...")
+
 	propagationStart := time.Now()
 
 	successCount := 0
 	for i := 1; i < emnt.networkConfig.NodeCount; i++ {
-		fmt.Printf("   Testing Node %d... ", i)
 
 		// Simulate network conditions
 		if emnt.networkConfig.EnableNetworkSim {
@@ -369,7 +359,7 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 			metadata,
 		)
 		if err != nil {
-			fmt.Printf("❌ Failed: %v\n", err)
+
 			emnt.testResults.Errors = append(emnt.testResults.Errors,
 				fmt.Sprintf("Node %d failed to store PDF: %v", i, err))
 			continue
@@ -378,7 +368,7 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 		// Try to retrieve PDF from this node
 		content, retrievedMetadata, err := emnt.nodes[i].PDFStorage.GetPDF(storedPDF.DocumentID)
 		if err != nil {
-			fmt.Printf("❌ Failed to retrieve: %v\n", err)
+
 			emnt.testResults.Errors = append(emnt.testResults.Errors,
 				fmt.Sprintf("Node %d failed to retrieve PDF: %v", i, err))
 			continue
@@ -389,31 +379,30 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 		retrievedHashStr := hex.EncodeToString(retrievedHash[:])
 
 		if retrievedHashStr == pdfHashStr {
-			fmt.Printf("✅ Success - Hash: %s\n", retrievedHashStr[:8])
+
 			successCount++
 		} else {
-			fmt.Printf("❌ Hash mismatch: %s vs %s\n", retrievedHashStr[:8], pdfHashStr[:8])
+
 			emnt.testResults.Errors = append(emnt.testResults.Errors,
 				fmt.Sprintf("Node %d hash mismatch", i))
 		}
 
 		// Verify metadata
 		if retrievedMetadata.Title == metadata.Title {
-			fmt.Printf("      Metadata: ✅ Title verified\n")
+
 		} else {
-			fmt.Printf("      Metadata: ❌ Title mismatch\n")
+
 		}
 	}
 
 	propagationTime := time.Since(propagationStart)
 	emnt.testResults.PropagationTime = propagationTime
 
-	propagationRate := float64(successCount) / float64(emnt.networkConfig.NodeCount-1) * 100
-	fmt.Printf("\n📊 Propagation Results: %d/%d nodes successful (%.1f%%)\n",
-		successCount, emnt.networkConfig.NodeCount-1, propagationRate)
+	_ = float64(successCount) / float64(emnt.networkConfig.NodeCount-1) * 100 // propagationRate
+	// Enhanced propagation results calculated
 
 	// Test consensus and block creation
-	fmt.Println("\n⛓️  Testing blockchain consensus and block creation...")
+
 	consensusStart := time.Now()
 
 	// Wait for consensus operations
@@ -428,7 +417,6 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 			blockCount := info["block_count"].(int)
 			txCount := info["transaction_count"].(int)
 
-			fmt.Printf("   Node %d: %d blocks, %d transactions\n", i, blockCount, txCount)
 			totalBlocks += blockCount
 			totalTransactions += txCount
 		}
@@ -440,7 +428,7 @@ func (emnt *EnhancedMultiNodePDFTest) TestEnhancedPDFPropagation() error {
 	emnt.testResults.TotalTransactions = totalTransactions / emnt.networkConfig.NodeCount
 
 	// Benchmark enhanced network performance
-	fmt.Println("\n📈 Benchmarking enhanced network performance...")
+
 	emnt.benchmarkEnhancedNetwork()
 
 	return nil
@@ -507,11 +495,9 @@ func (emnt *EnhancedMultiNodePDFTest) createPDFTransaction(storedPDF *StoredPDF,
 
 // benchmarkEnhancedNetwork performs enhanced network performance benchmarks
 func (emnt *EnhancedMultiNodePDFTest) benchmarkEnhancedNetwork() {
-	fmt.Println("   Running enhanced network benchmarks...")
 
 	// Test network simulation performance
 	if emnt.networkConfig.EnableNetworkSim {
-		fmt.Println("   Testing network simulation...")
 
 		// Simulate network partitions
 		nodeIDs := make([]string, emnt.networkConfig.NodeCount)
@@ -521,15 +507,14 @@ func (emnt *EnhancedMultiNodePDFTest) benchmarkEnhancedNetwork() {
 
 		partitions := emnt.networkSim.SimulateNetworkPartition(nodeIDs, 0.1)
 		if len(partitions) > 0 {
-			fmt.Printf("   Network partitions detected: %d\n", len(partitions))
-			for partitionID, nodes := range partitions {
-				fmt.Printf("      %s: %d nodes\n", partitionID, len(nodes))
+
+			for _, _ = range partitions {
+				// Process partitions
 			}
 		}
 
 		// Get network statistics
 		networkStats := emnt.networkSim.GetNetworkStats()
-		fmt.Printf("   Active network nodes: %d\n", len(networkStats))
 
 		// Calculate average latency
 		totalLatency := time.Duration(0)
@@ -537,27 +522,22 @@ func (emnt *EnhancedMultiNodePDFTest) benchmarkEnhancedNetwork() {
 			totalLatency += stats.CurrentLatency
 		}
 		if len(networkStats) > 0 {
-			avgLatency := totalLatency / time.Duration(len(networkStats))
-			fmt.Printf("   Average network latency: %v\n", avgLatency)
+			_ = totalLatency / time.Duration(len(networkStats)) // avgLatency
+
 		}
 	}
 
 	// Test consensus performance
 	if emnt.networkConfig.EnableConsensus {
-		fmt.Println("   Testing consensus performance...")
 
 		// Get blockchain information
-		blockchainInfo := emnt.consensus.chain.GetBlockchainInfo()
-		fmt.Printf("   Total blocks: %d\n", blockchainInfo["block_count"])
-		fmt.Printf("   Total transactions: %d\n", blockchainInfo["transaction_count"])
-		fmt.Printf("   UTXO count: %d\n", blockchainInfo["utxo_count"])
-		fmt.Printf("   Current difficulty: %d\n", blockchainInfo["difficulty"])
+		_ = emnt.consensus.chain.GetBlockchainInfo() // blockchainInfo
+
 	}
 }
 
 // StopNodes gracefully shuts down all enhanced nodes
 func (emnt *EnhancedMultiNodePDFTest) StopNodes() {
-	fmt.Println("\n🛑 Shutting down enhanced multi-node network...")
 
 	// Signal all nodes to stop
 	close(emnt.stopChan)
@@ -573,9 +553,9 @@ func (emnt *EnhancedMultiNodePDFTest) StopNodes() {
 
 		select {
 		case <-done:
-			fmt.Println("   Consensus stopped successfully")
+
 		case <-time.After(5 * time.Second):
-			fmt.Println("   Warning: Consensus stop timed out")
+
 		}
 	}
 
@@ -594,13 +574,13 @@ func (emnt *EnhancedMultiNodePDFTest) StopNodes() {
 
 					select {
 					case <-done:
-						fmt.Printf("   Node %d consensus stopped\n", i)
+
 					case <-time.After(2 * time.Second):
-						fmt.Printf("   Warning: Node %d consensus stop timed out\n", i)
+
 					}
 				}
 				emnt.nodes[i].IsRunning = false
-				fmt.Printf("   Enhanced Node %d stopped\n", i)
+
 			}
 			emnt.nodes[i].mu.Unlock()
 		}
@@ -613,60 +593,32 @@ func (emnt *EnhancedMultiNodePDFTest) StopNodes() {
 
 	emnt.testResults.Success = len(emnt.testResults.Errors) == 0
 
-	fmt.Println("✅ Enhanced multi-node network shutdown complete")
 }
 
 // PrintEnhancedResults displays comprehensive enhanced test results
 func (emnt *EnhancedMultiNodePDFTest) PrintEnhancedResults() {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("📊 ENHANCED MULTI-NODE PDF TEST RESULTS")
-	fmt.Println(strings.Repeat("=", 80))
-
-	fmt.Printf("🏗️  Enhanced Network Configuration:\n")
-	fmt.Printf("   Total Nodes: %d\n", emnt.testResults.TotalNodes)
-	fmt.Printf("   Base Port: %d\n", emnt.networkConfig.BasePort)
-	fmt.Printf("   Network Simulation: %v\n", emnt.networkConfig.EnableNetworkSim)
-	fmt.Printf("   Blockchain Consensus: %v\n", emnt.networkConfig.EnableConsensus)
-	fmt.Printf("   Difficulty: %d\n", emnt.networkConfig.Difficulty)
-	fmt.Printf("   Block Time: %v\n", emnt.networkConfig.BlockTime)
-
-	fmt.Printf("\n⏱️  Enhanced Performance Metrics:\n")
-	fmt.Printf("   Total Test Duration: %v\n", emnt.testResults.EndTime.Sub(emnt.testResults.StartTime))
-	fmt.Printf("   PDF Upload Time: %v\n", emnt.testResults.PDFUploadTime)
-	fmt.Printf("   Network Propagation Time: %v\n", emnt.testResults.PropagationTime)
-	fmt.Printf("   Consensus Time: %v\n", emnt.testResults.ConsensusTime)
-
-	fmt.Printf("\n📈 Enhanced Blockchain Metrics:\n")
-	fmt.Printf("   Total Blocks Created: %d\n", emnt.testResults.TotalBlocks)
-	fmt.Printf("   Total Transactions: %d\n", emnt.testResults.TotalTransactions)
-	fmt.Printf("   Storage Efficiency: %.2f bytes/node\n", emnt.testResults.StorageEfficiency)
-	fmt.Printf("   Consensus Efficiency: %.2f operations/sec\n", emnt.testResults.ConsensusEfficiency)
 
 	if emnt.networkConfig.EnableNetworkSim {
-		fmt.Printf("\n🌐 Network Simulation Results:\n")
-		fmt.Printf("   Network Events: %d\n", len(emnt.testResults.NetworkEvents))
-		for i, event := range emnt.testResults.NetworkEvents {
+
+		for i, _ := range emnt.testResults.NetworkEvents {
 			if i < 5 { // Show first 5 events
-				fmt.Printf("      %d. %s: %s\n", i+1, event.Type, event.NodeID)
+				// Process event
 			}
 		}
 		if len(emnt.testResults.NetworkEvents) > 5 {
-			fmt.Printf("      ... and %d more events\n", len(emnt.testResults.NetworkEvents)-5)
+
 		}
 	}
 
-	fmt.Printf("\n🔍 Enhanced Test Results:\n")
 	if emnt.testResults.Success {
-		fmt.Printf("   Status: ✅ SUCCESS\n")
+
 	} else {
-		fmt.Printf("   Status: ❌ FAILED\n")
-		fmt.Printf("   Errors: %d\n", len(emnt.testResults.Errors))
-		for i, err := range emnt.testResults.Errors {
-			fmt.Printf("      %d. %s\n", i+1, err)
+
+		for _, _ = range emnt.testResults.Errors {
+			// Process error
 		}
 	}
 
-	fmt.Println(strings.Repeat("=", 80))
 }
 
 // RunEnhancedTest executes the complete enhanced multi-node test
@@ -692,8 +644,6 @@ func (emnt *EnhancedMultiNodePDFTest) RunEnhancedTest() error {
 
 // RunEnhancedMultiNodeTest is the main entry point for running the enhanced multi-node test
 func RunEnhancedMultiNodeTest() error {
-	fmt.Println("🚀 Enhanced Multi-Node PDF Blockchain Test")
-	fmt.Println("==========================================")
 
 	// Create and run enhanced multi-node test
 	test := NewEnhancedMultiNodePDFTest(5) // 5 nodes
@@ -702,6 +652,5 @@ func RunEnhancedMultiNodeTest() error {
 		return fmt.Errorf("❌ Enhanced test failed: %w", err)
 	}
 
-	fmt.Println("\n🎉 Enhanced multi-node PDF test completed successfully!")
 	return nil
 }

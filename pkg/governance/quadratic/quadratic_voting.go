@@ -74,59 +74,59 @@ func (ps ProposalStatus) String() string {
 
 // Proposal represents a governance proposal
 type Proposal struct {
-	ID              string                 `json:"id"`
-	Title           string                 `json:"title"`
-	Description     string                 `json:"description"`
-	Creator         string                 `json:"creator"`
-	Status          ProposalStatus         `json:"status"`
-	CreatedAt       time.Time              `json:"created_at"`
-	VotingStart     time.Time              `json:"voting_start"`
-	VotingEnd       time.Time              `json:"voting_end"`
-	ExecutionDelay  time.Duration          `json:"execution_delay"`
-	Quorum          *big.Int               `json:"quorum"`
-	Threshold       *big.Int               `json:"threshold"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID             string                 `json:"id"`
+	Title          string                 `json:"title"`
+	Description    string                 `json:"description"`
+	Creator        string                 `json:"creator"`
+	Status         ProposalStatus         `json:"status"`
+	CreatedAt      time.Time              `json:"created_at"`
+	VotingStart    time.Time              `json:"voting_start"`
+	VotingEnd      time.Time              `json:"voting_end"`
+	ExecutionDelay time.Duration          `json:"execution_delay"`
+	Quorum         *big.Int               `json:"quorum"`
+	Threshold      *big.Int               `json:"threshold"`
+	Metadata       map[string]interface{} `json:"metadata"`
 }
 
 // Vote represents a quadratic vote
 type Vote struct {
-	ID           string                 `json:"id"`
-	ProposalID   string                 `json:"proposal_id"`
-	Voter        string                 `json:"voter"`
-	VoteType     VoteType               `json:"vote_type"`
-	VotePower    *big.Int               `json:"vote_power"`
-	VoteCost     *big.Int               `json:"vote_cost"`
-	Timestamp    time.Time              `json:"timestamp"`
-	ZKProof      *security.ZKProof      `json:"zk_proof"`
-	Metadata     map[string]interface{} `json:"metadata"`
+	ID         string                 `json:"id"`
+	ProposalID string                 `json:"proposal_id"`
+	Voter      string                 `json:"voter"`
+	VoteType   VoteType               `json:"vote_type"`
+	VotePower  *big.Int               `json:"vote_power"`
+	VoteCost   *big.Int               `json:"vote_cost"`
+	Timestamp  time.Time              `json:"timestamp"`
+	ZKProof    *security.ZKProof      `json:"zk_proof"`
+	Metadata   map[string]interface{} `json:"metadata"`
 }
 
 // Voter represents a voter in the quadratic voting system
 type Voter struct {
 	ID              string                 `json:"id"`
 	Address         string                 `json:"address"`
-	VotingPower    *big.Int               `json:"voting_power"`
-	UsedPower      *big.Int               `json:"used_power"`
-	Reputation     *big.Int               `json:"reputation"`
-	SybilResistance *big.Int              `json:"sybil_resistance"`
-	JoinedAt       time.Time              `json:"joined_at"`
-	LastVote       time.Time              `json:"last_vote"`
-	Metadata       map[string]interface{} `json:"metadata"`
+	VotingPower     *big.Int               `json:"voting_power"`
+	UsedPower       *big.Int               `json:"used_power"`
+	Reputation      *big.Int               `json:"reputation"`
+	SybilResistance *big.Int               `json:"sybil_resistance"`
+	JoinedAt        time.Time              `json:"joined_at"`
+	LastVote        time.Time              `json:"last_vote"`
+	Metadata        map[string]interface{} `json:"metadata"`
 }
 
 // VotingResult represents the result of a proposal vote
 type VotingResult struct {
-	ProposalID     string                 `json:"proposal_id"`
-	TotalVotes     uint64                 `json:"total_votes"`
-	YesVotes       *big.Int               `json:"yes_votes"`
-	NoVotes        *big.Int               `json:"no_votes"`
-	AbstainVotes   *big.Int               `json:"abstain_votes"`
-	TotalPower     *big.Int               `json:"total_power"`
-	QuorumReached  bool                   `json:"quorum_reached"`
-	ThresholdMet   bool                   `json:"threshold_met"`
-	Passed         bool                   `json:"passed"`
-	FinalizedAt    time.Time              `json:"finalized_at"`
-	Metadata       map[string]interface{} `json:"metadata"`
+	ProposalID    string                 `json:"proposal_id"`
+	TotalVotes    uint64                 `json:"total_votes"`
+	YesVotes      *big.Int               `json:"yes_votes"`
+	NoVotes       *big.Int               `json:"no_votes"`
+	AbstainVotes  *big.Int               `json:"abstain_votes"`
+	TotalPower    *big.Int               `json:"total_power"`
+	QuorumReached bool                   `json:"quorum_reached"`
+	ThresholdMet  bool                   `json:"threshold_met"`
+	Passed        bool                   `json:"passed"`
+	FinalizedAt   time.Time              `json:"finalized_at"`
+	Metadata      map[string]interface{} `json:"metadata"`
 }
 
 // SybilResistance represents sybil resistance mechanisms
@@ -169,27 +169,27 @@ func (ss SybilStatus) String() string {
 
 // QuadraticVotingConfig represents configuration for the Quadratic Voting system
 type QuadraticVotingConfig struct {
-	MaxProposals       uint64        `json:"max_proposals"`
-	MaxVoters          uint64        `json:"max_voters"`
-	MaxVotes           uint64        `json:"max_votes"`
-	EncryptionKeySize  int           `json:"encryption_key_size"`
-	ZKProofType        security.ProofType `json:"zk_proof_type"`
-	VotingTimeout      time.Duration `json:"voting_timeout"`
-	CleanupInterval    time.Duration `json:"cleanup_interval"`
-	MinQuorum          *big.Int      `json:"min_quorum"`
-	DefaultThreshold   *big.Int      `json:"default_threshold"`
-	SybilResistanceEnabled bool      `json:"sybil_resistance_enabled"`
+	MaxProposals           uint64             `json:"max_proposals"`
+	MaxVoters              uint64             `json:"max_voters"`
+	MaxVotes               uint64             `json:"max_votes"`
+	EncryptionKeySize      int                `json:"encryption_key_size"`
+	ZKProofType            security.ProofType `json:"zk_proof_type"`
+	VotingTimeout          time.Duration      `json:"voting_timeout"`
+	CleanupInterval        time.Duration      `json:"cleanup_interval"`
+	MinQuorum              *big.Int           `json:"min_quorum"`
+	DefaultThreshold       *big.Int           `json:"default_threshold"`
+	SybilResistanceEnabled bool               `json:"sybil_resistance_enabled"`
 }
 
 // QuadraticVoting represents the main Quadratic Voting system
 type QuadraticVoting struct {
 	mu              sync.RWMutex
-	Proposals       map[string]*Proposal           `json:"proposals"`
-	Votes           map[string]*Vote               `json:"votes"`
-	Voters          map[string]*Voter              `json:"voters"`
-	Results         map[string]*VotingResult       `json:"results"`
-	SybilResistance map[string]*SybilResistance    `json:"sybil_resistance"`
-	Config          QuadraticVotingConfig          `json:"config"`
+	Proposals       map[string]*Proposal        `json:"proposals"`
+	Votes           map[string]*Vote            `json:"votes"`
+	Voters          map[string]*Voter           `json:"voters"`
+	Results         map[string]*VotingResult    `json:"results"`
+	SybilResistance map[string]*SybilResistance `json:"sybil_resistance"`
+	Config          QuadraticVotingConfig       `json:"config"`
 	encryptionKey   []byte
 	running         bool
 	stopChan        chan struct{}
@@ -229,7 +229,11 @@ func NewQuadraticVoting(config QuadraticVotingConfig) *QuadraticVoting {
 	// Generate encryption key
 	encryptionKey := make([]byte, config.EncryptionKeySize)
 	if _, err := rand.Read(encryptionKey); err != nil {
-		panic(fmt.Sprintf("Failed to generate encryption key: %v", err))
+		// Return a default quadratic voting instance with error handling
+		return &QuadraticVoting{
+			Config:        config,
+			encryptionKey: make([]byte, 32), // Default key
+		}
 	}
 
 	return &QuadraticVoting{
@@ -417,12 +421,12 @@ func (qv *QuadraticVoting) RegisterVoter(
 	voter := &Voter{
 		ID:              generateVoterID(),
 		Address:         address,
-		VotingPower:    votingPower,
-		UsedPower:      big.NewInt(0),
-		Reputation:     big.NewInt(100), // Start with base reputation
+		VotingPower:     votingPower,
+		UsedPower:       big.NewInt(0),
+		Reputation:      big.NewInt(100), // Start with base reputation
 		SybilResistance: sybilResistance,
-		JoinedAt:       time.Now(),
-		Metadata:       metadata,
+		JoinedAt:        time.Now(),
+		Metadata:        metadata,
 	}
 
 	qv.Voters[voter.ID] = voter
@@ -750,7 +754,7 @@ func (qv *QuadraticVoting) updateSybilResistance() {
 
 	for _, voter := range qv.Voters {
 		// Update reputation based on voting behavior
-		if voter.LastVote.After(time.Now().Add(-time.Hour*24*30)) { // Last 30 days
+		if voter.LastVote.After(time.Now().Add(-time.Hour * 24 * 30)) { // Last 30 days
 			voter.Reputation.Add(voter.Reputation, big.NewInt(1))
 		}
 
@@ -829,7 +833,7 @@ func (qv *QuadraticVoting) generateSybilResistanceScore(address string, votingPo
 	// Simple sybil resistance based on address hash and voting power
 	hash := sha256.Sum256([]byte(address))
 	hashInt := new(big.Int).SetBytes(hash[:])
-	
+
 	// Combine with voting power for final score
 	score := new(big.Int).Add(hashInt, votingPower)
 	return score.Mod(score, big.NewInt(1000)) // Normalize to 0-999

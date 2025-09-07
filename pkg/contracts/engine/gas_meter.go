@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 // GasMeterImpl implements the GasMeter interface
@@ -197,5 +198,5 @@ func (gm *GasMeterImpl) Clone() *GasMeterImpl {
 func getCurrentTimestamp() int64 {
 	// This would typically use a more precise time source in production
 	// For now, using standard time package
-	return 0 // Placeholder - would use actual timestamp in real implementation
+	return time.Now().Unix()
 }

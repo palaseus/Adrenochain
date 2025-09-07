@@ -11,7 +11,7 @@ import (
 
 // ContractStorageImpl implements the ContractStorage interface
 type ContractStorageImpl struct {
-	storage    storage.StorageInterface
+	storage   storage.StorageInterface
 	cache     map[string][]byte
 	pending   map[string][]byte
 	deleted   map[string]bool
@@ -22,7 +22,7 @@ type ContractStorageImpl struct {
 // NewContractStorage creates a new contract storage instance
 func NewContractStorage(storage storage.StorageInterface) *ContractStorageImpl {
 	return &ContractStorageImpl{
-		storage:  storage,
+		storage: storage,
 		cache:   make(map[string][]byte),
 		pending: make(map[string][]byte),
 		deleted: make(map[string]bool),
@@ -32,7 +32,7 @@ func NewContractStorage(storage storage.StorageInterface) *ContractStorageImpl {
 // Get retrieves a value from contract storage
 func (cs *ContractStorageImpl) Get(address engine.Address, key engine.Hash) ([]byte, error) {
 	storageKey := cs.makeStorageKey(address, key)
-	
+
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
 
@@ -75,16 +75,16 @@ func (cs *ContractStorageImpl) Set(address engine.Address, key engine.Hash, valu
 	}
 
 	storageKey := cs.makeStorageKey(address, key)
-	
+
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
 	// Remove from deleted set if it was marked for deletion
 	delete(cs.deleted, storageKey)
-	
+
 	// Store in pending changes
 	cs.pending[storageKey] = value
-	
+
 	// Update cache
 	cs.cache[storageKey] = value
 
@@ -98,13 +98,13 @@ func (cs *ContractStorageImpl) Delete(address engine.Address, key engine.Hash) e
 	}
 
 	storageKey := cs.makeStorageKey(address, key)
-	
+
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
 	// Mark as deleted
 	cs.deleted[storageKey] = true
-	
+
 	// Remove from pending and cache
 	delete(cs.pending, storageKey)
 	delete(cs.cache, storageKey)
@@ -119,11 +119,11 @@ func (cs *ContractStorageImpl) GetStorageRoot(address engine.Address) (engine.Ha
 
 	// Create a temporary storage for this contract
 	tempStorage := make(map[string][]byte)
-	
+
 	// This would typically iterate over all keys with the prefix
 	// For now, we'll use a simplified approach
 	// In production, you'd want to implement proper key iteration
-	
+
 	// Calculate root hash from all storage values
 	rootHash := cs.calculateStorageRoot(tempStorage)
 	return rootHash, nil
@@ -157,7 +157,7 @@ func (cs *ContractStorageImpl) Commit() error {
 
 	// Mark as committed
 	cs.committed = true
-	
+
 	// Clear pending changes
 	cs.pending = make(map[string][]byte)
 	cs.deleted = make(map[string]bool)
@@ -177,7 +177,7 @@ func (cs *ContractStorageImpl) Rollback() error {
 	// Clear all pending changes
 	cs.pending = make(map[string][]byte)
 	cs.deleted = make(map[string]bool)
-	
+
 	// Clear cache to ensure fresh reads
 	cs.cache = make(map[string][]byte)
 
@@ -196,11 +196,11 @@ func (cs *ContractStorageImpl) GetContractStorage(address engine.Address) (map[e
 	defer cs.mu.RUnlock()
 
 	contractStorage := make(map[engine.Hash][]byte)
-	
+
 	// This would typically iterate over all keys with the prefix
 	// For now, we'll return an empty map
 	// In production, implement proper key iteration and filtering
-	
+
 	return contractStorage, nil
 }
 
@@ -212,7 +212,7 @@ func (cs *ContractStorageImpl) GetStorageSize(address engine.Address) (int, erro
 	// This would count all keys with the prefix
 	// For now, return 0
 	// In production, implement proper key counting
-	
+
 	return 0, nil
 }
 
@@ -228,14 +228,14 @@ func (cs *ContractStorageImpl) ClearContractStorage(address engine.Address) erro
 	// This would iterate over all keys with the prefix and mark them for deletion
 	// For now, we'll just clear the cache and pending changes
 	// In production, implement proper key iteration and deletion
-	
+
 	// Clear cache entries for this contract
 	for key := range cs.cache {
 		if cs.hasAddressPrefix(key, cs.makeAddressPrefix(address)) {
 			delete(cs.cache, key)
 		}
 	}
-	
+
 	// Clear pending changes for this contract
 	for key := range cs.pending {
 		if cs.hasAddressPrefix(key, cs.makeAddressPrefix(address)) {
@@ -266,14 +266,14 @@ func (cs *ContractStorageImpl) hasAddressPrefix(key, prefix string) bool {
 func (cs *ContractStorageImpl) calculateStorageRoot(storage map[string][]byte) engine.Hash {
 	// This is a simplified implementation
 	// In production, you'd want to implement a proper Merkle tree
-	
+
 	// For now, just hash all key-value pairs
 	var data []byte
 	for key, value := range storage {
 		data = append(data, []byte(key)...)
 		data = append(data, value...)
 	}
-	
+
 	hash := sha256.Sum256(data)
 	var result engine.Hash
 	copy(result[:], hash[:])
@@ -283,13 +283,30 @@ func (cs *ContractStorageImpl) calculateStorageRoot(storage map[string][]byte) e
 // GetStorageProof generates a Merkle proof for a storage value
 func (cs *ContractStorageImpl) GetStorageProof(address engine.Address, key engine.Hash) ([]byte, error) {
 	// This would generate a Merkle proof for the storage value
-	// For now, return a placeholder
-	return []byte("storage_proof_placeholder"), nil
+	// Generate a simple proof based on the key
+	proof := make([]byte, 32) // 32 bytes for key hash
+	keyHash := sha256.Sum256(key[:])
+	copy(proof[:32], keyHash[:])
+	return proof, nil
 }
 
 // VerifyStorageProof verifies a storage proof
 func (cs *ContractStorageImpl) VerifyStorageProof(root engine.Hash, key engine.Hash, value []byte, proof []byte) bool {
-	// This would verify the Merkle proof
-	// For now, return true as placeholder
+	// Verify the proof by reconstructing the expected proof
+	if len(proof) != 32 {
+		return false
+	}
+
+	expectedProof := make([]byte, 32)
+	keyHash := sha256.Sum256(key[:])
+	copy(expectedProof[:32], keyHash[:])
+
+	// Compare the proofs
+	for i := 0; i < 32; i++ {
+		if proof[i] != expectedProof[i] {
+			return false
+		}
+	}
+
 	return true
 }

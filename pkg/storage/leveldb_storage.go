@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/config"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -257,5 +258,7 @@ func makeBlockKey(hash []byte) []byte {
 
 // ensureDir creates a directory if it doesn't exist
 func ensureDir(dir string) error {
-	return os.MkdirAll(dir, 0755)
+	config := config.DefaultSystemConfig()
+	filePerms := os.FileMode(config.Storage.FilePermissions)
+	return os.MkdirAll(dir, filePerms)
 }

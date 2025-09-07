@@ -23,7 +23,7 @@ func NewRealSecurityValidator() *RealSecurityValidator {
 
 // RunAllRealSecurityValidations executes real security validation for all packages
 func (rsv *RealSecurityValidator) RunAllRealSecurityValidations() error {
-	fmt.Println("🔒 Starting Real Security Validation Suite...")
+	
 
 	// Run Layer 2 Security Validations
 	if err := rsv.validateLayer2RealSecurity(); err != nil {
@@ -50,13 +50,13 @@ func (rsv *RealSecurityValidator) RunAllRealSecurityValidations() error {
 		return fmt.Errorf("AI/ML real security validation failed: %v", err)
 	}
 
-	fmt.Println("✅ All Real Security Validations Completed Successfully!")
+	
 	return nil
 }
 
 // validateLayer2RealSecurity runs real security validation for Layer 2 packages
 func (rsv *RealSecurityValidator) validateLayer2RealSecurity() error {
-	fmt.Println("🔒 Validating Layer 2 Real Security...")
+	
 
 	// ZK Rollups Real Security
 	result := rsv.runRealFuzzTest("ZK Rollups", "Transaction Processing", 1000)
@@ -103,13 +103,13 @@ func (rsv *RealSecurityValidator) validateLayer2RealSecurity() error {
 	result = rsv.runRealRaceDetection("Sharding", "Cross-Shard Communication", 200)
 	rsv.AddResult(result)
 
-	fmt.Println("✅ Layer 2 Real Security validation completed")
+	
 	return nil
 }
 
 // validateCrossChainRealSecurity runs real security validation for cross-chain packages
 func (rsv *RealSecurityValidator) validateCrossChainRealSecurity() error {
-	fmt.Println("🔒 Validating Cross-Chain Real Security...")
+	
 
 	// IBC Protocol Real Security
 	result := rsv.runRealFuzzTest("IBC Protocol", "Connection Establishment", 600)
@@ -139,13 +139,13 @@ func (rsv *RealSecurityValidator) validateCrossChainRealSecurity() error {
 	result = rsv.runRealRaceDetection("Cross-Chain DeFi", "Yield Farming", 350)
 	rsv.AddResult(result)
 
-	fmt.Println("✅ Cross-Chain Real Security validation completed")
+	
 	return nil
 }
 
 // validateGovernanceRealSecurity runs real security validation for governance packages
 func (rsv *RealSecurityValidator) validateGovernanceRealSecurity() error {
-	fmt.Println("🔒 Validating Governance Real Security...")
+	
 
 	// Quadratic Voting Real Security
 	result := rsv.runRealFuzzTest("Quadratic Voting", "Vote Creation", 600)
@@ -175,13 +175,13 @@ func (rsv *RealSecurityValidator) validateGovernanceRealSecurity() error {
 	result = rsv.runRealRaceDetection("Cross-Protocol Governance", "Alignment Tracking", 300)
 	rsv.AddResult(result)
 
-	fmt.Println("✅ Governance Real Security validation completed")
+	
 	return nil
 }
 
 // validatePrivacyRealSecurity runs real security validation for privacy packages
 func (rsv *RealSecurityValidator) validatePrivacyRealSecurity() error {
-	fmt.Println("🔒 Validating Privacy Real Security...")
+	
 
 	// Private DeFi Real Security
 	result := rsv.runRealFuzzTest("Private DeFi", "Confidential Transactions", 800)
@@ -204,13 +204,13 @@ func (rsv *RealSecurityValidator) validatePrivacyRealSecurity() error {
 	result = rsv.runRealRaceDetection("Privacy ZK-Rollups", "State Transitions", 350)
 	rsv.AddResult(result)
 
-	fmt.Println("✅ Privacy Real Security validation completed")
+	
 	return nil
 }
 
 // validateAIMLRealSecurity runs real security validation for AI/ML packages
 func (rsv *RealSecurityValidator) validateAIMLRealSecurity() error {
-	fmt.Println("🔒 Validating AI/ML Real Security...")
+	
 
 	// Strategy Generation Real Security
 	result := rsv.runRealFuzzTest("Strategy Generation", "AI Operations", 600)
@@ -233,7 +233,7 @@ func (rsv *RealSecurityValidator) validateAIMLRealSecurity() error {
 	result = rsv.runRealRaceDetection("Sentiment Analysis", "Real-time Analysis", 250)
 	rsv.AddResult(result)
 
-	fmt.Println("✅ AI/ML Real Security validation completed")
+	
 	return nil
 }
 

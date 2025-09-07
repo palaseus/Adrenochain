@@ -453,7 +453,7 @@ func TestOracleProofValidation(t *testing.T) {
 	// Test valid proof
 	validProof := &OracleProof{
 		Data:      []byte("valid_data"),
-		Signature: []byte("signature"),
+		Signature: []byte("this_is_a_valid_signature_that_is_long_enough_for_verification"),
 		PublicKey: []byte("public_key"),
 		Timestamp: time.Now(),
 		Nonce:     1,

@@ -44,8 +44,8 @@ func (ws *WebServer) Start(port int) error {
 	}
 
 	log.Printf("Starting adrenochain Explorer web interface on port %d", port)
-	log.Printf("Web interface available at: http://localhost:%d", port)
-	log.Printf("API endpoints available at: http://localhost:%d/api/v1", port)
+	log.Printf("Web interface available at: http://0.0.0.0:%d", port)
+	log.Printf("API endpoints available at: http://0.0.0.0:%d/api/v1", port)
 
 	return ws.server.ListenAndServe()
 }

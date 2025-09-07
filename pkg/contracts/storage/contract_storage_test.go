@@ -215,18 +215,18 @@ func TestContractStorage_Get_ErrorPath(t *testing.T) {
 	// Create a mock storage that returns an error
 	errorStorage := NewMockStorageWithError()
 	csError := NewContractStorage(errorStorage)
-	
+
 	// First, we need to make the storage think the key exists but fail to read it
 	// This requires a more sophisticated mock that can simulate this scenario
 	// For now, let's test the basic error case by setting up a scenario where
 	// the key exists but reading fails
-	
+
 	// Set a value first to ensure it exists in pending
 	err = csError.Set(address, key, []byte("test"))
 	if err != nil {
 		t.Fatalf("Set failed: %v", err)
 	}
-	
+
 	// Now try to get it - should work from pending, not from storage
 	retrievedValue, err = csError.Get(address, key)
 	if err != nil {
@@ -430,12 +430,12 @@ func TestContractStorage_Commit_StorageError(t *testing.T) {
 	if err == nil {
 		t.Error("Commit should fail due to storage error")
 	}
-	
+
 	// Should not be marked as committed
 	if cs.committed {
 		t.Error("Should not be marked as committed after storage error")
 	}
-	
+
 	// Pending changes should still exist
 	if len(cs.pending) == 0 {
 		t.Error("Pending changes should still exist after storage error")
@@ -660,9 +660,9 @@ func TestContractStorage_GetStorageProof(t *testing.T) {
 		t.Fatalf("GetStorageProof failed: %v", err)
 	}
 
-	// Should return a placeholder proof
-	if string(proof) != "storage_proof_placeholder" {
-		t.Errorf("Expected 'storage_proof_placeholder', got '%s'", string(proof))
+	// Should return a valid proof (32 bytes)
+	if len(proof) != 32 {
+		t.Errorf("Expected proof length 32, got %d", len(proof))
 	}
 }
 
@@ -673,12 +673,17 @@ func TestContractStorage_VerifyStorageProof(t *testing.T) {
 	root := engine.Hash{1, 2, 3, 4, 5}
 	key := engine.Hash{10, 20, 30, 40, 50}
 	value := []byte("test_value")
-	proof := []byte("test_proof")
+
+	// Generate a proper proof using GetStorageProof
+	proof, err := cs.GetStorageProof(engine.Address{}, key)
+	if err != nil {
+		t.Fatalf("GetStorageProof failed: %v", err)
+	}
 
 	// Verify storage proof
 	result := cs.VerifyStorageProof(root, key, value, proof)
 	if !result {
-		t.Error("VerifyStorageProof should return true (placeholder)")
+		t.Error("VerifyStorageProof should return true for valid proof")
 	}
 }
 
@@ -731,18 +736,18 @@ func TestContractStorage_MakeStorageKey(t *testing.T) {
 	key := engine.Hash{10, 20, 30, 40, 50}
 
 	storageKey := cs.makeStorageKey(address, key)
-	
+
 	// The address and hash are 20 and 32 bytes respectively, so they'll have many zeros
 	// Just check that the key contains the expected format
 	if len(storageKey) == 0 {
 		t.Error("Storage key should not be empty")
 	}
-	
+
 	// Check that it contains a colon separator somewhere in the middle
 	if len(storageKey) < 2 {
 		t.Error("Storage key should have reasonable length")
 	}
-	
+
 	// The format should be "address:key", so there should be a colon
 	hasColon := false
 	for i := 0; i < len(storageKey); i++ {
@@ -751,7 +756,7 @@ func TestContractStorage_MakeStorageKey(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if !hasColon {
 		t.Error("Storage key should contain a colon separator")
 	}
@@ -764,13 +769,13 @@ func TestContractStorage_MakeAddressPrefix(t *testing.T) {
 	address := engine.Address{1, 2, 3, 4, 5}
 
 	prefix := cs.makeAddressPrefix(address)
-	
+
 	// The address is 20 bytes, so it'll have many zeros
 	// Just check that the prefix contains the expected format
 	if len(prefix) == 0 {
 		t.Error("Address prefix should not be empty")
 	}
-	
+
 	// Check that it ends with a colon separator
 	if prefix[len(prefix)-1] != ':' {
 		t.Error("Address prefix should end with colon")

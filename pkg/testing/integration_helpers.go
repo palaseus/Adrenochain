@@ -425,16 +425,16 @@ func (ith *IntegrationTestHelpers) RunIntegrationTests() error {
 		return fmt.Errorf("failed to setup governance environment: %v", err)
 	}
 
-	// Run simulations
-	if err := ith.SimulateTradingActivity(tradingEnv, 5*time.Second); err != nil {
+	// Run simulations (reduced time for testing)
+	if err := ith.SimulateTradingActivity(tradingEnv, 1*time.Second); err != nil {
 		return fmt.Errorf("trading simulation failed: %v", err)
 	}
 
-	if err := ith.SimulateBridgeActivity(bridgeEnv, 5*time.Second); err != nil {
+	if err := ith.SimulateBridgeActivity(bridgeEnv, 1*time.Second); err != nil {
 		return fmt.Errorf("bridge simulation failed: %v", err)
 	}
 
-	if err := ith.SimulateGovernanceActivity(governanceEnv, 5*time.Second); err != nil {
+	if err := ith.SimulateGovernanceActivity(governanceEnv, 1*time.Second); err != nil {
 		return fmt.Errorf("governance simulation failed: %v", err)
 	}
 

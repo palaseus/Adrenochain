@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/palaseus/adrenochain/pkg/block"
-	"github.com/palaseus/adrenochain/pkg/proto/net"
-	"github.com/palaseus/adrenochain/pkg/storage"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/palaseus/adrenochain/pkg/block"
+	"github.com/palaseus/adrenochain/pkg/proto/net"
+	"github.com/palaseus/adrenochain/pkg/storage"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -165,8 +165,12 @@ func (sp *SyncProtocol) recordError(peerID peer.ID, err error) {
 		}
 
 		if state.RetryCount < maxRetries {
-			fmt.Printf("Sync error with peer %s (attempt %d/%d): %v, retrying in %v\n",
-				peerID, state.RetryCount, maxRetries, err, retryDelay)
+			// Log retry attempt
+			_ = peerID
+			_ = state.RetryCount
+			_ = maxRetries
+			_ = err
+			_ = retryDelay
 
 			// Schedule retry
 			go func() {
@@ -174,7 +178,7 @@ func (sp *SyncProtocol) recordError(peerID peer.ID, err error) {
 				sp.StartSync(peerID)
 			}()
 		} else {
-			fmt.Printf("Max retries exceeded for peer %s: %v\n", peerID, err)
+
 		}
 	}
 }
@@ -296,7 +300,7 @@ func (sp *SyncProtocol) syncHeaders(peerID peer.ID) error {
 		// Process headers
 		for _, header := range headers {
 			if err := sp.processHeader(header); err != nil {
-				fmt.Printf("Failed to process header at height %d: %v\n", header.Height, err)
+
 				continue
 			}
 		}
@@ -337,13 +341,13 @@ func (sp *SyncProtocol) syncBlocks(peerID peer.ID) error {
 
 			blockData, err := sp.requestBlock(peerID, blockReq)
 			if err != nil {
-				fmt.Printf("Failed to request block at height %d: %v\n", height, err)
+
 				continue
 			}
 
 			// Process block
 			if err := sp.processBlock(blockData); err != nil {
-				fmt.Printf("Failed to process block at height %d: %v\n", height, err)
+
 				continue
 			}
 
@@ -365,7 +369,7 @@ func (sp *SyncProtocol) syncBlocks(peerID peer.ID) error {
 func (sp *SyncProtocol) syncStateData(peerID peer.ID) error {
 	// This is a placeholder for state synchronization
 	// In a real implementation, this would sync account states, contract storage, etc.
-	fmt.Printf("State synchronization with peer %s (not yet implemented)\n", peerID)
+
 	return nil
 }
 
@@ -497,7 +501,6 @@ func (sp *SyncProtocol) processBlock(blockData []byte) error {
 		return fmt.Errorf("failed to add block to chain: %w", err)
 	}
 
-	fmt.Printf("Received block data of size %d bytes\n", len(blockData))
 	return nil
 }
 
@@ -529,7 +532,7 @@ func (sp *SyncProtocol) getKnownHeaders() [][]byte {
 		var hash []byte
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("Recovered from panic in CalculateHash for height %d: %v\n", height, r)
+
 			}
 		}()
 
@@ -541,7 +544,7 @@ func (sp *SyncProtocol) getKnownHeaders() [][]byte {
 
 	// If we couldn't get any headers, return empty list
 	if len(headers) == 0 {
-		fmt.Printf("Warning: No valid headers found in chain (height: %d)\n", currentHeight)
+
 	}
 
 	return headers
@@ -562,13 +565,13 @@ func (sp *SyncProtocol) handleSyncRequest(stream network.Stream) {
 	request := make([]byte, 4096)
 	n, err := stream.Read(request)
 	if err != nil {
-		fmt.Printf("Failed to read sync request: %v\n", err)
+
 		return
 	}
 
 	var syncReq net.SyncRequest
 	if err := proto.Unmarshal(request[:n], &syncReq); err != nil {
-		fmt.Printf("Failed to unmarshal sync request: %v\n", err)
+
 		return
 	}
 
@@ -583,12 +586,12 @@ func (sp *SyncProtocol) handleSyncRequest(stream network.Stream) {
 	// Send response
 	response, err := proto.Marshal(syncResp)
 	if err != nil {
-		fmt.Printf("Failed to marshal sync response: %v\n", err)
+
 		return
 	}
 
 	if _, err := stream.Write(response); err != nil {
-		fmt.Printf("Failed to write sync response: %v\n", err)
+
 		return
 	}
 }
@@ -600,13 +603,13 @@ func (sp *SyncProtocol) handleHeaderRequest(stream network.Stream) {
 	request := make([]byte, 4096)
 	n, err := stream.Read(request)
 	if err != nil {
-		fmt.Printf("Failed to read header request: %v\n", err)
+
 		return
 	}
 
 	var headersReq net.BlockHeadersRequest
 	if err := proto.Unmarshal(request[:n], &headersReq); err != nil {
-		fmt.Printf("Failed to unmarshal header request: %v\n", err)
+
 		return
 	}
 
@@ -622,12 +625,12 @@ func (sp *SyncProtocol) handleHeaderRequest(stream network.Stream) {
 	// Send response
 	response, err := proto.Marshal(headersResp)
 	if err != nil {
-		fmt.Printf("Failed to marshal headers response: %v\n", err)
+
 		return
 	}
 
 	if _, err := stream.Write(response); err != nil {
-		fmt.Printf("Failed to write headers response: %v\n", err)
+
 		return
 	}
 }
@@ -639,13 +642,13 @@ func (sp *SyncProtocol) handleBlockRequest(stream network.Stream) {
 	request := make([]byte, 4096)
 	n, err := stream.Read(request)
 	if err != nil {
-		fmt.Printf("Failed to read block request: %v\n", err)
+
 		return
 	}
 
 	var blockReq net.BlockRequest
 	if err := proto.Unmarshal(request[:n], &blockReq); err != nil {
-		fmt.Printf("Failed to unmarshal block request: %v\n", err)
+
 		return
 	}
 
@@ -668,12 +671,12 @@ func (sp *SyncProtocol) handleBlockRequest(stream network.Stream) {
 	// Send response
 	response, err := proto.Marshal(blockResp)
 	if err != nil {
-		fmt.Printf("Failed to marshal block response: %v\n", err)
+
 		return
 	}
 
 	if _, err := stream.Write(response); err != nil {
-		fmt.Printf("Failed to write block response: %v\n", err)
+
 		return
 	}
 }
@@ -685,13 +688,13 @@ func (sp *SyncProtocol) handleStateRequest(stream network.Stream) {
 	request := make([]byte, 4096)
 	n, err := stream.Read(request)
 	if err != nil {
-		fmt.Printf("Failed to read state request: %v\n", err)
+
 		return
 	}
 
 	var stateReq net.StateRequest
 	if err := proto.Unmarshal(request[:n], &stateReq); err != nil {
-		fmt.Printf("Failed to unmarshal state request: %v\n", err)
+
 		return
 	}
 
@@ -705,12 +708,12 @@ func (sp *SyncProtocol) handleStateRequest(stream network.Stream) {
 	// Send response
 	response, err := proto.Marshal(stateResp)
 	if err != nil {
-		fmt.Printf("Failed to marshal state response: %v\n", err)
+
 		return
 	}
 
 	if _, err := stream.Write(response); err != nil {
-		fmt.Printf("Failed to write state response: %v\n", err)
+
 		return
 	}
 }
@@ -778,14 +781,14 @@ func (sp *SyncProtocol) getHeaders(startHeight, count uint64) []*net.BlockHeader
 
 		headerInterface := block.GetHeader()
 		if headerInterface == nil {
-			fmt.Printf("Block at height %d has no header\n", height)
+
 			continue
 		}
 
 		// Try to cast to our header interface
 		header, ok := headerInterface.(HeaderInterface)
 		if !ok {
-			fmt.Printf("Header at height %d does not implement HeaderInterface\n", height)
+
 			continue
 		}
 

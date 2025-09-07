@@ -461,12 +461,12 @@ func (s *Service) LogWarn(format string, args ...interface{}) {
 
 // GetMetricsEndpoint returns the metrics endpoint URL
 func (s *Service) GetMetricsEndpoint() string {
-	return fmt.Sprintf("http://localhost:%d%s", s.config.MetricsPort, s.config.MetricsPath)
+	return fmt.Sprintf("http://0.0.0.0:%d%s", s.config.MetricsPort, s.config.MetricsPath)
 }
 
 // GetHealthEndpoint returns the health endpoint URL
 func (s *Service) GetHealthEndpoint() string {
-	return fmt.Sprintf("http://localhost:%d%s", s.config.HealthPort, s.config.HealthPath)
+	return fmt.Sprintf("http://0.0.0.0:%d%s", s.config.HealthPort, s.config.HealthPath)
 }
 
 // GetPrometheusEndpoint returns the Prometheus endpoint URL
@@ -474,5 +474,5 @@ func (s *Service) GetPrometheusEndpoint() string {
 	if !s.config.EnablePrometheus {
 		return ""
 	}
-	return fmt.Sprintf("http://localhost:%d%s", s.config.MetricsPort, s.config.PrometheusPath)
+	return fmt.Sprintf("http://0.0.0.0:%d%s", s.config.MetricsPort, s.config.PrometheusPath)
 }
