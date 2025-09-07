@@ -12,30 +12,30 @@ import (
 func TestRunnerMain() {
 	fmt.Println("🚀 adrenochain COMPREHENSIVE TEST SUITE")
 	fmt.Println("=====================================")
-	
+
 	// Create comprehensive test suite
 	testSuite := NewComprehensiveTestSuite()
-	
+
 	// Initialize test suites
 	fmt.Println("📋 Initializing test suites...")
 	if err := testSuite.InitializeTestSuites(); err != nil {
 		log.Fatalf("Failed to initialize test suites: %v", err)
 	}
-	
+
 	// Run all tests
 	fmt.Println("🧪 Running comprehensive tests...")
 	startTime := time.Now()
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
+
 	report, err := testSuite.RunAllTests(ctx)
 	if err != nil {
 		log.Fatalf("Test execution failed: %v", err)
 	}
-	
+
 	duration := time.Since(startTime)
-	
+
 	// Display results
 	fmt.Println("\n📊 TEST EXECUTION RESULTS")
 	fmt.Println("==========================")
@@ -46,7 +46,7 @@ func TestRunnerMain() {
 	fmt.Printf("⏭️  Skipped Tests: %d\n", report.SkippedTests)
 	fmt.Printf("📊 Success Rate: %.2f%%\n", report.SuccessRate)
 	fmt.Printf("🎯 Coverage: %.2f%%\n", report.Coverage)
-	
+
 	// Display recommendations
 	if len(report.Recommendations) > 0 {
 		fmt.Println("\n💡 RECOMMENDATIONS")
@@ -55,7 +55,7 @@ func TestRunnerMain() {
 			fmt.Printf("%d. %s\n", i+1, rec)
 		}
 	}
-	
+
 	// Get detailed statistics
 	stats := testSuite.GetTestStatistics()
 	fmt.Println("\n📈 DETAILED STATISTICS")
@@ -63,21 +63,21 @@ func TestRunnerMain() {
 	fmt.Printf("🔄 Last Run: %v\n", stats.LastRun)
 	fmt.Printf("⏱️  Total Duration: %v\n", stats.TotalDuration)
 	fmt.Printf("🎯 Overall Coverage: %.2f%%\n", stats.Coverage)
-	
+
 	// Get coverage report
 	coverageReport := testSuite.GetCoverageReport()
 	if coverageReport != nil {
 		fmt.Println("\n📊 COVERAGE BREAKDOWN")
 		fmt.Println("=====================")
 		fmt.Printf("🎯 Overall Coverage: %.2f%%\n", coverageReport.OverallCoverage)
-		
+
 		if len(coverageReport.PackageCoverage) > 0 {
 			fmt.Println("\n📦 Package Coverage:")
 			for pkg, coverage := range coverageReport.PackageCoverage {
 				fmt.Printf("  %s: %.2f%%\n", pkg, coverage)
 			}
 		}
-		
+
 		if len(coverageReport.Recommendations) > 0 {
 			fmt.Println("\n💡 Coverage Recommendations:")
 			for i, rec := range coverageReport.Recommendations {
@@ -85,7 +85,7 @@ func TestRunnerMain() {
 			}
 		}
 	}
-	
+
 	// Determine overall status
 	fmt.Println("\n🏆 OVERALL STATUS")
 	fmt.Println("==================")
@@ -107,23 +107,23 @@ func TestRunnerMain() {
 // RunSpecificTestSuite runs a specific test suite
 func RunSpecificTestSuite(suiteID string) {
 	fmt.Printf("🧪 Running test suite: %s\n", suiteID)
-	
+
 	testSuite := NewComprehensiveTestSuite()
-	
+
 	// Initialize test suites
 	if err := testSuite.InitializeTestSuites(); err != nil {
 		log.Fatalf("Failed to initialize test suites: %v", err)
 	}
-	
+
 	// Run specific suite
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	
+
 	report, err := testSuite.RunTestSuite(ctx, suiteID)
 	if err != nil {
 		log.Fatalf("Test suite execution failed: %v", err)
 	}
-	
+
 	// Display results
 	fmt.Printf("\n📊 Test Suite Results: %s\n", suiteID)
 	fmt.Printf("✅ Passed: %d\n", report.PassedTests)
@@ -165,31 +165,31 @@ func RunIntegrationTests() {
 // RunPerformanceTests runs performance-focused tests
 func RunPerformanceTests() {
 	fmt.Println("⚡ Running Performance Tests...")
-	
+
 	testSuite := NewComprehensiveTestSuite()
-	
+
 	// Initialize test suites
 	if err := testSuite.InitializeTestSuites(); err != nil {
 		log.Fatalf("Failed to initialize test suites: %v", err)
 	}
-	
+
 	// Run performance tests with extended timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	
+
 	startTime := time.Now()
 	report, err := testSuite.RunTestSuite(ctx, "contract_engine")
 	if err != nil {
 		log.Fatalf("Performance test execution failed: %v", err)
 	}
-	
+
 	duration := time.Since(startTime)
-	
+
 	fmt.Printf("\n📊 Performance Test Results:\n")
 	fmt.Printf("⏱️  Duration: %v\n", duration)
 	fmt.Printf("📈 Tests Executed: %d\n", report.TotalTests)
 	fmt.Printf("✅ Success Rate: %.2f%%\n", report.SuccessRate)
-	
+
 	// Get performance metrics
 	stats := testSuite.GetTestStatistics()
 	fmt.Printf("🔄 Total Duration: %v\n", stats.TotalDuration)
@@ -198,31 +198,31 @@ func RunPerformanceTests() {
 // RunSecurityTests runs security-focused tests
 func RunSecurityTests() {
 	fmt.Println("🔒 Running Security Tests...")
-	
+
 	testSuite := NewComprehensiveTestSuite()
-	
+
 	// Initialize test suites
 	if err := testSuite.InitializeTestSuites(); err != nil {
 		log.Fatalf("Failed to initialize test suites: %v", err)
 	}
-	
+
 	// Run security tests
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
+
 	startTime := time.Now()
 	report, err := testSuite.RunTestSuite(ctx, "contract_engine")
 	if err != nil {
 		log.Fatalf("Security test execution failed: %v", err)
 	}
-	
+
 	duration := time.Since(startTime)
-	
+
 	fmt.Printf("\n📊 Security Test Results:\n")
 	fmt.Printf("⏱️  Duration: %v\n", duration)
 	fmt.Printf("🔒 Tests Executed: %d\n", report.TotalTests)
 	fmt.Printf("✅ Success Rate: %.2f%%\n", report.SuccessRate)
-	
+
 	// Security tests should have 100% pass rate
 	if report.SuccessRate < 100.0 {
 		fmt.Println("❌ CRITICAL: Security tests failed!")
@@ -236,25 +236,25 @@ func RunSecurityTests() {
 // GenerateTestReport generates a comprehensive test report
 func GenerateTestReport() {
 	fmt.Println("📋 Generating Comprehensive Test Report...")
-	
+
 	testSuite := NewComprehensiveTestSuite()
-	
+
 	// Initialize test suites
 	if err := testSuite.InitializeTestSuites(); err != nil {
 		log.Fatalf("Failed to initialize test suites: %v", err)
 	}
-	
+
 	// Get statistics
 	stats := testSuite.GetTestStatistics()
 	coverageReport := testSuite.GetCoverageReport()
-	
+
 	fmt.Println("\n📊 adrenochain TEST REPORT")
 	fmt.Println("=======================")
 	fmt.Printf("📅 Generated: %v\n", time.Now())
 	fmt.Printf("🔄 Last Run: %v\n", stats.LastRun)
 	fmt.Printf("⏱️  Total Duration: %v\n", stats.TotalDuration)
 	fmt.Printf("🎯 Overall Coverage: %.2f%%\n", stats.Coverage)
-	
+
 	if coverageReport != nil {
 		fmt.Println("\n📦 Package Coverage Details:")
 		for pkg, coverage := range coverageReport.PackageCoverage {
@@ -267,7 +267,7 @@ func GenerateTestReport() {
 			}
 			fmt.Printf("  %s %s: %.2f%%\n", status, pkg, coverage)
 		}
-		
+
 		if len(coverageReport.UncoveredAreas) > 0 {
 			fmt.Println("\n🔍 Uncovered Areas:")
 			for _, area := range coverageReport.UncoveredAreas {
@@ -275,7 +275,7 @@ func GenerateTestReport() {
 			}
 		}
 	}
-	
+
 	fmt.Println("\n🏆 REPORT SUMMARY")
 	fmt.Println("==================")
 	if stats.Coverage >= 90.0 {

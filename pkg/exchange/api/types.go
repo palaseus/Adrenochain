@@ -10,12 +10,12 @@ import (
 
 // CreateOrderRequest represents a request to create a new order
 type CreateOrderRequest struct {
-	TradingPair string         `json:"trading_pair"`
+	TradingPair string              `json:"trading_pair"`
 	Side        orderbook.OrderSide `json:"side"`
 	Type        orderbook.OrderType `json:"type"`
-	Quantity    *big.Int       `json:"quantity"`
-	Price       *big.Int       `json:"price"`
-	UserID      string         `json:"user_id"`
+	Quantity    *big.Int            `json:"quantity"`
+	Price       *big.Int            `json:"price"`
+	UserID      string              `json:"user_id"`
 }
 
 // Validate validates the create order request
@@ -58,10 +58,10 @@ type CancelOrderResponse struct {
 
 // OrderBookResponse represents the order book data
 type OrderBookResponse struct {
-	TradingPair string              `json:"trading_pair"`
-	Timestamp   time.Time           `json:"timestamp"`
-	Bids        []*orderbook.Order  `json:"bids"`
-	Asks        []*orderbook.Order  `json:"asks"`
+	TradingPair string             `json:"trading_pair"`
+	Timestamp   time.Time          `json:"timestamp"`
+	Bids        []*orderbook.Order `json:"bids"`
+	Asks        []*orderbook.Order `json:"asks"`
 }
 
 // MarketDataResponse represents market data for a trading pair
@@ -82,14 +82,14 @@ type OrderBookEntry struct {
 
 // MarketSummary represents a summary of market data
 type MarketSummary struct {
-	TradingPair      string    `json:"trading_pair"`
-	LastPrice        *big.Int  `json:"last_price"`
-	Bid              *big.Int  `json:"bid"`
-	Ask              *big.Int  `json:"ask"`
-	Volume24h        *big.Int  `json:"volume_24h"`
-	PriceChange24h   *big.Int  `json:"price_change_24h"`
-	PriceChangePercent24h *big.Int `json:"price_change_percent_24h"`
-	High24h          *big.Int  `json:"high_24h"`
-	Low24h           *big.Int  `json:"low_24h"`
-	Timestamp        time.Time `json:"timestamp"`
+	TradingPair           string    `json:"trading_pair"`
+	LastPrice             *big.Int  `json:"last_price"`
+	Bid                   *big.Int  `json:"bid"`
+	Ask                   *big.Int  `json:"ask"`
+	Volume24h             *big.Int  `json:"volume_24h"`
+	PriceChange24h        *big.Int  `json:"price_change_24h"`
+	PriceChangePercent24h *big.Int  `json:"price_change_percent_24h"`
+	High24h               *big.Int  `json:"high_24h"`
+	Low24h                *big.Int  `json:"low_24h"`
+	Timestamp             time.Time `json:"timestamp"`
 }

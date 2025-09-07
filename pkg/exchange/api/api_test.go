@@ -2054,7 +2054,7 @@ func TestMarketDataWebSocket_ReadPumpAndWritePump(t *testing.T) {
 
 	// Test WebSocket connection and message handling
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "?user_id=test_user"
-	
+
 	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
 		t.Fatalf("Failed to connect to WebSocket: %v", err)
@@ -2131,9 +2131,9 @@ func TestMarketDataWebSocket_HandleWebSocketEdgeCases(t *testing.T) {
 	// Test with invalid HTTP method
 	req, _ := http.NewRequest("POST", "/ws", nil)
 	w := httptest.NewRecorder()
-	
+
 	ws.HandleWebSocket(w, req)
-	
+
 	// Should handle gracefully (though the actual behavior depends on the upgrader)
 	if w.Code != http.StatusBadRequest {
 		t.Logf("Expected status 400 for invalid request, got %d", w.Code)
@@ -2142,9 +2142,9 @@ func TestMarketDataWebSocket_HandleWebSocketEdgeCases(t *testing.T) {
 	// Test with malformed user_id
 	req, _ = http.NewRequest("GET", "/ws?user_id=", nil)
 	w = httptest.NewRecorder()
-	
+
 	ws.HandleWebSocket(w, req)
-	
+
 	// Should handle gracefully
 	if w.Code != http.StatusBadRequest {
 		t.Logf("Expected status 400 for empty user_id, got %d", w.Code)
@@ -2156,12 +2156,12 @@ func TestMarketDataWebSocket_SendMessageEdgeCases(t *testing.T) {
 	ws.Start()
 
 	// Create a test client
-			client := &Client{
-			hub:      ws,
-			userID:   "test_user",
-			send:     make(chan []byte, 1), // Small buffer to test overflow
-			channels: make([]string, 0),
-		}
+	client := &Client{
+		hub:      ws,
+		userID:   "test_user",
+		send:     make(chan []byte, 1), // Small buffer to test overflow
+		channels: make([]string, 0),
+	}
 
 	// Test sending message to client with full buffer
 	client.send <- []byte("blocking message")
@@ -2192,12 +2192,12 @@ func TestMarketDataWebSocket_BroadcastMessageEdgeCases(t *testing.T) {
 	ws.broadcastMessage([]byte(""))
 
 	// Create a client with a small buffer
-			client := &Client{
-			hub:      ws,
-			userID:   "test_user",
-			send:     make(chan []byte, 1), // Small buffer
-			channels: make([]string, 0),
-		}
+	client := &Client{
+		hub:      ws,
+		userID:   "test_user",
+		send:     make(chan []byte, 1), // Small buffer
+		channels: make([]string, 0),
+	}
 
 	// Register client
 	ws.register <- client
@@ -2222,12 +2222,12 @@ func TestMarketDataWebSocket_RunFunctionComprehensive(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Test client registration
-			testClient := &Client{
-			hub:      ws,
-			userID:   "test_user",
-			send:     make(chan []byte, 256),
-			channels: make([]string, 0),
-		}
+	testClient := &Client{
+		hub:      ws,
+		userID:   "test_user",
+		send:     make(chan []byte, 256),
+		channels: make([]string, 0),
+	}
 
 	ws.register <- testClient
 	time.Sleep(10 * time.Millisecond)

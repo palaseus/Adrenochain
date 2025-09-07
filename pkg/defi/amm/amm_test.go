@@ -290,19 +290,19 @@ func TestAMMSwap(t *testing.T) {
 
 	// Check reserves were updated
 	reserveA, reserveB := amm.GetReserves()
-	
+
 	// ReserveA should increase by swap amount (minus fee)
 	fee := amm.calculateFee(swapAmount)
 	amountInAfterFee := new(big.Int).Sub(swapAmount, fee)
 	expectedReserveA := new(big.Int).Add(amountA, amountInAfterFee)
-	
+
 	if reserveA.Cmp(expectedReserveA) != 0 {
 		t.Errorf("expected ReserveA %s, got %s", expectedReserveA.String(), reserveA.String())
 	}
 
 	// ReserveB should decrease by amount out
 	expectedReserveB := new(big.Int).Sub(amountB, amountOut)
-	
+
 	if reserveB.Cmp(expectedReserveB) != 0 {
 		t.Errorf("expected ReserveB %s, got %s", expectedReserveB.String(), reserveB.String())
 	}
@@ -394,7 +394,7 @@ func TestAMMStatistics(t *testing.T) {
 	}
 
 	// Perform swap
-	swapAmount := big.NewInt(10000) // Use larger amount to ensure fee > 0
+	swapAmount := big.NewInt(10000)  // Use larger amount to ensure fee > 0
 	minAmountOut := big.NewInt(1000) // Set reasonable minimum output
 
 	_, err = amm.Swap(user, amm.TokenA, swapAmount, minAmountOut, blockNumber, txHash)
@@ -490,7 +490,7 @@ func TestAMMClone(t *testing.T) {
 // TestAMMConcurrency tests concurrent access to AMM
 func TestAMMConcurrency(t *testing.T) {
 	amm := NewAMM("test-pool", generateRandomAddress(), generateRandomAddress(), "Test Pool", "TEST-LP", 18, generateRandomAddress(), big.NewInt(30))
-	
+
 	// Test concurrent reads
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {

@@ -8,19 +8,19 @@ import (
 
 func TestNewUnitTestFramework(t *testing.T) {
 	config := UnitTestConfig{
-		MaxConcurrentTests:       10,
-		TestTimeout:              30 * time.Second,
-		EnableParallel:           true,
-		EnableRaceDetection:      false,
-		MinCoverageThreshold:     80.0,
-		EnableCoverageReport:     true,
-		CoverageOutputFormat:     "html",
-		EnableAutoGeneration:     false,
-		MaxGeneratedTests:        100,
-		TestDataSeed:             12345,
-		EnableDetailedReports:    true,
+		MaxConcurrentTests:         10,
+		TestTimeout:                30 * time.Second,
+		EnableParallel:             true,
+		EnableRaceDetection:        false,
+		MinCoverageThreshold:       80.0,
+		EnableCoverageReport:       true,
+		CoverageOutputFormat:       "html",
+		EnableAutoGeneration:       false,
+		MaxGeneratedTests:          100,
+		TestDataSeed:               12345,
+		EnableDetailedReports:      true,
 		EnablePerformanceProfiling: true,
-		ReportOutputPath:         "./reports",
+		ReportOutputPath:           "./reports",
 	}
 
 	framework := NewUnitTestFramework(config)

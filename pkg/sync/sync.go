@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/chain"
 	"github.com/palaseus/adrenochain/pkg/storage"
-	"github.com/libp2p/go-libp2p/core/host"
-	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // ChainReader defines the interface that the sync package needs from the chain

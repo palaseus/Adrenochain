@@ -818,13 +818,13 @@ func TestRunNodeWithValidConfig(t *testing.T) {
 	// Just verify the function signature - don't actually run it
 	// This prevents the test from hanging due to network services
 	assert.NotNil(t, runNode)
-	
+
 	// Test basic configuration setup
 	port = 0
 	mining = false
 	network = "testnet"
 	configFile = ""
-	
+
 	assert.Equal(t, 0, port)
 	assert.Equal(t, false, mining)
 	assert.Equal(t, "testnet", network)
@@ -838,7 +838,7 @@ func TestRunNodeWithMiningEnabled(t *testing.T) {
 	mining = true
 	network = "testnet"
 	configFile = ""
-	
+
 	assert.Equal(t, true, mining)
 	assert.Equal(t, "testnet", network)
 }
@@ -850,7 +850,7 @@ func TestRunNodeWithCustomPort(t *testing.T) {
 	mining = false
 	network = "testnet"
 	configFile = ""
-	
+
 	assert.Equal(t, 8080, port)
 	assert.Equal(t, false, mining)
 	assert.Equal(t, "testnet", network)
@@ -863,7 +863,7 @@ func TestRunNodeWithConfigFile(t *testing.T) {
 	mining = false
 	network = "testnet"
 	configFile = "test_config.yaml"
-	
+
 	assert.Equal(t, "test_config.yaml", configFile)
 	assert.Equal(t, 0, port)
 	assert.Equal(t, false, mining)

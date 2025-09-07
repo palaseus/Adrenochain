@@ -9,34 +9,34 @@ import (
 
 // Trade represents a completed trade between two orders
 type Trade struct {
-	ID            string    `json:"id"`
-	BuyOrderID    string    `json:"buy_order_id"`
-	SellOrderID   string    `json:"sell_order_id"`
-	TradingPair   string    `json:"trading_pair"`
-	Quantity      *big.Int  `json:"quantity"`
-	Price         *big.Int  `json:"price"`
-	BuyUserID     string    `json:"buy_user_id"`
-	SellUserID    string    `json:"sell_user_id"`
-	Timestamp     time.Time `json:"timestamp"`
-	Fee           *big.Int  `json:"fee"`
-	FeeCurrency   string    `json:"fee_currency"`
+	ID          string    `json:"id"`
+	BuyOrderID  string    `json:"buy_order_id"`
+	SellOrderID string    `json:"sell_order_id"`
+	TradingPair string    `json:"trading_pair"`
+	Quantity    *big.Int  `json:"quantity"`
+	Price       *big.Int  `json:"price"`
+	BuyUserID   string    `json:"buy_user_id"`
+	SellUserID  string    `json:"sell_user_id"`
+	Timestamp   time.Time `json:"timestamp"`
+	Fee         *big.Int  `json:"fee"`
+	FeeCurrency string    `json:"fee_currency"`
 }
 
 // TradeExecution represents the result of executing a trade
 type TradeExecution struct {
-	Trade        *Trade   `json:"trade"`
-	BuyOrder     *Order   `json:"buy_order"`
-	SellOrder    *Order   `json:"sell_order"`
-	PartialFills []*Trade `json:"partial_fills,omitempty"`
+	Trade         *Trade   `json:"trade"`
+	BuyOrder      *Order   `json:"buy_order"`
+	SellOrder     *Order   `json:"sell_order"`
+	PartialFills  []*Trade `json:"partial_fills,omitempty"`
 	RemainingBuy  *big.Int `json:"remaining_buy,omitempty"`
 	RemainingSell *big.Int `json:"remaining_sell,omitempty"`
 }
 
 // MatchingEngine handles order matching and trade execution
 type MatchingEngine struct {
-	orderBook *OrderBook
-	mutex     sync.RWMutex
-	trades    []*Trade
+	orderBook   *OrderBook
+	mutex       sync.RWMutex
+	trades      []*Trade
 	lastTradeID int64
 }
 
@@ -60,8 +60,8 @@ var (
 // NewMatchingEngine creates a new matching engine
 func NewMatchingEngine(orderBook *OrderBook) *MatchingEngine {
 	return &MatchingEngine{
-		orderBook: orderBook,
-		trades:    make([]*Trade, 0),
+		orderBook:   orderBook,
+		trades:      make([]*Trade, 0),
 		lastTradeID: 0,
 	}
 }
@@ -128,8 +128,8 @@ func (me *MatchingEngine) matchSellOrder(sellOrder *Order) (*TradeExecution, err
 // matchLimitBuyOrder matches a limit buy order with existing sell orders
 func (me *MatchingEngine) matchLimitBuyOrder(buyOrder *Order) (*TradeExecution, error) {
 	execution := &TradeExecution{
-		BuyOrder: buyOrder.Clone(),
-		SellOrder: nil,
+		BuyOrder:     buyOrder.Clone(),
+		SellOrder:    nil,
 		PartialFills: make([]*Trade, 0),
 		RemainingBuy: new(big.Int).Set(buyOrder.RemainingQuantity),
 	}
@@ -182,7 +182,7 @@ func (me *MatchingEngine) matchLimitBuyOrder(buyOrder *Order) (*TradeExecution, 
 		// Update the sell order in the order book
 		updatedSellOrder := bestAsk.Clone()
 		updatedSellOrder.Fill(tradeQuantity, bestAsk.Price)
-		
+
 		// If the sell order is completely filled, remove it
 		if updatedSellOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
 			me.orderBook.RemoveOrder(bestAsk.ID)
@@ -202,9 +202,9 @@ func (me *MatchingEngine) matchLimitBuyOrder(buyOrder *Order) (*TradeExecution, 
 // matchLimitSellOrder matches a limit sell order with existing buy orders
 func (me *MatchingEngine) matchLimitSellOrder(sellOrder *Order) (*TradeExecution, error) {
 	execution := &TradeExecution{
-		BuyOrder: nil,
-		SellOrder: sellOrder.Clone(),
-		PartialFills: make([]*Trade, 0),
+		BuyOrder:      nil,
+		SellOrder:     sellOrder.Clone(),
+		PartialFills:  make([]*Trade, 0),
 		RemainingSell: new(big.Int).Set(sellOrder.RemainingQuantity),
 	}
 
@@ -256,7 +256,7 @@ func (me *MatchingEngine) matchLimitSellOrder(sellOrder *Order) (*TradeExecution
 		// Update the buy order in the order book
 		updatedBuyOrder := bestBid.Clone()
 		updatedBuyOrder.Fill(tradeQuantity, sellOrder.Price)
-		
+
 		// If the buy order is completely filled, remove it
 		if updatedBuyOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
 			me.orderBook.RemoveOrder(bestBid.ID)
@@ -276,8 +276,8 @@ func (me *MatchingEngine) matchLimitSellOrder(sellOrder *Order) (*TradeExecution
 // matchMarketBuyOrder matches a market buy order with existing sell orders
 func (me *MatchingEngine) matchMarketBuyOrder(buyOrder *Order) (*TradeExecution, error) {
 	execution := &TradeExecution{
-		BuyOrder: buyOrder.Clone(),
-		SellOrder: nil,
+		BuyOrder:     buyOrder.Clone(),
+		SellOrder:    nil,
 		PartialFills: make([]*Trade, 0),
 		RemainingBuy: new(big.Int).Set(buyOrder.RemainingQuantity),
 	}
@@ -314,7 +314,7 @@ func (me *MatchingEngine) matchMarketBuyOrder(buyOrder *Order) (*TradeExecution,
 		// Update the sell order in the order book
 		updatedSellOrder := bestAsk.Clone()
 		updatedSellOrder.Fill(tradeQuantity, bestAsk.Price)
-		
+
 		// If the sell order is completely filled, remove it
 		if updatedSellOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
 			me.orderBook.RemoveOrder(bestAsk.ID)
@@ -334,9 +334,9 @@ func (me *MatchingEngine) matchMarketBuyOrder(buyOrder *Order) (*TradeExecution,
 // matchMarketSellOrder matches a market sell order with existing buy orders
 func (me *MatchingEngine) matchMarketSellOrder(sellOrder *Order) (*TradeExecution, error) {
 	execution := &TradeExecution{
-		BuyOrder: nil,
-		SellOrder: sellOrder.Clone(),
-		PartialFills: make([]*Trade, 0),
+		BuyOrder:      nil,
+		SellOrder:     sellOrder.Clone(),
+		PartialFills:  make([]*Trade, 0),
 		RemainingSell: new(big.Int).Set(sellOrder.RemainingQuantity),
 	}
 
@@ -372,7 +372,7 @@ func (me *MatchingEngine) matchMarketSellOrder(sellOrder *Order) (*TradeExecutio
 		// Update the buy order in the order book
 		updatedBuyOrder := bestBid.Clone()
 		updatedBuyOrder.Fill(tradeQuantity, bestBid.Price)
-		
+
 		// If the buy order is completely filled, remove it
 		if updatedBuyOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
 			me.orderBook.RemoveOrder(bestBid.ID)

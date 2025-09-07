@@ -2199,36 +2199,36 @@ func TestComprehensiveCoverage(t *testing.T) {
 	// Test with various configurations
 	configs := []ConsensusIntegrationConfig{
 		{
-			EnableContractExecution: true,
-			EnableBlockValidation:   true,
-			EnableStateRollback:     true,
-			MaxContractsPerBlock:    100,
-			MaxGasPerBlock:          1000000,
-			MaxGasPerContract:       100000,
-			EnableGasAccounting:     true,
-			EnableStateValidation:    true,
-			MaxRollbackDepth:        5,
-			ConsensusTimeout:        5 * time.Second,
+			EnableContractExecution:   true,
+			EnableBlockValidation:     true,
+			EnableStateRollback:       true,
+			MaxContractsPerBlock:      100,
+			MaxGasPerBlock:            1000000,
+			MaxGasPerContract:         100000,
+			EnableGasAccounting:       true,
+			EnableStateValidation:     true,
+			MaxRollbackDepth:          5,
+			ConsensusTimeout:          5 * time.Second,
 			EnableTransactionOrdering: true,
 		},
 		{
-			EnableContractExecution: false,
-			EnableBlockValidation:   false,
-			EnableStateRollback:     false,
-			MaxContractsPerBlock:    0,
-			MaxGasPerBlock:          0,
-			MaxGasPerContract:       0,
-			EnableGasAccounting:     false,
-			EnableStateValidation:    false,
-			MaxRollbackDepth:        0,
-			ConsensusTimeout:        0,
+			EnableContractExecution:   false,
+			EnableBlockValidation:     false,
+			EnableStateRollback:       false,
+			MaxContractsPerBlock:      0,
+			MaxGasPerBlock:            0,
+			MaxGasPerContract:         0,
+			EnableGasAccounting:       false,
+			EnableStateValidation:     false,
+			MaxRollbackDepth:          0,
+			ConsensusTimeout:          0,
 			EnableTransactionOrdering: false,
 		},
 	}
 
 	for i, config := range configs {
 		ci := NewConsensusIntegration(mockEngine, mockStateManager, config)
-		
+
 		// Test with different transaction types
 		transactions := []*PendingTransaction{
 			{
@@ -2248,34 +2248,34 @@ func TestComprehensiveCoverage(t *testing.T) {
 	stmConfigs := []StateTransitionConfig{
 		{
 			MaxTransactionsPerBlock: 1000,
-			EnableStateValidation:    true,
+			EnableStateValidation:   true,
 			EnableRollback:          true,
 			MaxRollbackDepth:        10,
-			ValidationTimeout:        time.Second,
-			ExecutionTimeout:         time.Second,
+			ValidationTimeout:       time.Second,
+			ExecutionTimeout:        time.Second,
 		},
 		{
 			MaxTransactionsPerBlock: 1,
-			EnableStateValidation:    false,
+			EnableStateValidation:   false,
 			EnableRollback:          false,
 			MaxRollbackDepth:        0,
-			ValidationTimeout:        0,
-			ExecutionTimeout:         0,
+			ValidationTimeout:       0,
+			ExecutionTimeout:        0,
 		},
 	}
 
 	for i, config := range stmConfigs {
 		stm := NewStateTransitionManager(mockEngine, mockStateManager, config)
-		
+
 		// Test with various transaction states
 		tx := &ConsensusTransaction{
-			ID:        fmt.Sprintf("tx-%d", i),
-			Contract:  engine.Address{byte(i)},
-			GasLimit:  1000,
-			GasPrice:  big.NewInt(1),
-			Sender:    engine.Address{byte(i)},
-			Value:     big.NewInt(0),
-			Nonce:     uint64(i),
+			ID:       fmt.Sprintf("tx-%d", i),
+			Contract: engine.Address{byte(i)},
+			GasLimit: 1000,
+			GasPrice: big.NewInt(1),
+			Sender:   engine.Address{byte(i)},
+			Value:    big.NewInt(0),
+			Nonce:    uint64(i),
 		}
 
 		err := stm.ExecuteTransaction(tx, uint64(i))

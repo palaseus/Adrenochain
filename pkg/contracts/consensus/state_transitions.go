@@ -351,7 +351,7 @@ func (stm *StateTransitionManager) validateTransaction(tx *ConsensusTransaction)
 	if tx == nil {
 		return errors.New("transaction cannot be nil")
 	}
-	
+
 	if tx.Contract == (engine.Address{}) {
 		return ErrInvalidContractAddress
 	}
@@ -414,7 +414,7 @@ func (stm *StateTransitionManager) executeTransaction(tx *ConsensusTransaction) 
 		StateChanges: []engine.StateChange{},
 	}
 
-		// Validate final state
+	// Validate final state
 	if stm.config.EnableStateValidation {
 		if err := stm.validateStateTransition(tx); err != nil {
 			return err

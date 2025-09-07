@@ -8,27 +8,27 @@ import (
 
 func TestNewOptionsEngine(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	if engine == nil {
 		t.Fatal("Expected options engine but got nil")
 	}
-	
+
 	if engine.orders == nil {
 		t.Error("Orders map not initialized")
 	}
-	
+
 	if engine.positions == nil {
 		t.Error("Positions map not initialized")
 	}
-	
+
 	if engine.trades == nil {
 		t.Error("Trades map not initialized")
 	}
-	
+
 	if engine.orderBook == nil {
 		t.Error("Order book not initialized")
 	}
-	
+
 	if engine.riskManager == nil {
 		t.Error("Risk manager not initialized")
 	}
@@ -36,15 +36,15 @@ func TestNewOptionsEngine(t *testing.T) {
 
 func TestNewOptionsOrderBook(t *testing.T) {
 	orderBook := NewOptionsOrderBook()
-	
+
 	if orderBook == nil {
 		t.Fatal("Expected order book but got nil")
 	}
-	
+
 	if orderBook.buyOrders == nil {
 		t.Error("Buy orders map not initialized")
 	}
-	
+
 	if orderBook.sellOrders == nil {
 		t.Error("Sell orders map not initialized")
 	}
@@ -52,29 +52,29 @@ func TestNewOptionsOrderBook(t *testing.T) {
 
 func TestNewOptionsRiskManager(t *testing.T) {
 	riskManager := NewOptionsRiskManager()
-	
+
 	if riskManager == nil {
 		t.Fatal("Expected risk manager but got nil")
 	}
-	
+
 	if riskManager.maxPositionSize == nil {
 		t.Error("Max position size not initialized")
 	}
-	
+
 	if riskManager.maxLoss == nil {
 		t.Error("Max loss not initialized")
 	}
-	
+
 	if riskManager.positionLimits == nil {
 		t.Error("Position limits map not initialized")
 	}
-	
+
 	// Check default values
 	expectedMaxPositionSize := big.NewFloat(1000)
 	if riskManager.maxPositionSize.Cmp(expectedMaxPositionSize) != 0 {
 		t.Errorf("Expected max position size %v, got %v", expectedMaxPositionSize, riskManager.maxPositionSize)
 	}
-	
+
 	expectedMaxLoss := big.NewFloat(10000)
 	if riskManager.maxLoss.Cmp(expectedMaxLoss) != 0 {
 		t.Errorf("Expected max loss %v, got %v", expectedMaxLoss, riskManager.maxLoss)
@@ -83,7 +83,7 @@ func TestNewOptionsRiskManager(t *testing.T) {
 
 func TestOptionsEnginePlaceOrder(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	// Create a valid option
 	option, err := NewOption(
 		Call,
@@ -96,7 +96,7 @@ func TestOptionsEnginePlaceOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create option: %v", err)
 	}
-	
+
 	// Create a valid order
 	order := &OptionsOrder{
 		Option:   option,
@@ -106,36 +106,36 @@ func TestOptionsEnginePlaceOrder(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	// Place order
 	err = engine.PlaceOrder(order)
 	if err != nil {
 		t.Fatalf("Failed to place order: %v", err)
 	}
-	
+
 	// Verify order was stored
 	if order.ID == "" {
 		t.Error("Order ID not set")
 	}
-	
+
 	if order.Status != Pending {
 		t.Errorf("Expected order status Pending, got %v", order.Status)
 	}
-	
+
 	if order.CreatedAt.IsZero() {
 		t.Error("CreatedAt not set")
 	}
-	
+
 	if order.UpdatedAt.IsZero() {
 		t.Error("UpdatedAt not set")
 	}
-	
+
 	// Verify order is in the engine
 	retrievedOrder, err := engine.GetOrder(order.ID)
 	if err != nil {
 		t.Fatalf("Failed to retrieve order: %v", err)
 	}
-	
+
 	if retrievedOrder != order {
 		t.Error("Retrieved order is not the same as placed order")
 	}
@@ -143,17 +143,17 @@ func TestOptionsEnginePlaceOrder(t *testing.T) {
 
 func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	tests := []struct {
-		name        string
-		order       *OptionsOrder
-		expectError bool
+		name          string
+		order         *OptionsOrder
+		expectError   bool
 		errorContains string
 	}{
 		{
-			name:        "Nil order",
-			order:       nil,
-			expectError: true,
+			name:          "Nil order",
+			order:         nil,
+			expectError:   true,
 			errorContains: "order cannot be nil",
 		},
 		{
@@ -166,7 +166,7 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 				Price:    big.NewFloat(15.0),
 				UserID:   "user1",
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "option cannot be nil",
 		},
 		{
@@ -179,7 +179,7 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 				Price:    big.NewFloat(15.0),
 				UserID:   "user1",
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "quantity must be positive",
 		},
 		{
@@ -192,7 +192,7 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 				Price:    big.NewFloat(15.0),
 				UserID:   "user1",
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "quantity must be positive",
 		},
 		{
@@ -205,7 +205,7 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 				Price:    big.NewFloat(-15.0),
 				UserID:   "user1",
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "price must be non-negative",
 		},
 		{
@@ -218,15 +218,15 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 				Price:    big.NewFloat(15.0),
 				UserID:   "",
 			},
-			expectError: true,
+			expectError:   true,
 			errorContains: "user ID is required",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := engine.PlaceOrder(tt.order)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -237,7 +237,7 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
@@ -247,7 +247,7 @@ func TestOptionsEnginePlaceOrderValidation(t *testing.T) {
 
 func TestOptionsEngineCancelOrder(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	// Create and place an order
 	option := createTestOption(t)
 	order := &OptionsOrder{
@@ -258,23 +258,23 @@ func TestOptionsEngineCancelOrder(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	err := engine.PlaceOrder(order)
 	if err != nil {
 		t.Fatalf("Failed to place order: %v", err)
 	}
-	
+
 	// Cancel the order
 	err = engine.CancelOrder(order.ID, "user1")
 	if err != nil {
 		t.Fatalf("Failed to cancel order: %v", err)
 	}
-	
+
 	// Verify order status was updated
 	if order.Status != Cancelled {
 		t.Errorf("Expected order status Cancelled, got %v", order.Status)
 	}
-	
+
 	// Verify order was removed from order book
 	buyOrders, sellOrders := engine.orderBook.GetOrderBook()
 	if len(buyOrders) != 0 || len(sellOrders) != 0 {
@@ -284,7 +284,7 @@ func TestOptionsEngineCancelOrder(t *testing.T) {
 
 func TestOptionsEngineCancelOrderErrors(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	// Create and place an order first for the unauthorized user test
 	option := createTestOption(t)
 	order := &OptionsOrder{
@@ -295,39 +295,39 @@ func TestOptionsEngineCancelOrderErrors(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	err := engine.PlaceOrder(order)
 	if err != nil {
 		t.Fatalf("Failed to place order for test: %v", err)
 	}
-	
+
 	tests := []struct {
-		name        string
-		orderID     string
-		userID      string
-		expectError bool
+		name          string
+		orderID       string
+		userID        string
+		expectError   bool
 		errorContains string
 	}{
 		{
-			name:        "Order not found",
-			orderID:     "nonexistent",
-			userID:      "user1",
-			expectError: true,
+			name:          "Order not found",
+			orderID:       "nonexistent",
+			userID:        "user1",
+			expectError:   true,
 			errorContains: "order not found",
 		},
 		{
-			name:        "Unauthorized user",
-			orderID:     order.ID,
-			userID:      "user2",
-			expectError: true,
+			name:          "Unauthorized user",
+			orderID:       order.ID,
+			userID:        "user2",
+			expectError:   true,
 			errorContains: "unauthorized to cancel order",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := engine.CancelOrder(tt.orderID, tt.userID)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -338,7 +338,7 @@ func TestOptionsEngineCancelOrderErrors(t *testing.T) {
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
@@ -348,7 +348,7 @@ func TestOptionsEngineCancelOrderErrors(t *testing.T) {
 
 func TestOptionsEngineOrderMatching(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	// Create a call option
 	option, err := NewOption(
 		Call,
@@ -361,7 +361,7 @@ func TestOptionsEngineOrderMatching(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create option: %v", err)
 	}
-	
+
 	// Place a buy order
 	buyOrder := &OptionsOrder{
 		Option:   option,
@@ -371,12 +371,12 @@ func TestOptionsEngineOrderMatching(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "buyer",
 	}
-	
+
 	err = engine.PlaceOrder(buyOrder)
 	if err != nil {
 		t.Fatalf("Failed to place buy order: %v", err)
 	}
-	
+
 	// Place a matching sell order
 	sellOrder := &OptionsOrder{
 		Option:   option,
@@ -386,36 +386,36 @@ func TestOptionsEngineOrderMatching(t *testing.T) {
 		Price:    big.NewFloat(14.0), // Lower price, should match
 		UserID:   "seller",
 	}
-	
+
 	err = engine.PlaceOrder(sellOrder)
 	if err != nil {
 		t.Fatalf("Failed to place sell order: %v", err)
 	}
-	
+
 	// Wait a bit for order matching to complete
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Verify both orders were filled
 	if buyOrder.Status != Filled {
 		t.Errorf("Buy order status should be Filled, got %v", buyOrder.Status)
 	}
-	
+
 	if sellOrder.Status != Filled {
 		t.Errorf("Sell order status should be Filled, got %v", sellOrder.Status)
 	}
-	
+
 	// Verify trade was created
 	userTrades := engine.GetUserTrades("buyer")
 	if len(userTrades) != 1 {
 		t.Errorf("Expected 1 trade for buyer, got %d", len(userTrades))
 	}
-	
+
 	// Verify positions were created
 	buyerPositions := engine.GetUserPositions("buyer")
 	if len(buyerPositions) != 1 {
 		t.Errorf("Expected 1 position for buyer, got %d", len(buyerPositions))
 	}
-	
+
 	sellerPositions := engine.GetUserPositions("seller")
 	if len(sellerPositions) != 1 {
 		t.Errorf("Expected 1 position for seller, got %d", len(sellerPositions))
@@ -424,7 +424,7 @@ func TestOptionsEngineOrderMatching(t *testing.T) {
 
 func TestOptionsEnginePositionTracking(t *testing.T) {
 	engine := NewOptionsEngine()
-	
+
 	// Create a call option
 	option, err := NewOption(
 		Call,
@@ -437,7 +437,7 @@ func TestOptionsEnginePositionTracking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create option: %v", err)
 	}
-	
+
 	// Place and execute a trade
 	buyOrder := &OptionsOrder{
 		Option:   option,
@@ -447,7 +447,7 @@ func TestOptionsEnginePositionTracking(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "buyer",
 	}
-	
+
 	sellOrder := &OptionsOrder{
 		Option:   option,
 		Side:     Sell,
@@ -456,30 +456,30 @@ func TestOptionsEnginePositionTracking(t *testing.T) {
 		Price:    big.NewFloat(14.0),
 		UserID:   "seller",
 	}
-	
+
 	engine.PlaceOrder(buyOrder)
 	engine.PlaceOrder(sellOrder)
-	
+
 	// Wait for matching
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Verify buyer position
 	buyerPositions := engine.GetUserPositions("buyer")
 	if len(buyerPositions) != 1 {
 		t.Fatalf("Expected 1 position for buyer, got %d", len(buyerPositions))
 	}
-	
+
 	buyerPosition := buyerPositions[0]
 	if buyerPosition.Quantity.Cmp(big.NewFloat(10)) != 0 {
 		t.Errorf("Expected buyer quantity 10, got %v", buyerPosition.Quantity)
 	}
-	
+
 	// Verify seller position (short position)
 	sellerPositions := engine.GetUserPositions("seller")
 	if len(sellerPositions) != 1 {
 		t.Fatalf("Expected 1 position for seller, got %d", len(sellerPositions))
 	}
-	
+
 	sellerPosition := sellerPositions[0]
 	if sellerPosition.Quantity.Cmp(big.NewFloat(-10)) != 0 {
 		t.Errorf("Expected seller quantity -10, got %v", sellerPosition.Quantity)
@@ -488,7 +488,7 @@ func TestOptionsEnginePositionTracking(t *testing.T) {
 
 func TestOptionsRiskManager(t *testing.T) {
 	riskManager := NewOptionsRiskManager()
-	
+
 	// Test default limits
 	order := &OptionsOrder{
 		Option:   createTestOption(t),
@@ -498,12 +498,12 @@ func TestOptionsRiskManager(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	err := riskManager.CheckRiskLimits(order)
 	if err != nil {
 		t.Errorf("Order within limits should not be rejected: %v", err)
 	}
-	
+
 	// Test exceeding default position size
 	largeOrder := &OptionsOrder{
 		Option:   createTestOption(t),
@@ -513,15 +513,15 @@ func TestOptionsRiskManager(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	err = riskManager.CheckRiskLimits(largeOrder)
 	if err == nil {
 		t.Error("Order exceeding limits should be rejected")
 	}
-	
+
 	// Test user-specific limits
 	riskManager.SetUserPositionLimit("user1", big.NewFloat(200))
-	
+
 	userLimitOrder := &OptionsOrder{
 		Option:   createTestOption(t),
 		Side:     Buy,
@@ -530,12 +530,12 @@ func TestOptionsRiskManager(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	err = riskManager.CheckRiskLimits(userLimitOrder)
 	if err != nil {
 		t.Errorf("Order within user limits should not be rejected: %v", err)
 	}
-	
+
 	// Test exceeding user limit
 	exceedingUserLimitOrder := &OptionsOrder{
 		Option:   createTestOption(t),
@@ -545,7 +545,7 @@ func TestOptionsRiskManager(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "user1",
 	}
-	
+
 	err = riskManager.CheckRiskLimits(exceedingUserLimitOrder)
 	if err == nil {
 		t.Error("Order exceeding user limits should be rejected")
@@ -554,10 +554,10 @@ func TestOptionsRiskManager(t *testing.T) {
 
 func TestOptionsOrderBook(t *testing.T) {
 	orderBook := NewOptionsOrderBook()
-	
+
 	// Create test orders
 	option := createTestOption(t)
-	
+
 	buyOrder := &OptionsOrder{
 		ID:       "buy1",
 		Option:   option,
@@ -567,7 +567,7 @@ func TestOptionsOrderBook(t *testing.T) {
 		Price:    big.NewFloat(15.0),
 		UserID:   "buyer",
 	}
-	
+
 	sellOrder := &OptionsOrder{
 		ID:       "sell1",
 		Option:   option,
@@ -577,39 +577,39 @@ func TestOptionsOrderBook(t *testing.T) {
 		Price:    big.NewFloat(16.0),
 		UserID:   "seller",
 	}
-	
+
 	// Add orders
 	err := orderBook.AddOrder(buyOrder)
 	if err != nil {
 		t.Fatalf("Failed to add buy order: %v", err)
 	}
-	
+
 	err = orderBook.AddOrder(sellOrder)
 	if err != nil {
 		t.Fatalf("Failed to add sell order: %v", err)
 	}
-	
+
 	// Get order book
 	buyOrders, sellOrders := orderBook.GetOrderBook()
-	
+
 	if len(buyOrders) != 1 {
 		t.Errorf("Expected 1 buy order, got %d", len(buyOrders))
 	}
-	
+
 	if len(sellOrders) != 1 {
 		t.Errorf("Expected 1 sell order, got %d", len(sellOrders))
 	}
-	
+
 	// Remove orders
 	orderBook.RemoveOrder(buyOrder)
 	orderBook.RemoveOrder(sellOrder)
-	
+
 	// Verify orders were removed
 	buyOrders, sellOrders = orderBook.GetOrderBook()
 	if len(buyOrders) != 0 {
 		t.Errorf("Expected 0 buy orders after removal, got %d", len(buyOrders))
 	}
-	
+
 	if len(sellOrders) != 0 {
 		t.Errorf("Expected 0 sell orders after removal, got %d", len(sellOrders))
 	}
@@ -618,7 +618,7 @@ func TestOptionsOrderBook(t *testing.T) {
 func BenchmarkOptionsEnginePlaceOrder(b *testing.B) {
 	engine := NewOptionsEngine()
 	option := createTestOption(b)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		order := &OptionsOrder{
@@ -629,7 +629,7 @@ func BenchmarkOptionsEnginePlaceOrder(b *testing.B) {
 			Price:    big.NewFloat(15.0),
 			UserID:   "user1",
 		}
-		
+
 		err := engine.PlaceOrder(order)
 		if err != nil {
 			b.Fatalf("Failed to place order: %v", err)
@@ -640,7 +640,7 @@ func BenchmarkOptionsEnginePlaceOrder(b *testing.B) {
 func BenchmarkOptionsEngineOrderMatching(b *testing.B) {
 	engine := NewOptionsEngine()
 	option := createTestOption(b)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Place buy order
@@ -652,9 +652,9 @@ func BenchmarkOptionsEngineOrderMatching(b *testing.B) {
 			Price:    big.NewFloat(15.0),
 			UserID:   "buyer",
 		}
-		
+
 		engine.PlaceOrder(buyOrder)
-		
+
 		// Place matching sell order
 		sellOrder := &OptionsOrder{
 			Option:   option,
@@ -664,7 +664,7 @@ func BenchmarkOptionsEngineOrderMatching(b *testing.B) {
 			Price:    big.NewFloat(14.0),
 			UserID:   "seller",
 		}
-		
+
 		engine.PlaceOrder(sellOrder)
 	}
 }

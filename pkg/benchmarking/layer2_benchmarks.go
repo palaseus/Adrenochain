@@ -23,127 +23,113 @@ func NewLayer2BenchmarkSuite() *Layer2BenchmarkSuite {
 
 // RunAllLayer2Benchmarks runs comprehensive benchmarks for all Layer 2 packages
 func (bs *Layer2BenchmarkSuite) RunAllLayer2Benchmarks() error {
-	
-	
+
 	// Benchmark ZK Rollups Package
 	if err := bs.benchmarkZKRollups(); err != nil {
 		return fmt.Errorf("ZK rollups benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Optimistic Rollups Package
 	if err := bs.benchmarkOptimisticRollups(); err != nil {
 		return fmt.Errorf("optimistic rollups benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark State Channels Package
 	if err := bs.benchmarkStateChannels(); err != nil {
 		return fmt.Errorf("state channels benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Payment Channels Package
 	if err := bs.benchmarkPaymentChannels(); err != nil {
 		return fmt.Errorf("payment channels benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Sidechains Package
 	if err := bs.benchmarkSidechains(); err != nil {
 		return fmt.Errorf("sidechains benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Sharding Package
 	if err := bs.benchmarkSharding(); err != nil {
 		return fmt.Errorf("sharding benchmarks failed: %v", err)
 	}
-	
-	
+
 	return nil
 }
 
 // benchmarkZKRollups runs benchmarks for the ZK Rollups Package
 func (bs *Layer2BenchmarkSuite) benchmarkZKRollups() error {
-	
-	
+
 	// Benchmark 1: Transaction Addition Performance
 	result := bs.benchmarkZKTransactionAddition()
 	bs.AddResult(result)
-	
+
 	// Benchmark 2: Batch Processing Performance
 	result = bs.benchmarkZKBatchProcessing()
 	bs.AddResult(result)
-	
+
 	// Benchmark 3: Proof Generation Performance
 	result = bs.benchmarkZKProofGeneration()
 	bs.AddResult(result)
-	
+
 	// Benchmark 4: Concurrent Operations
 	result = bs.benchmarkZKConcurrentOperations()
 	bs.AddResult(result)
-	
+
 	// Benchmark 5: Memory Efficiency
 	result = bs.benchmarkZKMemoryEfficiency()
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkOptimisticRollups runs benchmarks for the Optimistic Rollups Package
 func (bs *Layer2BenchmarkSuite) benchmarkOptimisticRollups() error {
-	
-	
+
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Optimistic Rollups", "Transaction Processing", 5000)
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkStateChannels runs benchmarks for the State Channels Package
 func (bs *Layer2BenchmarkSuite) benchmarkStateChannels() error {
-	
-	
+
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("State Channels", "Channel Operations", 3000)
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkPaymentChannels runs benchmarks for the Payment Channels Package
 func (bs *Layer2BenchmarkSuite) benchmarkPaymentChannels() error {
-	
-	
+
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Payment Channels", "Payment Processing", 4000)
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkSidechains runs benchmarks for the Sidechains Package
 func (bs *Layer2BenchmarkSuite) benchmarkSidechains() error {
-	
-	
+
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Sidechains", "Cross-Chain Operations", 2000)
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkSharding runs benchmarks for the Sharding Package
 func (bs *Layer2BenchmarkSuite) benchmarkSharding() error {
-	
-	
+
 	// Simple benchmark for now - will expand later
 	result := bs.runGenericBenchmark("Sharding", "Shard Operations", 2500)
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
@@ -153,19 +139,19 @@ func (bs *Layer2BenchmarkSuite) runGenericBenchmark(packageName, testName string
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	// Simulate operations
 	for i := 0; i < operations; i++ {
 		_ = fmt.Sprintf("operation_%d", i)
 	}
-	
+
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     packageName,
 		TestName:        testName,
@@ -188,23 +174,23 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKTransactionAddition() *BenchmarkResul
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	operations := int64(0)
-	
+
 	// Simulate transaction addition operations
 	for i := 0; i < 10000; i++ {
 		// Simulate transaction processing
 		_ = createMockZKTransaction(fmt.Sprintf("tx_%d", i))
 		operations++
 	}
-	
+
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     "ZK Rollups",
 		TestName:        "Transaction Addition",
@@ -216,7 +202,7 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKTransactionAddition() *BenchmarkResul
 		Timestamp:       time.Now(),
 		Metadata: map[string]interface{}{
 			"transaction_count": operations,
-			"avg_tx_size":      256, // bytes
+			"avg_tx_size":       256, // bytes
 		},
 	}
 }
@@ -227,10 +213,10 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKBatchProcessing() *BenchmarkResult {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	operations := int64(0)
 	batchSize := 100
-	
+
 	// Simulate batch processing operations
 	for i := 0; i < 100; i++ {
 		// Simulate batch processing
@@ -241,14 +227,14 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKBatchProcessing() *BenchmarkResult {
 		_ = processMockZKBatch(batch)
 		operations++
 	}
-	
+
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     "ZK Rollups",
 		TestName:        "Batch Processing",
@@ -259,7 +245,7 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKBatchProcessing() *BenchmarkResult {
 		MemoryPerOp:     float64(memoryUsage) / float64(operations),
 		Timestamp:       time.Now(),
 		Metadata: map[string]interface{}{
-			"batch_size":       batchSize,
+			"batch_size":         batchSize,
 			"total_transactions": operations * int64(batchSize),
 		},
 	}
@@ -271,23 +257,23 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKProofGeneration() *BenchmarkResult {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	operations := int64(0)
-	
+
 	// Simulate proof generation operations
 	for i := 0; i < 1000; i++ {
 		// Simulate proof generation
 		_ = generateMockZKProof(fmt.Sprintf("proof_%d", i))
 		operations++
 	}
-	
+
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     "ZK Rollups",
 		TestName:        "Proof Generation",
@@ -298,8 +284,8 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKProofGeneration() *BenchmarkResult {
 		MemoryPerOp:     float64(memoryUsage) / float64(operations),
 		Timestamp:       time.Now(),
 		Metadata: map[string]interface{}{
-			"proof_count":      operations,
-			"avg_proof_size":   1024, // bytes
+			"proof_count":    operations,
+			"avg_proof_size": 1024, // bytes
 		},
 	}
 }
@@ -310,12 +296,12 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKConcurrentOperations() *BenchmarkResu
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	operations := int64(0)
 	concurrency := 10
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	
+
 	// Simulate concurrent operations
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
@@ -330,15 +316,15 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKConcurrentOperations() *BenchmarkResu
 			}
 		}(i)
 	}
-	
+
 	wg.Wait()
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     "ZK Rollups",
 		TestName:        "Concurrent Operations",
@@ -349,7 +335,7 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKConcurrentOperations() *BenchmarkResu
 		MemoryPerOp:     float64(memoryUsage) / float64(operations),
 		Timestamp:       time.Now(),
 		Metadata: map[string]interface{}{
-			"concurrency":      concurrency,
+			"concurrency":       concurrency,
 			"ops_per_goroutine": 1000,
 		},
 	}
@@ -361,28 +347,28 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKMemoryEfficiency() *BenchmarkResult {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	operations := int64(0)
-	
+
 	// Simulate memory-intensive operations
 	for i := 0; i < 1000; i++ {
 		// Simulate large data structure operations
 		_ = createLargeMockZKDataStructure(i)
 		operations++
-		
+
 		// Force garbage collection periodically
 		if i%100 == 0 {
 			runtime.GC()
 		}
 	}
-	
+
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     "ZK Rollups",
 		TestName:        "Memory Efficiency",
@@ -393,7 +379,7 @@ func (bs *Layer2BenchmarkSuite) benchmarkZKMemoryEfficiency() *BenchmarkResult {
 		MemoryPerOp:     float64(memoryUsage) / float64(operations),
 		Timestamp:       time.Now(),
 		Metadata: map[string]interface{}{
-			"gc_cycles":       10,
+			"gc_cycles":           10,
 			"data_structure_size": 1024, // bytes
 		},
 	}
@@ -439,7 +425,7 @@ func (bs *Layer2BenchmarkSuite) AddResult(result *BenchmarkResult) {
 func (bs *Layer2BenchmarkSuite) GetResults() []*BenchmarkResult {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
-	
+
 	results := make([]*BenchmarkResult, len(bs.Results))
 	copy(results, bs.Results)
 	return results

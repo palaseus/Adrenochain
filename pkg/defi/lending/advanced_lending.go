@@ -35,17 +35,17 @@ type LendingPool struct {
 
 // LendingAsset represents a single asset in the lending pool
 type LendingAsset struct {
-	Symbol           string
-	Address          string
-	TotalSupply      float64
-	TotalBorrowed    float64
-	AvailableLiquidity float64
-	SupplyAPY        float64
-	BorrowAPY        float64
-	CollateralFactor float64
+	Symbol               string
+	Address              string
+	TotalSupply          float64
+	TotalBorrowed        float64
+	AvailableLiquidity   float64
+	SupplyAPY            float64
+	BorrowAPY            float64
+	CollateralFactor     float64
 	LiquidationThreshold float64
-	ReserveFactor    float64
-	LastUpdate       time.Time
+	ReserveFactor        float64
+	LastUpdate           time.Time
 }
 
 // Loan represents a user's loan position
@@ -71,10 +71,10 @@ type Loan struct {
 type LoanType string
 
 const (
-	LoanTypeCollateralized LoanType = "collateralized"
+	LoanTypeCollateralized   LoanType = "collateralized"
 	LoanTypeUncollateralized LoanType = "uncollateralized"
-	LoanTypeFlash         LoanType = "flash"
-	LoanTypeStable        LoanType = "stable"
+	LoanTypeFlash            LoanType = "flash"
+	LoanTypeStable           LoanType = "stable"
 )
 
 // LoanStatus represents the status of a loan
@@ -98,33 +98,33 @@ type Collateral struct {
 
 // LendingUser represents a lending platform user
 type LendingUser struct {
-	ID           string
+	ID            string
 	TotalBorrowed float64
 	TotalSupplied float64
-	CreditScore  float64
-	RiskLevel    RiskLevel
-	Loans        []string
-	Collateral   map[string]float64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	CreditScore   float64
+	RiskLevel     RiskLevel
+	Loans         []string
+	Collateral    map[string]float64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // LendingService provides advanced lending and borrowing functionality
 type LendingService struct {
-	pools    map[string]*LendingPool
-	loans    map[string]*Loan
-	users    map[string]*LendingUser
-	logger   *logger.Logger
-	mu       sync.RWMutex
+	pools  map[string]*LendingPool
+	loans  map[string]*Loan
+	users  map[string]*LendingUser
+	logger *logger.Logger
+	mu     sync.RWMutex
 }
 
 // NewLendingService creates a new lending service
 func NewLendingService() *LendingService {
 	return &LendingService{
-		pools:   make(map[string]*LendingPool),
-		loans:   make(map[string]*Loan),
-		users:   make(map[string]*LendingUser),
-		logger:  logger.NewLogger(&logger.Config{Level: logger.INFO, Prefix: "lending_service"}),
+		pools:  make(map[string]*LendingPool),
+		loans:  make(map[string]*Loan),
+		users:  make(map[string]*LendingUser),
+		logger: logger.NewLogger(&logger.Config{Level: logger.INFO, Prefix: "lending_service"}),
 	}
 }
 
@@ -149,11 +149,11 @@ func (ls *LendingService) CreatePool(id, name string, assets []string) (*Lending
 	// Initialize assets
 	for _, asset := range assets {
 		pool.Assets[asset] = &LendingAsset{
-			Symbol:              asset,
-			CollateralFactor:    0.8, // 80% LTV
+			Symbol:               asset,
+			CollateralFactor:     0.8,  // 80% LTV
 			LiquidationThreshold: 0.85, // 85% liquidation threshold
-			ReserveFactor:       0.1, // 10% reserve
-			LastUpdate:          time.Now(),
+			ReserveFactor:        0.1,  // 10% reserve
+			LastUpdate:           time.Now(),
 		}
 	}
 
@@ -202,7 +202,7 @@ func (ls *LendingService) SupplyAsset(poolID, assetSymbol, userID string, amount
 	// Calculate new APY
 	ls.updatePoolAPY(pool)
 
-	ls.logger.Info("Asset supplied - pool: %s, asset: %s, user: %s, amount: %.2f", 
+	ls.logger.Info("Asset supplied - pool: %s, asset: %s, user: %s, amount: %.2f",
 		poolID, assetSymbol, userID, amount)
 	return nil
 }
@@ -227,7 +227,7 @@ func (ls *LendingService) BorrowAsset(poolID, assetSymbol, userID string, amount
 	}
 
 	if amount > asset.AvailableLiquidity {
-		return nil, fmt.Errorf("insufficient liquidity: requested %.2f, available %.2f", 
+		return nil, fmt.Errorf("insufficient liquidity: requested %.2f, available %.2f",
 			amount, asset.AvailableLiquidity)
 	}
 
@@ -273,7 +273,7 @@ func (ls *LendingService) BorrowAsset(poolID, assetSymbol, userID string, amount
 	// Calculate new APY
 	ls.updatePoolAPY(pool)
 
-	ls.logger.Info("Asset borrowed - pool: %s, asset: %s, user: %s, amount: %.2f, loan_id: %s", 
+	ls.logger.Info("Asset borrowed - pool: %s, asset: %s, user: %s, amount: %.2f, loan_id: %s",
 		poolID, assetSymbol, userID, amount, loan.ID)
 	return loan, nil
 }
@@ -300,8 +300,6 @@ func (ls *LendingService) RepayLoan(loanID string, amount float64) error {
 	interest := ls.calculateInterest(loan)
 	totalOwed := loan.BorrowedAmount + interest
 
-
-
 	if amount > totalOwed {
 		amount = totalOwed
 	}
@@ -313,7 +311,7 @@ func (ls *LendingService) RepayLoan(loanID string, amount float64) error {
 	// Check if loan is fully repaid (with small tolerance for floating point precision)
 	const tolerance = 0.01
 	isFullyRepaid := loan.RepaidAmount >= (totalOwed - tolerance)
-	
+
 	if isFullyRepaid {
 		loan.Status = LoanStatusRepaid
 		loan.RepaidAmount = totalOwed
@@ -342,7 +340,7 @@ func (ls *LendingService) RepayLoan(loanID string, amount float64) error {
 		user.TotalBorrowed -= amount
 	}
 
-	ls.logger.Info("Loan repaid - loan_id: %s, amount: %.2f, status: %s", 
+	ls.logger.Info("Loan repaid - loan_id: %s, amount: %.2f, status: %s",
 		loanID, amount, loan.Status)
 	return nil
 }
@@ -396,7 +394,7 @@ func (ls *LendingService) LiquidateLoan(loanID string) error {
 		user.TotalBorrowed -= loan.BorrowedAmount
 	}
 
-	ls.logger.Info("Loan liquidated - loan_id: %s, borrowed_amount: %.2f", 
+	ls.logger.Info("Loan liquidated - loan_id: %s, borrowed_amount: %.2f",
 		loanID, loan.BorrowedAmount)
 	return nil
 }
@@ -478,7 +476,7 @@ func (ls *LendingService) validateCollateral(collateral []Collateral, borrowAmou
 
 	maxBorrowAmount := totalCollateralValue * collateralFactor
 	if borrowAmount > maxBorrowAmount {
-		return fmt.Errorf("borrow amount %.2f exceeds maximum allowed %.2f", 
+		return fmt.Errorf("borrow amount %.2f exceeds maximum allowed %.2f",
 			borrowAmount, maxBorrowAmount)
 	}
 

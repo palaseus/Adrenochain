@@ -11,101 +11,101 @@ import (
 
 // TreasuryManager handles DAO treasury operations
 type TreasuryManager struct {
-	balances        map[string]*big.Int
-	transactions    []*TreasuryTransaction
-	proposals       map[string]*TreasuryProposal
-	multisig        *MultisigWallet
-	mutex           sync.RWMutex
+	balances             map[string]*big.Int
+	transactions         []*TreasuryTransaction
+	proposals            map[string]*TreasuryProposal
+	multisig             *MultisigWallet
+	mutex                sync.RWMutex
 	maxTransactionAmount *big.Int
-	dailyLimit      *big.Int
-	dailyUsed       *big.Int
-	lastReset       time.Time
+	dailyLimit           *big.Int
+	dailyUsed            *big.Int
+	lastReset            time.Time
 }
 
 // TreasuryTransaction represents a treasury transaction
 type TreasuryTransaction struct {
-	ID              string                `json:"id"`
-	Type            TreasuryTransactionType `json:"type"`
-	Amount          *big.Int              `json:"amount"`
-	Asset           string                `json:"asset"`
-	From            string                `json:"from"`
-	To              string                `json:"to"`
-	Description     string                `json:"description"`
-	ProposalID      string                `json:"proposal_id,omitempty"`
-	Status          TransactionStatus     `json:"status"`
-	ExecutedBy      string                `json:"executed_by"`
-	CreatedAt       time.Time             `json:"created_at"`
-	ExecutedAt      *time.Time            `json:"executed_at,omitempty"`
-	GasUsed         *big.Int              `json:"gas_used,omitempty"`
-	TxHash          string                `json:"tx_hash,omitempty"`
+	ID          string                  `json:"id"`
+	Type        TreasuryTransactionType `json:"type"`
+	Amount      *big.Int                `json:"amount"`
+	Asset       string                  `json:"asset"`
+	From        string                  `json:"from"`
+	To          string                  `json:"to"`
+	Description string                  `json:"description"`
+	ProposalID  string                  `json:"proposal_id,omitempty"`
+	Status      TransactionStatus       `json:"status"`
+	ExecutedBy  string                  `json:"executed_by"`
+	CreatedAt   time.Time               `json:"created_at"`
+	ExecutedAt  *time.Time              `json:"executed_at,omitempty"`
+	GasUsed     *big.Int                `json:"gas_used,omitempty"`
+	TxHash      string                  `json:"tx_hash,omitempty"`
 }
 
 // TreasuryTransactionType represents the type of treasury transaction
 type TreasuryTransactionType string
 
 const (
-	TreasuryTransactionTypeTransfer    TreasuryTransactionType = "transfer"
-	TreasuryTransactionTypeWithdrawal  TreasuryTransactionType = "withdrawal"
-	TreasuryTransactionTypeDeposit     TreasuryTransactionType = "deposit"
-	TreasuryTransactionTypeInvestment  TreasuryTransactionType = "investment"
-	TreasuryTransactionTypeReward      TreasuryTransactionType = "reward"
+	TreasuryTransactionTypeTransfer   TreasuryTransactionType = "transfer"
+	TreasuryTransactionTypeWithdrawal TreasuryTransactionType = "withdrawal"
+	TreasuryTransactionTypeDeposit    TreasuryTransactionType = "deposit"
+	TreasuryTransactionTypeInvestment TreasuryTransactionType = "investment"
+	TreasuryTransactionTypeReward     TreasuryTransactionType = "reward"
 )
 
 // TransactionStatus represents the status of a treasury transaction
 type TransactionStatus string
 
 const (
-	TransactionStatusPending   TransactionStatus = "pending"
-	TransactionStatusApproved  TransactionStatus = "approved"
-	TransactionStatusExecuted  TransactionStatus = "executed"
-	TransactionStatusRejected  TransactionStatus = "rejected"
-	TransactionStatusFailed    TransactionStatus = "failed"
+	TransactionStatusPending  TransactionStatus = "pending"
+	TransactionStatusApproved TransactionStatus = "approved"
+	TransactionStatusExecuted TransactionStatus = "executed"
+	TransactionStatusRejected TransactionStatus = "rejected"
+	TransactionStatusFailed   TransactionStatus = "failed"
 )
 
 // TreasuryProposal represents a treasury proposal
 type TreasuryProposal struct {
-	ID              string                `json:"id"`
-	Title           string                `json:"title"`
-	Description     string                `json:"description"`
-	Proposer        string                `json:"proposer"`
-	Amount          *big.Int              `json:"amount"`
-	Asset           string                `json:"asset"`
-	Recipient       string                `json:"recipient"`
-	Purpose         string                `json:"purpose"`
-	Status          TreasuryProposalStatus `json:"status"`
-	VotesFor        *big.Int              `json:"votes_for"`
-	VotesAgainst    *big.Int              `json:"votes_against"`
-	CreatedAt       time.Time             `json:"created_at"`
-	UpdatedAt       time.Time             `json:"updated_at"`
-	ExecutedAt      *time.Time            `json:"executed_at,omitempty"`
+	ID           string                 `json:"id"`
+	Title        string                 `json:"title"`
+	Description  string                 `json:"description"`
+	Proposer     string                 `json:"proposer"`
+	Amount       *big.Int               `json:"amount"`
+	Asset        string                 `json:"asset"`
+	Recipient    string                 `json:"recipient"`
+	Purpose      string                 `json:"purpose"`
+	Status       TreasuryProposalStatus `json:"status"`
+	VotesFor     *big.Int               `json:"votes_for"`
+	VotesAgainst *big.Int               `json:"votes_against"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	ExecutedAt   *time.Time             `json:"executed_at,omitempty"`
 }
 
 // TreasuryProposalStatus represents the status of a treasury proposal
 type TreasuryProposalStatus string
 
 const (
-	TreasuryProposalStatusDraft      TreasuryProposalStatus = "draft"
-	TreasuryProposalStatusActive     TreasuryProposalStatus = "active"
-	TreasuryProposalStatusPassed     TreasuryProposalStatus = "passed"
-	TreasuryProposalStatusRejected   TreasuryProposalStatus = "rejected"
-	TreasuryProposalStatusExecuted   TreasuryProposalStatus = "executed"
-	TreasuryProposalStatusCancelled  TreasuryProposalStatus = "cancelled"
+	TreasuryProposalStatusDraft     TreasuryProposalStatus = "draft"
+	TreasuryProposalStatusActive    TreasuryProposalStatus = "active"
+	TreasuryProposalStatusPassed    TreasuryProposalStatus = "passed"
+	TreasuryProposalStatusRejected  TreasuryProposalStatus = "rejected"
+	TreasuryProposalStatusExecuted  TreasuryProposalStatus = "executed"
+	TreasuryProposalStatusCancelled TreasuryProposalStatus = "cancelled"
 )
 
 // MultisigWallet represents a multisignature wallet for treasury operations
 type MultisigWallet struct {
-	addresses       []string
+	addresses          []string
 	requiredSignatures int
-	signatures      map[string]map[string]*Signature
-	mutex           sync.RWMutex
+	signatures         map[string]map[string]*Signature
+	mutex              sync.RWMutex
 }
 
 // Signature represents a signature on a transaction
 type Signature struct {
-	Signer         string    `json:"signer"`
-	TransactionID  string    `json:"transaction_id"`
-	Signature      []byte    `json:"signature"`
-	Timestamp      time.Time `json:"timestamp"`
+	Signer        string    `json:"signer"`
+	TransactionID string    `json:"transaction_id"`
+	Signature     []byte    `json:"signature"`
+	Timestamp     time.Time `json:"timestamp"`
 }
 
 // NewTreasuryManager creates a new treasury manager

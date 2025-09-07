@@ -15,7 +15,7 @@ func TestNewLiquidationConfig(t *testing.T) {
 		liquidationFee := big.NewFloat(0.05) // 5%
 		minAuctionDuration := 1 * time.Hour
 		maxAuctionDuration := 7 * 24 * time.Hour
-		bidIncrement := big.NewFloat(0.01) // 1%
+		bidIncrement := big.NewFloat(0.01)       // 1%
 		autoExtendThreshold := big.NewFloat(0.1) // 10%
 
 		config, err := NewLiquidationConfig(
@@ -83,13 +83,13 @@ func TestNewLiquidationConfig(t *testing.T) {
 
 func TestNewLiquidationEngine(t *testing.T) {
 	// Create dependencies
-	riskFreeRate := big.NewFloat(0.02) // 2%
+	riskFreeRate := big.NewFloat(0.02)    // 2%
 	confidenceLevel := big.NewFloat(0.95) // 95%
 	basePremiumRate := big.NewFloat(0.01) // 1%
-	
+
 	riskManager, err := NewAdvancedRiskManager(riskFreeRate, confidenceLevel)
 	require.NoError(t, err)
-	
+
 	insuranceManager, err := NewInsuranceManager(riskFreeRate, basePremiumRate)
 	require.NoError(t, err)
 
@@ -483,13 +483,13 @@ func TestNewRecoveryMechanism(t *testing.T) {
 
 // Helper function to create a test liquidation engine
 func createTestLiquidationEngine(t *testing.T) *LiquidationEngine {
-	riskFreeRate := big.NewFloat(0.02) // 2%
+	riskFreeRate := big.NewFloat(0.02)    // 2%
 	confidenceLevel := big.NewFloat(0.95) // 95%
 	basePremiumRate := big.NewFloat(0.01) // 1%
-	
+
 	riskManager, err := NewAdvancedRiskManager(riskFreeRate, confidenceLevel)
 	require.NoError(t, err)
-	
+
 	insuranceManager, err := NewInsuranceManager(riskFreeRate, basePremiumRate)
 	require.NoError(t, err)
 

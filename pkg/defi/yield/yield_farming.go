@@ -32,38 +32,38 @@ const (
 
 // Farm represents a yield farming opportunity
 type Farm struct {
-	ID              string
-	Name            string
-	Description     string
-	Protocol        string
-	Chain           string
-	Strategy        FarmingStrategy
-	RiskLevel       RiskLevel
-	APY             *big.Float
-	APR             *big.Float
-	TVL             *big.Float
-	MinStake        *big.Float
-	MaxStake        *big.Float
-	LockPeriod      time.Duration
-	RewardTokens    []string
-	StakeTokens     []string
-	IsActive        bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID           string
+	Name         string
+	Description  string
+	Protocol     string
+	Chain        string
+	Strategy     FarmingStrategy
+	RiskLevel    RiskLevel
+	APY          *big.Float
+	APR          *big.Float
+	TVL          *big.Float
+	MinStake     *big.Float
+	MaxStake     *big.Float
+	LockPeriod   time.Duration
+	RewardTokens []string
+	StakeTokens  []string
+	IsActive     bool
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // Position represents a user's position in a farm
 type Position struct {
-	ID          string
-	FarmID      string
-	UserID      string
-	StakedAmount *big.Float
+	ID            string
+	FarmID        string
+	UserID        string
+	StakedAmount  *big.Float
 	RewardsEarned *big.Float
-	StartTime   time.Time
-	LastClaim   time.Time
-	IsActive    bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	StartTime     time.Time
+	LastClaim     time.Time
+	IsActive      bool
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // YieldCalculator calculates yield metrics
@@ -73,18 +73,18 @@ type YieldCalculator struct {
 
 // YieldManager manages yield farming operations
 type YieldManager struct {
-	Farms     map[string]*Farm
-	Positions map[string]*Position
+	Farms      map[string]*Farm
+	Positions  map[string]*Position
 	Calculator *YieldCalculator
-	mu        sync.RWMutex
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	mu         sync.RWMutex
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // NewYieldManager creates a new yield manager
 func NewYieldManager() *YieldManager {
 	now := time.Now()
-	
+
 	return &YieldManager{
 		Farms:      make(map[string]*Farm),
 		Positions:  make(map[string]*Position),
@@ -129,9 +129,9 @@ func NewFarm(id, name, description, protocol, chain string, strategy FarmingStra
 	if stakeTokens == nil {
 		stakeTokens = []string{}
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Farm{
 		ID:           id,
 		Name:         name,
@@ -168,20 +168,20 @@ func NewPosition(id, farmID, userID string, stakedAmount *big.Float) (*Position,
 	if stakedAmount == nil || stakedAmount.Sign() <= 0 {
 		return nil, errors.New("staked amount must be positive")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Position{
-		ID:           id,
-		FarmID:       farmID,
-		UserID:       userID,
-		StakedAmount: new(big.Float).Copy(stakedAmount),
+		ID:            id,
+		FarmID:        farmID,
+		UserID:        userID,
+		StakedAmount:  new(big.Float).Copy(stakedAmount),
 		RewardsEarned: big.NewFloat(0),
-		StartTime:    now,
-		LastClaim:    now,
-		IsActive:     true,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		StartTime:     now,
+		LastClaim:     now,
+		IsActive:      true,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}, nil
 }
 
@@ -190,17 +190,17 @@ func (ym *YieldManager) AddFarm(farm *Farm) error {
 	if farm == nil {
 		return errors.New("farm cannot be nil")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	if _, exists := ym.Farms[farm.ID]; exists {
 		return errors.New("farm with this ID already exists")
 	}
-	
+
 	ym.Farms[farm.ID] = farm
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -209,24 +209,24 @@ func (ym *YieldManager) RemoveFarm(farmID string) error {
 	if farmID == "" {
 		return errors.New("farm ID cannot be empty")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	if _, exists := ym.Farms[farmID]; !exists {
 		return errors.New("farm not found")
 	}
-	
+
 	// Check if there are active positions
 	for _, position := range ym.Positions {
 		if position.FarmID == farmID && position.IsActive {
 			return errors.New("cannot remove farm with active positions")
 		}
 	}
-	
+
 	delete(ym.Farms, farmID)
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -235,10 +235,10 @@ func (ym *YieldManager) StartFarming(position *Position) error {
 	if position == nil {
 		return errors.New("position cannot be nil")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	// Validate farm exists and is active
 	farm, exists := ym.Farms[position.FarmID]
 	if !exists {
@@ -247,7 +247,7 @@ func (ym *YieldManager) StartFarming(position *Position) error {
 	if !farm.IsActive {
 		return errors.New("farm is not active")
 	}
-	
+
 	// Validate stake amount
 	if position.StakedAmount.Cmp(farm.MinStake) < 0 {
 		return errors.New("staked amount below minimum")
@@ -255,15 +255,15 @@ func (ym *YieldManager) StartFarming(position *Position) error {
 	if farm.MaxStake.Sign() > 0 && position.StakedAmount.Cmp(farm.MaxStake) > 0 {
 		return errors.New("staked amount above maximum")
 	}
-	
+
 	// Check if position already exists
 	if _, exists := ym.Positions[position.ID]; exists {
 		return errors.New("position with this ID already exists")
 	}
-	
+
 	ym.Positions[position.ID] = position
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -272,23 +272,23 @@ func (ym *YieldManager) StopFarming(positionID string) error {
 	if positionID == "" {
 		return errors.New("position ID cannot be empty")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	position, exists := ym.Positions[positionID]
 	if !exists {
 		return errors.New("position not found")
 	}
-	
+
 	if !position.IsActive {
 		return errors.New("position is already inactive")
 	}
-	
+
 	position.IsActive = false
 	position.UpdatedAt = time.Now()
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -297,33 +297,33 @@ func (ym *YieldManager) ClaimRewards(positionID string) (*big.Float, error) {
 	if positionID == "" {
 		return nil, errors.New("position ID cannot be empty")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	position, exists := ym.Positions[positionID]
 	if !exists {
 		return nil, errors.New("position not found")
 	}
-	
+
 	if !position.IsActive {
 		return nil, errors.New("position is not active")
 	}
-	
+
 	// Calculate rewards since last claim
 	farm, exists := ym.Farms[position.FarmID]
 	if !exists {
 		return nil, errors.New("farm not found")
 	}
-	
+
 	rewards := ym.Calculator.CalculateRewards(position, farm)
-	
+
 	// Update position
 	position.RewardsEarned.Add(position.RewardsEarned, rewards)
 	position.LastClaim = time.Now()
 	position.UpdatedAt = time.Now()
 	ym.UpdatedAt = time.Now()
-	
+
 	return rewards, nil
 }
 
@@ -331,20 +331,20 @@ func (ym *YieldManager) ClaimRewards(positionID string) (*big.Float, error) {
 func (yc *YieldCalculator) CalculateRewards(position *Position, farm *Farm) *big.Float {
 	yc.mu.RLock()
 	defer yc.mu.RUnlock()
-	
+
 	// Calculate time since last claim
 	timeSinceClaim := time.Since(position.LastClaim)
 	if timeSinceClaim <= 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	// Convert to years
 	years := timeSinceClaim.Hours() / 8760 // 8760 hours in a year
-	
+
 	// Calculate rewards using APR (more accurate for short periods)
 	rewards := new(big.Float).Mul(position.StakedAmount, farm.APR)
 	rewards.Mul(rewards, big.NewFloat(years))
-	
+
 	return rewards
 }
 
@@ -353,15 +353,15 @@ func (ym *YieldManager) GetFarm(farmID string) (*Farm, error) {
 	if farmID == "" {
 		return nil, errors.New("farm ID cannot be empty")
 	}
-	
+
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	farm, exists := ym.Farms[farmID]
 	if !exists {
 		return nil, errors.New("farm not found")
 	}
-	
+
 	return farm, nil
 }
 
@@ -370,15 +370,15 @@ func (ym *YieldManager) GetPosition(positionID string) (*Position, error) {
 	if positionID == "" {
 		return nil, errors.New("position ID cannot be empty")
 	}
-	
+
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	position, exists := ym.Positions[positionID]
 	if !exists {
 		return nil, errors.New("position not found")
 	}
-	
+
 	return position, nil
 }
 
@@ -386,14 +386,14 @@ func (ym *YieldManager) GetPosition(positionID string) (*Position, error) {
 func (ym *YieldManager) GetFarmsByStrategy(strategy FarmingStrategy) []*Farm {
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var farms []*Farm
 	for _, farm := range ym.Farms {
 		if farm.Strategy == strategy && farm.IsActive {
 			farms = append(farms, farm)
 		}
 	}
-	
+
 	return farms
 }
 
@@ -401,14 +401,14 @@ func (ym *YieldManager) GetFarmsByStrategy(strategy FarmingStrategy) []*Farm {
 func (ym *YieldManager) GetFarmsByRiskLevel(riskLevel RiskLevel) []*Farm {
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var farms []*Farm
 	for _, farm := range ym.Farms {
 		if farm.RiskLevel == riskLevel && farm.IsActive {
 			farms = append(farms, farm)
 		}
 	}
-	
+
 	return farms
 }
 
@@ -417,17 +417,17 @@ func (ym *YieldManager) GetPositionsByUser(userID string) []*Position {
 	if userID == "" {
 		return nil
 	}
-	
+
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var positions []*Position
 	for _, position := range ym.Positions {
 		if position.UserID == userID {
 			positions = append(positions, position)
 		}
 	}
-	
+
 	return positions
 }
 
@@ -435,14 +435,14 @@ func (ym *YieldManager) GetPositionsByUser(userID string) []*Position {
 func (ym *YieldManager) GetActivePositions() []*Position {
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var positions []*Position
 	for _, position := range ym.Positions {
 		if position.IsActive {
 			positions = append(positions, position)
 		}
 	}
-	
+
 	return positions
 }
 
@@ -454,19 +454,19 @@ func (ym *YieldManager) UpdateFarmAPY(farmID string, newAPY *big.Float) error {
 	if newAPY == nil || newAPY.Sign() < 0 {
 		return errors.New("APY must be non-negative")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	farm, exists := ym.Farms[farmID]
 	if !exists {
 		return errors.New("farm not found")
 	}
-	
+
 	farm.APY = new(big.Float).Copy(newAPY)
 	farm.UpdatedAt = time.Now()
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -478,19 +478,19 @@ func (ym *YieldManager) UpdateFarmAPR(farmID string, newAPR *big.Float) error {
 	if newAPR == nil || newAPR.Sign() < 0 {
 		return errors.New("APR must be non-negative")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	farm, exists := ym.Farms[farmID]
 	if !exists {
 		return errors.New("farm not found")
 	}
-	
+
 	farm.APR = new(big.Float).Copy(newAPR)
 	farm.UpdatedAt = time.Now()
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -502,19 +502,19 @@ func (ym *YieldManager) UpdateFarmTVL(farmID string, newTVL *big.Float) error {
 	if newTVL == nil || newTVL.Sign() < 0 {
 		return errors.New("TVL must be non-negative")
 	}
-	
+
 	ym.mu.Lock()
 	defer ym.mu.Unlock()
-	
+
 	farm, exists := ym.Farms[farmID]
 	if !exists {
 		return errors.New("farm not found")
 	}
-	
+
 	farm.TVL = new(big.Float).Copy(newTVL)
 	farm.UpdatedAt = time.Now()
 	ym.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -522,14 +522,14 @@ func (ym *YieldManager) UpdateFarmTVL(farmID string, newTVL *big.Float) error {
 func (ym *YieldManager) GetTotalStaked() *big.Float {
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	totalStaked := big.NewFloat(0)
 	for _, position := range ym.Positions {
 		if position.IsActive {
 			totalStaked.Add(totalStaked, position.StakedAmount)
 		}
 	}
-	
+
 	return totalStaked
 }
 
@@ -537,12 +537,12 @@ func (ym *YieldManager) GetTotalStaked() *big.Float {
 func (ym *YieldManager) GetTotalRewards() *big.Float {
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	totalRewards := big.NewFloat(0)
 	for _, position := range ym.Positions {
 		totalRewards.Add(totalRewards, position.RewardsEarned)
 	}
-	
+
 	return totalRewards
 }
 
@@ -550,25 +550,25 @@ func (ym *YieldManager) GetTotalRewards() *big.Float {
 func (ym *YieldManager) GetAverageAPY() *big.Float {
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	if len(ym.Farms) == 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	totalAPY := big.NewFloat(0)
 	activeFarms := 0
-	
+
 	for _, farm := range ym.Farms {
 		if farm.IsActive {
 			totalAPY.Add(totalAPY, farm.APY)
 			activeFarms++
 		}
 	}
-	
+
 	if activeFarms == 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	averageAPY := new(big.Float).Quo(totalAPY, big.NewFloat(float64(activeFarms)))
 	return averageAPY
 }
@@ -578,17 +578,17 @@ func (ym *YieldManager) GetTopPerformingFarms(limit int) []*Farm {
 	if limit <= 0 {
 		limit = 10 // Default to top 10
 	}
-	
+
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var farms []*Farm
 	for _, farm := range ym.Farms {
 		if farm.IsActive {
 			farms = append(farms, farm)
 		}
 	}
-	
+
 	// Sort by APY (descending)
 	for i := 0; i < len(farms)-1; i++ {
 		for j := i + 1; j < len(farms); j++ {
@@ -597,12 +597,12 @@ func (ym *YieldManager) GetTopPerformingFarms(limit int) []*Farm {
 			}
 		}
 	}
-	
+
 	// Return top N farms
 	if len(farms) > limit {
 		return farms[:limit]
 	}
-	
+
 	return farms
 }
 
@@ -611,17 +611,17 @@ func (ym *YieldManager) GetFarmsByChain(chain string) []*Farm {
 	if chain == "" {
 		return nil
 	}
-	
+
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var farms []*Farm
 	for _, farm := range ym.Farms {
 		if farm.Chain == chain && farm.IsActive {
 			farms = append(farms, farm)
 		}
 	}
-	
+
 	return farms
 }
 
@@ -630,16 +630,16 @@ func (ym *YieldManager) GetFarmsByProtocol(protocol string) []*Farm {
 	if protocol == "" {
 		return nil
 	}
-	
+
 	ym.mu.RLock()
 	defer ym.mu.RUnlock()
-	
+
 	var farms []*Farm
 	for _, farm := range ym.Farms {
 		if farm.Protocol == protocol && farm.IsActive {
 			farms = append(farms, farm)
 		}
 	}
-	
+
 	return farms
 }

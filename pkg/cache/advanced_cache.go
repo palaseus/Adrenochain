@@ -17,74 +17,74 @@ type CacheLevel int
 
 const (
 	LevelL1 CacheLevel = iota // Fastest, in-memory
-	LevelL2                    // Medium, compressed
-	LevelL3                    // Slowest, persistent
+	LevelL2                   // Medium, compressed
+	LevelL3                   // Slowest, persistent
 )
 
 // CacheConfig holds configuration for the advanced cache system
 type CacheConfig struct {
-	L1Size        int           // L1 cache size (number of items)
-	L2Size        int           // L2 cache size (number of items)
-	L3Size        int           // L3 cache size (number of items)
-	L1TTL         time.Duration // L1 cache TTL
-	L2TTL         time.Duration // L2 cache TTL
-	L3TTL         time.Duration // L3 cache TTL
-	Compression   bool          // Enable compression for L2
-	Parallelism   int           // Number of parallel workers
-	EvictionPolicy string       // LRU, LFU, or FIFO
+	L1Size         int           // L1 cache size (number of items)
+	L2Size         int           // L2 cache size (number of items)
+	L3Size         int           // L3 cache size (number of items)
+	L1TTL          time.Duration // L1 cache TTL
+	L2TTL          time.Duration // L2 cache TTL
+	L3TTL          time.Duration // L3 cache TTL
+	Compression    bool          // Enable compression for L2
+	Parallelism    int           // Number of parallel workers
+	EvictionPolicy string        // LRU, LFU, or FIFO
 }
 
 // DefaultCacheConfig returns sensible defaults for the cache system
 func DefaultCacheConfig() *CacheConfig {
 	return &CacheConfig{
-		L1Size:        10000,           // 10K items in L1
-		L2Size:        100000,          // 100K items in L2
-		L3Size:        1000000,         // 1M items in L3
-		L1TTL:         5 * time.Minute, // 5 minutes
-		L2TTL:         30 * time.Minute, // 30 minutes
-		L3TTL:         24 * time.Hour,  // 24 hours
-		Compression:   true,            // Enable compression
-		Parallelism:   4,               // 4 parallel workers
-		EvictionPolicy: "LRU",          // LRU eviction
+		L1Size:         10000,            // 10K items in L1
+		L2Size:         100000,           // 100K items in L2
+		L3Size:         1000000,          // 1M items in L3
+		L1TTL:          5 * time.Minute,  // 5 minutes
+		L2TTL:          30 * time.Minute, // 30 minutes
+		L3TTL:          24 * time.Hour,   // 24 hours
+		Compression:    true,             // Enable compression
+		Parallelism:    4,                // 4 parallel workers
+		EvictionPolicy: "LRU",            // LRU eviction
 	}
 }
 
 // CacheItem represents a cached item with metadata
 type CacheItem struct {
-	Key       string
-	Value     interface{}
-	Level     CacheLevel
-	Created   time.Time
-	Accessed  time.Time
-	Hits      int64
-	Size      int64
+	Key        string
+	Value      interface{}
+	Level      CacheLevel
+	Created    time.Time
+	Accessed   time.Time
+	Hits       int64
+	Size       int64
 	Compressed bool
 }
 
 // AdvancedCache is a multi-level, high-performance caching system
 type AdvancedCache struct {
-	config     *CacheConfig
-	l1Cache    *LRUCache
-	l2Cache    *LRUCache
-	l3Cache    *LRUCache
-	stats      *CacheStats
-	workers    chan struct{}
-	ctx        context.Context
-	cancel     context.CancelFunc
-	mu         sync.RWMutex
+	config  *CacheConfig
+	l1Cache *LRUCache
+	l2Cache *LRUCache
+	l3Cache *LRUCache
+	stats   *CacheStats
+	workers chan struct{}
+	ctx     context.Context
+	cancel  context.CancelFunc
+	mu      sync.RWMutex
 }
 
 // CacheStats tracks cache performance metrics
 type CacheStats struct {
-	Hits        int64
-	Misses      int64
-	Evictions   int64
-	Compressions int64
+	Hits           int64
+	Misses         int64
+	Evictions      int64
+	Compressions   int64
 	Decompressions int64
-	L1Hits      int64
-	L2Hits      int64
-	L3Hits      int64
-	mu          sync.RWMutex
+	L1Hits         int64
+	L2Hits         int64
+	L3Hits         int64
+	mu             sync.RWMutex
 }
 
 // NewAdvancedCache creates a new advanced cache instance
@@ -225,7 +225,7 @@ func (ac *AdvancedCache) promoteToL1(key string, item *CacheItem) {
 	if item.Compressed {
 		ac.decompressItem(item)
 	}
-	
+
 	// Create a copy for L1
 	l1Item := &CacheItem{
 		Key:      item.Key,
@@ -236,7 +236,7 @@ func (ac *AdvancedCache) promoteToL1(key string, item *CacheItem) {
 		Hits:     item.Hits,
 		Size:     item.Size,
 	}
-	
+
 	ac.l1Cache.Set(key, l1Item)
 }
 
@@ -252,11 +252,11 @@ func (ac *AdvancedCache) promoteToL2(key string, item *CacheItem) {
 		Hits:     item.Hits,
 		Size:     item.Size,
 	}
-	
+
 	if ac.config.Compression {
 		ac.compressItem(l2Item)
 	}
-	
+
 	ac.l2Cache.Set(key, l2Item)
 }
 

@@ -700,7 +700,7 @@ func TestYieldFarm_Concurrency(t *testing.T) {
 
 	// Test concurrent access to farm data
 	done := make(chan bool, 10)
-	
+
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			// Access farm data concurrently
@@ -713,7 +713,7 @@ func TestYieldFarm_Concurrency(t *testing.T) {
 			if yf.Symbol != "TEST" {
 				t.Errorf("invalid symbol: %s", yf.Symbol)
 			}
-			
+
 			done <- true
 		}(i)
 	}

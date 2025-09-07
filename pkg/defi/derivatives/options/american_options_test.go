@@ -7,48 +7,48 @@ import (
 
 func TestNewAmericanOption(t *testing.T) {
 	tests := []struct {
-		name           string
-		optionType     AmericanOptionType
-		strikePrice    *big.Float
-		currentPrice   *big.Float
-		timeToExpiry   *big.Float
-		riskFreeRate   *big.Float
-		volatility     *big.Float
-		expectError    bool
-		expectedType   OptionType
+		name         string
+		optionType   AmericanOptionType
+		strikePrice  *big.Float
+		currentPrice *big.Float
+		timeToExpiry *big.Float
+		riskFreeRate *big.Float
+		volatility   *big.Float
+		expectError  bool
+		expectedType OptionType
 	}{
 		{
-			name:           "Valid American Call",
-			optionType:     AmericanCall,
-			strikePrice:    big.NewFloat(100),
-			currentPrice:   big.NewFloat(110),
-			timeToExpiry:   big.NewFloat(1.0),
-			riskFreeRate:   big.NewFloat(0.05),
-			volatility:     big.NewFloat(0.3),
-			expectError:    false,
-			expectedType:   Call,
+			name:         "Valid American Call",
+			optionType:   AmericanCall,
+			strikePrice:  big.NewFloat(100),
+			currentPrice: big.NewFloat(110),
+			timeToExpiry: big.NewFloat(1.0),
+			riskFreeRate: big.NewFloat(0.05),
+			volatility:   big.NewFloat(0.3),
+			expectError:  false,
+			expectedType: Call,
 		},
 		{
-			name:           "Valid American Put",
-			optionType:     AmericanPut,
-			strikePrice:    big.NewFloat(100),
-			currentPrice:   big.NewFloat(90),
-			timeToExpiry:   big.NewFloat(1.0),
-			riskFreeRate:   big.NewFloat(0.05),
-			volatility:     big.NewFloat(0.3),
-			expectError:    false,
-			expectedType:   Put,
+			name:         "Valid American Put",
+			optionType:   AmericanPut,
+			strikePrice:  big.NewFloat(100),
+			currentPrice: big.NewFloat(90),
+			timeToExpiry: big.NewFloat(1.0),
+			riskFreeRate: big.NewFloat(0.05),
+			volatility:   big.NewFloat(0.3),
+			expectError:  false,
+			expectedType: Put,
 		},
 		{
-			name:           "Zero Strike Price",
-			optionType:     AmericanCall,
-			strikePrice:    big.NewFloat(0),
-			currentPrice:   big.NewFloat(110),
-			timeToExpiry:   big.NewFloat(1.0),
-			riskFreeRate:   big.NewFloat(0.05),
-			volatility:     big.NewFloat(0.3),
-			expectError:    true,
-			expectedType:   Call,
+			name:         "Zero Strike Price",
+			optionType:   AmericanCall,
+			strikePrice:  big.NewFloat(0),
+			currentPrice: big.NewFloat(110),
+			timeToExpiry: big.NewFloat(1.0),
+			riskFreeRate: big.NewFloat(0.05),
+			volatility:   big.NewFloat(0.3),
+			expectError:  true,
+			expectedType: Call,
 		},
 	}
 
@@ -229,9 +229,9 @@ func TestAmericanOptionExerciseEarly(t *testing.T) {
 		// Create a deep in-the-money call option that should exercise early
 		option, err := NewAmericanOption(
 			AmericanCall,
-			big.NewFloat(100), // Strike
-			big.NewFloat(110), // Current price
-			big.NewFloat(1.0), // Time to expiry
+			big.NewFloat(100),  // Strike
+			big.NewFloat(110),  // Current price
+			big.NewFloat(1.0),  // Time to expiry
 			big.NewFloat(0.05), // Risk-free rate
 			big.NewFloat(0.3),  // Volatility
 		)
@@ -281,9 +281,9 @@ func TestAmericanOptionExerciseEarly(t *testing.T) {
 	t.Run("Early Exercise Not Optimal - At The Money", func(t *testing.T) {
 		option, err := NewAmericanOption(
 			AmericanCall,
-			big.NewFloat(100), // Strike
-			big.NewFloat(100), // Current price (at the money)
-			big.NewFloat(1.0), // Time to expiry
+			big.NewFloat(100),  // Strike
+			big.NewFloat(100),  // Current price (at the money)
+			big.NewFloat(1.0),  // Time to expiry
 			big.NewFloat(0.05), // Risk-free rate
 			big.NewFloat(0.3),  // Volatility
 		)
@@ -369,49 +369,49 @@ func TestAmericanOptionExerciseHistory(t *testing.T) {
 
 func TestAmericanOptionCalculateEarlyExerciseValue(t *testing.T) {
 	tests := []struct {
-		name           string
-		optionType     AmericanOptionType
-		strikePrice    *big.Float
-		currentPrice   *big.Float
-		marketPrice    *big.Float
-		quantity       *big.Float
-		expectedValue  *big.Float
+		name          string
+		optionType    AmericanOptionType
+		strikePrice   *big.Float
+		currentPrice  *big.Float
+		marketPrice   *big.Float
+		quantity      *big.Float
+		expectedValue *big.Float
 	}{
 		{
-			name:           "Call - In The Money",
-			optionType:     AmericanCall,
-			strikePrice:    big.NewFloat(100),
-			currentPrice:   big.NewFloat(110),
-			marketPrice:    big.NewFloat(120),
-			quantity:       big.NewFloat(10),
-			expectedValue:  big.NewFloat(200), // (120-100) * 10
+			name:          "Call - In The Money",
+			optionType:    AmericanCall,
+			strikePrice:   big.NewFloat(100),
+			currentPrice:  big.NewFloat(110),
+			marketPrice:   big.NewFloat(120),
+			quantity:      big.NewFloat(10),
+			expectedValue: big.NewFloat(200), // (120-100) * 10
 		},
 		{
-			name:           "Call - Out Of The Money",
-			optionType:     AmericanCall,
-			strikePrice:    big.NewFloat(100),
-			currentPrice:   big.NewFloat(110),
-			marketPrice:    big.NewFloat(90),
-			quantity:       big.NewFloat(10),
-			expectedValue:  big.NewFloat(0), // max(0, 90-100) * 10 = 0
+			name:          "Call - Out Of The Money",
+			optionType:    AmericanCall,
+			strikePrice:   big.NewFloat(100),
+			currentPrice:  big.NewFloat(110),
+			marketPrice:   big.NewFloat(90),
+			quantity:      big.NewFloat(10),
+			expectedValue: big.NewFloat(0), // max(0, 90-100) * 10 = 0
 		},
 		{
-			name:           "Put - In The Money",
-			optionType:     AmericanPut,
-			strikePrice:    big.NewFloat(100),
-			currentPrice:   big.NewFloat(90),
-			marketPrice:    big.NewFloat(80),
-			quantity:       big.NewFloat(10),
-			expectedValue:  big.NewFloat(200), // (100-80) * 10
+			name:          "Put - In The Money",
+			optionType:    AmericanPut,
+			strikePrice:   big.NewFloat(100),
+			currentPrice:  big.NewFloat(90),
+			marketPrice:   big.NewFloat(80),
+			quantity:      big.NewFloat(10),
+			expectedValue: big.NewFloat(200), // (100-80) * 10
 		},
 		{
-			name:           "Put - Out Of The Money",
-			optionType:     AmericanPut,
-			strikePrice:    big.NewFloat(100),
-			currentPrice:   big.NewFloat(90),
-			marketPrice:    big.NewFloat(110),
-			quantity:       big.NewFloat(10),
-			expectedValue:  big.NewFloat(0), // max(0, 100-110) * 10 = 0
+			name:          "Put - Out Of The Money",
+			optionType:    AmericanPut,
+			strikePrice:   big.NewFloat(100),
+			currentPrice:  big.NewFloat(90),
+			marketPrice:   big.NewFloat(110),
+			quantity:      big.NewFloat(10),
+			expectedValue: big.NewFloat(0), // max(0, 100-110) * 10 = 0
 		},
 	}
 

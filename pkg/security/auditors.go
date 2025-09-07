@@ -24,7 +24,7 @@ func (ca *ConsensusAuditor) Audit(ctx context.Context) (*AuditResult, error) {
 	if !ca.enabled {
 		return nil, ErrConsensusAuditingNotEnabled
 	}
-	
+
 	// Placeholder implementation
 	return &AuditResult{
 		ID:        "consensus_audit",
@@ -52,7 +52,7 @@ func (ca *ContractAuditor) Audit(ctx context.Context) (*AuditResult, error) {
 	if !ca.enabled {
 		return nil, ErrContractAuditingNotEnabled
 	}
-	
+
 	// Placeholder implementation
 	return &AuditResult{
 		ID:        "contract_audit",
@@ -80,7 +80,7 @@ func (na *NetworkAuditor) Audit(ctx context.Context) (*AuditResult, error) {
 	if !na.enabled {
 		return nil, ErrNetworkAuditingNotEnabled
 	}
-	
+
 	// Placeholder implementation
 	return &AuditResult{
 		ID:        "network_audit",
@@ -108,7 +108,7 @@ func (ea *EconomicAuditor) Audit(ctx context.Context) (*AuditResult, error) {
 	if !ea.enabled {
 		return nil, ErrEconomicAuditingNotEnabled
 	}
-	
+
 	// Placeholder implementation
 	return &AuditResult{
 		ID:        "economic_audit",

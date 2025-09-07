@@ -840,14 +840,14 @@ func TestGovernance_CancelProposal_Errors(t *testing.T) {
 	// Test 4: Cancel proposal with wrong canceler (not the proposer)
 	// First create the user to give them voting power
 	gov.Users[proposer] = &User{
-		Address:         proposer,
-		VotingPower:     big.NewInt(1000),
-		DelegatedTo:     engine.Address{},
-		Delegators:      make(map[engine.Address]*big.Int),
-		LastVote:        time.Now(),
+		Address:          proposer,
+		VotingPower:      big.NewInt(1000),
+		DelegatedTo:      engine.Address{},
+		Delegators:       make(map[engine.Address]*big.Int),
+		LastVote:         time.Now(),
 		ProposalsCreated: 0,
 	}
-	
+
 	// Create a proposal
 	proposalID, err := gov.CreateProposal(
 		proposer,
@@ -856,20 +856,20 @@ func TestGovernance_CancelProposal_Errors(t *testing.T) {
 		[]string{"transfer(address,uint256)"},
 		[]string{"0xdead"},
 		"Test proposal",
-		1, // blockNumber
+		1,                    // blockNumber
 		generateRandomHash(), // txHash
 	)
 	assert.NoError(t, err)
-	
+
 	// Try to cancel with wrong address
 	wrongCanceler := generateRandomAddress()
-	
+
 	// Debug: check proposal state before trying to cancel
 	proposalBeforeCancel := gov.Proposals[proposalID]
 	t.Logf("Proposal state before cancel: %v", proposalBeforeCancel.State)
 	t.Logf("Proposal proposer: %v", proposalBeforeCancel.Proposer)
 	t.Logf("Wrong canceler: %v", wrongCanceler)
-	
+
 	err = gov.CancelProposal(proposalID, wrongCanceler, 1, generateRandomHash())
 	assert.Equal(t, ErrNotProposer, err)
 
@@ -879,32 +879,32 @@ func TestGovernance_CancelProposal_Errors(t *testing.T) {
 	voter1 := generateRandomAddress()
 	voter2 := generateRandomAddress()
 	voter3 := generateRandomAddress()
-	
+
 	// Give voters voting power
 	gov.Users[voter1] = &User{Address: voter1, VotingPower: big.NewInt(1000)}
 	gov.Users[voter2] = &User{Address: voter2, VotingPower: big.NewInt(1000)}
 	gov.Users[voter3] = &User{Address: voter3, VotingPower: big.NewInt(1000)}
-	
+
 	// Change proposal state to Active so we can vote on it
 	proposal := gov.Proposals[proposalID]
 	proposal.State = ProposalStateActive
-	
+
 	// Vote for the proposal
 	gov.CastVote(voter1, proposalID, VoteSupportFor, "Support", 1, generateRandomHash())
 	gov.CastVote(voter2, proposalID, VoteSupportFor, "Support", 1, generateRandomHash())
 	gov.CastVote(voter3, proposalID, VoteSupportFor, "Support", 1, generateRandomHash())
-	
+
 	// Wait for voting period to end and check if proposal succeeded
 	// For testing, we'll manually set the proposal state
 	proposal.State = ProposalStateSucceeded
-	
+
 	// Also set the end time to be more than 24 hours in the past to avoid execution delay issues
 	proposal.EndTime = time.Now().Add(-25 * time.Hour)
-	
+
 	// Execute the proposal
 	err = gov.ExecuteProposal(proposalID, proposer, 1, generateRandomHash())
 	assert.NoError(t, err)
-	
+
 	// Try to cancel executed proposal
 	err = gov.CancelProposal(proposalID, proposer, 1, generateRandomHash())
 	assert.Equal(t, ErrProposalCannotBeCanceled, err)

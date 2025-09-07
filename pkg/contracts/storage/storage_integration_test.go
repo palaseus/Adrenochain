@@ -655,10 +655,10 @@ func TestStorageIntegrationConcurrency(t *testing.T) {
 			address := engine.Address{byte(id), 0x02, 0x03, 0x04, 0x05}
 			code := []byte{0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3}
 			balance := big.NewInt(1000)
-			
+
 			err := si.CreateContractStorage(address, code, balance)
 			assert.NoError(t, err)
-			
+
 			done <- true
 		}(i)
 	}
@@ -706,7 +706,7 @@ func TestStorageIntegrationPerformance(t *testing.T) {
 		address := engine.Address{byte(i), 0x02, 0x03, 0x04, 0x05}
 		code := []byte{0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3}
 		balance := big.NewInt(1000)
-		
+
 		err := si.CreateContractStorage(address, code, balance)
 		assert.NoError(t, err)
 	}

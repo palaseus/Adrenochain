@@ -154,18 +154,18 @@ func (engine *BacktestEngine) LoadMarketData(data []MarketData) error {
 		return data[i].Timestamp.Before(data[j].Timestamp)
 	})
 
-			// Filter data within date range (inclusive)
-		filteredData := make([]MarketData, 0)
-		for _, point := range data {
-			// Include data points that are within or exactly at the start/end dates
-			// Use a small tolerance for timestamp comparison to handle microsecond precision
-			startTolerance := point.Timestamp.Sub(engine.config.StartDate)
-			endTolerance := engine.config.EndDate.Sub(point.Timestamp)
-			
-			if startTolerance >= -time.Microsecond && endTolerance >= -time.Microsecond {
-				filteredData = append(filteredData, point)
-			}
+	// Filter data within date range (inclusive)
+	filteredData := make([]MarketData, 0)
+	for _, point := range data {
+		// Include data points that are within or exactly at the start/end dates
+		// Use a small tolerance for timestamp comparison to handle microsecond precision
+		startTolerance := point.Timestamp.Sub(engine.config.StartDate)
+		endTolerance := engine.config.EndDate.Sub(point.Timestamp)
+
+		if startTolerance >= -time.Microsecond && endTolerance >= -time.Microsecond {
+			filteredData = append(filteredData, point)
 		}
+	}
 
 	if len(filteredData) == 0 {
 		return fmt.Errorf("no market data within specified date range")

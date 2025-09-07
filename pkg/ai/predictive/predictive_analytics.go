@@ -841,7 +841,7 @@ func (pa *PredictiveAnalytics) autoTrainModels() {
 	defer pa.mu.RUnlock()
 
 	// For now, just log that auto-training is running
-	
+
 }
 
 func (pa *PredictiveAnalytics) autoEvaluateModels() {
@@ -851,7 +851,7 @@ func (pa *PredictiveAnalytics) autoEvaluateModels() {
 	defer pa.mu.RUnlock()
 
 	// For now, just log that auto-evaluation is running
-	
+
 }
 
 func (pa *PredictiveAnalytics) collectFeatures() {
@@ -861,7 +861,7 @@ func (pa *PredictiveAnalytics) collectFeatures() {
 	defer pa.mu.Unlock()
 
 	// For now, just log that feature collection is running
-	
+
 }
 
 func (pa *PredictiveAnalytics) cleanupOldModels() {
@@ -871,7 +871,7 @@ func (pa *PredictiveAnalytics) cleanupOldModels() {
 	defer pa.mu.Unlock()
 
 	// For now, just log that cleanup is running
-	
+
 }
 
 // Utility functions

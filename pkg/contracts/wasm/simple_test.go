@@ -459,12 +459,12 @@ func TestWASMValueConversions(t *testing.T) {
 	if clonedValue == nil {
 		t.Error("expected non-nil cloned value")
 	}
-	
+
 	// Test that cloned value has same type and value
 	if clonedValue.Type() != i32Val.Type() {
 		t.Error("expected cloned value to have same type")
 	}
-	
+
 	clonedIntValue := clonedValue.(*WASMI32Value).Int32()
 	originalIntValue := i32Val.(*WASMI32Value).Int32()
 	if clonedIntValue != originalIntValue {

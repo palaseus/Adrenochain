@@ -297,10 +297,6 @@ func TestProcessBatchProcessingFailure(t *testing.T) {
 	}
 }
 
-
-
-
-
 // TestResolveChallengeInvalidChallenge tests resolving an invalid challenge
 func TestResolveChallengeInvalidChallenge(t *testing.T) {
 	rollup := NewOptimisticRollup(OptimisticRollupConfig{})

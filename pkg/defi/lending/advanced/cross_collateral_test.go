@@ -749,6 +749,6 @@ func TestCrossCollateralRiskCalculationWithZeroValues(t *testing.T) {
 	assert.Equal(t, big.NewInt(500000), finalPortfolio.TotalBorrowedValue, "Total borrowed should remain 500000")
 	assert.Equal(t, big.NewInt(-500000), finalPortfolio.NetCollateralValue, "Net collateral should be negative due to undercollateralization")
 	// Allow for small precision differences in big.Float
-	assert.True(t, finalPortfolio.CollateralRatio.Cmp(big.NewFloat(0)) == 0, 
+	assert.True(t, finalPortfolio.CollateralRatio.Cmp(big.NewFloat(0)) == 0,
 		"Collateral ratio should be 0, got %v", finalPortfolio.CollateralRatio.String())
 }

@@ -448,7 +448,7 @@ func TestERC1155TokenBurnBatch(t *testing.T) {
 	if len(burnEvents) != 3 { // 3 burn events
 		t.Errorf("expected 3 burn events, got %d", len(burnEvents))
 	}
-	
+
 	// Check mint events
 	mintEvents := token.GetMintEvents()
 	if len(mintEvents) != 3 { // 3 mint events
@@ -601,7 +601,7 @@ func TestERC1155TokenClone(t *testing.T) {
 	// Add some state
 	address1 := generateRandomAddress()
 	tokenID := uint64(1)
-	
+
 	// Mint a token
 	err := token.Mint(address1, tokenID, big.NewInt(100), nil, generateRandomHash(), 12345)
 	if err != nil {
@@ -632,7 +632,7 @@ func TestERC1155TokenClone(t *testing.T) {
 // TestERC1155TokenConcurrency tests concurrent access to token
 func TestERC1155TokenConcurrency(t *testing.T) {
 	token := NewERC1155Token("https://api.example.com/metadata/", generateRandomAddress(), DefaultERC1155TokenConfig())
-	
+
 	// Test concurrent reads
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {

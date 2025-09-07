@@ -13,14 +13,14 @@ import (
 
 // ProcessorConfig holds configuration for the parallel processor
 type ProcessorConfig struct {
-	MaxWorkers        int           // Maximum number of worker goroutines
-	QueueSize         int           // Size of the work queue
-	BatchSize         int           // Number of items to process in a batch
-	Timeout           time.Duration // Timeout for processing operations
-	EnableProfiling   bool          // Enable performance profiling
-	EnableMetrics     bool          // Enable detailed metrics collection
-	LoadBalancing     bool          // Enable dynamic load balancing
-	PriorityQueuing   bool          // Enable priority-based queuing
+	MaxWorkers      int           // Maximum number of worker goroutines
+	QueueSize       int           // Size of the work queue
+	BatchSize       int           // Number of items to process in a batch
+	Timeout         time.Duration // Timeout for processing operations
+	EnableProfiling bool          // Enable performance profiling
+	EnableMetrics   bool          // Enable detailed metrics collection
+	LoadBalancing   bool          // Enable dynamic load balancing
+	PriorityQueuing bool          // Enable priority-based queuing
 }
 
 // DefaultProcessorConfig returns sensible defaults for the processor
@@ -73,12 +73,12 @@ type WorkResult struct {
 
 // Worker represents a worker goroutine that processes work items
 type Worker struct {
-	ID       int
+	ID        int
 	processor *ParallelProcessor
-	workChan <-chan *WorkItem
-	stats    *WorkerStats
-	ctx      context.Context
-	cancel   context.CancelFunc
+	workChan  <-chan *WorkItem
+	stats     *WorkerStats
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // WorkerStats tracks worker performance metrics
@@ -92,15 +92,15 @@ type WorkerStats struct {
 
 // ParallelProcessor is a high-performance parallel processing system
 type ParallelProcessor struct {
-	config     *ProcessorConfig
-	workers    []*Worker
-	workQueue  chan *WorkItem
+	config        *ProcessorConfig
+	workers       []*Worker
+	workQueue     chan *WorkItem
 	priorityQueue *PriorityQueue
-	stats      *ProcessorStats
-	ctx        context.Context
-	cancel     context.CancelFunc
-	mu         sync.RWMutex
-	wg         sync.WaitGroup
+	stats         *ProcessorStats
+	ctx           context.Context
+	cancel        context.CancelFunc
+	mu            sync.RWMutex
+	wg            sync.WaitGroup
 }
 
 // ProcessorStats tracks overall processor performance
@@ -123,12 +123,12 @@ func NewParallelProcessor(config *ProcessorConfig) *ParallelProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	processor := &ParallelProcessor{
-		config:     config,
-		workQueue:  make(chan *WorkItem, config.QueueSize),
+		config:        config,
+		workQueue:     make(chan *WorkItem, config.QueueSize),
 		priorityQueue: NewPriorityQueue(),
-		stats:      &ProcessorStats{},
-		ctx:        ctx,
-		cancel:     cancel,
+		stats:         &ProcessorStats{},
+		ctx:           ctx,
+		cancel:        cancel,
 	}
 
 	// Start workers
@@ -278,7 +278,7 @@ func (w *Worker) run(wg *sync.WaitGroup) {
 // processWorkItem processes a single work item
 func (w *Worker) processWorkItem(item *WorkItem) {
 	start := time.Now()
-	
+
 	// Update worker stats
 	w.stats.mu.Lock()
 	w.stats.LastActivity = time.Now()
@@ -358,11 +358,11 @@ func (w *Worker) processTransaction(item *WorkItem) (*WorkResult, error) {
 	}
 
 	return &WorkResult{
-		ID:       item.ID,
-		Success:  true,
-		Data:     tx,
-		Duration: 0, // Will be set by caller
-		WorkerID: w.ID,
+		ID:        item.ID,
+		Success:   true,
+		Data:      tx,
+		Duration:  0, // Will be set by caller
+		WorkerID:  w.ID,
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -385,11 +385,11 @@ func (w *Worker) processBlock(item *WorkItem) (*WorkResult, error) {
 	}
 
 	return &WorkResult{
-		ID:       item.ID,
-		Success:  true,
-		Data:     block,
-		Duration: 0, // Will be set by caller
-		WorkerID: w.ID,
+		ID:        item.ID,
+		Success:   true,
+		Data:      block,
+		Duration:  0, // Will be set by caller
+		WorkerID:  w.ID,
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -398,11 +398,11 @@ func (w *Worker) processBlock(item *WorkItem) (*WorkResult, error) {
 func (w *Worker) processUTXOUpdate(item *WorkItem) (*WorkResult, error) {
 	// Simplified UTXO update processing
 	return &WorkResult{
-		ID:       item.ID,
-		Success:  true,
-		Data:     "UTXO updated",
-		Duration: 0,
-		WorkerID: w.ID,
+		ID:        item.ID,
+		Success:   true,
+		Data:      "UTXO updated",
+		Duration:  0,
+		WorkerID:  w.ID,
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -411,11 +411,11 @@ func (w *Worker) processUTXOUpdate(item *WorkItem) (*WorkResult, error) {
 func (w *Worker) processMerkleTree(item *WorkItem) (*WorkResult, error) {
 	// Simplified merkle tree calculation
 	return &WorkResult{
-		ID:       item.ID,
-		Success:  true,
-		Data:     "Merkle tree calculated",
-		Duration: 0,
-		WorkerID: w.ID,
+		ID:        item.ID,
+		Success:   true,
+		Data:      "Merkle tree calculated",
+		Duration:  0,
+		WorkerID:  w.ID,
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -424,11 +424,11 @@ func (w *Worker) processMerkleTree(item *WorkItem) (*WorkResult, error) {
 func (w *Worker) processSignatureVerification(item *WorkItem) (*WorkResult, error) {
 	// Simplified signature verification
 	return &WorkResult{
-		ID:       item.ID,
-		Success:  true,
-		Data:     "Signature verified",
-		Duration: 0,
-		WorkerID: w.ID,
+		ID:        item.ID,
+		Success:   true,
+		Data:      "Signature verified",
+		Duration:  0,
+		WorkerID:  w.ID,
 		Timestamp: time.Now(),
 	}, nil
 }
@@ -437,11 +437,11 @@ func (w *Worker) processSignatureVerification(item *WorkItem) (*WorkResult, erro
 func (w *Worker) processStateTransition(item *WorkItem) (*WorkResult, error) {
 	// Simplified state transition processing
 	return &WorkResult{
-		ID:       item.ID,
-		Success:  true,
-		Data:     "State transition completed",
-		Duration: 0,
-		WorkerID: w.ID,
+		ID:        item.ID,
+		Success:   true,
+		Data:      "State transition completed",
+		Duration:  0,
+		WorkerID:  w.ID,
 		Timestamp: time.Now(),
 	}, nil
 }

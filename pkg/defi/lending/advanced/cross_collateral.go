@@ -640,7 +640,7 @@ func (ccm *CrossCollateralManager) ValidatePortfolioState(userID string) ([]stri
 			issues = append(issues, fmt.Sprintf("Asset %s has negative value: %s", assetID, asset.Value.String()))
 		}
 		if asset.Amount.Cmp(big.NewInt(0)) == 0 && asset.Value.Cmp(big.NewInt(0)) > 0 {
-			issues = append(issues, fmt.Sprintf("Asset %s has zero amount but non-zero value: amount=%s, value=%s", 
+			issues = append(issues, fmt.Sprintf("Asset %s has zero amount but non-zero value: amount=%s, value=%s",
 				assetID, asset.Amount.String(), asset.Value.String()))
 		}
 	}
@@ -654,7 +654,7 @@ func (ccm *CrossCollateralManager) ValidatePortfolioState(userID string) ([]stri
 		ratioDiff := new(big.Float).Sub(portfolio.CollateralRatio, expectedRatio)
 		ratioDiff.Abs(ratioDiff)
 		if ratioDiff.Cmp(big.NewFloat(0.0001)) > 0 {
-			issues = append(issues, fmt.Sprintf("Collateral ratio mismatch: calculated=%v, stored=%v", 
+			issues = append(issues, fmt.Sprintf("Collateral ratio mismatch: calculated=%v, stored=%v",
 				expectedRatio.String(), portfolio.CollateralRatio.String()))
 		}
 	}
@@ -672,15 +672,15 @@ func (ccm *CrossCollateralManager) GetPortfolioAssetDetails(userID string) (map[
 	assetDetails := make(map[string]interface{})
 	for assetID, asset := range portfolio.CollateralAssets {
 		assetDetails[assetID] = map[string]interface{}{
-			"type":             asset.Type,
-			"symbol":           asset.Symbol,
-			"amount":           asset.Amount.String(),
-			"value":            asset.Value.String(),
-			"volatility":       asset.Volatility.String(),
-			"liquidity_score":  asset.LiquidityScore.String(),
-			"risk_score":       asset.RiskScore.String(),
-			"pledged_at":       asset.PledgedAt,
-			"last_valuation":   asset.LastValuation,
+			"type":            asset.Type,
+			"symbol":          asset.Symbol,
+			"amount":          asset.Amount.String(),
+			"value":           asset.Value.String(),
+			"volatility":      asset.Volatility.String(),
+			"liquidity_score": asset.LiquidityScore.String(),
+			"risk_score":      asset.RiskScore.String(),
+			"pledged_at":      asset.PledgedAt,
+			"last_valuation":  asset.LastValuation,
 		}
 	}
 

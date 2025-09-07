@@ -24,22 +24,22 @@ const (
 // HybridConsensusConfig holds configuration for hybrid consensus
 type HybridConsensusConfig struct {
 	// PoW Configuration
-	TargetBlockTime        time.Duration // Target time between blocks
-	DifficultyAdjustment   uint64        // Blocks between difficulty adjustments
-	MaxDifficulty          uint64        // Maximum allowed difficulty
-	MinDifficulty          uint64        // Minimum allowed difficulty
-	
+	TargetBlockTime      time.Duration // Target time between blocks
+	DifficultyAdjustment uint64        // Blocks between difficulty adjustments
+	MaxDifficulty        uint64        // Maximum allowed difficulty
+	MinDifficulty        uint64        // Minimum allowed difficulty
+
 	// PoS Configuration
-	StakeRequirement       uint64        // Minimum stake required for validation
-	ValidatorReward        uint64        // Reward for validators
-	SlashingPenalty        uint64        // Penalty for malicious behavior
-	EpochLength            uint64        // Length of staking epochs
-	
+	StakeRequirement uint64 // Minimum stake required for validation
+	ValidatorReward  uint64 // Reward for validators
+	SlashingPenalty  uint64 // Penalty for malicious behavior
+	EpochLength      uint64 // Length of staking epochs
+
 	// Hybrid Configuration
-	PoWWeight              float64       // Weight of PoW in hybrid consensus (0.0-1.0)
-	PoSWeight              float64       // Weight of PoS in hybrid consensus (0.0-1.0)
-	HybridThreshold        float64       // Threshold for hybrid consensus validation
-	TransitionHeight       uint64        // Height at which hybrid consensus activates
+	PoWWeight        float64 // Weight of PoW in hybrid consensus (0.0-1.0)
+	PoSWeight        float64 // Weight of PoS in hybrid consensus (0.0-1.0)
+	HybridThreshold  float64 // Threshold for hybrid consensus validation
+	TransitionHeight uint64  // Height at which hybrid consensus activates
 }
 
 // DefaultHybridConsensusConfig returns sensible defaults
@@ -49,43 +49,43 @@ func DefaultHybridConsensusConfig() *HybridConsensusConfig {
 		DifficultyAdjustment: 2016,
 		MaxDifficulty:        256,
 		MinDifficulty:        1,
-		StakeRequirement:     1000, // 1000 tokens minimum stake
-		ValidatorReward:      50,   // 50 tokens per block
-		SlashingPenalty:      100,  // 100 tokens penalty
-		EpochLength:          10080, // ~1 week (10080 blocks)
-		PoWWeight:            0.6,  // 60% PoW
-		PoSWeight:            0.4,  // 40% PoS
-		HybridThreshold:      0.7,  // 70% consensus required
+		StakeRequirement:     1000,   // 1000 tokens minimum stake
+		ValidatorReward:      50,     // 50 tokens per block
+		SlashingPenalty:      100,    // 100 tokens penalty
+		EpochLength:          10080,  // ~1 week (10080 blocks)
+		PoWWeight:            0.6,    // 60% PoW
+		PoSWeight:            0.4,    // 40% PoS
+		HybridThreshold:      0.7,    // 70% consensus required
 		TransitionHeight:     100000, // Activate at block 100,000
 	}
 }
 
 // Validator represents a PoS validator
 type Validator struct {
-	Address     []byte
-	Stake       uint64
-	PublicKey   []byte
-	IsActive    bool
-	LastStake   time.Time
-	Rewards     uint64
-	Penalties   uint64
-	Votes       uint64
+	Address   []byte
+	Stake     uint64
+	PublicKey []byte
+	IsActive  bool
+	LastStake time.Time
+	Rewards   uint64
+	Penalties uint64
+	Votes     uint64
 }
 
 // HybridConsensus implements hybrid PoW/PoS consensus
 type HybridConsensus struct {
-	config           *HybridConsensusConfig
-	consensusType    ConsensusType
-	currentHeight    uint64
-	difficulty       uint64
-	validators       map[string]*Validator
-	stakePool        uint64
-	epochStart       uint64
-	lastAdjustment   time.Time
-	blockTimes       []time.Duration
-	mu               sync.RWMutex
-	chain            ChainReader
-	storage          storage.StorageInterface
+	config         *HybridConsensusConfig
+	consensusType  ConsensusType
+	currentHeight  uint64
+	difficulty     uint64
+	validators     map[string]*Validator
+	stakePool      uint64
+	epochStart     uint64
+	lastAdjustment time.Time
+	blockTimes     []time.Duration
+	mu             sync.RWMutex
+	chain          ChainReader
+	storage        storage.StorageInterface
 }
 
 // NewHybridConsensus creates a new hybrid consensus instance
@@ -95,16 +95,16 @@ func NewHybridConsensus(config *HybridConsensusConfig, chain ChainReader, storag
 	}
 
 	consensus := &HybridConsensus{
-		config:        config,
-		consensusType: ConsensusTypePoW, // Start with PoW
-		difficulty:    config.MinDifficulty,
-		validators:    make(map[string]*Validator),
-		stakePool:     0,
-		epochStart:    0,
+		config:         config,
+		consensusType:  ConsensusTypePoW, // Start with PoW
+		difficulty:     config.MinDifficulty,
+		validators:     make(map[string]*Validator),
+		stakePool:      0,
+		epochStart:     0,
 		lastAdjustment: time.Now(),
-		blockTimes:    make([]time.Duration, 0),
-		chain:         chain,
-		storage:       storage,
+		blockTimes:     make([]time.Duration, 0),
+		chain:          chain,
+		storage:        storage,
 	}
 
 	return consensus
@@ -254,7 +254,7 @@ func (hc *HybridConsensus) validateStakeRequirements(block *block.Block) error {
 	// For now, we'll use the block hash as a proxy for validator address
 	// In a real implementation, this would be extracted from the block header
 	validatorAddr := block.CalculateHash()[:8] // Use first 8 bytes as validator address
-	
+
 	validator, exists := hc.validators[string(validatorAddr)]
 	if !exists {
 		return fmt.Errorf("validator not found: %x", validatorAddr)
@@ -534,14 +534,14 @@ func (hc *HybridConsensus) GetConsensusStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"consensus_type":     hc.consensusType,
-		"current_height":     hc.currentHeight,
-		"difficulty":         hc.difficulty,
-		"active_validators":  activeValidators,
-		"total_stake":        totalStake,
-		"stake_pool":         hc.stakePool,
-		"epoch_start":        hc.epochStart,
-		"last_adjustment":    hc.lastAdjustment,
-		"block_times_count":  len(hc.blockTimes),
+		"consensus_type":    hc.consensusType,
+		"current_height":    hc.currentHeight,
+		"difficulty":        hc.difficulty,
+		"active_validators": activeValidators,
+		"total_stake":       totalStake,
+		"stake_pool":        hc.stakePool,
+		"epoch_start":       hc.epochStart,
+		"last_adjustment":   hc.lastAdjustment,
+		"block_times_count": len(hc.blockTimes),
 	}
 }

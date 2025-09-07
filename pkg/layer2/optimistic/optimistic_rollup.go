@@ -11,18 +11,18 @@ import (
 
 // OptimisticRollup represents an optimistic rollup implementation
 type OptimisticRollup struct {
-	ID                string
-	StateRoot         [32]byte
-	BatchNumber       uint64
-	Transactions      []Transaction
-	Batches           []Batch
-	Challenges        []Challenge
-	Verifier          FraudProofVerifier
-	StateManager      StateManager
-	BatchProcessor    BatchProcessor
-	mu                sync.RWMutex
-	config            OptimisticRollupConfig
-	metrics           RollupMetrics
+	ID             string
+	StateRoot      [32]byte
+	BatchNumber    uint64
+	Transactions   []Transaction
+	Batches        []Batch
+	Challenges     []Challenge
+	Verifier       FraudProofVerifier
+	StateManager   StateManager
+	BatchProcessor BatchProcessor
+	mu             sync.RWMutex
+	config         OptimisticRollupConfig
+	metrics        RollupMetrics
 }
 
 // OptimisticRollupConfig holds configuration for the optimistic rollup
@@ -47,17 +47,17 @@ const (
 
 // Transaction represents a rollup transaction
 type Transaction struct {
-	ID          string
-	From        [20]byte
-	To          [20]byte
-	Value       *big.Int
-	Data        []byte
-	Nonce       uint64
-	Signature   []byte
-	Timestamp   time.Time
-	GasLimit    uint64
-	GasPrice    *big.Int
-	RollupHash  [32]byte
+	ID         string
+	From       [20]byte
+	To         [20]byte
+	Value      *big.Int
+	Data       []byte
+	Nonce      uint64
+	Signature  []byte
+	Timestamp  time.Time
+	GasLimit   uint64
+	GasPrice   *big.Int
+	RollupHash [32]byte
 }
 
 // Batch represents a batch of transactions
@@ -75,14 +75,14 @@ type Batch struct {
 
 // Challenge represents a fraud proof challenge
 type Challenge struct {
-	ID           string
-	BatchNumber  uint64
-	Challenger   [20]byte
-	Evidence     []byte
-	Timestamp    time.Time
-	Resolved     bool
-	Valid        bool
-	Stake        *big.Int
+	ID          string
+	BatchNumber uint64
+	Challenger  [20]byte
+	Evidence    []byte
+	Timestamp   time.Time
+	Resolved    bool
+	Valid       bool
+	Stake       *big.Int
 }
 
 // FraudProofVerifier verifies fraud proofs
@@ -121,13 +121,13 @@ type BatchResult struct {
 
 // RollupMetrics tracks rollup performance metrics
 type RollupMetrics struct {
-	TotalBatches     uint64
+	TotalBatches      uint64
 	TotalTransactions uint64
-	TotalGasUsed     uint64
-	TotalChallenges  uint64
-	AverageBatchTime time.Duration
-	ChallengeRate    float64
-	LastUpdate       time.Time
+	TotalGasUsed      uint64
+	TotalChallenges   uint64
+	AverageBatchTime  time.Duration
+	ChallengeRate     float64
+	LastUpdate        time.Time
 }
 
 // NewOptimisticRollup creates a new optimistic rollup instance
@@ -178,10 +178,10 @@ func (r *OptimisticRollup) AddTransaction(tx Transaction) error {
 
 	// Generate rollup hash
 	tx.RollupHash = r.generateTransactionHash(tx)
-	
+
 	// Add to transactions
 	r.Transactions = append(r.Transactions, tx)
-	
+
 	// Update metrics
 	r.metrics.TotalTransactions++
 	r.metrics.LastUpdate = time.Now()
@@ -273,14 +273,14 @@ func (r *OptimisticRollup) ChallengeBatch(batchNumber uint64, challenger [20]byt
 
 	// Create challenge
 	challenge := Challenge{
-		ID:           fmt.Sprintf("challenge_%d_%d", batchNumber, time.Now().Unix()),
-		BatchNumber:  batchNumber,
-		Challenger:   challenger,
-		Evidence:     evidence,
-		Timestamp:    time.Now(),
-		Resolved:     false,
-		Valid:        false,
-		Stake:        stake,
+		ID:          fmt.Sprintf("challenge_%d_%d", batchNumber, time.Now().Unix()),
+		BatchNumber: batchNumber,
+		Challenger:  challenger,
+		Evidence:    evidence,
+		Timestamp:   time.Now(),
+		Resolved:    false,
+		Valid:       false,
+		Stake:       stake,
 	}
 
 	// Add challenge
@@ -479,11 +479,11 @@ func (r *OptimisticRollup) generateTransactionHash(tx Transaction) [32]byte {
 	data = append(data, tx.To[:]...)
 	data = append(data, tx.Value.Bytes()...)
 	data = append(data, tx.Data...)
-	
+
 	nonceBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(nonceBytes, tx.Nonce)
 	data = append(data, nonceBytes...)
-	
+
 	timestampBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timestampBytes, uint64(tx.Timestamp.Unix()))
 	data = append(data, timestampBytes...)
@@ -525,7 +525,7 @@ func (r *OptimisticRollup) rollbackBatch(batchNumber uint64) error {
 func (r *OptimisticRollup) updateMetrics(batchResult *BatchResult, processingTime time.Duration) {
 	r.metrics.TotalBatches++
 	r.metrics.TotalGasUsed += batchResult.GasUsed
-	
+
 	// Calculate average batch time
 	if r.metrics.TotalBatches > 1 {
 		totalTime := r.metrics.AverageBatchTime * time.Duration(r.metrics.TotalBatches-1)
@@ -533,12 +533,12 @@ func (r *OptimisticRollup) updateMetrics(batchResult *BatchResult, processingTim
 	} else {
 		r.metrics.AverageBatchTime = processingTime
 	}
-	
+
 	// Calculate challenge rate
 	if r.metrics.TotalBatches > 0 {
 		r.metrics.ChallengeRate = float64(r.metrics.TotalChallenges) / float64(r.metrics.TotalBatches)
 	}
-	
+
 	r.metrics.LastUpdate = time.Now()
 }
 

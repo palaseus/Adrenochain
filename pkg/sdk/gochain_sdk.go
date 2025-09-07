@@ -368,13 +368,13 @@ func (sdk *adrenochainSDK) CreateYieldFarm(
 ) (*YieldFarmResult, error) {
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()
-	
+
 	if sdk.YieldFarming == nil {
 		return nil, ErrYieldFarmingNotInitialized
 	}
-	
+
 	sdk.TotalOperations++
-	
+
 	// Create yield farm (simplified for now)
 	farm := yield.NewYieldFarm(
 		config.FarmID,
@@ -388,7 +388,7 @@ func (sdk *adrenochainSDK) CreateYieldFarm(
 		config.StartTime,
 		config.EndTime,
 	)
-	
+
 	return &YieldFarmResult{
 		FarmID: config.FarmID,
 		Name:   config.Name,

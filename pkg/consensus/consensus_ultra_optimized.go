@@ -4,28 +4,28 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"runtime"
 	"sync"
 	"time"
-	"runtime"
 )
 
 // UltraOptimizedConsensus represents the FINAL optimized consensus
 type UltraOptimizedConsensus struct {
-	ID              string
-	Type            ConsensusType
-	Status          ConsensusStatus
-	Participants    map[string]*Participant
-	CurrentRound    uint64
-	CurrentBlock    *Block
-	Config          UltraOptimizedConfig
-	Metrics         UltraOptimizedMetrics
-	mu              sync.RWMutex
-	ctx             context.Context
-	cancel          context.CancelFunc
-	
+	ID           string
+	Type         ConsensusType
+	Status       ConsensusStatus
+	Participants map[string]*Participant
+	CurrentRound uint64
+	CurrentBlock *Block
+	Config       UltraOptimizedConfig
+	Metrics      UltraOptimizedMetrics
+	mu           sync.RWMutex
+	ctx          context.Context
+	cancel       context.CancelFunc
+
 	// ULTRA performance optimizations
 	blockCache      map[string]*Block
-	cacheMutex     sync.RWMutex
+	cacheMutex      sync.RWMutex
 	workerPool      chan struct{}
 	fastPath        *UltraFastPathConsensus
 	slowPath        *UltraSlowPathConsensus
@@ -35,113 +35,113 @@ type UltraOptimizedConsensus struct {
 
 // UltraOptimizedConfig holds ultra-optimized configuration
 type UltraOptimizedConfig struct {
-	MaxParticipants     uint64
-	ConsensusTimeout    time.Duration
-	BlockTime           time.Duration
-	FastPathThreshold   float64
-	SlowPathThreshold   float64
-	WorkerPoolSize      int
-	EnableFastPath      bool
-	EnableParallel      bool
-	EnableCaching       bool
-	MaxBlockSize        uint64
-	MinStake            *big.Int
+	MaxParticipants      uint64
+	ConsensusTimeout     time.Duration
+	BlockTime            time.Duration
+	FastPathThreshold    float64
+	SlowPathThreshold    float64
+	WorkerPoolSize       int
+	EnableFastPath       bool
+	EnableParallel       bool
+	EnableCaching        bool
+	MaxBlockSize         uint64
+	MinStake             *big.Int
 	ParallelizationLevel int
-	CacheSize           int
+	CacheSize            int
 }
 
 // UltraOptimizedMetrics tracks ultra-optimized consensus performance
 type UltraOptimizedMetrics struct {
-	TotalBlocks         uint64
-	FastPathBlocks      uint64
-	SlowPathBlocks      uint64
-	AverageBlockTime    time.Duration
+	TotalBlocks          uint64
+	FastPathBlocks       uint64
+	SlowPathBlocks       uint64
+	AverageBlockTime     time.Duration
 	ConsensusSuccessRate float64
-	LastUpdate          time.Time
-	
+	LastUpdate           time.Time
+
 	// ULTRA performance metrics
-	AverageConsensusLatency time.Duration
-	FastPathLatency         time.Duration
-	SlowPathLatency         time.Duration
-	CacheHitRate            float64
+	AverageConsensusLatency   time.Duration
+	FastPathLatency           time.Duration
+	SlowPathLatency           time.Duration
+	CacheHitRate              float64
 	ParallelizationEfficiency float64
-	UltraOptimizationLevel  float64
+	UltraOptimizationLevel    float64
 }
 
 // UltraFastPathConsensus provides ULTRA-fast consensus
 type UltraFastPathConsensus struct {
-	mu              sync.RWMutex
-	participants    map[string]*Participant
-	threshold       float64
-	timeout         time.Duration
-	parallelEngine  *UltraParallelEngine
+	mu             sync.RWMutex
+	participants   map[string]*Participant
+	threshold      float64
+	timeout        time.Duration
+	parallelEngine *UltraParallelEngine
 }
 
 // UltraSlowPathConsensus provides ULTRA-robust consensus
 type UltraSlowPathConsensus struct {
-	mu              sync.RWMutex
-	participants    map[string]*Participant
-	threshold       float64
-	timeout         time.Duration
+	mu                 sync.RWMutex
+	participants       map[string]*Participant
+	threshold          float64
+	timeout            time.Duration
 	byzantineTolerance int
-	parallelEngine  *UltraParallelEngine
+	parallelEngine     *UltraParallelEngine
 }
 
 // UltraConsensusEngine manages ULTRA consensus logic
 type UltraConsensusEngine struct {
-	mu              sync.RWMutex
-	algorithms      map[string]UltraConsensusAlgorithm
-	currentAlgorithm string
+	mu                sync.RWMutex
+	algorithms        map[string]UltraConsensusAlgorithm
+	currentAlgorithm  string
 	optimizationLevel int
 }
 
 // UltraConsensusAlgorithm represents an ULTRA consensus algorithm
 type UltraConsensusAlgorithm struct {
-	ID           string
-	Type         string
-	Parameters   map[string]interface{}
-	Performance  float64
+	ID                string
+	Type              string
+	Parameters        map[string]interface{}
+	Performance       float64
 	OptimizationLevel int
-	LastUpdated  time.Time
+	LastUpdated       time.Time
 }
 
 // UltraParallelEngine provides ULTRA parallel processing
 type UltraParallelEngine struct {
-	mu              sync.RWMutex
-	workerPools     map[string]chan struct{}
-	config          UltraParallelConfig
+	mu          sync.RWMutex
+	workerPools map[string]chan struct{}
+	config      UltraParallelConfig
 }
 
 // UltraParallelConfig holds ULTRA parallel configuration
 type UltraParallelConfig struct {
-	MaxWorkers       int
-	QueueSize        int
-	Timeout          time.Duration
-	LoadBalancing    bool
-	AdaptiveScaling  bool
+	MaxWorkers      int
+	QueueSize       int
+	Timeout         time.Duration
+	LoadBalancing   bool
+	AdaptiveScaling bool
 }
 
 // NewUltraOptimizedConsensus creates the FINAL optimized consensus
 func NewUltraOptimizedConsensus(config UltraOptimizedConfig) *UltraOptimizedConsensus {
 	if config.WorkerPoolSize <= 0 {
-		config.WorkerPoolSize = runtime.NumCPU() * 4  // 4x CPU utilization
+		config.WorkerPoolSize = runtime.NumCPU() * 4 // 4x CPU utilization
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &UltraOptimizedConsensus{
-		ID:             generateUltraConsensusID(),
-		Type:           ConsensusTypeHybrid,
-		Status:         ConsensusStatusActive,
-		Participants:   make(map[string]*Participant),
-		Config:         config,
-		blockCache:     make(map[string]*Block, config.CacheSize),
-		workerPool:     make(chan struct{}, config.WorkerPoolSize),
-		ctx:            ctx,
-		cancel:         cancel,
-		Metrics:        UltraOptimizedMetrics{},
-		fastPath:       NewUltraFastPathConsensus(config.FastPathThreshold, config.ConsensusTimeout),
-		slowPath:       NewUltraSlowPathConsensus(config.SlowPathThreshold, config.ConsensusTimeout),
+		ID:              generateUltraConsensusID(),
+		Type:            ConsensusTypeHybrid,
+		Status:          ConsensusStatusActive,
+		Participants:    make(map[string]*Participant),
+		Config:          config,
+		blockCache:      make(map[string]*Block, config.CacheSize),
+		workerPool:      make(chan struct{}, config.WorkerPoolSize),
+		ctx:             ctx,
+		cancel:          cancel,
+		Metrics:         UltraOptimizedMetrics{},
+		fastPath:        NewUltraFastPathConsensus(config.FastPathThreshold, config.ConsensusTimeout),
+		slowPath:        NewUltraSlowPathConsensus(config.SlowPathThreshold, config.ConsensusTimeout),
 		consensusEngine: NewUltraConsensusEngine(),
 		parallelEngine:  NewUltraParallelEngine(),
 	}
@@ -150,21 +150,21 @@ func NewUltraOptimizedConsensus(config UltraOptimizedConfig) *UltraOptimizedCons
 // ProposeBlockUltraOptimized proposes a new block with ULTRA optimization
 func (c *UltraOptimizedConsensus) ProposeBlockUltraOptimized(block *Block) (*ConsensusResult, error) {
 	startTime := time.Now()
-	
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// Validate block with ULTRA optimization
 	if err := c.validateBlockUltraOptimized(block); err != nil {
 		return nil, fmt.Errorf("ultra-optimized block validation failed: %w", err)
 	}
-	
+
 	// Check cache first with ULTRA optimization
 	cacheKey := c.generateUltraBlockCacheKey(block)
 	c.cacheMutex.RLock()
 	if cachedBlock, exists := c.blockCache[cacheKey]; exists {
 		c.cacheMutex.RUnlock()
-		c.Metrics.CacheHitRate = 0.95  // 95% cache hit rate
+		c.Metrics.CacheHitRate = 0.95 // 95% cache hit rate
 		return &ConsensusResult{
 			Block:     cachedBlock,
 			Consensus: ConsensusTypeHybrid,
@@ -173,11 +173,11 @@ func (c *UltraOptimizedConsensus) ProposeBlockUltraOptimized(block *Block) (*Con
 		}, nil
 	}
 	c.cacheMutex.RUnlock()
-	
+
 	// Determine consensus path with ULTRA optimization
 	var consensusResult *ConsensusResult
 	var err error
-	
+
 	if c.shouldUseUltraFastPath(block) {
 		consensusResult, err = c.fastPath.ConsensusUltraOptimized(block, c.Participants)
 		c.Metrics.FastPathBlocks++
@@ -187,43 +187,43 @@ func (c *UltraOptimizedConsensus) ProposeBlockUltraOptimized(block *Block) (*Con
 		c.Metrics.SlowPathBlocks++
 		c.Metrics.SlowPathLatency = time.Since(startTime)
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("ultra-optimized consensus failed: %w", err)
 	}
-	
+
 	// Cache the result with ULTRA optimization
 	c.cacheMutex.Lock()
 	c.blockCache[cacheKey] = block
 	c.cacheMutex.Unlock()
-	
+
 	// Update metrics
 	consensusLatency := time.Since(startTime)
 	c.updateMetricsUltraOptimized(block, consensusLatency)
-	
+
 	return consensusResult, nil
 }
 
 // shouldUseUltraFastPath determines if ULTRA fast path should be used
 func (c *UltraOptimizedConsensus) shouldUseUltraFastPath(block *Block) bool {
 	// ULTRA-optimized fast path decision
-	if block.Transactions == nil || len(block.Transactions) < 50 {  // Lower threshold
+	if block.Transactions == nil || len(block.Transactions) < 50 { // Lower threshold
 		return true
 	}
-	
+
 	// Use fast path for low-value blocks
-	if block.TotalValue != nil && block.TotalValue.Cmp(big.NewInt(500000)) < 0 {  // Lower threshold
+	if block.TotalValue != nil && block.TotalValue.Cmp(big.NewInt(500000)) < 0 { // Lower threshold
 		return true
 	}
-	
+
 	// Use fast path for trusted participants with ULTRA optimization
 	trustedParticipants := 0
 	for _, participant := range c.Participants {
-		if participant.TrustScore > 0.7 {  // Lower threshold
+		if participant.TrustScore > 0.7 { // Lower threshold
 			trustedParticipants++
 		}
 	}
-	
+
 	trustRatio := float64(trustedParticipants) / float64(len(c.Participants))
 	return trustRatio > c.Config.FastPathThreshold
 }
@@ -233,28 +233,28 @@ func (c *UltraOptimizedConsensus) validateBlockUltraOptimized(block *Block) erro
 	if block == nil {
 		return fmt.Errorf("block cannot be nil")
 	}
-	
+
 	if block.Header == nil {
 		return fmt.Errorf("block header cannot be nil")
 	}
-	
+
 	if block.Header.Height <= c.CurrentRound {
 		return fmt.Errorf("block height must be greater than current round")
 	}
-	
+
 	if uint64(len(block.Transactions)) > c.Config.MaxBlockSize {
 		return fmt.Errorf("block size %d exceeds maximum %d", len(block.Transactions), c.Config.MaxBlockSize)
 	}
-	
+
 	return nil
 }
 
 // NewUltraFastPathConsensus creates ULTRA fast path consensus
 func NewUltraFastPathConsensus(threshold float64, timeout time.Duration) *UltraFastPathConsensus {
 	return &UltraFastPathConsensus{
-		participants: make(map[string]*Participant),
-		threshold:    threshold,
-		timeout:      timeout,
+		participants:   make(map[string]*Participant),
+		threshold:      threshold,
+		timeout:        timeout,
 		parallelEngine: NewUltraParallelEngine(),
 	}
 }
@@ -262,14 +262,14 @@ func NewUltraFastPathConsensus(threshold float64, timeout time.Duration) *UltraF
 // ConsensusUltraOptimized performs ULTRA-optimized fast path consensus
 func (f *UltraFastPathConsensus) ConsensusUltraOptimized(block *Block, participants map[string]*Participant) (*ConsensusResult, error) {
 	startTime := time.Now()
-	
+
 	// ULTRA-fast consensus with minimal validation
 	approvals := 0
 	totalParticipants := len(participants)
-	
+
 	// Use ULTRA parallel processing for approvals
 	approvalChan := make(chan bool, totalParticipants)
-	
+
 	// Process approvals in parallel with ULTRA optimization
 	for _, participant := range participants {
 		go func(p *Participant) {
@@ -277,10 +277,10 @@ func (f *UltraFastPathConsensus) ConsensusUltraOptimized(block *Block, participa
 			approvalChan <- approved
 		}(participant)
 	}
-	
+
 	// Collect approvals with ULTRA timeout
-	timeout := time.After(500 * time.Millisecond)  // 500ms timeout
-	
+	timeout := time.After(500 * time.Millisecond) // 500ms timeout
+
 	for i := 0; i < totalParticipants; i++ {
 		select {
 		case approved := <-approvalChan:
@@ -291,13 +291,13 @@ func (f *UltraFastPathConsensus) ConsensusUltraOptimized(block *Block, participa
 			break
 		}
 	}
-	
+
 	// Check threshold
 	approvalRatio := float64(approvals) / float64(totalParticipants)
 	if approvalRatio < f.threshold {
 		return nil, fmt.Errorf("ultra-fast path consensus failed: approval ratio %.2f below threshold %.2f", approvalRatio, f.threshold)
 	}
-	
+
 	return &ConsensusResult{
 		Block:     block,
 		Consensus: ConsensusTypeFast,
@@ -312,16 +312,16 @@ func (f *UltraFastPathConsensus) validateParticipantApprovalUltraOptimized(parti
 	if participant.Stake.Cmp(big.NewInt(0)) <= 0 {
 		return false
 	}
-	
-	if participant.TrustScore < 0.3 {  // Lower threshold for speed
+
+	if participant.TrustScore < 0.3 { // Lower threshold for speed
 		return false
 	}
-	
+
 	// Simple block validation with ULTRA optimization
 	if block.Header.Height <= 0 {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -339,14 +339,14 @@ func NewUltraSlowPathConsensus(threshold float64, timeout time.Duration) *UltraS
 // ConsensusUltraOptimized performs ULTRA-optimized slow path consensus
 func (s *UltraSlowPathConsensus) ConsensusUltraOptimized(block *Block, participants map[string]*Participant) (*ConsensusResult, error) {
 	startTime := time.Now()
-	
+
 	// ULTRA-optimized slow path consensus with parallel processing
 	approvals := 0
 	totalParticipants := len(participants)
-	
+
 	// Use ULTRA parallel processing for full validation
 	validationChan := make(chan bool, totalParticipants)
-	
+
 	// Process validations in parallel with ULTRA optimization
 	for _, participant := range participants {
 		go func(p *Participant) {
@@ -354,10 +354,10 @@ func (s *UltraSlowPathConsensus) ConsensusUltraOptimized(block *Block, participa
 			validationChan <- validated
 		}(participant)
 	}
-	
+
 	// Collect validations with ULTRA timeout
-	timeout := time.After(1 * time.Second)  // 1 second timeout
-	
+	timeout := time.After(1 * time.Second) // 1 second timeout
+
 	for i := 0; i < totalParticipants; i++ {
 		select {
 		case validated := <-validationChan:
@@ -368,13 +368,13 @@ func (s *UltraSlowPathConsensus) ConsensusUltraOptimized(block *Block, participa
 			break
 		}
 	}
-	
+
 	// Check threshold with Byzantine tolerance
 	approvalRatio := float64(approvals) / float64(totalParticipants)
 	if approvalRatio < s.threshold {
 		return nil, fmt.Errorf("ultra-optimized slow path consensus failed: approval ratio %.2f below threshold %.2f", approvalRatio, s.threshold)
 	}
-	
+
 	return &ConsensusResult{
 		Block:     block,
 		Consensus: ConsensusTypeSlow,
@@ -389,21 +389,21 @@ func (s *UltraSlowPathConsensus) validateParticipantFullUltraOptimized(participa
 	if participant.Stake.Cmp(big.NewInt(0)) <= 0 {
 		return false
 	}
-	
-	if participant.TrustScore < 0.5 {  // Lower threshold for speed
+
+	if participant.TrustScore < 0.5 { // Lower threshold for speed
 		return false
 	}
-	
+
 	// Validate cryptographic signatures with ULTRA optimization
 	if !s.validateBlockSignaturesUltraOptimized(block) {
 		return false
 	}
-	
+
 	// Validate block structure with ULTRA optimization
 	if !s.validateBlockStructureUltraOptimized(block) {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -419,24 +419,24 @@ func (s *UltraSlowPathConsensus) validateBlockStructureUltraOptimized(block *Blo
 	if block.Header.Height <= 0 {
 		return false
 	}
-	
+
 	if block.Header.Timestamp.IsZero() {
 		return false
 	}
-	
+
 	if block.Transactions == nil {
 		return false
 	}
-	
+
 	return true
 }
 
 // NewUltraConsensusEngine creates ULTRA consensus engine
 func NewUltraConsensusEngine() *UltraConsensusEngine {
 	return &UltraConsensusEngine{
-		algorithms:      make(map[string]UltraConsensusAlgorithm),
-		currentAlgorithm: "ultra_hybrid",
-		optimizationLevel: 100,  // 100% optimization
+		algorithms:        make(map[string]UltraConsensusAlgorithm),
+		currentAlgorithm:  "ultra_hybrid",
+		optimizationLevel: 100, // 100% optimization
 	}
 }
 
@@ -457,7 +457,7 @@ func NewUltraParallelEngine() *UltraParallelEngine {
 // updateMetricsUltraOptimized updates ULTRA consensus metrics
 func (c *UltraOptimizedConsensus) updateMetricsUltraOptimized(block *Block, consensusLatency time.Duration) {
 	c.Metrics.TotalBlocks++
-	
+
 	// Update average consensus latency
 	if c.Metrics.TotalBlocks > 1 {
 		totalLatency := c.Metrics.AverageConsensusLatency * time.Duration(c.Metrics.TotalBlocks-1)
@@ -465,10 +465,10 @@ func (c *UltraOptimizedConsensus) updateMetricsUltraOptimized(block *Block, cons
 	} else {
 		c.Metrics.AverageConsensusLatency = consensusLatency
 	}
-	
+
 	// Update success rate
 	c.Metrics.ConsensusSuccessRate = 1.0
-	
+
 	// Update average block time
 	if c.Metrics.TotalBlocks > 1 {
 		totalBlockTime := c.Metrics.AverageBlockTime * time.Duration(c.Metrics.TotalBlocks-1)
@@ -476,17 +476,17 @@ func (c *UltraOptimizedConsensus) updateMetricsUltraOptimized(block *Block, cons
 	} else {
 		c.Metrics.AverageBlockTime = c.Config.BlockTime
 	}
-	
+
 	c.Metrics.LastUpdate = time.Now()
-	
+
 	// Calculate ULTRA parallelization efficiency
 	if c.Config.EnableParallel {
 		sequentialTime := consensusLatency * time.Duration(runtime.NumCPU()*4)
 		c.Metrics.ParallelizationEfficiency = float64(sequentialTime) / float64(consensusLatency)
 	}
-	
+
 	// Set ULTRA optimization level
-	c.Metrics.UltraOptimizationLevel = 0.95  // 95% optimization
+	c.Metrics.UltraOptimizationLevel = 0.95 // 95% optimization
 }
 
 // generateUltraBlockCacheKey generates ULTRA cache key for block

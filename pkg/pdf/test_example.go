@@ -17,7 +17,7 @@ func TestPDFFunctionality() {
 	documentContent := []byte("This is a test PDF content for demonstration")
 	documentName := "test_document.pdf"
 	uploaderID := "test_user_123"
-	
+
 	// Create metadata
 	metadata := PDFMetadata{
 		Title:       "Test Document",
@@ -52,7 +52,7 @@ func TestPDFFunctionality() {
 	fmt.Println("\n🔍 Testing Document Integrity:")
 	originalHash := sha256.Sum256(documentContent)
 	originalHashStr := hex.EncodeToString(originalHash[:])
-	
+
 	if pdfTx.VerifyDocumentIntegrity(documentContent) {
 		fmt.Printf("✅ Document integrity verified!\n")
 		fmt.Printf("   Original Hash: %s\n", originalHashStr)

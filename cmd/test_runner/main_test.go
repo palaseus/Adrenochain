@@ -93,7 +93,7 @@ func TestMain(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Reset flag set for each test
 			flag.CommandLine = flag.NewFlagSet("test", flag.ExitOnError)
-			
+
 			// Capture stdout
 			oldStdout := os.Stdout
 			r, w, _ := os.Pipe()
@@ -101,7 +101,7 @@ func TestMain(t *testing.T) {
 
 			// Set up flags
 			os.Args = append([]string{"test"}, tc.flags...)
-			
+
 			// Run main function
 			main()
 
@@ -287,11 +287,11 @@ func TestShowHelp(t *testing.T) {
 func TestFlagParsing(t *testing.T) {
 	// Test that flags are properly defined
 	flag.CommandLine = flag.NewFlagSet("test", flag.ExitOnError)
-	
+
 	// Define flags like in main
 	var (
-		runAllTests    = flag.Bool("all", false, "Run all comprehensive tests")
-		help           = flag.Bool("help", false, "Show help information")
+		runAllTests = flag.Bool("all", false, "Run all comprehensive tests")
+		help        = flag.Bool("help", false, "Show help information")
 	)
 
 	// Test flag parsing
@@ -418,7 +418,7 @@ func TestConcurrentOperations(t *testing.T) {
 
 	// Create multiple portfolios concurrently
 	userIDs := []string{"user1", "user2", "user3", "user4", "user5"}
-	
+
 	// Use channels to coordinate goroutines
 	done := make(chan bool, len(userIDs))
 	errors := make(chan error, len(userIDs))
@@ -426,7 +426,7 @@ func TestConcurrentOperations(t *testing.T) {
 	for _, userID := range userIDs {
 		go func(id string) {
 			defer func() { done <- true }()
-			
+
 			// Create portfolio
 			_, err := ccm.CreatePortfolio(ctx, id, big.NewFloat(1.5))
 			if err != nil {
@@ -484,7 +484,7 @@ func TestPerformance(t *testing.T) {
 
 	// Test creating many portfolios quickly
 	start := time.Now()
-	
+
 	for i := 0; i < 100; i++ {
 		userID := fmt.Sprintf("perf_user_%d", i)
 		_, err := ccm.CreatePortfolio(ctx, userID, big.NewFloat(1.5))
@@ -553,7 +553,7 @@ func TestEdgeCases(t *testing.T) {
 func TestCrossCollateralDemoErrorHandling(t *testing.T) {
 	// Test with a mock manager that returns errors
 	// This will help cover error handling paths
-	
+
 	// Capture stdout to suppress output during error testing
 	oldStdout := os.Stdout
 	_, w, _ := os.Pipe()
@@ -561,7 +561,7 @@ func TestCrossCollateralDemoErrorHandling(t *testing.T) {
 
 	// Test with invalid portfolio creation (this should not fail in normal operation)
 	// But we can test the error handling by creating edge cases
-	
+
 	// Restore stdout
 	w.Close()
 	os.Stdout = oldStdout
@@ -574,12 +574,12 @@ func TestCrossCollateralDemoErrorHandling(t *testing.T) {
 func TestShowPortfolioStateErrorHandling(t *testing.T) {
 	// Test the case where GetPortfolio returns an error
 	// We need to create a mock manager that can simulate errors
-	
+
 	// Create a mock manager that returns an error
 	mockCCM := &MockCrossCollateralManager{
 		shouldError: true,
 	}
-	
+
 	// Capture stdout
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -678,7 +678,7 @@ func (m *MockCrossCollateralManager) GetPortfolioAssetDetails(userID string) (ma
 func TestCrossCollateralDemoCompleteFlow(t *testing.T) {
 	// Test the complete demo flow to ensure all code paths are covered
 	// This includes the detailed asset information display
-	
+
 	// Capture stdout
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
@@ -783,7 +783,7 @@ func TestShowPortfolioStateWithData(t *testing.T) {
 func TestCrossCollateralDemoWithValidationIssues(t *testing.T) {
 	// Test scenario where portfolio validation might find issues
 	// This helps cover the validation logic in the demo
-	
+
 	// Create a cross-collateral manager
 	ccm := advanced.NewCrossCollateralManager()
 	ctx := context.Background()
@@ -834,7 +834,7 @@ func TestCrossCollateralDemoWithValidationIssues(t *testing.T) {
 func TestCrossCollateralDemoAssetDetails(t *testing.T) {
 	// Test the detailed asset information display logic
 	// This helps cover the asset details iteration code
-	
+
 	// Create a cross-collateral manager
 	ccm := advanced.NewCrossCollateralManager()
 	ctx := context.Background()
@@ -898,7 +898,7 @@ func TestCrossCollateralDemoAssetDetails(t *testing.T) {
 		if details == nil {
 			t.Error("Asset details should not be nil")
 		}
-		
+
 		// Test type assertion (this covers the interface{} handling)
 		if detailsMap, ok := details.(map[string]interface{}); ok {
 			if len(detailsMap) == 0 {

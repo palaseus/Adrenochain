@@ -228,7 +228,7 @@ func TestLendingService(t *testing.T) {
 		// Test invalid amount on a new loan
 		loan2, err := service.BorrowAsset("pool_1", "BTC", "user_3", 300.0, collateral)
 		require.NoError(t, err)
-		
+
 		err = service.RepayLoan(loan2.ID, -100.0)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "must be positive")

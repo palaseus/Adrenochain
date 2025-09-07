@@ -288,14 +288,14 @@ func TestCreateToken_ERC20_WithCustomConfig(t *testing.T) {
 		Pausable:             false,
 		Blacklistable:        true,
 	}
-	
+
 	tokenConfig := TokenCreationConfig{
-		Name:          "Custom Token",
-		Symbol:        "CUST",
-		Decimals:      6,
-		TotalSupply:   big.NewInt(500000000),
-		Owner:         createTestAddress(1),
-		ERC20Config:   &customConfig,
+		Name:        "Custom Token",
+		Symbol:      "CUST",
+		Decimals:    6,
+		TotalSupply: big.NewInt(500000000),
+		Owner:       createTestAddress(1),
+		ERC20Config: &customConfig,
 	}
 
 	result, err := sdk.CreateToken(ctx, TokenTypeERC20, tokenConfig)
@@ -384,7 +384,7 @@ func TestCreateToken_ERC721_WithCustomConfig(t *testing.T) {
 		Blacklistable: false,
 		MetadataURI:   false,
 	}
-	
+
 	tokenConfig := TokenCreationConfig{
 		Name:         "Custom NFT",
 		Symbol:       "CNFT",
@@ -474,7 +474,7 @@ func TestCreateToken_ERC1155_WithCustomConfig(t *testing.T) {
 		Blacklistable: true,
 		MetadataURI:   false,
 	}
-	
+
 	tokenConfig := TokenCreationConfig{
 		URI:           "https://custom1155.com/metadata/",
 		Owner:         createTestAddress(3),
@@ -568,11 +568,11 @@ func TestGenerateAddress(t *testing.T) {
 
 	// Generate first address
 	addr1 := sdk.generateAddress()
-	
+
 	// Increment operations to get different addresses
 	sdk.TotalOperations++
 	addr2 := sdk.generateAddress()
-	
+
 	sdk.TotalOperations++
 	addr3 := sdk.generateAddress()
 
@@ -648,7 +648,7 @@ func TestConcurrency(t *testing.T) {
 func TestCreateAMM_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize AMM component
 	ammInstance := &amm.AMM{}
 	sdk.AMM = ammInstance
@@ -712,7 +712,7 @@ func TestCreateAMM_NotInitialized(t *testing.T) {
 func TestAddLiquidity_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize AMM component
 	ammInstance := &amm.AMM{}
 	sdk.AMM = ammInstance
@@ -768,7 +768,7 @@ func TestAddLiquidity_NotInitialized(t *testing.T) {
 func TestSwapTokens_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize AMM component
 	ammInstance := &amm.AMM{}
 	sdk.AMM = ammInstance
@@ -776,7 +776,7 @@ func TestSwapTokens_Success(t *testing.T) {
 	ctx := context.Background()
 	ammAddress := createTestAddress(1)
 	tokenIn := createTestAddress(2)
-	amountIn := big.NewInt(1000000000000000000) // 1 token
+	amountIn := big.NewInt(1000000000000000000)    // 1 token
 	minAmountOut := big.NewInt(900000000000000000) // 0.9 tokens
 
 	result, err := sdk.SwapTokens(ctx, ammAddress, tokenIn, amountIn, minAmountOut)
@@ -834,7 +834,7 @@ func TestSwapTokens_NotInitialized(t *testing.T) {
 func TestCreateLendingProtocol_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize Lending component
 	lendingInstance := &lending.LendingProtocol{}
 	sdk.Lending = lendingInstance
@@ -906,7 +906,7 @@ func TestCreateLendingProtocol_NotInitialized(t *testing.T) {
 func TestSupplyAsset_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize Lending component
 	lendingInstance := &lending.LendingProtocol{}
 	sdk.Lending = lendingInstance
@@ -974,7 +974,7 @@ func TestSupplyAsset_NotInitialized(t *testing.T) {
 func TestCreateYieldFarm_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize Yield Farming component
 	yieldInstance := &yield.YieldFarm{}
 	sdk.YieldFarming = yieldInstance
@@ -982,7 +982,7 @@ func TestCreateYieldFarm_Success(t *testing.T) {
 	ctx := context.Background()
 	startTime := time.Now()
 	endTime := startTime.Add(24 * time.Hour)
-	
+
 	yieldConfig := YieldFarmConfig{
 		FarmID:          "farm_v1",
 		Name:            "Test Farm",
@@ -1037,7 +1037,7 @@ func TestCreateYieldFarm_NotInitialized(t *testing.T) {
 	ctx := context.Background()
 	startTime := time.Now()
 	endTime := startTime.Add(24 * time.Hour)
-	
+
 	yieldConfig := YieldFarmConfig{
 		FarmID:       "farm_v1",
 		Name:         "Test Farm",
@@ -1063,7 +1063,7 @@ func TestCreateYieldFarm_NotInitialized(t *testing.T) {
 func TestCreateGovernance_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize Governance component
 	governanceInstance := &governance.Governance{}
 	sdk.Governance = governanceInstance
@@ -1078,7 +1078,7 @@ func TestCreateGovernance_Success(t *testing.T) {
 		GovernanceToken:   createTestAddress(2),
 		MinQuorum:         big.NewInt(1000000000000000000), // 1 token
 		ProposalThreshold: big.NewInt(100000000000000000),  // 0.1 token
-		VotingPeriod:      7 * 24 * time.Hour,             // 7 days
+		VotingPeriod:      7 * 24 * time.Hour,              // 7 days
 		ExecutionDelay:    24 * time.Hour,                  // 1 day
 	}
 
@@ -1142,7 +1142,7 @@ func TestCreateGovernance_NotInitialized(t *testing.T) {
 func TestGetPrice_Success(t *testing.T) {
 	config := SDKConfig{}
 	sdk := NewadrenochainSDK(config)
-	
+
 	// Initialize Oracle component
 	oracleInstance := &oracle.OracleAggregator{}
 	sdk.OracleAggregator = oracleInstance
@@ -1203,7 +1203,7 @@ func TestCalculateLPTokens(t *testing.T) {
 	amountB := big.NewInt(2000000000000000000) // 2 tokens
 
 	result := sdk.calculateLPTokens(amountA, amountB)
-	
+
 	// Should be amountA + amountB (simplified implementation)
 	expected := new(big.Int).Add(amountA, amountB)
 	if result.Cmp(expected) != 0 {
@@ -1218,7 +1218,7 @@ func TestCalculateSwapOutput(t *testing.T) {
 	amountIn := big.NewInt(1000000000000000000) // 1 token
 
 	result := sdk.calculateSwapOutput(amountIn)
-	
+
 	// Should be amountIn / 1000 (simplified implementation with 0.1% fee)
 	expected := new(big.Int).Div(amountIn, big.NewInt(1000))
 	if result.Cmp(expected) != 0 {
@@ -1231,7 +1231,7 @@ func TestGetCurrentTimestamp(t *testing.T) {
 	sdk := NewadrenochainSDK(config)
 
 	result := sdk.getCurrentTimestamp()
-	
+
 	// Should be 0 in simplified implementation
 	if result != 0 {
 		t.Errorf("Expected 0, got %d", result)
@@ -1430,13 +1430,13 @@ func TestSDKErrorHandling(t *testing.T) {
 			name: "CreateGovernance without initialization",
 			testFunc: func() error {
 				_, err := sdk.CreateGovernance(ctx, GovernanceConfig{
-					GovernanceID: "test",
-					Name:         "Test",
-					Symbol:       "TEST",
-					Decimals:     18,
-					Owner:        createTestAddress(1),
+					GovernanceID:    "test",
+					Name:            "Test",
+					Symbol:          "TEST",
+					Decimals:        18,
+					Owner:           createTestAddress(1),
 					GovernanceToken: createTestAddress(2),
-					VotingPeriod: time.Hour,
+					VotingPeriod:    time.Hour,
 				})
 				return err
 			},

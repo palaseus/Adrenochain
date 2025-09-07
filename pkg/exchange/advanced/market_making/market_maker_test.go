@@ -18,9 +18,9 @@ func TestMarketMaker(t *testing.T) {
 			QuoteSize:        0.1,
 			QuoteRefreshRate: 1 * time.Second,
 		}
-		
+
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
-		
+
 		mm := NewMarketMaker("mm_1", strategy, config)
 		require.NotNil(t, mm)
 		assert.Equal(t, "mm_1", mm.ID)
@@ -39,22 +39,22 @@ func TestMarketMaker(t *testing.T) {
 			QuoteSize:        0.1,
 			QuoteRefreshRate: 100 * time.Millisecond,
 		}
-		
+
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
 		mm := NewMarketMaker("mm_1", strategy, config)
-		
+
 		// Start market maker
 		err := mm.Start()
 		require.NoError(t, err)
-		
+
 		// Wait a bit for quotes to be generated
 		time.Sleep(150 * time.Millisecond)
-		
+
 		// Check if quotes were generated
 		quotes, exists := mm.Quotes["BTC/USDT"]
 		assert.True(t, exists)
 		assert.NotNil(t, quotes)
-		
+
 		// Stop market maker
 		err = mm.Stop()
 		require.NoError(t, err)
@@ -68,14 +68,14 @@ func TestMarketMaker(t *testing.T) {
 			QuoteSize:        0.1,
 			QuoteRefreshRate: 1 * time.Second,
 		}
-		
+
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
 		mm := NewMarketMaker("mm_1", strategy, config)
-		
+
 		// Initial position should be zero
 		assert.Equal(t, 0.0, mm.Position.Quantity)
 		assert.Equal(t, 0.0, mm.Position.AveragePrice)
-		
+
 		// Update position with a trade (buying)
 		trade := Trade{
 			Symbol:   "BTC/USDT",
@@ -83,9 +83,9 @@ func TestMarketMaker(t *testing.T) {
 			Quantity: 0.1,
 			Price:    50000.0,
 		}
-		
+
 		mm.UpdatePosition(trade)
-		
+
 		// Check position update
 		assert.Equal(t, 0.1, mm.Position.Quantity)
 		assert.Equal(t, 50000.0, mm.Position.AveragePrice)
@@ -99,10 +99,10 @@ func TestMarketMaker(t *testing.T) {
 			QuoteSize:        0.1,
 			QuoteRefreshRate: 1 * time.Second,
 		}
-		
+
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
 		mm := NewMarketMaker("mm_1", strategy, config)
-		
+
 		// Update configuration
 		newConfig := MarketMakerConfig{
 			MaxPositionSize:  2.0,
@@ -111,7 +111,7 @@ func TestMarketMaker(t *testing.T) {
 			QuoteSize:        0.2,
 			QuoteRefreshRate: 2 * time.Second,
 		}
-		
+
 		err := mm.UpdateConfig(newConfig)
 		require.NoError(t, err)
 		assert.Equal(t, newConfig, mm.Config)
@@ -131,31 +131,31 @@ func TestBasicMarketMaking(t *testing.T) {
 
 	t.Run("CalculateQuotes", func(t *testing.T) {
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
-		
+
 		marketData := MarketData{
-			Symbol: "BTC/USDT",
-			Bid:    49999.0,
-			Ask:    50001.0,
+			Symbol:   "BTC/USDT",
+			Bid:      49999.0,
+			Ask:      50001.0,
 			MidPrice: 50000.0,
-			Spread: 2.0,
-			Volume: 1000000.0,
+			Spread:   2.0,
+			Volume:   1000000.0,
 		}
-		
+
 		position := Position{
-			Symbol:      "BTC/USDT",
-			Quantity:    0.1,
+			Symbol:       "BTC/USDT",
+			Quantity:     0.1,
 			AveragePrice: 50000.0,
 		}
-		
+
 		quotes := strategy.CalculateQuotes(marketData, position)
 		require.NotNil(t, quotes)
-		
+
 		// Check bid quote
 		assert.NotNil(t, quotes.Bid)
 		assert.Equal(t, "bid", quotes.Bid.Side)
 		assert.True(t, quotes.Bid.Price < marketData.MidPrice)
 		assert.True(t, quotes.Bid.Quantity > 0)
-		
+
 		// Check ask quote
 		assert.NotNil(t, quotes.Ask)
 		assert.Equal(t, "ask", quotes.Ask.Side)
@@ -165,15 +165,15 @@ func TestBasicMarketMaking(t *testing.T) {
 
 	t.Run("UpdateStrategy", func(t *testing.T) {
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
-		
+
 		marketData := MarketData{
-			Symbol: "BTC/USDT",
-			Bid:    49999.0,
-			Ask:    50001.0,
+			Symbol:   "BTC/USDT",
+			Bid:      49999.0,
+			Ask:      50001.0,
 			MidPrice: 50000.0,
-			Volume: 1000000.0,
+			Volume:   1000000.0,
 		}
-		
+
 		trades := []Trade{
 			{
 				Symbol:   "BTC/USDT",
@@ -181,16 +181,16 @@ func TestBasicMarketMaking(t *testing.T) {
 				Price:    50000.0,
 			},
 		}
-		
+
 		strategy.UpdateStrategy(marketData, trades)
-		
+
 		// Strategy should be updated (no specific assertions needed for this basic implementation)
 		assert.NotNil(t, strategy)
 	})
 
 	t.Run("GetParameters", func(t *testing.T) {
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
-		
+
 		params := strategy.GetParameters()
 		assert.NotNil(t, params)
 		assert.Equal(t, 1.5, params["spread_multiplier"])
@@ -214,7 +214,7 @@ func TestAdaptiveMarketMaking(t *testing.T) {
 
 	t.Run("CalculateQuotes", func(t *testing.T) {
 		strategy := NewAdaptiveMarketMaking(0.02, 1.0, 0.1, 1.0, 0.1, 0.01)
-		
+
 		marketData := MarketData{
 			Symbol:     "BTC/USDT",
 			Bid:        49999.0,
@@ -224,16 +224,16 @@ func TestAdaptiveMarketMaking(t *testing.T) {
 			Volume:     1000000.0,
 			Volatility: 0.02,
 		}
-		
+
 		position := Position{
-			Symbol:      "BTC/USDT",
-			Quantity:    0.1,
+			Symbol:       "BTC/USDT",
+			Quantity:     0.1,
 			AveragePrice: 50000.0,
 		}
-		
+
 		quotes := strategy.CalculateQuotes(marketData, position)
 		require.NotNil(t, quotes)
-		
+
 		// Check that quotes are generated
 		assert.NotNil(t, quotes.Bid)
 		assert.NotNil(t, quotes.Ask)
@@ -243,7 +243,7 @@ func TestAdaptiveMarketMaking(t *testing.T) {
 
 	t.Run("UpdateStrategy", func(t *testing.T) {
 		strategy := NewAdaptiveMarketMaking(0.02, 1.0, 0.1, 1.0, 0.1, 0.01)
-		
+
 		marketData := MarketData{
 			Symbol:     "BTC/USDT",
 			Bid:        49999.0,
@@ -252,7 +252,7 @@ func TestAdaptiveMarketMaking(t *testing.T) {
 			Volume:     1000000.0,
 			Volatility: 0.02,
 		}
-		
+
 		trades := []Trade{
 			{
 				Symbol:   "BTC/USDT",
@@ -260,16 +260,16 @@ func TestAdaptiveMarketMaking(t *testing.T) {
 				Price:    50000.0,
 			},
 		}
-		
+
 		strategy.UpdateStrategy(marketData, trades)
-		
+
 		// Strategy should be updated
 		assert.NotNil(t, strategy)
 	})
 
 	t.Run("GetParameters", func(t *testing.T) {
 		strategy := NewAdaptiveMarketMaking(0.02, 1.0, 0.1, 1.0, 0.1, 0.01)
-		
+
 		params := strategy.GetParameters()
 		assert.NotNil(t, params)
 		assert.Equal(t, 0.02, params["base_spread"])
@@ -291,24 +291,24 @@ func TestIntegration(t *testing.T) {
 			QuoteSize:        0.1,
 			QuoteRefreshRate: 100 * time.Millisecond,
 		}
-		
+
 		strategy := NewBasicMarketMaking(1.5, 1.0, 0.1)
 		mm := NewMarketMaker("mm_1", strategy, config)
-		
+
 		// Start market maker
 		err := mm.Start()
 		require.NoError(t, err)
-		
+
 		// Wait for quotes to be generated
 		time.Sleep(150 * time.Millisecond)
-		
+
 		// Check quotes
 		quotes, exists := mm.Quotes["BTC/USDT"]
 		assert.True(t, exists)
 		assert.NotNil(t, quotes)
 		assert.NotNil(t, quotes.Bid)
 		assert.NotNil(t, quotes.Ask)
-		
+
 		// Simulate a trade (buying)
 		trade := Trade{
 			Symbol:   "BTC/USDT",
@@ -316,13 +316,13 @@ func TestIntegration(t *testing.T) {
 			Quantity: 0.1,
 			Price:    50000.0,
 		}
-		
+
 		mm.UpdatePosition(trade)
-		
+
 		// Check position update
 		assert.Equal(t, 0.1, mm.Position.Quantity)
 		assert.Equal(t, 50000.0, mm.Position.AveragePrice)
-		
+
 		// Stop market maker
 		err = mm.Stop()
 		require.NoError(t, err)

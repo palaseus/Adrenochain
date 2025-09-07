@@ -16,99 +16,99 @@ type ShardID string
 
 // Shard represents a blockchain shard
 type Shard struct {
-	ID              ShardID                 `json:"id"`
-	Name            string                  `json:"name"`
-	Description     string                  `json:"description"`
-	Status          ShardStatus             `json:"status"`
-	Type            ShardType               `json:"type"`
-	Capacity        *big.Int                `json:"capacity"`        // Maximum transactions per block
-	CurrentLoad     *big.Int                `json:"current_load"`    // Current transaction count
-	Validators      []string                `json:"validators"`      // Validator addresses
-	ConsensusType   ConsensusType           `json:"consensus_type"`
-	BlockHeight     uint64                  `json:"block_height"`
-	LastBlockHash   string                  `json:"last_block_hash"`
-	LastBlockTime   time.Time               `json:"last_block_time"`
-	CrossShardLinks []ShardID               `json:"cross_shard_links"` // Connected shards
-	Metadata        map[string]interface{}  `json:"metadata"`
-	CreatedAt       time.Time               `json:"created_at"`
-	UpdatedAt       time.Time               `json:"updated_at"`
+	ID              ShardID                `json:"id"`
+	Name            string                 `json:"name"`
+	Description     string                 `json:"description"`
+	Status          ShardStatus            `json:"status"`
+	Type            ShardType              `json:"type"`
+	Capacity        *big.Int               `json:"capacity"`     // Maximum transactions per block
+	CurrentLoad     *big.Int               `json:"current_load"` // Current transaction count
+	Validators      []string               `json:"validators"`   // Validator addresses
+	ConsensusType   ConsensusType          `json:"consensus_type"`
+	BlockHeight     uint64                 `json:"block_height"`
+	LastBlockHash   string                 `json:"last_block_hash"`
+	LastBlockTime   time.Time              `json:"last_block_time"`
+	CrossShardLinks []ShardID              `json:"cross_shard_links"` // Connected shards
+	Metadata        map[string]interface{} `json:"metadata"`
+	CreatedAt       time.Time              `json:"created_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
 }
 
 // ShardStatus represents the current status of a shard
 type ShardStatus string
 
 const (
-	ShardActive     ShardStatus = "active"      // Shard is active and processing transactions
-	ShardInactive   ShardStatus = "inactive"    // Shard is inactive
-	ShardSyncing    ShardStatus = "syncing"     // Shard is synchronizing with other shards
-	ShardPaused     ShardStatus = "paused"      // Shard is temporarily paused
-	ShardDeprecated ShardStatus = "deprecated"  // Shard is deprecated
-	ShardTesting    ShardStatus = "testing"     // Shard is in testing phase
+	ShardActive     ShardStatus = "active"     // Shard is active and processing transactions
+	ShardInactive   ShardStatus = "inactive"   // Shard is inactive
+	ShardSyncing    ShardStatus = "syncing"    // Shard is synchronizing with other shards
+	ShardPaused     ShardStatus = "paused"     // Shard is temporarily paused
+	ShardDeprecated ShardStatus = "deprecated" // Shard is deprecated
+	ShardTesting    ShardStatus = "testing"    // Shard is in testing phase
 )
 
 // ShardType represents the type of shard
 type ShardType string
 
 const (
-	ExecutionShard  ShardType = "execution"    // Executes transactions
-	DataShard       ShardType = "data"          // Stores data
-	ConsensusShard  ShardType = "consensus"     // Handles consensus
-	BridgeShard     ShardType = "bridge"        // Bridges between shards
-	CustomShard     ShardType = "custom"        // Custom shard type
+	ExecutionShard ShardType = "execution" // Executes transactions
+	DataShard      ShardType = "data"      // Stores data
+	ConsensusShard ShardType = "consensus" // Handles consensus
+	BridgeShard    ShardType = "bridge"    // Bridges between shards
+	CustomShard    ShardType = "custom"    // Custom shard type
 )
 
 // ConsensusType represents the consensus mechanism used by a shard
 type ConsensusType string
 
 const (
-	PoWConsensus    ConsensusType = "pow"       // Proof of Work
-	PoSConsensus    ConsensusType = "pos"       // Proof of Stake
-	PoAConsensus    ConsensusType = "poa"       // Proof of Authority
-	DPoSConsensus   ConsensusType = "dpos"      // Delegated Proof of Stake
-	CustomConsensus ConsensusType = "custom"    // Custom consensus
+	PoWConsensus    ConsensusType = "pow"    // Proof of Work
+	PoSConsensus    ConsensusType = "pos"    // Proof of Stake
+	PoAConsensus    ConsensusType = "poa"    // Proof of Authority
+	DPoSConsensus   ConsensusType = "dpos"   // Delegated Proof of Stake
+	CustomConsensus ConsensusType = "custom" // Custom consensus
 )
 
 // CrossShardTransaction represents a transaction that spans multiple shards
 type CrossShardTransaction struct {
-	ID              string                 `json:"id"`
-	FromShard       ShardID                `json:"from_shard"`
-	ToShard         ShardID                `json:"to_shard"`
-	TransactionHash string                 `json:"transaction_hash"`
-	Status          CrossShardTxStatus     `json:"status"`
-	Amount          *big.Int               `json:"amount"`
-	Asset           string                 `json:"asset"`
-	Sender          string                 `json:"sender"`
-	Recipient       string                 `json:"recipient"`
-	Nonce           uint64                 `json:"nonce"`
-	GasLimit        uint64                 `json:"gas_limit"`
-	GasPrice        *big.Int               `json:"gas_price"`
-	Data            []byte                 `json:"data"`
-	Signature       string                 `json:"signature"`
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
+	ID              string             `json:"id"`
+	FromShard       ShardID            `json:"from_shard"`
+	ToShard         ShardID            `json:"to_shard"`
+	TransactionHash string             `json:"transaction_hash"`
+	Status          CrossShardTxStatus `json:"status"`
+	Amount          *big.Int           `json:"amount"`
+	Asset           string             `json:"asset"`
+	Sender          string             `json:"sender"`
+	Recipient       string             `json:"recipient"`
+	Nonce           uint64             `json:"nonce"`
+	GasLimit        uint64             `json:"gas_limit"`
+	GasPrice        *big.Int           `json:"gas_price"`
+	Data            []byte             `json:"data"`
+	Signature       string             `json:"signature"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
 }
 
 // CrossShardTxStatus represents the status of a cross-shard transaction
 type CrossShardTxStatus string
 
 const (
-	CrossShardTxPending   CrossShardTxStatus = "pending"    // Transaction is pending
+	CrossShardTxPending    CrossShardTxStatus = "pending"    // Transaction is pending
 	CrossShardTxProcessing CrossShardTxStatus = "processing" // Transaction is being processed
-	CrossShardTxConfirmed CrossShardTxStatus = "confirmed"  // Transaction is confirmed
-	CrossShardTxFailed    CrossShardTxStatus = "failed"     // Transaction failed
-	CrossShardTxExpired   CrossShardTxStatus = "expired"    // Transaction expired
+	CrossShardTxConfirmed  CrossShardTxStatus = "confirmed"  // Transaction is confirmed
+	CrossShardTxFailed     CrossShardTxStatus = "failed"     // Transaction failed
+	CrossShardTxExpired    CrossShardTxStatus = "expired"    // Transaction expired
 )
 
 // ShardSync represents synchronization data between shards
 type ShardSync struct {
-	FromShard       ShardID    `json:"from_shard"`
-	ToShard         ShardID    `json:"to_shard"`
-	LastSyncHeight  uint64     `json:"last_sync_height"`
-	LastSyncTime    time.Time  `json:"last_sync_time"`
-	SyncStatus      SyncStatus `json:"sync_status"`
-	ErrorCount      uint64     `json:"error_count"`
-	LastError       string     `json:"last_error"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	FromShard      ShardID    `json:"from_shard"`
+	ToShard        ShardID    `json:"to_shard"`
+	LastSyncHeight uint64     `json:"last_sync_height"`
+	LastSyncTime   time.Time  `json:"last_sync_time"`
+	SyncStatus     SyncStatus `json:"sync_status"`
+	ErrorCount     uint64     `json:"error_count"`
+	LastError      string     `json:"last_error"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 // SyncStatus represents the synchronization status
@@ -123,27 +123,27 @@ const (
 
 // ShardMetrics tracks shard performance and health metrics
 type ShardMetrics struct {
-	ShardID           ShardID    `json:"shard_id"`
-	TPS               float64    `json:"tps"`               // Transactions per second
-	BlockTime         float64    `json:"block_time"`         // Average block time
-	ValidatorCount    int        `json:"validator_count"`    // Number of active validators
-	StakeAmount       *big.Int   `json:"stake_amount"`       // Total staked amount
-	CrossShardTxCount uint64     `json:"cross_shard_tx_count"` // Cross-shard transaction count
-	LastUpdated       time.Time  `json:"last_updated"`
+	ShardID           ShardID   `json:"shard_id"`
+	TPS               float64   `json:"tps"`                  // Transactions per second
+	BlockTime         float64   `json:"block_time"`           // Average block time
+	ValidatorCount    int       `json:"validator_count"`      // Number of active validators
+	StakeAmount       *big.Int  `json:"stake_amount"`         // Total staked amount
+	CrossShardTxCount uint64    `json:"cross_shard_tx_count"` // Cross-shard transaction count
+	LastUpdated       time.Time `json:"last_updated"`
 }
 
 // ShardingManager manages the entire sharding system
 type ShardingManager struct {
-	shards              map[ShardID]*Shard
-	crossShardTxs       map[string]*CrossShardTransaction
-	shardSyncs          map[string]*ShardSync
-	metrics             map[ShardID]*ShardMetrics
-	mu                  sync.RWMutex
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	txQueue             chan *CrossShardTransaction
-	syncQueue           chan ShardID
-	metricsUpdater      chan ShardID
+	shards         map[ShardID]*Shard
+	crossShardTxs  map[string]*CrossShardTransaction
+	shardSyncs     map[string]*ShardSync
+	metrics        map[ShardID]*ShardMetrics
+	mu             sync.RWMutex
+	ctx            context.Context
+	cancel         context.CancelFunc
+	txQueue        chan *CrossShardTransaction
+	syncQueue      chan ShardID
+	metricsUpdater chan ShardID
 }
 
 // NewShardingManager creates a new ShardingManager instance

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/palaseus/adrenochain/pkg/explorer/service"
 	"github.com/gorilla/mux"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -676,7 +676,7 @@ func TestIsValidSearchQueryEdgeCases(t *testing.T) {
 	result = handler.isValidSearchQuery("block#123")
 	t.Logf("isValidSearchQuery('block#123') returned: %v", result)
 	assert.True(t, result)
-	
+
 	result = handler.isValidSearchQuery("tx@hash")
 	t.Logf("isValidSearchQuery('tx@hash') returned: %v", result)
 	assert.True(t, result)
@@ -685,7 +685,7 @@ func TestIsValidSearchQueryEdgeCases(t *testing.T) {
 	result = handler.isValidSearchQuery("BlockHash123")
 	t.Logf("isValidSearchQuery('BlockHash123') returned: %v", result)
 	assert.True(t, result)
-	
+
 	result = handler.isValidSearchQuery("TRANSACTION_HASH")
 	t.Logf("isValidSearchQuery('TRANSACTION_HASH') returned: %v", result)
 	assert.True(t, result)
@@ -694,7 +694,7 @@ func TestIsValidSearchQueryEdgeCases(t *testing.T) {
 	result = handler.isValidSearchQuery("123456789")
 	t.Logf("isValidSearchQuery('123456789') returned: %v", result)
 	assert.True(t, result)
-	
+
 	result = handler.isValidSearchQuery("0xabcdef123456")
 	t.Logf("isValidSearchQuery('0xabcdef123456') returned: %v", result)
 	assert.True(t, result)

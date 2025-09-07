@@ -119,15 +119,15 @@ func TestIntegrationTestHelpers_CreateTestOrders(t *testing.T) {
 
 func TestIntegrationTestHelpers_SimulateTradingActivity(t *testing.T) {
 	ith := NewIntegrationTestHelpers()
-	
+
 	// Setup trading environment
 	env, err := ith.SetupTradingEnvironment()
 	require.NoError(t, err)
-	
+
 	// Simulate trading activity for a short duration
 	err = ith.SimulateTradingActivity(env, 100*time.Millisecond)
 	require.NoError(t, err)
-	
+
 	// Verify environment is still intact
 	assert.NotNil(t, env.TradingPairs)
 	assert.NotNil(t, env.OrderBooks)
@@ -136,15 +136,15 @@ func TestIntegrationTestHelpers_SimulateTradingActivity(t *testing.T) {
 
 func TestIntegrationTestHelpers_SimulateBridgeActivity(t *testing.T) {
 	ith := NewIntegrationTestHelpers()
-	
+
 	// Setup bridge environment
 	env, err := ith.SetupBridgeEnvironment()
 	require.NoError(t, err)
-	
+
 	// Simulate bridge activity for a short duration
 	err = ith.SimulateBridgeActivity(env, 100*time.Millisecond)
 	require.NoError(t, err)
-	
+
 	// Verify environment is still intact
 	assert.NotNil(t, env.Bridge)
 	assert.NotNil(t, env.Validators)
@@ -153,15 +153,15 @@ func TestIntegrationTestHelpers_SimulateBridgeActivity(t *testing.T) {
 
 func TestIntegrationTestHelpers_SimulateGovernanceActivity(t *testing.T) {
 	ith := NewIntegrationTestHelpers()
-	
+
 	// Setup governance environment
 	env, err := ith.SetupGovernanceEnvironment()
 	require.NoError(t, err)
-	
+
 	// Simulate governance activity for a short duration
 	err = ith.SimulateGovernanceActivity(env, 100*time.Millisecond)
 	require.NoError(t, err)
-	
+
 	// Verify environment is still intact
 	assert.NotNil(t, env.VotingSystem)
 	assert.NotNil(t, env.Treasury)
@@ -171,11 +171,11 @@ func TestIntegrationTestHelpers_SimulateGovernanceActivity(t *testing.T) {
 
 func TestIntegrationTestHelpers_RunIntegrationTests(t *testing.T) {
 	ith := NewIntegrationTestHelpers()
-	
+
 	// Run integration tests
 	err := ith.RunIntegrationTests()
 	require.NoError(t, err)
-	
+
 	// If we get here, all tests passed successfully
 	// The method handles setup, simulation, and cleanup internally
 }
@@ -256,13 +256,13 @@ func TestIntegrationTestHelpers_ErrorHandling(t *testing.T) {
 	// Test that methods handle errors gracefully
 	// This would require mocking dependencies that can fail
 	// For now, we'll test the basic error handling paths
-	
+
 	// Test with invalid trading pair (if validation exists)
 	// This depends on the actual implementation of trading.NewTradingPair
-	
+
 	// Test with invalid bridge config (if validation exists)
 	// This depends on the actual implementation of bridge.NewBridge
-	
+
 	// Test with invalid governance config (if validation exists)
 	// This depends on the actual implementation of governance.NewGovernance
 }

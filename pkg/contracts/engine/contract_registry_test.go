@@ -663,5 +663,3 @@ func generateRandomHash() Hash {
 	rand.Read(hash[:])
 	return hash
 }
-
-

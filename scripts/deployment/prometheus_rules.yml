@@ -1,0 +1,153 @@
+groups:
+  - name: adrenochain.rules
+    rules:
+      # Blockchain Health Alerts
+      - alert: AdrenochainNodeDown
+        expr: up{job="adrenochain"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Adrenochain node is down"
+          description: "Adrenochain node has been down for more than 1 minute."
+
+      - alert: AdrenochainHighErrorRate
+        expr: adrenochain_total_errors > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Adrenochain node has {{ $value }} errors in the last 5 minutes."
+
+      - alert: AdrenochainNoPeers
+        expr: adrenochain_connected_peers == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No connected peers"
+          description: "Adrenochain node has no connected peers for more than 2 minutes."
+
+      - alert: AdrenochainLowPeerCount
+        expr: adrenochain_connected_peers < 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low peer count"
+          description: "Adrenochain node has only {{ $value }} connected peers."
+
+      # Performance Alerts
+      - alert: AdrenochainHighMemoryUsage
+        expr: adrenochain_memory_usage_bytes > 1073741824  # 1GB
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Adrenochain node is using {{ $value | humanize1024 }}B of memory."
+
+      - alert: AdrenochainBlockHeightStalled
+        expr: rate(adrenochain_block_height[5m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Block height is not increasing"
+          description: "Block height has not increased in the last 10 minutes."
+
+      - alert: AdrenochainHighPendingTransactions
+        expr: adrenochain_pending_transactions > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of pending transactions"
+          description: "Adrenochain node has {{ $value }} pending transactions."
+
+      # Network Alerts
+      - alert: AdrenochainNetworkIssues
+        expr: adrenochain_network_errors > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Network errors detected"
+          description: "Adrenochain node has {{ $value }} network errors."
+
+      # Mining Alerts
+      - alert: AdrenochainMiningStopped
+        expr: adrenochain_hash_rate == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mining has stopped"
+          description: "Adrenochain node hash rate is 0 for more than 5 minutes."
+
+      - alert: AdrenochainLowHashRate
+        expr: adrenochain_hash_rate < 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low hash rate"
+          description: "Adrenochain node hash rate is {{ $value }} (below 1000)."
+
+      # API Health Alerts
+      - alert: AdrenochainAPIUnavailable
+        expr: up{job="adrenochain-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Adrenochain API is unavailable"
+          description: "Adrenochain API has been down for more than 1 minute."
+
+      - alert: AdrenochainHealthCheckFailed
+        expr: up{job="adrenochain-health"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Adrenochain health check failed"
+          description: "Adrenochain health endpoint has been down for more than 1 minute."
+
+      # System Resource Alerts
+      - alert: AdrenochainHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="adrenochain"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "Adrenochain node CPU usage is {{ $value }}%."
+
+      - alert: AdrenochainDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% available."
+
+      # Business Logic Alerts
+      - alert: AdrenochainTransactionVolumeHigh
+        expr: rate(adrenochain_total_transactions[5m]) > 100
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "High transaction volume"
+          description: "Transaction rate is {{ $value }} per second."
+
+      - alert: AdrenochainDifficultySpike
+        expr: rate(adrenochain_chain_difficulty[10m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Chain difficulty spike"
+          description: "Chain difficulty increased by {{ $value }} in the last 10 minutes."

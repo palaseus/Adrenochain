@@ -157,110 +157,110 @@ func TestCreateProposal(t *testing.T) {
 		{
 			name: "valid proposal",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing title",
 			proposal: &GovernanceProposal{
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing creator",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: true,
 		},
 		{
 			name: "no protocols",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: true,
 		},
 		{
 			name: "zero voting period",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  0,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 0,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: true,
 		},
 		{
 			name: "zero quorum",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(0),
-				Threshold:     big.NewInt(250000),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(0),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: true,
 		},
 		{
 			name: "zero threshold",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(0),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(0),
 			},
 			wantErr: true,
 		},
 		{
 			name: "non-existent protocol",
 			proposal: &GovernanceProposal{
-				Title:         "Test Proposal",
-				Description:   "Test Description",
-				ProposalType:  ProtocolUpgrade,
-				Creator:       "user1",
-				Protocols:     []ProtocolID{"non-existent"},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        "Test Proposal",
+				Description:  "Test Description",
+				ProposalType: ProtocolUpgrade,
+				Creator:      "user1",
+				Protocols:    []ProtocolID{"non-existent"},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			},
 			wantErr: true,
 		},
@@ -304,14 +304,14 @@ func TestActivateProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(250000),
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(250000),
 	}
 
 	err = cpg.CreateProposal(proposal)
@@ -358,14 +358,14 @@ func TestCastVote(t *testing.T) {
 	// Test individual vote scenarios to avoid proposal finalization
 	t.Run("valid yes vote", func(t *testing.T) {
 		proposal := &GovernanceProposal{
-			Title:         "Test Proposal 1",
-			Description:   "Test Description",
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        "Test Proposal 1",
+			Description:  "Test Description",
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -392,14 +392,14 @@ func TestCastVote(t *testing.T) {
 
 	t.Run("valid no vote", func(t *testing.T) {
 		proposal := &GovernanceProposal{
-			Title:         "Test Proposal 2",
-			Description:   "Test Description",
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        "Test Proposal 2",
+			Description:  "Test Description",
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -426,14 +426,14 @@ func TestCastVote(t *testing.T) {
 
 	t.Run("valid abstain vote", func(t *testing.T) {
 		proposal := &GovernanceProposal{
-			Title:         "Test Proposal 3",
-			Description:   "Test Description",
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        "Test Proposal 3",
+			Description:  "Test Description",
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -465,14 +465,14 @@ func TestCastVote(t *testing.T) {
 
 	t.Run("non-existent protocol", func(t *testing.T) {
 		proposal := &GovernanceProposal{
-			Title:         "Test Proposal 4",
-			Description:   "Test Description",
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        "Test Proposal 4",
+			Description:  "Test Description",
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -487,14 +487,14 @@ func TestCastVote(t *testing.T) {
 
 	t.Run("zero voting power", func(t *testing.T) {
 		proposal := &GovernanceProposal{
-			Title:         "Test Proposal 5",
-			Description:   "Test Description",
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        "Test Proposal 5",
+			Description:  "Test Description",
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -509,14 +509,14 @@ func TestCastVote(t *testing.T) {
 
 	t.Run("excessive voting power", func(t *testing.T) {
 		proposal := &GovernanceProposal{
-			Title:         "Test Proposal 6",
-			Description:   "Test Description",
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        "Test Proposal 6",
+			Description:  "Test Description",
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -549,14 +549,14 @@ func TestGetProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(250000),
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(250000),
 	}
 
 	err = cpg.CreateProposal(proposal)
@@ -592,25 +592,25 @@ func TestGetProposals(t *testing.T) {
 
 	// Create multiple proposals
 	proposal1 := &GovernanceProposal{
-		Title:         "Proposal 1",
-		Description:   "Test Description 1",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(250000),
+		Title:        "Proposal 1",
+		Description:  "Test Description 1",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(250000),
 	}
 
 	proposal2 := &GovernanceProposal{
-		Title:         "Proposal 2",
-		Description:   "Test Description 2",
-		ProposalType:  ParameterChange,
-		Creator:       "user2",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  48 * time.Hour,
-		Quorum:        big.NewInt(150000),
-		Threshold:     big.NewInt(300000),
+		Title:        "Proposal 2",
+		Description:  "Test Description 2",
+		ProposalType: ParameterChange,
+		Creator:      "user2",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 48 * time.Hour,
+		Quorum:       big.NewInt(150000),
+		Threshold:    big.NewInt(300000),
 	}
 
 	err = cpg.CreateProposal(proposal1)
@@ -723,14 +723,14 @@ func TestExecuteProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(250000),
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(250000),
 	}
 
 	err = cpg.CreateProposal(proposal)
@@ -799,14 +799,14 @@ func TestConcurrency(t *testing.T) {
 			defer wg.Done()
 
 			proposal := &GovernanceProposal{
-				Title:         fmt.Sprintf("Proposal %d", index),
-				Description:   fmt.Sprintf("Description %d", index),
-				ProposalType:  ProtocolUpgrade,
-				Creator:       fmt.Sprintf("user%d", index),
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        fmt.Sprintf("Proposal %d", index),
+				Description:  fmt.Sprintf("Description %d", index),
+				ProposalType: ProtocolUpgrade,
+				Creator:      fmt.Sprintf("user%d", index),
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			}
 
 			err := cpg.CreateProposal(proposal)
@@ -846,14 +846,14 @@ func TestMemorySafety(t *testing.T) {
 		// Create proposals for each protocol
 		for j := 0; j < numProposals; j++ {
 			proposal := &GovernanceProposal{
-				Title:         fmt.Sprintf("Proposal %d-%d", i, j),
-				Description:   fmt.Sprintf("Description %d-%d", i, j),
-				ProposalType:  ProtocolUpgrade,
-				Creator:       fmt.Sprintf("user%d", j),
-				Protocols:     []ProtocolID{protocol.ID},
-				VotingPeriod:  24 * time.Hour,
-				Quorum:        big.NewInt(100000),
-				Threshold:     big.NewInt(250000),
+				Title:        fmt.Sprintf("Proposal %d-%d", i, j),
+				Description:  fmt.Sprintf("Description %d-%d", i, j),
+				ProposalType: ProtocolUpgrade,
+				Creator:      fmt.Sprintf("user%d", j),
+				Protocols:    []ProtocolID{protocol.ID},
+				VotingPeriod: 24 * time.Hour,
+				Quorum:       big.NewInt(100000),
+				Threshold:    big.NewInt(250000),
 			}
 
 			err := cpg.CreateProposal(proposal)
@@ -886,14 +886,14 @@ func TestEdgeCases(t *testing.T) {
 
 	// Test with very small voting period
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  1 * time.Millisecond,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(250000),
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 1 * time.Millisecond,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(250000),
 	}
 
 	err = cpg.CreateProposal(proposal)
@@ -969,14 +969,14 @@ func TestProposalTypes(t *testing.T) {
 
 	for _, proposalType := range proposalTypes {
 		proposal := &GovernanceProposal{
-			Title:         fmt.Sprintf("Test %s Proposal", proposalType),
-			Description:   fmt.Sprintf("Test %s Description", proposalType),
-			ProposalType:  proposalType,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        fmt.Sprintf("Test %s Proposal", proposalType),
+			Description:  fmt.Sprintf("Test %s Description", proposalType),
+			ProposalType: proposalType,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -1008,14 +1008,14 @@ func TestVoteTypes(t *testing.T) {
 
 	for i, voteType := range voteTypes {
 		proposal := &GovernanceProposal{
-			Title:         fmt.Sprintf("Test Proposal %d", i+1),
-			Description:   fmt.Sprintf("Test Description %d", i+1),
-			ProposalType:  ProtocolUpgrade,
-			Creator:       "user1",
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        fmt.Sprintf("Test Proposal %d", i+1),
+			Description:  fmt.Sprintf("Test Description %d", i+1),
+			ProposalType: ProtocolUpgrade,
+			Creator:      "user1",
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -1089,14 +1089,14 @@ func TestProposalStatusTransitions(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(250000),
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(250000),
 	}
 
 	err = cpg.CreateProposal(proposal)
@@ -1177,14 +1177,14 @@ func TestPerformance(t *testing.T) {
 
 	for i := 0; i < numProposals; i++ {
 		proposal := &GovernanceProposal{
-			Title:         fmt.Sprintf("Proposal %d", i),
-			Description:   fmt.Sprintf("Description %d", i),
-			ProposalType:  ProtocolUpgrade,
-			Creator:       fmt.Sprintf("user%d", i),
-			Protocols:     []ProtocolID{protocol.ID},
-			VotingPeriod:  24 * time.Hour,
-			Quorum:        big.NewInt(100000),
-			Threshold:     big.NewInt(250000),
+			Title:        fmt.Sprintf("Proposal %d", i),
+			Description:  fmt.Sprintf("Description %d", i),
+			ProposalType: ProtocolUpgrade,
+			Creator:      fmt.Sprintf("user%d", i),
+			Protocols:    []ProtocolID{protocol.ID},
+			VotingPeriod: 24 * time.Hour,
+			Quorum:       big.NewInt(100000),
+			Threshold:    big.NewInt(250000),
 		}
 
 		err := cpg.CreateProposal(proposal)
@@ -1278,14 +1278,14 @@ func TestProposalFinalization(t *testing.T) {
 
 	// Test proposal that meets quorum but not threshold
 	proposal1 := &GovernanceProposal{
-		Title:         "Test Proposal 1",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(400000), // High threshold
+		Title:        "Test Proposal 1",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(400000), // High threshold
 	}
 
 	err = cpg.CreateProposal(proposal1)
@@ -1309,14 +1309,14 @@ func TestProposalFinalization(t *testing.T) {
 
 	// Test proposal that meets both quorum and threshold
 	proposal2 := &GovernanceProposal{
-		Title:         "Test Proposal 2",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(100000),
-		Threshold:     big.NewInt(200000), // Lower threshold
+		Title:        "Test Proposal 2",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(100000),
+		Threshold:    big.NewInt(200000), // Lower threshold
 	}
 
 	err = cpg.CreateProposal(proposal2)
@@ -1359,14 +1359,14 @@ func TestExpiredProposal(t *testing.T) {
 
 	// Create proposal with very short voting period
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  1 * time.Millisecond, // Very short period
-		Quorum:        big.NewInt(1000000),  // Very high quorum to prevent finalization
-		Threshold:     big.NewInt(1000000),  // Very high threshold to prevent finalization
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 1 * time.Millisecond, // Very short period
+		Quorum:       big.NewInt(1000000),  // Very high quorum to prevent finalization
+		Threshold:    big.NewInt(1000000),  // Very high threshold to prevent finalization
 	}
 
 	err = cpg.CreateProposal(proposal)
@@ -1408,14 +1408,14 @@ func TestVoteReplacement(t *testing.T) {
 	require.NoError(t, err)
 
 	proposal := &GovernanceProposal{
-		Title:         "Test Proposal",
-		Description:   "Test Description",
-		ProposalType:  ProtocolUpgrade,
-		Creator:       "user1",
-		Protocols:     []ProtocolID{protocol.ID},
-		VotingPeriod:  24 * time.Hour,
-		Quorum:        big.NewInt(1000000),  // Very high quorum to prevent finalization
-		Threshold:     big.NewInt(1000000),  // Very high threshold to prevent finalization
+		Title:        "Test Proposal",
+		Description:  "Test Description",
+		ProposalType: ProtocolUpgrade,
+		Creator:      "user1",
+		Protocols:    []ProtocolID{protocol.ID},
+		VotingPeriod: 24 * time.Hour,
+		Quorum:       big.NewInt(1000000), // Very high quorum to prevent finalization
+		Threshold:    big.NewInt(1000000), // Very high threshold to prevent finalization
 	}
 
 	err = cpg.CreateProposal(proposal)

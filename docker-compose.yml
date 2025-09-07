@@ -1,0 +1,75 @@
+services:
+  adrenochain:
+    build: .
+    container_name: adrenochain-node
+    ports:
+      - "8080:8080"  # API
+      - "8081:8081"  # Health
+      - "9092:9090"  # Metrics (changed to avoid Kodi conflict)
+      - "30303:30303" # P2P
+    volumes:
+      - adrenochain_data:/app/data
+      - adrenochain_logs:/app/logs
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: adrenochain-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./scripts/deployment/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./scripts/deployment/prometheus_rules.yml:/etc/prometheus/prometheus_rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: adrenochain-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./scripts/deployment/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./scripts/deployment/grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: adrenochain-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  adrenochain_data:
+  adrenochain_logs:
+  prometheus_data:
+  grafana_data:
+  redis_data:
+
+networks:
+  default:
+    name: adrenochain-network

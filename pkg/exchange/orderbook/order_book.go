@@ -11,8 +11,8 @@ import (
 // OrderBook represents a trading order book for a specific trading pair
 type OrderBook struct {
 	tradingPair string
-	buyOrders   *OrderHeap  // Max heap for buy orders (highest price first)
-	sellOrders  *OrderHeap  // Min heap for sell orders (lowest price first)
+	buyOrders   *OrderHeap        // Max heap for buy orders (highest price first)
+	sellOrders  *OrderHeap        // Min heap for sell orders (lowest price first)
 	orders      map[string]*Order // Map of order ID to order for quick lookup
 	mutex       sync.RWMutex
 	lastUpdate  time.Time
@@ -34,9 +34,9 @@ func (e OrderBookError) Error() string {
 
 // Order book errors
 var (
-	ErrOrderNotFound     = errors.New("order not found")
-	ErrOrderAlreadyExists = errors.New("order already exists")
-	ErrOrderBookEmpty    = errors.New("order book is empty")
+	ErrOrderNotFound         = errors.New("order not found")
+	ErrOrderAlreadyExists    = errors.New("order already exists")
+	ErrOrderBookEmpty        = errors.New("order book is empty")
 	ErrInsufficientLiquidity = errors.New("insufficient liquidity")
 )
 
@@ -340,10 +340,10 @@ func (ob *OrderBook) GetDepth(levels int) ([]PriceLevel, error) {
 
 // PriceLevel represents a price level with aggregated volume
 type PriceLevel struct {
-	Price   *big.Int `json:"price"`
-	Volume  *big.Int `json:"volume"`
-	Side    OrderSide `json:"side"`
-	OrderCount int    `json:"order_count"`
+	Price      *big.Int  `json:"price"`
+	Volume     *big.Int  `json:"volume"`
+	Side       OrderSide `json:"side"`
+	OrderCount int       `json:"order_count"`
 }
 
 // getPriceLevels aggregates orders by price level
@@ -353,16 +353,16 @@ func (ob *OrderBook) getPriceLevels(h *OrderHeap, levels int, side OrderSide) []
 	}
 
 	priceLevels := make(map[string]*PriceLevel)
-	
+
 	// Clone the heap to avoid modifying the original
 	heapCopy := make(OrderHeap, h.Len())
 	copy(heapCopy, *h)
-	
+
 	// Process orders and aggregate by price
 	for heapCopy.Len() > 0 && len(priceLevels) < levels {
 		order := heap.Pop(&heapCopy).(*Order)
 		priceKey := order.Price.String()
-		
+
 		if level, exists := priceLevels[priceKey]; exists {
 			level.Volume.Add(level.Volume, order.RemainingQuantity)
 			level.OrderCount++
@@ -424,7 +424,7 @@ func (ob *OrderBook) CancelExpiredOrders() int {
 	// Remove expired orders from the order book
 	for _, orderID := range expiredOrders {
 		order := ob.orders[orderID]
-		
+
 		// Remove from appropriate heap
 		switch order.Side {
 		case OrderSideBuy:
@@ -432,7 +432,7 @@ func (ob *OrderBook) CancelExpiredOrders() int {
 		case OrderSideSell:
 			ob.removeFromHeap(ob.sellOrders, orderID)
 		}
-		
+
 		// Remove from orders map
 		delete(ob.orders, orderID)
 		cancelledCount++
@@ -480,10 +480,10 @@ func (h OrderHeap) Len() int { return len(h) }
 func (h OrderHeap) Less(i, j int) bool {
 	// For buy orders: higher price first, then earlier timestamp
 	// For sell orders: lower price first, then earlier timestamp
-	
+
 	orderI := h[i]
 	orderJ := h[j]
-	
+
 	// Handle nil prices (market orders)
 	if orderI.Price == nil && orderJ.Price == nil {
 		// Both are market orders, sort by timestamp
@@ -497,7 +497,7 @@ func (h OrderHeap) Less(i, j int) bool {
 		// orderJ is market order, it should come first
 		return false
 	}
-	
+
 	if orderI.Side == OrderSideBuy {
 		// Buy orders: higher price first
 		priceCmp := orderI.Price.Cmp(orderJ.Price)

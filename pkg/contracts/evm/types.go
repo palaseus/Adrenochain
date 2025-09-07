@@ -38,7 +38,7 @@ func NewEVMStack() *EVMStack {
 func (s *EVMStack) Push(value *big.Int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.items = append(s.items, new(big.Int).Set(value))
 }
 
@@ -46,14 +46,14 @@ func (s *EVMStack) Push(value *big.Int) {
 func (s *EVMStack) Pop() *big.Int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if len(s.items) == 0 {
 		return big.NewInt(0)
 	}
-	
+
 	value := s.items[len(s.items)-1]
 	s.items = s.items[:len(s.items)-1]
-	
+
 	return value
 }
 
@@ -61,11 +61,11 @@ func (s *EVMStack) Pop() *big.Int {
 func (s *EVMStack) Peek() *big.Int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	if len(s.items) == 0 {
 		return big.NewInt(0)
 	}
-	
+
 	return new(big.Int).Set(s.items[len(s.items)-1])
 }
 
@@ -73,7 +73,7 @@ func (s *EVMStack) Peek() *big.Int {
 func (s *EVMStack) Size() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	return len(s.items)
 }
 
@@ -81,7 +81,7 @@ func (s *EVMStack) Size() int {
 func (s *EVMStack) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.items = make([]*big.Int, 0)
 }
 
@@ -89,15 +89,15 @@ func (s *EVMStack) Reset() {
 func (s *EVMStack) Clone() *EVMStack {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	clone := &EVMStack{
 		items: make([]*big.Int, len(s.items)),
 	}
-	
+
 	for i, item := range s.items {
 		clone.items[i] = new(big.Int).Set(item)
 	}
-	
+
 	return clone
 }
 
@@ -118,7 +118,7 @@ func NewEVMMemory() *EVMMemory {
 func (m *EVMMemory) Set(offset uint64, data []byte) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	for i, b := range data {
 		m.data[offset+uint64(i)] = b
 	}
@@ -128,14 +128,14 @@ func (m *EVMMemory) Set(offset uint64, data []byte) {
 func (m *EVMMemory) Get(offset uint64, size uint64) []byte {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	result := make([]byte, size)
 	for i := uint64(0); i < size; i++ {
 		if b, exists := m.data[offset+i]; exists {
 			result[i] = b
 		}
 	}
-	
+
 	return result
 }
 
@@ -143,18 +143,18 @@ func (m *EVMMemory) Get(offset uint64, size uint64) []byte {
 func (m *EVMMemory) Size() uint64 {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	if len(m.data) == 0 {
 		return 0
 	}
-	
+
 	maxOffset := uint64(0)
 	for offset := range m.data {
 		if offset > maxOffset {
 			maxOffset = offset
 		}
 	}
-	
+
 	return maxOffset + 1
 }
 
@@ -162,7 +162,7 @@ func (m *EVMMemory) Size() uint64 {
 func (m *EVMMemory) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	m.data = make(map[uint64]byte)
 }
 
@@ -170,27 +170,27 @@ func (m *EVMMemory) Reset() {
 func (m *EVMMemory) Clone() *EVMMemory {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	clone := &EVMMemory{
 		data: make(map[uint64]byte),
 	}
-	
+
 	for offset, value := range m.data {
 		clone.data[offset] = value
 	}
-	
+
 	return clone
 }
 
 // Instruction represents an EVM instruction
 type Instruction struct {
-	Opcode   byte
-	Name     string
-	GasCost  uint64
-	Size     uint64
-	Halts    bool
-	Pops     int
-	Pushes   int
+	Opcode  byte
+	Name    string
+	GasCost uint64
+	Size    uint64
+	Halts   bool
+	Pops    int
+	Pushes  int
 }
 
 // Instructions maps opcodes to instruction definitions
@@ -206,7 +206,7 @@ var Instructions = map[byte]*Instruction{
 	0x08: {Opcode: 0x08, Name: "ADDMOD", GasCost: 8, Size: 1, Halts: false, Pops: 3, Pushes: 1},
 	0x09: {Opcode: 0x09, Name: "MULMOD", GasCost: 8, Size: 1, Halts: false, Pops: 3, Pushes: 1},
 	0x0A: {Opcode: 0x0A, Name: "SIGNEXTEND", GasCost: 5, Size: 1, Halts: false, Pops: 2, Pushes: 1},
-	
+
 	// Comparison operations
 	0x10: {Opcode: 0x10, Name: "LT", GasCost: 3, Size: 1, Halts: false, Pops: 2, Pushes: 1},
 	0x11: {Opcode: 0x11, Name: "GT", GasCost: 3, Size: 1, Halts: false, Pops: 2, Pushes: 1},
@@ -219,10 +219,10 @@ var Instructions = map[byte]*Instruction{
 	0x18: {Opcode: 0x18, Name: "XOR", GasCost: 3, Size: 1, Halts: false, Pops: 2, Pushes: 1},
 	0x19: {Opcode: 0x19, Name: "NOT", GasCost: 3, Size: 1, Halts: false, Pops: 1, Pushes: 1},
 	0x1A: {Opcode: 0x1A, Name: "BYTE", GasCost: 3, Size: 1, Halts: false, Pops: 2, Pushes: 1},
-	
+
 	// SHA3
 	0x20: {Opcode: 0x20, Name: "SHA3", GasCost: 30, Size: 1, Halts: false, Pops: 2, Pushes: 1},
-	
+
 	// Environment information
 	0x30: {Opcode: 0x30, Name: "ADDRESS", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x31: {Opcode: 0x31, Name: "BALANCE", GasCost: 400, Size: 1, Halts: false, Pops: 1, Pushes: 1},
@@ -240,7 +240,7 @@ var Instructions = map[byte]*Instruction{
 	0x3D: {Opcode: 0x3D, Name: "RETURNDATASIZE", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x3E: {Opcode: 0x3E, Name: "RETURNDATACOPY", GasCost: 3, Size: 1, Halts: false, Pops: 3, Pushes: 0},
 	0x3F: {Opcode: 0x3F, Name: "EXTCODEHASH", GasCost: 400, Size: 1, Halts: false, Pops: 1, Pushes: 1},
-	
+
 	// Block information
 	0x40: {Opcode: 0x40, Name: "BLOCKHASH", GasCost: 20, Size: 1, Halts: false, Pops: 1, Pushes: 1},
 	0x41: {Opcode: 0x41, Name: "COINBASE", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
@@ -250,7 +250,7 @@ var Instructions = map[byte]*Instruction{
 	0x45: {Opcode: 0x45, Name: "GASLIMIT", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x46: {Opcode: 0x46, Name: "CHAINID", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x47: {Opcode: 0x47, Name: "SELFBALANCE", GasCost: 5, Size: 1, Halts: false, Pops: 0, Pushes: 1},
-	
+
 	// Stack operations
 	0x50: {Opcode: 0x50, Name: "POP", GasCost: 2, Size: 1, Halts: false, Pops: 1, Pushes: 0},
 	0x51: {Opcode: 0x51, Name: "MLOAD", GasCost: 3, Size: 1, Halts: false, Pops: 1, Pushes: 1},
@@ -264,7 +264,7 @@ var Instructions = map[byte]*Instruction{
 	0x59: {Opcode: 0x59, Name: "MSIZE", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x5A: {Opcode: 0x5A, Name: "GAS", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x5B: {Opcode: 0x5B, Name: "JUMPDEST", GasCost: 1, Size: 1, Halts: false, Pops: 0, Pushes: 0},
-	
+
 	// Push operations
 	0x60: {Opcode: 0x60, Name: "PUSH1", GasCost: 3, Size: 2, Halts: false, Pops: 0, Pushes: 1},
 	0x61: {Opcode: 0x61, Name: "PUSH2", GasCost: 3, Size: 3, Halts: false, Pops: 0, Pushes: 1},
@@ -298,7 +298,7 @@ var Instructions = map[byte]*Instruction{
 	0x7D: {Opcode: 0x7D, Name: "PUSH30", GasCost: 3, Size: 31, Halts: false, Pops: 0, Pushes: 1},
 	0x7E: {Opcode: 0x7E, Name: "PUSH31", GasCost: 3, Size: 32, Halts: false, Pops: 0, Pushes: 1},
 	0x7F: {Opcode: 0x7F, Name: "PUSH32", GasCost: 3, Size: 33, Halts: false, Pops: 0, Pushes: 1},
-	
+
 	// Duplication operations
 	0x80: {Opcode: 0x80, Name: "DUP1", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x81: {Opcode: 0x81, Name: "DUP2", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 1},
@@ -316,7 +316,7 @@ var Instructions = map[byte]*Instruction{
 	0x8D: {Opcode: 0x8D, Name: "DUP14", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x8E: {Opcode: 0x8E, Name: "DUP15", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x8F: {Opcode: 0x8F, Name: "DUP16", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 1},
-	
+
 	// Exchange operations
 	0x90: {Opcode: 0x90, Name: "SWAP1", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 0},
 	0x91: {Opcode: 0x91, Name: "SWAP2", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 0},
@@ -334,14 +334,14 @@ var Instructions = map[byte]*Instruction{
 	0x9D: {Opcode: 0x9D, Name: "SWAP14", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 0},
 	0x9E: {Opcode: 0x9E, Name: "SWAP15", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 0},
 	0x9F: {Opcode: 0x9F, Name: "SWAP16", GasCost: 3, Size: 1, Halts: false, Pops: 0, Pushes: 0},
-	
+
 	// Logging operations
 	0xA0: {Opcode: 0xA0, Name: "LOG0", GasCost: 375, Size: 1, Halts: false, Pops: 2, Pushes: 0},
 	0xA1: {Opcode: 0xA1, Name: "LOG1", GasCost: 750, Size: 1, Halts: false, Pops: 3, Pushes: 0},
 	0xA2: {Opcode: 0xA2, Name: "LOG2", GasCost: 1125, Size: 1, Halts: false, Pops: 4, Pushes: 0},
 	0xA3: {Opcode: 0xA3, Name: "LOG3", GasCost: 1500, Size: 1, Halts: false, Pops: 5, Pushes: 0},
 	0xA4: {Opcode: 0xA4, Name: "LOG4", GasCost: 1875, Size: 1, Halts: false, Pops: 6, Pushes: 0},
-	
+
 	// System operations
 	0xF0: {Opcode: 0xF0, Name: "CREATE", GasCost: 32000, Size: 1, Halts: false, Pops: 3, Pushes: 1},
 	0xF1: {Opcode: 0xF1, Name: "CALL", GasCost: 0, Size: 1, Halts: false, Pops: 7, Pushes: 1},

@@ -3,10 +3,10 @@ package sync
 import (
 	"fmt"
 
+	"github.com/libp2p/go-libp2p"
 	"github.com/palaseus/adrenochain/pkg/chain"
 	"github.com/palaseus/adrenochain/pkg/consensus"
 	"github.com/palaseus/adrenochain/pkg/storage"
-	"github.com/libp2p/go-libp2p"
 )
 
 // Example that shows how to use the sync package

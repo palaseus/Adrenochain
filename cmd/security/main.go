@@ -19,12 +19,12 @@ func main() {
 	// Create the real security validator
 	validator := security.NewRealSecurityValidator()
 
-		// Run all real security validations
+	// Run all real security validations
 	fmt.Println("Starting comprehensive real security validation...")
 	if err := validator.RunAllRealSecurityValidations(); err != nil {
 		log.Fatalf("Security validation failed: %v", err)
 	}
-	
+
 	// Generate security report
 	fmt.Println("\nGenerating comprehensive security report...")
 	if err := generateSecurityReport(validator); err != nil {
@@ -195,7 +195,7 @@ func saveSecurityReportToFile(report SecurityReport) error {
 	if err := os.MkdirAll(testResultsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create test_results directory: %v", err)
 	}
-	
+
 	filename := filepath.Join(testResultsDir, fmt.Sprintf("security_report_%s.json", time.Now().Format("20060102_150405")))
 
 	file, err := os.Create(filename)

@@ -892,7 +892,7 @@ func TestConcurrency(t *testing.T) {
 
 func TestMemorySafety(t *testing.T) {
 	pdf := NewPrivateDeFi(PrivateDeFiConfig{})
-	
+
 	// Test that modifications to returned data don't affect internal state
 	amount := big.NewInt(1000)
 	tx, err := pdf.CreateConfidentialTransaction(
@@ -906,29 +906,29 @@ func TestMemorySafety(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create transaction: %v", err)
 	}
-	
+
 	// Store the original ID
 	originalID := tx.ID
-	
+
 	// Get the transaction again to test the copy mechanism
 	retrievedTx, err := pdf.GetTransaction(originalID)
 	if err != nil {
 		t.Fatalf("Failed to get transaction: %v", err)
 	}
-	
+
 	// Modify the retrieved transaction
 	retrievedTx.ID = "Modified ID"
-	
+
 	// Verify internal state wasn't affected
 	storedTx, err := pdf.GetTransaction(originalID)
 	if err != nil {
 		t.Fatalf("Failed to get stored transaction: %v", err)
 	}
-	
+
 	if storedTx.ID == "Modified ID" {
 		t.Error("Expected internal state to not be affected by external modifications")
 	}
-	
+
 	if storedTx.ID != originalID {
 		t.Errorf("Expected stored transaction ID to remain unchanged, got %s", storedTx.ID)
 	}

@@ -845,25 +845,25 @@ func TestEdgeCases(t *testing.T) {
 		t.Error("Expected sentiment to be analyzed for empty content")
 	}
 
-		// Test with very long content that exceeds length factor calculation
+	// Test with very long content that exceeds length factor calculation
 	veryLongContent := ""
 	for i := 0; i < 100; i++ {
 		veryLongContent += "Long. "
 	}
-	
+
 	longData := &SentimentData{
 		SourceID:  "source2",
 		Content:   veryLongContent,
 		Language:  "en",
 		Timestamp: time.Now(),
 	}
-	
+
 	sa.AddData(longData)
-	
+
 	if longData.Sentiment == nil {
 		t.Error("Expected sentiment to be analyzed for very long content")
 	}
-	
+
 	// Verify length factor is capped at 1.0
 	expectedLengthFactor := 1.0
 	actualLengthFactor := float64(len(veryLongContent)) / 1000.0

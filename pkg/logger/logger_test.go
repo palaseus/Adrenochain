@@ -515,7 +515,7 @@ func TestLogger_RotateFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logFile := filepath.Join(tempDir, "test.log")
-	
+
 	// Create initial log file
 	file, err := os.Create(logFile)
 	if err != nil {
@@ -526,7 +526,7 @@ func TestLogger_RotateFile(t *testing.T) {
 	// Create some backup files to test rotation
 	backup1 := logFile + ".1"
 	backup2 := logFile + ".2"
-	
+
 	// Create backup files with some content
 	os.WriteFile(backup1, []byte("backup1"), 0644)
 	os.WriteFile(backup2, []byte("backup2"), 0644)
@@ -586,7 +586,7 @@ func TestLogger_RotateFileWithError(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logFile := filepath.Join(tempDir, "test.log")
-	
+
 	// Create initial log file
 	file, err := os.Create(logFile)
 	if err != nil {
@@ -623,13 +623,13 @@ func TestLogger_RotateLogFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	logFile := filepath.Join(tempDir, "test.log")
-	
+
 	// Create initial log file with some content to make it large enough
 	file, err := os.Create(logFile)
 	if err != nil {
 		t.Fatalf("Failed to create log file: %v", err)
 	}
-	
+
 	// Write enough content to trigger rotation
 	largeContent := strings.Repeat("x", 1024*1024) // 1MB
 	file.WriteString(largeContent)
@@ -647,10 +647,10 @@ func TestLogger_RotateLogFile(t *testing.T) {
 
 	// Start the rotation goroutine
 	go logger.rotateLogFile(config)
-	
+
 	// Wait a bit for rotation to potentially happen
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Stop the rotation by closing the file
 	if logger.file != nil {
 		logger.file.Close()

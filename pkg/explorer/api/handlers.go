@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/palaseus/adrenochain/pkg/explorer/service"
 	"github.com/gorilla/mux"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 )
 
 // ExplorerHandler handles HTTP requests for the blockchain explorer

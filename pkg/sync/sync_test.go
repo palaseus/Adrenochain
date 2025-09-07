@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -775,7 +775,7 @@ func TestChainAdapterMethods(t *testing.T) {
 		Header: &block.Header{
 			Version:       1,
 			PrevBlockHash: mockChain.tipHash, // Use the current tip hash
-			MerkleRoot:    make([]byte, 32), // Will be calculated by CalculateHash()
+			MerkleRoot:    make([]byte, 32),  // Will be calculated by CalculateHash()
 			Timestamp:     time.Now(),
 			Difficulty:    1000,
 			Nonce:         101,
@@ -823,10 +823,10 @@ func TestSyncManagerEdgeCases(t *testing.T) {
 
 	syncManager := NewSyncManager(mockChain, mockChain, mockStorage, config, host)
 
-		// Test starting sync when already syncing
+	// Test starting sync when already syncing
 	err := syncManager.StartSync()
 	assert.NoError(t, err)
-	
+
 	err = syncManager.StartSync() // Should error when already syncing
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "sync already in progress")
@@ -916,7 +916,7 @@ func TestSyncManagerStatusUpdates(t *testing.T) {
 
 	// Check that peers were added to the map
 	assert.Equal(t, 2, len(syncManager.peers))
-	
+
 	// Note: PeersConnected in status is not automatically updated
 	// We're testing the actual peer management functionality
 
@@ -1372,58 +1372,56 @@ func TestSyncManagerValidateCheckpoint(t *testing.T) {
 func TestChainAdapterWithRealChain(t *testing.T) {
 	// Create a temporary directory for test data
 	tempDir := t.TempDir()
-	
+
 	// Create storage
 	storageInstance, err := storage.NewStorage(&storage.StorageConfig{DataDir: tempDir})
 	require.NoError(t, err)
 	defer storageInstance.Close()
-	
+
 	// Create chain config
 	chainConfig := &chain.ChainConfig{
 		MaxReorgDepth: 10,
 	}
-	
+
 	// Create consensus config
 	consensusConfig := &consensus.ConsensusConfig{
-		TargetBlockTime: 10 * time.Second,
+		TargetBlockTime:              10 * time.Second,
 		DifficultyAdjustmentInterval: 2016,
 	}
-	
+
 	// Create a real chain
 	realChain, err := chain.NewChain(chainConfig, consensusConfig, storageInstance)
 	require.NoError(t, err)
 	defer realChain.Close()
-	
+
 	// Create chain adapter
 	adapter := NewChainAdapter(realChain)
-	
+
 	// Test GetHeight
 	height := adapter.GetHeight()
 	assert.Equal(t, uint64(0), height) // Genesis block height
-	
+
 	// Test GetTipHash
 	tipHash := adapter.GetTipHash()
 	assert.NotNil(t, tipHash)
 	assert.Len(t, tipHash, 32)
-	
+
 	// Test GetBlockByHeight
 	genesisBlock := adapter.GetBlockByHeight(0)
 	assert.NotNil(t, genesisBlock)
 	assert.Equal(t, uint64(0), genesisBlock.Header.Height)
-	
+
 	// Test GetBlock
 	genesisHash := genesisBlock.CalculateHash()
 	blockByHash := adapter.GetBlock(genesisHash)
 	assert.NotNil(t, blockByHash)
 	assert.Equal(t, genesisBlock, blockByHash)
-	
+
 	// Test AddBlock with invalid block type
 	err = adapter.AddBlock("invalid_block")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid block type")
-	
+
 	// Note: Testing AddBlock with a real block requires more complex setup
 	// due to consensus validation rules. The basic functionality is tested above.
 }
-
-

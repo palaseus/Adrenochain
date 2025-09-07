@@ -10,35 +10,35 @@ import (
 
 // CrossChainDeFi represents the main cross-chain DeFi system
 type CrossChainDeFi struct {
-	ID              string
-	Networks        map[string]*BlockchainNetwork
-	LendingPools    map[string]*LendingPool
-	YieldFarms      map[string]*YieldFarm
-	LiquidityPools  map[string]*LiquidityPool
-	AssetRegistry   *AssetRegistry
-	PriceOracle     *PriceOracle
-	RiskManager     *RiskManager
-	CreatedAt       time.Time
-	mu              sync.RWMutex
-	config          DeFiConfig
-	metrics         DeFiMetrics
+	ID             string
+	Networks       map[string]*BlockchainNetwork
+	LendingPools   map[string]*LendingPool
+	YieldFarms     map[string]*YieldFarm
+	LiquidityPools map[string]*LiquidityPool
+	AssetRegistry  *AssetRegistry
+	PriceOracle    *PriceOracle
+	RiskManager    *RiskManager
+	CreatedAt      time.Time
+	mu             sync.RWMutex
+	config         DeFiConfig
+	metrics        DeFiMetrics
 }
 
 // BlockchainNetwork represents a blockchain network in the DeFi system
 type BlockchainNetwork struct {
-	ID              string
-	Name            string
-	ChainID         uint64
-	NativeToken     string
-	BlockTime       time.Duration
-	FinalityBlocks  uint64
-	GasPrice        *big.Int
-	Status          NetworkStatus
-	Validators      []string
-	CreatedAt       time.Time
-	LastUpdate      time.Time
-	config          NetworkConfig
-	metrics         NetworkMetrics
+	ID             string
+	Name           string
+	ChainID        uint64
+	NativeToken    string
+	BlockTime      time.Duration
+	FinalityBlocks uint64
+	GasPrice       *big.Int
+	Status         NetworkStatus
+	Validators     []string
+	CreatedAt      time.Time
+	LastUpdate     time.Time
+	config         NetworkConfig
+	metrics        NetworkMetrics
 }
 
 // NetworkStatus represents the status of a blockchain network
@@ -53,11 +53,11 @@ const (
 
 // NetworkConfig holds configuration for blockchain networks
 type NetworkConfig struct {
-	MaxGasLimit      uint64
-	MinConfirmations uint64
+	MaxGasLimit        uint64
+	MinConfirmations   uint64
 	EnableFastFinality bool
-	SecurityLevel    SecurityLevel
-	CrossChainEnabled bool
+	SecurityLevel      SecurityLevel
+	CrossChainEnabled  bool
 }
 
 // SecurityLevel defines the security level for network operations
@@ -81,21 +81,21 @@ type NetworkMetrics struct {
 
 // LendingPool represents a cross-chain lending pool
 type LendingPool struct {
-	ID              string
-	NetworkID       string
-	Asset           string
-	TotalSupply     *big.Int
-	TotalBorrowed   *big.Int
-	UtilizationRate float64
-	APY             float64
-	CollateralRatio float64
+	ID                   string
+	NetworkID            string
+	Asset                string
+	TotalSupply          *big.Int
+	TotalBorrowed        *big.Int
+	UtilizationRate      float64
+	APY                  float64
+	CollateralRatio      float64
 	LiquidationThreshold float64
-	Status          PoolStatus
-	CreatedAt       time.Time
-	LastUpdate      time.Time
-	mu              sync.RWMutex
-	config          LendingPoolConfig
-	metrics         LendingPoolMetrics
+	Status               PoolStatus
+	CreatedAt            time.Time
+	LastUpdate           time.Time
+	mu                   sync.RWMutex
+	config               LendingPoolConfig
+	metrics              LendingPoolMetrics
 }
 
 // PoolStatus represents the status of a lending pool
@@ -110,13 +110,13 @@ const (
 
 // LendingPoolConfig holds configuration for lending pools
 type LendingPoolConfig struct {
-	MaxUtilizationRate    float64
-	MinCollateralRatio    float64
-	LiquidationThreshold  float64
-	InterestRateModel     InterestRateModel
-	EnableFlashLoans      bool
-	MaxFlashLoanAmount    *big.Int
-	SecurityLevel         SecurityLevel
+	MaxUtilizationRate   float64
+	MinCollateralRatio   float64
+	LiquidationThreshold float64
+	InterestRateModel    InterestRateModel
+	EnableFlashLoans     bool
+	MaxFlashLoanAmount   *big.Int
+	SecurityLevel        SecurityLevel
 }
 
 // InterestRateModel defines how interest rates are calculated
@@ -168,99 +168,99 @@ const (
 
 // YieldFarmConfig holds configuration for yield farms
 type YieldFarmConfig struct {
-	MinStakeAmount    *big.Int
-	MaxStakeAmount    *big.Int
-	LockPeriod        time.Duration
-	EnableCompound    bool
-	RewardMultiplier  float64
-	SecurityLevel     SecurityLevel
+	MinStakeAmount   *big.Int
+	MaxStakeAmount   *big.Int
+	LockPeriod       time.Duration
+	EnableCompound   bool
+	RewardMultiplier float64
+	SecurityLevel    SecurityLevel
 }
 
 // YieldFarmMetrics tracks yield farm performance
 type YieldFarmMetrics struct {
-	TotalStakers      uint64
-	ActiveStakers     uint64
-	TotalRewards      *big.Int
-	ClaimedRewards    *big.Int
-	AverageAPY        float64
-	LastUpdate        time.Time
+	TotalStakers   uint64
+	ActiveStakers  uint64
+	TotalRewards   *big.Int
+	ClaimedRewards *big.Int
+	AverageAPY     float64
+	LastUpdate     time.Time
 }
 
 // LiquidityPool represents a cross-chain liquidity pool
 type LiquidityPool struct {
-	ID              string
-	NetworkID       string
-	TokenA          string
-	TokenB          string
-	ReserveA        *big.Int
-	ReserveB        *big.Int
-	TotalSupply     *big.Int
-	Fee             float64
-	Status          PoolStatus
-	CreatedAt       time.Time
-	LastUpdate      time.Time
-	mu              sync.RWMutex
-	config          LiquidityPoolConfig
-	metrics         LiquidityPoolMetrics
+	ID          string
+	NetworkID   string
+	TokenA      string
+	TokenB      string
+	ReserveA    *big.Int
+	ReserveB    *big.Int
+	TotalSupply *big.Int
+	Fee         float64
+	Status      PoolStatus
+	CreatedAt   time.Time
+	LastUpdate  time.Time
+	mu          sync.RWMutex
+	config      LiquidityPoolConfig
+	metrics     LiquidityPoolMetrics
 }
 
 // LiquidityPoolConfig holds configuration for liquidity pools
 type LiquidityPoolConfig struct {
-	MinLiquidity     *big.Int
-	MaxSlippage      float64
-	EnableRebalancing bool
+	MinLiquidity       *big.Int
+	MaxSlippage        float64
+	EnableRebalancing  bool
 	RebalanceThreshold float64
-	SecurityLevel    SecurityLevel
+	SecurityLevel      SecurityLevel
 }
 
 // LiquidityPoolMetrics tracks liquidity pool performance
 type LiquidityPoolMetrics struct {
-	TotalSwaps       uint64
-	TotalVolume      *big.Int
-	TotalFees        *big.Int
-	AverageSlippage  float64
-	LastUpdate       time.Time
+	TotalSwaps      uint64
+	TotalVolume     *big.Int
+	TotalFees       *big.Int
+	AverageSlippage float64
+	LastUpdate      time.Time
 }
 
 // RegistryConfig holds configuration for the asset registry
 type RegistryConfig struct {
-	MaxAssets        uint64
-	MaxCrossChainPaths uint64
+	MaxAssets             uint64
+	MaxCrossChainPaths    uint64
 	EnableAssetValidation bool
-	SecurityLevel    SecurityLevel
+	SecurityLevel         SecurityLevel
 }
 
 // RegistryMetrics tracks registry performance
 type RegistryMetrics struct {
-	TotalAssets      uint64
-	TotalPaths       uint64
-	LastUpdate       time.Time
+	TotalAssets uint64
+	TotalPaths  uint64
+	LastUpdate  time.Time
 }
 
 // AssetRegistry manages cross-chain asset information
 type AssetRegistry struct {
-	Assets           map[string]*Asset
-	CrossChainPaths  map[string]*CrossChainPath
+	Assets            map[string]*Asset
+	CrossChainPaths   map[string]*CrossChainPath
 	SupportedNetworks []string
-	CreatedAt        time.Time
-	LastUpdate       time.Time
-	mu               sync.RWMutex
-	config           RegistryConfig
-	metrics          RegistryMetrics
+	CreatedAt         time.Time
+	LastUpdate        time.Time
+	mu                sync.RWMutex
+	config            RegistryConfig
+	metrics           RegistryMetrics
 }
 
 // Asset represents a cross-chain asset
 type Asset struct {
-	Symbol          string
-	Name            string
-	Decimals        uint8
-	Networks        map[string]*AssetNetwork
-	TotalSupply     *big.Int
-	MarketCap       *big.Int
-	Price           *big.Float
-	Status          AssetStatus
-	CreatedAt       time.Time
-	LastUpdate      time.Time
+	Symbol      string
+	Name        string
+	Decimals    uint8
+	Networks    map[string]*AssetNetwork
+	TotalSupply *big.Int
+	MarketCap   *big.Int
+	Price       *big.Float
+	Status      AssetStatus
+	CreatedAt   time.Time
+	LastUpdate  time.Time
 }
 
 // AssetStatus represents the status of an asset
@@ -284,17 +284,17 @@ type AssetNetwork struct {
 
 // CrossChainPath represents a path for cross-chain asset transfers
 type CrossChainPath struct {
-	ID              string
-	SourceNetwork   string
-	TargetNetwork   string
-	Asset           string
-	Bridge          string
-	Fee             *big.Int
-	MinAmount       *big.Int
-	MaxAmount       *big.Int
-	Status          PathStatus
-	CreatedAt       time.Time
-	LastUpdate      time.Time
+	ID            string
+	SourceNetwork string
+	TargetNetwork string
+	Asset         string
+	Bridge        string
+	Fee           *big.Int
+	MinAmount     *big.Int
+	MaxAmount     *big.Int
+	Status        PathStatus
+	CreatedAt     time.Time
+	LastUpdate    time.Time
 }
 
 // PathStatus represents the status of a cross-chain path
@@ -309,22 +309,22 @@ const (
 
 // PriceOracle provides cross-chain price feeds
 type PriceOracle struct {
-	PriceFeeds      map[string]*PriceFeed
-	UpdateInterval  time.Duration
-	LastUpdate      time.Time
-	mu              sync.RWMutex
-	config          OracleConfig
-	metrics         OracleMetrics
+	PriceFeeds     map[string]*PriceFeed
+	UpdateInterval time.Duration
+	LastUpdate     time.Time
+	mu             sync.RWMutex
+	config         OracleConfig
+	metrics        OracleMetrics
 }
 
 // PriceFeed represents a price feed for an asset
 type PriceFeed struct {
-	Asset           string
-	Price           *big.Float
-	Timestamp       time.Time
-	Source          string
-	Confidence      float64
-	Status          FeedStatus
+	Asset      string
+	Price      *big.Float
+	Timestamp  time.Time
+	Source     string
+	Confidence float64
+	Status     FeedStatus
 }
 
 // FeedStatus represents the status of a price feed
@@ -339,40 +339,40 @@ const (
 
 // OracleConfig holds configuration for the price oracle
 type OracleConfig struct {
-	MaxPriceAge      time.Duration
-	MinConfidence    float64
-	UpdateFrequency  time.Duration
+	MaxPriceAge       time.Duration
+	MinConfidence     float64
+	UpdateFrequency   time.Duration
 	EnableAggregation bool
-	SecurityLevel    SecurityLevel
+	SecurityLevel     SecurityLevel
 }
 
 // OracleMetrics tracks oracle performance
 type OracleMetrics struct {
-	TotalUpdates     uint64
+	TotalUpdates      uint64
 	SuccessfulUpdates uint64
-	FailedUpdates    uint64
-	AverageLatency   time.Duration
-	LastUpdate       time.Time
+	FailedUpdates     uint64
+	AverageLatency    time.Duration
+	LastUpdate        time.Time
 }
 
 // RiskManager manages risk across the DeFi system
 type RiskManager struct {
-	RiskMetrics     map[string]*RiskMetric
-	RiskLimits      map[string]*RiskLimit
-	Alerts          []RiskAlert
-	LastUpdate      time.Time
-	mu              sync.RWMutex
-	config          RiskConfig
-	metrics         RiskMetrics
+	RiskMetrics map[string]*RiskMetric
+	RiskLimits  map[string]*RiskLimit
+	Alerts      []RiskAlert
+	LastUpdate  time.Time
+	mu          sync.RWMutex
+	config      RiskConfig
+	metrics     RiskMetrics
 }
 
 // RiskMetric represents a risk metric
 type RiskMetric struct {
-	Name            string
-	Value           float64
-	Threshold       float64
-	Status          RiskStatus
-	LastUpdate      time.Time
+	Name       string
+	Value      float64
+	Threshold  float64
+	Status     RiskStatus
+	LastUpdate time.Time
 }
 
 // RiskStatus represents the status of a risk metric
@@ -387,10 +387,10 @@ const (
 
 // RiskLimit represents a risk limit
 type RiskLimit struct {
-	Name            string
-	Value           float64
-	Action          RiskAction
-	LastUpdate      time.Time
+	Name       string
+	Value      float64
+	Action     RiskAction
+	LastUpdate time.Time
 }
 
 // RiskAction represents an action to take when risk limits are exceeded
@@ -405,12 +405,12 @@ const (
 
 // RiskAlert represents a risk alert
 type RiskAlert struct {
-	ID              string
-	Type            string
-	Severity        RiskStatus
-	Message         string
-	Timestamp       time.Time
-	Acknowledged    bool
+	ID           string
+	Type         string
+	Severity     RiskStatus
+	Message      string
+	Timestamp    time.Time
+	Acknowledged bool
 }
 
 // RiskConfig holds configuration for risk management
@@ -424,17 +424,17 @@ type RiskConfig struct {
 
 // RiskMetrics tracks risk management performance
 type RiskMetrics struct {
-	TotalAlerts      uint64
-	ActiveAlerts     uint64
-	ResolvedAlerts   uint64
-	LastUpdate       time.Time
+	TotalAlerts    uint64
+	ActiveAlerts   uint64
+	ResolvedAlerts uint64
+	LastUpdate     time.Time
 }
 
 // DeFiConfig holds configuration for the DeFi system
 type DeFiConfig struct {
-	MaxNetworks      uint64
-	MaxLendingPools  uint64
-	MaxYieldFarms    uint64
+	MaxNetworks       uint64
+	MaxLendingPools   uint64
+	MaxYieldFarms     uint64
 	MaxLiquidityPools uint64
 	EnableCrossChain  bool
 	SecurityLevel     SecurityLevel
@@ -442,12 +442,12 @@ type DeFiConfig struct {
 
 // DeFiMetrics tracks overall DeFi system performance
 type DeFiMetrics struct {
-	TotalNetworks     uint64
-	TotalLendingPools uint64
-	TotalYieldFarms   uint64
+	TotalNetworks       uint64
+	TotalLendingPools   uint64
+	TotalYieldFarms     uint64
 	TotalLiquidityPools uint64
-	TotalTVL          *big.Int
-	LastUpdate        time.Time
+	TotalTVL            *big.Int
+	LastUpdate          time.Time
 }
 
 // NewCrossChainDeFi creates a new cross-chain DeFi system
@@ -488,8 +488,8 @@ func NewBlockchainNetwork(name string, chainID uint64, nativeToken string, confi
 		Name:           name,
 		ChainID:        chainID,
 		NativeToken:    nativeToken,
-		BlockTime:      time.Second * 15, // Default 15 second block time
-		FinalityBlocks: 100,              // Default 100 block finality
+		BlockTime:      time.Second * 15,        // Default 15 second block time
+		FinalityBlocks: 100,                     // Default 100 block finality
 		GasPrice:       big.NewInt(20000000000), // 20 Gwei default
 		Status:         NetworkStatusActive,
 		Validators:     []string{},
@@ -503,20 +503,20 @@ func NewBlockchainNetwork(name string, chainID uint64, nativeToken string, confi
 // NewLendingPool creates a new lending pool
 func NewLendingPool(networkID, asset string, config LendingPoolConfig) *LendingPool {
 	return &LendingPool{
-		ID:              generatePoolID(),
-		NetworkID:       networkID,
-		Asset:           asset,
-		TotalSupply:     big.NewInt(0),
-		TotalBorrowed:   big.NewInt(0),
-		UtilizationRate: 0.0,
-		APY:             0.0,
-		CollateralRatio: config.MinCollateralRatio,
+		ID:                   generatePoolID(),
+		NetworkID:            networkID,
+		Asset:                asset,
+		TotalSupply:          big.NewInt(0),
+		TotalBorrowed:        big.NewInt(0),
+		UtilizationRate:      0.0,
+		APY:                  0.0,
+		CollateralRatio:      config.MinCollateralRatio,
 		LiquidationThreshold: config.LiquidationThreshold,
-		Status:          PoolStatusActive,
-		CreatedAt:       time.Now(),
-		LastUpdate:      time.Now(),
-		config:          config,
-		metrics:         LendingPoolMetrics{},
+		Status:               PoolStatusActive,
+		CreatedAt:            time.Now(),
+		LastUpdate:           time.Now(),
+		config:               config,
+		metrics:              LendingPoolMetrics{},
 	}
 }
 
@@ -554,18 +554,18 @@ func NewLiquidityPool(networkID, tokenA, tokenB string, config LiquidityPoolConf
 	}
 
 	return &LiquidityPool{
-		ID:              generatePoolID(),
-		NetworkID:       networkID,
-		TokenA:          tokenA,
-		TokenB:          tokenB,
-		ReserveA:        big.NewInt(0),
-		ReserveB:        big.NewInt(0),
-		TotalSupply:     big.NewInt(0),
-		Fee:             0.003, // 0.3% default fee
-		Status:          PoolStatusActive,
-		CreatedAt:       time.Now(),
-		LastUpdate:      time.Now(),
-		config:          config,
+		ID:          generatePoolID(),
+		NetworkID:   networkID,
+		TokenA:      tokenA,
+		TokenB:      tokenB,
+		ReserveA:    big.NewInt(0),
+		ReserveB:    big.NewInt(0),
+		TotalSupply: big.NewInt(0),
+		Fee:         0.003, // 0.3% default fee
+		Status:      PoolStatusActive,
+		CreatedAt:   time.Now(),
+		LastUpdate:  time.Now(),
+		config:      config,
 		metrics: LiquidityPoolMetrics{
 			TotalVolume: big.NewInt(0),
 			TotalFees:   big.NewInt(0),
@@ -576,13 +576,13 @@ func NewLiquidityPool(networkID, tokenA, tokenB string, config LiquidityPoolConf
 // NewAssetRegistry creates a new asset registry
 func NewAssetRegistry() *AssetRegistry {
 	return &AssetRegistry{
-		Assets:           make(map[string]*Asset),
-		CrossChainPaths:  make(map[string]*CrossChainPath),
+		Assets:            make(map[string]*Asset),
+		CrossChainPaths:   make(map[string]*CrossChainPath),
 		SupportedNetworks: []string{},
-		CreatedAt:        time.Now(),
-		LastUpdate:       time.Now(),
-		config:           RegistryConfig{},
-		metrics:          RegistryMetrics{},
+		CreatedAt:         time.Now(),
+		LastUpdate:        time.Now(),
+		config:            RegistryConfig{},
+		metrics:           RegistryMetrics{},
 	}
 }
 
@@ -866,7 +866,7 @@ func (pool *LendingPool) updateAPY() {
 	// Simple APY calculation based on utilization rate
 	baseRate := pool.config.InterestRateModel.BaseRate
 	multiplier := pool.config.InterestRateModel.Multiplier
-	
+
 	pool.APY = baseRate + (multiplier * pool.UtilizationRate)
 }
 
@@ -899,14 +899,14 @@ func (pool *LiquidityPool) calculateSwapOutput(amountIn, reserveIn, reserveOut *
 	// dy = (y * dx) / (x + dx)
 	numerator := new(big.Int).Mul(reserveOut, amountIn)
 	denominator := new(big.Int).Add(reserveIn, amountIn)
-	
+
 	// Apply fee
 	feeMultiplier := new(big.Int).Sub(big.NewInt(1000), big.NewInt(int64(pool.Fee*1000)))
 	amountOut := new(big.Int).Div(
 		new(big.Int).Mul(numerator, feeMultiplier),
 		new(big.Int).Mul(denominator, big.NewInt(1000)),
 	)
-	
+
 	return amountOut
 }
 

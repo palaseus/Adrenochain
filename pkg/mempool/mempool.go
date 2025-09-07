@@ -201,7 +201,7 @@ func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction 
 	// we need to collect all transactions first, then reverse the order
 	// to get highest fee rate first
 	var tempTransactions []*TransactionEntry
-	
+
 	// Collect all transactions from the min-heap
 	for feeQueue.Len() > 0 {
 		entry := heap.Pop(&feeQueue).(*TransactionEntry)
@@ -218,7 +218,7 @@ func (mp *Mempool) GetTransactionsForBlock(maxSize uint64) []*block.Transaction 
 	// We'll use a simple sort since we're dealing with a small number of transactions
 	for i := len(tempTransactions) - 1; i >= 0; i-- {
 		entry := tempTransactions[i]
-		
+
 		// Check if adding this transaction would exceed block size
 		if currentSize+entry.Size > maxSize {
 			break

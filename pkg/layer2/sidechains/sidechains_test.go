@@ -645,17 +645,17 @@ func TestCreateCrossChainTransaction(t *testing.T) {
 
 	// Test creating valid cross-chain transaction
 	tx := &CrossChainTransaction{
-		BridgeID:   bridge.ID,
-		Direction:  MainToSidechain,
-		Amount:     big.NewInt(500),
-		Asset:      "ETH",
-		Sender:     "0xSender",
-		Recipient:  "0xRecipient",
-		Nonce:      1,
-		GasLimit:   21000,
-		GasPrice:   big.NewInt(20000000000),
-		Data:       []byte("transfer"),
-		Signature:  "0xSignature",
+		BridgeID:  bridge.ID,
+		Direction: MainToSidechain,
+		Amount:    big.NewInt(500),
+		Asset:     "ETH",
+		Sender:    "0xSender",
+		Recipient: "0xRecipient",
+		Nonce:     1,
+		GasLimit:  21000,
+		GasPrice:  big.NewInt(20000000000),
+		Data:      []byte("transfer"),
+		Signature: "0xSignature",
 	}
 
 	err = sm.CreateCrossChainTransaction(tx)
@@ -764,7 +764,7 @@ func TestCreateCrossChainTransactionValidation(t *testing.T) {
 
 	// Test missing recipient
 	tx = &CrossChainTransaction{
-		BridgeID: bridge.ID,
+		BridgeID:  bridge.ID,
 		Direction: MainToSidechain,
 		Amount:    big.NewInt(500),
 		Asset:     "ETH",

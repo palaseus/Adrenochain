@@ -14,51 +14,51 @@ import (
 // SecurityConfig holds security configuration for production deployment
 type SecurityConfig struct {
 	// Cryptographic settings
-	KeySize           int
-	HashAlgorithm     string
-	EncryptionMethod  string
-	
+	KeySize          int
+	HashAlgorithm    string
+	EncryptionMethod string
+
 	// Network security
-	EnableTLS         bool
-	TLSConfig         *tls.Config
-	RateLimiting      bool
-	MaxConnections    int
-	
+	EnableTLS      bool
+	TLSConfig      *tls.Config
+	RateLimiting   bool
+	MaxConnections int
+
 	// Access control
-	EnableAuth        bool
-	AdminWhitelist    []engine.Address
-	APIKeyRequired    bool
-	
+	EnableAuth     bool
+	AdminWhitelist []engine.Address
+	APIKeyRequired bool
+
 	// Monitoring and logging
-	EnableAuditLog    bool
-	LogRetentionDays  int
-	AlertThresholds   map[string]int
-	
+	EnableAuditLog   bool
+	LogRetentionDays int
+	AlertThresholds  map[string]int
+
 	// Threat detection
-	EnableIntrusionDetection bool
+	EnableIntrusionDetection    bool
 	SuspiciousActivityThreshold int
-	BlockedIPs        []string
+	BlockedIPs                  []string
 }
 
 // DefaultSecurityConfig returns production-ready security configuration
 func DefaultSecurityConfig() *SecurityConfig {
 	return &SecurityConfig{
-		KeySize:           256,
-		HashAlgorithm:     "SHA-256",
-		EncryptionMethod:  "AES-256-GCM",
-		EnableTLS:         true,
-		RateLimiting:      true,
-		MaxConnections:    1000,
-		EnableAuth:        true,
-		APIKeyRequired:    true,
-		EnableAuditLog:    true,
-		LogRetentionDays:  90,
+		KeySize:          256,
+		HashAlgorithm:    "SHA-256",
+		EncryptionMethod: "AES-256-GCM",
+		EnableTLS:        true,
+		RateLimiting:     true,
+		MaxConnections:   1000,
+		EnableAuth:       true,
+		APIKeyRequired:   true,
+		EnableAuditLog:   true,
+		LogRetentionDays: 90,
 		AlertThresholds: map[string]int{
-			"failed_logins": 5,
+			"failed_logins":  5,
 			"suspicious_ips": 10,
-			"api_abuse": 100,
+			"api_abuse":      100,
 		},
-		EnableIntrusionDetection: true,
+		EnableIntrusionDetection:    true,
 		SuspiciousActivityThreshold: 3,
 	}
 }
@@ -136,7 +136,7 @@ func (sm *SecurityManager) ValidateAPIKey(apiKey string) bool {
 	if !sm.config.APIKeyRequired {
 		return true
 	}
-	
+
 	// In production, this would validate against a secure key store
 	// For now, we'll use a simple validation
 	return len(apiKey) >= 32 && len(apiKey) <= 128
@@ -146,7 +146,7 @@ func (sm *SecurityManager) ValidateAPIKey(apiKey string) bool {
 func (sm *SecurityManager) CheckRateLimit(identifier string, maxRequests int, window time.Duration) bool {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	tracker, exists := sm.rateLimit[identifier]
 	if !exists {
 		tracker = &RateLimitTracker{
@@ -156,11 +156,11 @@ func (sm *SecurityManager) CheckRateLimit(identifier string, maxRequests int, wi
 		}
 		sm.rateLimit[identifier] = tracker
 	}
-	
+
 	// Clean old requests outside the window
 	now := time.Now()
 	cutoff := now.Add(-window)
-	
+
 	var validRequests []time.Time
 	for _, reqTime := range tracker.Requests {
 		if reqTime.After(cutoff) {
@@ -168,12 +168,12 @@ func (sm *SecurityManager) CheckRateLimit(identifier string, maxRequests int, wi
 		}
 	}
 	tracker.Requests = validRequests
-	
+
 	// Check if limit exceeded
 	if len(tracker.Requests) >= maxRequests {
 		return false // Rate limited
 	}
-	
+
 	// Add current request
 	tracker.Requests = append(tracker.Requests, now)
 	return true // Allowed
@@ -183,7 +183,7 @@ func (sm *SecurityManager) CheckRateLimit(identifier string, maxRequests int, wi
 func (sm *SecurityManager) LogSecurityEvent(eventType, description, ipAddress, userID string, severity SecuritySeverity, metadata map[string]interface{}) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	event := SecurityEvent{
 		Timestamp:   time.Now(),
 		EventType:   eventType,
@@ -193,9 +193,9 @@ func (sm *SecurityManager) LogSecurityEvent(eventType, description, ipAddress, u
 		Severity:    severity,
 		Metadata:    metadata,
 	}
-	
+
 	sm.auditLog = append(sm.auditLog, event)
-	
+
 	// Clean old audit logs
 	if sm.config.LogRetentionDays > 0 {
 		cutoff := time.Now().AddDate(0, 0, -sm.config.LogRetentionDays)
@@ -207,7 +207,7 @@ func (sm *SecurityManager) LogSecurityEvent(eventType, description, ipAddress, u
 		}
 		sm.auditLog = validLogs
 	}
-	
+
 	// Check alert thresholds
 	sm.checkAlertThresholds(eventType, ipAddress)
 }
@@ -217,13 +217,13 @@ func (sm *SecurityManager) checkAlertThresholds(eventType, ipAddress string) {
 	// Count recent events of this type
 	recentEvents := 0
 	cutoff := time.Now().Add(-time.Hour) // Check last hour
-	
+
 	for _, event := range sm.auditLog {
 		if event.EventType == eventType && event.Timestamp.After(cutoff) {
 			recentEvents++
 		}
 	}
-	
+
 	// Check if threshold exceeded
 	if threshold, exists := sm.config.AlertThresholds[eventType]; exists && recentEvents >= threshold {
 		// Create alert event directly to avoid recursive call
@@ -240,7 +240,7 @@ func (sm *SecurityManager) checkAlertThresholds(eventType, ipAddress string) {
 				"threshold":  threshold,
 			},
 		}
-		
+
 		// Add alert event directly to audit log
 		sm.auditLog = append(sm.auditLog, alertEvent)
 	}
@@ -251,7 +251,7 @@ func (sm *SecurityManager) BlockIP(ipAddress string, duration time.Duration) {
 	sm.mu.Lock()
 	sm.blockedIPs[ipAddress] = time.Now().Add(duration)
 	sm.mu.Unlock()
-	
+
 	// Create block event directly to avoid recursive call
 	blockEvent := SecurityEvent{
 		Timestamp:   time.Now(),
@@ -264,7 +264,7 @@ func (sm *SecurityManager) BlockIP(ipAddress string, duration time.Duration) {
 			"block_duration": duration.String(),
 		},
 	}
-	
+
 	// Add block event directly to audit log
 	sm.auditLog = append(sm.auditLog, blockEvent)
 }
@@ -273,7 +273,7 @@ func (sm *SecurityManager) BlockIP(ipAddress string, duration time.Duration) {
 func (sm *SecurityManager) IsIPBlocked(ipAddress string) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	if blockTime, exists := sm.blockedIPs[ipAddress]; exists {
 		if time.Now().Before(blockTime) {
 			return true // Still blocked
@@ -288,7 +288,7 @@ func (sm *SecurityManager) IsIPBlocked(ipAddress string) bool {
 func (sm *SecurityManager) GetAuditLog() []SecurityEvent {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	// Return a copy to prevent external modification
 	logs := make([]SecurityEvent, len(sm.auditLog))
 	copy(logs, sm.auditLog)
@@ -299,20 +299,20 @@ func (sm *SecurityManager) GetAuditLog() []SecurityEvent {
 func (sm *SecurityManager) GetSecurityStats() map[string]interface{} {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	
+
 	stats := map[string]interface{}{
-		"total_events":     len(sm.auditLog),
-		"blocked_ips":      len(sm.blockedIPs),
+		"total_events":        len(sm.auditLog),
+		"blocked_ips":         len(sm.blockedIPs),
 		"rate_limit_trackers": len(sm.rateLimit),
 	}
-	
+
 	// Count events by severity
 	severityCounts := make(map[SecuritySeverity]int)
 	for _, event := range sm.auditLog {
 		severityCounts[event.Severity]++
 	}
 	stats["severity_counts"] = severityCounts
-	
+
 	return stats
 }
 
@@ -320,7 +320,7 @@ func (sm *SecurityManager) GetSecurityStats() map[string]interface{} {
 func (sm *SecurityManager) CleanupExpiredBlocks() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	
+
 	now := time.Now()
 	for ip, blockTime := range sm.blockedIPs {
 		if now.After(blockTime) {

@@ -112,7 +112,7 @@ func (m *Miner) StopMining() {
 	}
 
 	m.isMining = false
-	
+
 	// Signal the mining goroutine to stop
 	if m.stopMining != nil {
 		select {
@@ -192,7 +192,7 @@ func (m *Miner) mineBlocks() {
 			// Try to mine a new block
 			if err := m.mineNextBlock(); err != nil {
 				// Log error but continue mining
-				
+
 			}
 
 			// Mark mining as complete
@@ -236,7 +236,7 @@ func (m *Miner) mineNextBlock() error {
 	if err := m.chain.AddBlock(newBlock); err != nil {
 		if err.Error() == "block already exists" {
 			// This can happen due to race conditions, log but don't treat as critical error
-			
+
 			return err
 		}
 		return fmt.Errorf("failed to add block to chain: %w", err)
@@ -246,8 +246,6 @@ func (m *Miner) mineNextBlock() error {
 	if m.onBlockMined != nil {
 		m.onBlockMined(newBlock)
 	}
-
-	
 
 	return nil
 }
@@ -404,7 +402,7 @@ func (m *Miner) GetMiningStats() map[string]interface{} {
 	stats := make(map[string]interface{})
 	stats["isMining"] = m.isMining
 	stats["currentBlock"] = m.currentBlock
-	
+
 	// Safely get chain information
 	if bestBlock := m.chain.GetBestBlock(); bestBlock != nil {
 		stats["difficulty"] = bestBlock.Header.Difficulty
@@ -415,13 +413,13 @@ func (m *Miner) GetMiningStats() map[string]interface{} {
 		stats["height"] = 0
 		stats["bestBlockHash"] = "none"
 	}
-	
+
 	stats["config"] = map[string]interface{}{
-		"miningEnabled":   m.config.MiningEnabled,
-		"miningThreads":   m.config.MiningThreads,
-		"blockTime":       m.config.BlockTime.String(),
-		"maxBlockSize":    m.config.MaxBlockSize,
-		"coinbaseReward":  m.config.CoinbaseReward,
+		"miningEnabled":  m.config.MiningEnabled,
+		"miningThreads":  m.config.MiningThreads,
+		"blockTime":      m.config.BlockTime.String(),
+		"maxBlockSize":   m.config.MaxBlockSize,
+		"coinbaseReward": m.config.CoinbaseReward,
 	}
 
 	return stats

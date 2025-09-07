@@ -30,18 +30,18 @@ const (
 
 // StressResistantStrategy represents a strategy that can handle market stress
 type StressResistantStrategy struct {
-	ID                    string
-	BaseStrategy          *Strategy
-	RiskManager           *AdaptiveRiskManager
-	StressDetector        *StressDetector
-	EmergencyProtocol     *EmergencyProtocolManager
-	RegimeAdaptation      *RegimeAdaptationEngine
-	VolatilityAnalyzer    *VolatilityAnalyzer
-	LiquidityManager      *LiquidityManager
-	BlackSwanProtection   *BlackSwanProtectionSystem
-	mu                    sync.RWMutex
-	ctx                   context.Context
-	cancel                context.CancelFunc
+	ID                  string
+	BaseStrategy        *Strategy
+	RiskManager         *AdaptiveRiskManager
+	StressDetector      *StressDetector
+	EmergencyProtocol   *EmergencyProtocolManager
+	RegimeAdaptation    *RegimeAdaptationEngine
+	VolatilityAnalyzer  *VolatilityAnalyzer
+	LiquidityManager    *LiquidityManager
+	BlackSwanProtection *BlackSwanProtectionSystem
+	mu                  sync.RWMutex
+	ctx                 context.Context
+	cancel              context.CancelFunc
 }
 
 // AdaptiveRiskManager manages risk dynamically
@@ -62,10 +62,10 @@ type StressDetector struct {
 
 // EmergencyProtocolManager handles emergency protocols
 type EmergencyProtocolManager struct {
-	ID              string
-	Protocols       map[string]string
-	IsActive        bool
-	ActivationTime  time.Time
+	ID             string
+	Protocols      map[string]string
+	IsActive       bool
+	ActivationTime time.Time
 }
 
 // RegimeAdaptationEngine adapts to market regime changes
@@ -78,18 +78,18 @@ type RegimeAdaptationEngine struct {
 
 // VolatilityAnalyzer analyzes market volatility
 type VolatilityAnalyzer struct {
-	ID              string
+	ID                string
 	CurrentVolatility float64
 	VolatilityHistory []float64
-	Threshold        float64
+	Threshold         float64
 }
 
 // LiquidityManager manages liquidity during stress
 type LiquidityManager struct {
-	ID              string
+	ID               string
 	CurrentLiquidity float64
-	MinLiquidity    float64
-	LiquidityBuffer float64
+	MinLiquidity     float64
+	LiquidityBuffer  float64
 }
 
 // BlackSwanProtectionSystem provides protection against black swan events
@@ -103,19 +103,19 @@ type BlackSwanProtectionSystem struct {
 // NewStressResistantStrategy creates a new stress-resistant strategy
 func NewStressResistantStrategy(baseStrategy *Strategy) *StressResistantStrategy {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &StressResistantStrategy{
-		ID:                    fmt.Sprintf("stress_strategy_%d", time.Now().UnixNano()),
-		BaseStrategy:          baseStrategy,
-		RiskManager:           &AdaptiveRiskManager{ID: "risk_mgr", MaxRisk: 0.3, CurrentRisk: 0.1},
-		StressDetector:        &StressDetector{ID: "stress_detector", StressThreshold: 0.7},
-		EmergencyProtocol:     &EmergencyProtocolManager{ID: "emergency", Protocols: make(map[string]string)},
-		RegimeAdaptation:      &RegimeAdaptationEngine{ID: "regime_adapt", CurrentRegime: MarketRegimeSideways, AdaptationRules: make(map[MarketRegime]string)},
-		VolatilityAnalyzer:    &VolatilityAnalyzer{ID: "vol_analyzer", Threshold: 0.5},
-		LiquidityManager:      &LiquidityManager{ID: "liquidity_mgr", MinLiquidity: 0.2, LiquidityBuffer: 0.1},
-		BlackSwanProtection:   &BlackSwanProtectionSystem{ID: "black_swan_prot", ProtectionLevel: 0.8},
-		ctx:                   ctx,
-		cancel:                cancel,
+		ID:                  fmt.Sprintf("stress_strategy_%d", time.Now().UnixNano()),
+		BaseStrategy:        baseStrategy,
+		RiskManager:         &AdaptiveRiskManager{ID: "risk_mgr", MaxRisk: 0.3, CurrentRisk: 0.1},
+		StressDetector:      &StressDetector{ID: "stress_detector", StressThreshold: 0.7},
+		EmergencyProtocol:   &EmergencyProtocolManager{ID: "emergency", Protocols: make(map[string]string)},
+		RegimeAdaptation:    &RegimeAdaptationEngine{ID: "regime_adapt", CurrentRegime: MarketRegimeSideways, AdaptationRules: make(map[MarketRegime]string)},
+		VolatilityAnalyzer:  &VolatilityAnalyzer{ID: "vol_analyzer", Threshold: 0.5},
+		LiquidityManager:    &LiquidityManager{ID: "liquidity_mgr", MinLiquidity: 0.2, LiquidityBuffer: 0.1},
+		BlackSwanProtection: &BlackSwanProtectionSystem{ID: "black_swan_prot", ProtectionLevel: 0.8},
+		ctx:                 ctx,
+		cancel:              cancel,
 	}
 }
 
@@ -123,37 +123,37 @@ func NewStressResistantStrategy(baseStrategy *Strategy) *StressResistantStrategy
 func (srs *StressResistantStrategy) HandleMarketStress(stressLevel float64, regime MarketRegime) error {
 	srs.mu.Lock()
 	defer srs.mu.Unlock()
-	
+
 	// Update stress detection
 	srs.StressDetector.CurrentStress = stressLevel
 	srs.StressDetector.StressHistory = append(srs.StressDetector.StressHistory, stressLevel)
-	
+
 	// Update regime detection
 	srs.RegimeAdaptation.CurrentRegime = regime
 	srs.RegimeAdaptation.RegimeHistory = append(srs.RegimeAdaptation.RegimeHistory, regime)
-	
+
 	// Check if emergency protocols should be activated
 	if stressLevel > srs.StressDetector.StressThreshold {
 		srs.activateEmergencyProtocols()
 	}
-	
+
 	// Adapt to new regime
 	srs.adaptToRegime(regime)
-	
+
 	// Adjust risk management
 	srs.adjustRiskManagement(stressLevel)
-	
+
 	// Update volatility analysis
 	srs.updateVolatilityAnalysis(stressLevel)
-	
+
 	// Manage liquidity
 	srs.manageLiquidity(stressLevel)
-	
+
 	// Check for black swan conditions
 	if stressLevel > 0.9 {
 		srs.activateBlackSwanProtection()
 	}
-	
+
 	return nil
 }
 
@@ -161,7 +161,7 @@ func (srs *StressResistantStrategy) HandleMarketStress(stressLevel float64, regi
 func (srs *StressResistantStrategy) activateEmergencyProtocols() {
 	srs.EmergencyProtocol.IsActive = true
 	srs.EmergencyProtocol.ActivationTime = time.Now()
-	
+
 	// Add emergency protocols
 	srs.EmergencyProtocol.Protocols["stop_loss"] = "activated"
 	srs.EmergencyProtocol.Protocols["position_reduction"] = "activated"
@@ -200,7 +200,7 @@ func (srs *StressResistantStrategy) adjustRiskManagement(stressLevel float64) {
 func (srs *StressResistantStrategy) updateVolatilityAnalysis(stressLevel float64) {
 	srs.VolatilityAnalyzer.CurrentVolatility = stressLevel
 	srs.VolatilityAnalyzer.VolatilityHistory = append(srs.VolatilityAnalyzer.VolatilityHistory, stressLevel)
-	
+
 	// Keep only last 100 volatility readings
 	if len(srs.VolatilityAnalyzer.VolatilityHistory) > 100 {
 		srs.VolatilityAnalyzer.VolatilityHistory = srs.VolatilityAnalyzer.VolatilityHistory[1:]
@@ -229,9 +229,9 @@ func (srs *StressResistantStrategy) activateBlackSwanProtection() {
 func (srs *StressResistantStrategy) GetStressLevel() StressLevel {
 	srs.mu.RLock()
 	defer srs.mu.RUnlock()
-	
+
 	stress := srs.StressDetector.CurrentStress
-	
+
 	if stress < 0.3 {
 		return StressLevelLow
 	} else if stress < 0.6 {
@@ -247,7 +247,7 @@ func (srs *StressResistantStrategy) GetStressLevel() StressLevel {
 func (srs *StressResistantStrategy) GetCurrentRegime() MarketRegime {
 	srs.mu.RLock()
 	defer srs.mu.RUnlock()
-	
+
 	return srs.RegimeAdaptation.CurrentRegime
 }
 
@@ -255,7 +255,7 @@ func (srs *StressResistantStrategy) GetCurrentRegime() MarketRegime {
 func (srs *StressResistantStrategy) IsEmergencyActive() bool {
 	srs.mu.RLock()
 	defer srs.mu.RUnlock()
-	
+
 	return srs.EmergencyProtocol.IsActive
 }
 
@@ -263,7 +263,7 @@ func (srs *StressResistantStrategy) IsEmergencyActive() bool {
 func (srs *StressResistantStrategy) GetRiskLevel() float64 {
 	srs.mu.RLock()
 	defer srs.mu.RUnlock()
-	
+
 	return srs.RiskManager.CurrentRisk
 }
 

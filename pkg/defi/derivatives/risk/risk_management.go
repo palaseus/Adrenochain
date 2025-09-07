@@ -9,9 +9,9 @@ import (
 
 // RiskMetric represents a risk measurement
 type RiskMetric struct {
-	Value     *big.Float
-	Type      MetricType
-	Timestamp time.Time
+	Value      *big.Float
+	Type       MetricType
+	Timestamp  time.Time
 	Confidence *big.Float
 }
 
@@ -39,16 +39,16 @@ type Portfolio struct {
 
 // Position represents a position in the portfolio
 type Position struct {
-	ID           string
-	AssetID      string
-	Size         *big.Float
-	Price        *big.Float
-	Value        *big.Float
-	Weight       *big.Float
-	Returns      []*big.Float
-	Volatility   *big.Float
-	Beta         *big.Float
-	UpdatedAt    time.Time
+	ID         string
+	AssetID    string
+	Size       *big.Float
+	Price      *big.Float
+	Value      *big.Float
+	Weight     *big.Float
+	Returns    []*big.Float
+	Volatility *big.Float
+	Beta       *big.Float
+	UpdatedAt  time.Time
 }
 
 // MarketData represents historical market data for risk calculations
@@ -61,9 +61,9 @@ type MarketData struct {
 
 // RiskManager handles portfolio risk calculations and management
 type RiskManager struct {
-	Portfolios map[string]*Portfolio
-	MarketData map[string]*MarketData
-	RiskFreeRate *big.Float
+	Portfolios      map[string]*Portfolio
+	MarketData      map[string]*MarketData
+	RiskFreeRate    *big.Float
 	ConfidenceLevel *big.Float
 }
 
@@ -72,15 +72,15 @@ func NewRiskManager(riskFreeRate, confidenceLevel *big.Float) (*RiskManager, err
 	if riskFreeRate == nil || confidenceLevel == nil {
 		return nil, errors.New("risk-free rate and confidence level cannot be nil")
 	}
-	
+
 	if confidenceLevel.Cmp(big.NewFloat(0)) <= 0 || confidenceLevel.Cmp(big.NewFloat(1)) >= 0 {
 		return nil, errors.New("confidence level must be between 0 and 1")
 	}
-	
+
 	return &RiskManager{
-		Portfolios:     make(map[string]*Portfolio),
-		MarketData:     make(map[string]*MarketData),
-		RiskFreeRate:   new(big.Float).Copy(riskFreeRate),
+		Portfolios:      make(map[string]*Portfolio),
+		MarketData:      make(map[string]*MarketData),
+		RiskFreeRate:    new(big.Float).Copy(riskFreeRate),
 		ConfidenceLevel: new(big.Float).Copy(confidenceLevel),
 	}, nil
 }
@@ -90,9 +90,9 @@ func NewPortfolio(id string) (*Portfolio, error) {
 	if id == "" {
 		return nil, errors.New("portfolio ID cannot be empty")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Portfolio{
 		ID:          id,
 		Positions:   make(map[string]*Position),
@@ -116,20 +116,20 @@ func NewPosition(id, assetID string, size, price *big.Float) (*Position, error) 
 	if price == nil || price.Sign() <= 0 {
 		return nil, errors.New("position price must be positive")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Position{
-		ID:        id,
-		AssetID:   assetID,
-		Size:      new(big.Float).Copy(size),
-		Price:     new(big.Float).Copy(price),
-		Value:     new(big.Float).Mul(size, price),
-		Weight:    big.NewFloat(0),
-		Returns:   make([]*big.Float, 0),
+		ID:         id,
+		AssetID:    assetID,
+		Size:       new(big.Float).Copy(size),
+		Price:      new(big.Float).Copy(price),
+		Value:      new(big.Float).Mul(size, price),
+		Weight:     big.NewFloat(0),
+		Returns:    make([]*big.Float, 0),
 		Volatility: big.NewFloat(0),
-		Beta:      big.NewFloat(0),
-		UpdatedAt: now,
+		Beta:       big.NewFloat(0),
+		UpdatedAt:  now,
 	}, nil
 }
 
@@ -138,13 +138,13 @@ func (p *Portfolio) AddPosition(position *Position) error {
 	if position == nil {
 		return errors.New("position cannot be nil")
 	}
-	
+
 	p.Positions[position.ID] = position
 	p.UpdatedAt = time.Now()
-	
+
 	// Recalculate weights
 	p.recalculateWeights()
-	
+
 	return nil
 }
 
@@ -153,28 +153,28 @@ func (p *Portfolio) RemovePosition(positionID string) error {
 	if positionID == "" {
 		return errors.New("position ID cannot be empty")
 	}
-	
+
 	if _, exists := p.Positions[positionID]; !exists {
 		return errors.New("position not found")
 	}
-	
+
 	delete(p.Positions, positionID)
 	p.UpdatedAt = time.Now()
-	
+
 	// Recalculate weights
 	p.recalculateWeights()
-	
+
 	return nil
 }
 
 // recalculateWeights recalculates position weights based on current values
 func (p *Portfolio) recalculateWeights() {
 	totalValue := p.GetTotalValue()
-	
+
 	if totalValue.Sign() <= 0 {
 		return
 	}
-	
+
 	for _, position := range p.Positions {
 		position.Weight = new(big.Float).Quo(position.Value, totalValue)
 	}
@@ -183,11 +183,11 @@ func (p *Portfolio) recalculateWeights() {
 // GetTotalValue calculates the total portfolio value
 func (p *Portfolio) GetTotalValue() *big.Float {
 	totalValue := big.NewFloat(0)
-	
+
 	for _, position := range p.Positions {
 		totalValue.Add(totalValue, position.Value)
 	}
-	
+
 	return totalValue
 }
 
@@ -199,33 +199,33 @@ func (rm *RiskManager) CalculateVaR(portfolio *Portfolio, timeHorizon *big.Float
 	if timeHorizon == nil || timeHorizon.Sign() <= 0 {
 		return nil, errors.New("time horizon must be positive")
 	}
-	
+
 	// Calculate portfolio returns
 	portfolioReturns := rm.calculatePortfolioReturns(portfolio)
 	if len(portfolioReturns) == 0 {
 		return nil, errors.New("insufficient data for VaR calculation")
 	}
-	
+
 	// Calculate mean and standard deviation
 	mean := rm.calculateMean(portfolioReturns)
 	stdDev := rm.calculateStandardDeviation(portfolioReturns, mean)
-	
+
 	// Calculate VaR using normal distribution assumption
 	// VaR = mean - (z-score * stdDev * sqrt(timeHorizon))
 	zScore := rm.getZScore(rm.ConfidenceLevel)
-	
+
 	timeHorizonFloat, _ := timeHorizon.Float64()
 	sqrtTimeHorizon := math.Sqrt(timeHorizonFloat)
-	
+
 	zScoreFloat, _ := zScore.Float64()
 	stdDevFloat, _ := stdDev.Float64()
-	
+
 	varValue := zScoreFloat * stdDevFloat * sqrtTimeHorizon
 	varValue = mean - varValue
-	
+
 	// Convert back to big.Float
 	varResult := big.NewFloat(varValue)
-	
+
 	// Store the risk metric
 	portfolio.RiskMetrics[VaR] = &RiskMetric{
 		Value:      varResult,
@@ -233,7 +233,7 @@ func (rm *RiskManager) CalculateVaR(portfolio *Portfolio, timeHorizon *big.Float
 		Timestamp:  time.Now(),
 		Confidence: new(big.Float).Copy(rm.ConfidenceLevel),
 	}
-	
+
 	return varResult, nil
 }
 
@@ -245,20 +245,20 @@ func (rm *RiskManager) CalculateCVaR(portfolio *Portfolio, timeHorizon *big.Floa
 	if timeHorizon == nil || timeHorizon.Sign() <= 0 {
 		return nil, errors.New("time horizon must be positive")
 	}
-	
+
 	// Calculate VaR first
 	varValue, err := rm.CalculateVaR(portfolio, timeHorizon)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Calculate CVaR as the expected loss beyond VaR
 	portfolioReturns := rm.calculatePortfolioReturns(portfolio)
 	varFloat, _ := varValue.Float64()
-	
+
 	var sumLosses float64
 	var countLosses int
-	
+
 	for _, ret := range portfolioReturns {
 		retFloat, _ := ret.Float64()
 		if retFloat < varFloat {
@@ -266,14 +266,14 @@ func (rm *RiskManager) CalculateCVaR(portfolio *Portfolio, timeHorizon *big.Floa
 			countLosses++
 		}
 	}
-	
+
 	var cvarValue float64
 	if countLosses > 0 {
 		cvarValue = sumLosses / float64(countLosses)
 	}
-	
+
 	cvarResult := big.NewFloat(cvarValue)
-	
+
 	// Store the risk metric
 	portfolio.RiskMetrics[CVaR] = &RiskMetric{
 		Value:      cvarResult,
@@ -281,7 +281,7 @@ func (rm *RiskManager) CalculateCVaR(portfolio *Portfolio, timeHorizon *big.Floa
 		Timestamp:  time.Now(),
 		Confidence: new(big.Float).Copy(rm.ConfidenceLevel),
 	}
-	
+
 	return cvarResult, nil
 }
 
@@ -290,15 +290,15 @@ func (rm *RiskManager) CalculateVolatility(portfolio *Portfolio) (*big.Float, er
 	if portfolio == nil {
 		return nil, errors.New("portfolio cannot be nil")
 	}
-	
+
 	portfolioReturns := rm.calculatePortfolioReturns(portfolio)
 	if len(portfolioReturns) == 0 {
 		return nil, errors.New("insufficient data for volatility calculation")
 	}
-	
+
 	mean := rm.calculateMean(portfolioReturns)
 	volatility := rm.calculateStandardDeviation(portfolioReturns, mean)
-	
+
 	// Store the risk metric
 	portfolio.RiskMetrics[Volatility] = &RiskMetric{
 		Value:      volatility,
@@ -306,7 +306,7 @@ func (rm *RiskManager) CalculateVolatility(portfolio *Portfolio) (*big.Float, er
 		Timestamp:  time.Now(),
 		Confidence: big.NewFloat(0),
 	}
-	
+
 	return volatility, nil
 }
 
@@ -315,23 +315,23 @@ func (rm *RiskManager) CalculateSharpeRatio(portfolio *Portfolio) (*big.Float, e
 	if portfolio == nil {
 		return nil, errors.New("portfolio cannot be nil")
 	}
-	
+
 	// Calculate excess return (portfolio return - risk-free rate)
 	portfolioReturns := rm.calculatePortfolioReturns(portfolio)
 	if len(portfolioReturns) == 0 {
 		return nil, errors.New("insufficient data for Sharpe ratio calculation")
 	}
-	
+
 	meanReturn := rm.calculateMean(portfolioReturns)
 	meanReturnBig := big.NewFloat(meanReturn)
 	excessReturn := new(big.Float).Sub(meanReturnBig, rm.RiskFreeRate)
-	
+
 	// Calculate volatility
 	volatility, err := rm.CalculateVolatility(portfolio)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Sharpe ratio = excess return / volatility
 	var sharpeRatio *big.Float
 	if volatility.Sign() > 0 {
@@ -339,7 +339,7 @@ func (rm *RiskManager) CalculateSharpeRatio(portfolio *Portfolio) (*big.Float, e
 	} else {
 		sharpeRatio = big.NewFloat(0)
 	}
-	
+
 	// Store the risk metric
 	portfolio.RiskMetrics[SharpeRatio] = &RiskMetric{
 		Value:      sharpeRatio,
@@ -347,7 +347,7 @@ func (rm *RiskManager) CalculateSharpeRatio(portfolio *Portfolio) (*big.Float, e
 		Timestamp:  time.Now(),
 		Confidence: big.NewFloat(0),
 	}
-	
+
 	return sharpeRatio, nil
 }
 
@@ -356,30 +356,30 @@ func (rm *RiskManager) CalculateMaxDrawdown(portfolio *Portfolio) (*big.Float, e
 	if portfolio == nil {
 		return nil, errors.New("portfolio cannot be nil")
 	}
-	
+
 	portfolioValues := rm.calculatePortfolioValues(portfolio)
 	if len(portfolioValues) == 0 {
 		return nil, errors.New("insufficient data for drawdown calculation")
 	}
-	
+
 	var maxDrawdown float64
 	var peak float64
-	
+
 	for i, value := range portfolioValues {
 		valueFloat, _ := value.Float64()
-		
+
 		if i == 0 || valueFloat > peak {
 			peak = valueFloat
 		}
-		
+
 		drawdown := (peak - valueFloat) / peak
 		if drawdown > maxDrawdown {
 			maxDrawdown = drawdown
 		}
 	}
-	
+
 	maxDrawdownResult := big.NewFloat(maxDrawdown)
-	
+
 	// Store the risk metric
 	portfolio.RiskMetrics[MaxDrawdown] = &RiskMetric{
 		Value:      maxDrawdownResult,
@@ -387,7 +387,7 @@ func (rm *RiskManager) CalculateMaxDrawdown(portfolio *Portfolio) (*big.Float, e
 		Timestamp:  time.Now(),
 		Confidence: big.NewFloat(0),
 	}
-	
+
 	return maxDrawdownResult, nil
 }
 
@@ -399,47 +399,47 @@ func (rm *RiskManager) CalculateBeta(portfolio *Portfolio, benchmarkReturns []*b
 	if len(benchmarkReturns) == 0 {
 		return nil, errors.New("benchmark returns cannot be empty")
 	}
-	
+
 	portfolioReturns := rm.calculatePortfolioReturns(portfolio)
 	if len(portfolioReturns) == 0 {
 		return nil, errors.New("insufficient data for beta calculation")
 	}
-	
+
 	// Ensure both arrays have the same length
 	minLength := len(portfolioReturns)
 	if len(benchmarkReturns) < minLength {
 		minLength = len(benchmarkReturns)
 	}
-	
+
 	// Calculate covariance and variance
 	var covariance float64
 	var benchmarkVariance float64
-	
+
 	portfolioMean := rm.calculateMean(portfolioReturns[:minLength])
 	benchmarkMean := rm.calculateMean(benchmarkReturns[:minLength])
-	
+
 	for i := 0; i < minLength; i++ {
 		portfolioRet, _ := portfolioReturns[i].Float64()
 		benchmarkRet, _ := benchmarkReturns[i].Float64()
-		
+
 		portfolioDiff := portfolioRet - portfolioMean
 		benchmarkDiff := benchmarkRet - benchmarkMean
-		
+
 		covariance += portfolioDiff * benchmarkDiff
 		benchmarkVariance += benchmarkDiff * benchmarkDiff
 	}
-	
+
 	covariance /= float64(minLength)
 	benchmarkVariance /= float64(minLength)
-	
+
 	// Beta = covariance / benchmark variance
 	var beta float64
 	if benchmarkVariance > 0 {
 		beta = covariance / benchmarkVariance
 	}
-	
+
 	betaResult := big.NewFloat(beta)
-	
+
 	// Store the risk metric
 	portfolio.RiskMetrics[Beta] = &RiskMetric{
 		Value:      betaResult,
@@ -447,7 +447,7 @@ func (rm *RiskManager) CalculateBeta(portfolio *Portfolio, benchmarkReturns []*b
 		Timestamp:  time.Now(),
 		Confidence: big.NewFloat(0),
 	}
-	
+
 	return betaResult, nil
 }
 
@@ -459,31 +459,31 @@ func (rm *RiskManager) StressTest(portfolio *Portfolio, scenarios []StressScenar
 	if len(scenarios) == 0 {
 		return nil, errors.New("stress scenarios cannot be empty")
 	}
-	
+
 	results := make(map[string]*big.Float)
-	
+
 	for _, scenario := range scenarios {
 		// Apply scenario to portfolio
 		scenarioValue := rm.applyStressScenario(portfolio, scenario)
 		results[scenario.Name] = scenarioValue
 	}
-	
+
 	return results, nil
 }
 
 // StressScenario represents a stress test scenario
 type StressScenario struct {
-	Name        string
-	AssetShocks map[string]*big.Float // Percentage shocks to apply
-	CorrelationShock *big.Float       // Correlation breakdown shock
-	VolatilityShock *big.Float        // Volatility increase shock
+	Name             string
+	AssetShocks      map[string]*big.Float // Percentage shocks to apply
+	CorrelationShock *big.Float            // Correlation breakdown shock
+	VolatilityShock  *big.Float            // Volatility increase shock
 }
 
 // applyStressScenario applies a stress scenario to the portfolio
 func (rm *RiskManager) applyStressScenario(portfolio *Portfolio, scenario StressScenario) *big.Float {
 	// Calculate base portfolio value
 	baseValue := portfolio.GetTotalValue()
-	
+
 	// Apply asset-specific shocks
 	var stressedValue *big.Float
 	for assetID, shock := range scenario.AssetShocks {
@@ -491,7 +491,7 @@ func (rm *RiskManager) applyStressScenario(portfolio *Portfolio, scenario Stress
 			if position.AssetID == assetID {
 				shockMultiplier := new(big.Float).Add(big.NewFloat(1), shock)
 				positionValue := new(big.Float).Mul(position.Value, shockMultiplier)
-				
+
 				if stressedValue == nil {
 					stressedValue = positionValue
 				} else {
@@ -500,16 +500,16 @@ func (rm *RiskManager) applyStressScenario(portfolio *Portfolio, scenario Stress
 			}
 		}
 	}
-	
+
 	// If no specific shocks applied, use base value
 	if stressedValue == nil {
 		stressedValue = new(big.Float).Copy(baseValue)
 	}
-	
+
 	// Calculate percentage change
 	change := new(big.Float).Sub(stressedValue, baseValue)
 	percentageChange := new(big.Float).Quo(change, baseValue)
-	
+
 	return percentageChange
 }
 
@@ -520,23 +520,23 @@ func (rm *RiskManager) calculatePortfolioReturns(portfolio *Portfolio) []*big.Fl
 	// This is a simplified implementation
 	// In practice, you'd use actual historical portfolio values
 	portfolioValues := rm.calculatePortfolioValues(portfolio)
-	
+
 	if len(portfolioValues) < 2 {
 		return []*big.Float{}
 	}
-	
+
 	returns := make([]*big.Float, len(portfolioValues)-1)
-	
+
 	for i := 1; i < len(portfolioValues); i++ {
 		currentValue := portfolioValues[i]
 		previousValue := portfolioValues[i-1]
-		
+
 		returnValue := new(big.Float).Sub(currentValue, previousValue)
 		returnValue.Quo(returnValue, previousValue)
-		
+
 		returns[i-1] = returnValue
 	}
-	
+
 	return returns
 }
 
@@ -545,13 +545,13 @@ func (rm *RiskManager) calculatePortfolioValues(portfolio *Portfolio) []*big.Flo
 	// This is a simplified implementation
 	// In practice, you'd use actual historical portfolio values
 	values := make([]*big.Float, 0)
-	
+
 	// Simulate some historical values
 	baseValue := portfolio.GetTotalValue()
 	if baseValue.Sign() <= 0 {
 		return values
 	}
-	
+
 	// Generate some sample values (in practice, use real data)
 	for i := 0; i < 30; i++ { // 30 days of data
 		// Add some random variation
@@ -559,7 +559,7 @@ func (rm *RiskManager) calculatePortfolioValues(portfolio *Portfolio) []*big.Flo
 		value := new(big.Float).Mul(baseValue, variation)
 		values = append(values, value)
 	}
-	
+
 	return values
 }
 
@@ -568,13 +568,13 @@ func (rm *RiskManager) calculateMean(values []*big.Float) float64 {
 	if len(values) == 0 {
 		return 0
 	}
-	
+
 	var sum float64
 	for _, value := range values {
 		val, _ := value.Float64()
 		sum += val
 	}
-	
+
 	return sum / float64(len(values))
 }
 
@@ -583,17 +583,17 @@ func (rm *RiskManager) calculateStandardDeviation(values []*big.Float, mean floa
 	if len(values) == 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	var sumSquaredDiff float64
 	for _, value := range values {
 		val, _ := value.Float64()
 		diff := val - mean
 		sumSquaredDiff += diff * diff
 	}
-	
+
 	variance := sumSquaredDiff / float64(len(values))
 	stdDev := math.Sqrt(variance)
-	
+
 	return big.NewFloat(stdDev)
 }
 
@@ -602,7 +602,7 @@ func (rm *RiskManager) getZScore(confidenceLevel *big.Float) *big.Float {
 	// Simplified z-score calculation
 	// In practice, use proper statistical tables or libraries
 	confidence, _ := confidenceLevel.Float64()
-	
+
 	var zScore float64
 	switch {
 	case confidence >= 0.99:
@@ -614,7 +614,7 @@ func (rm *RiskManager) getZScore(confidenceLevel *big.Float) *big.Float {
 	default:
 		zScore = 1.0
 	}
-	
+
 	return big.NewFloat(zScore)
 }
 
@@ -623,11 +623,11 @@ func (p *Position) UpdatePosition(newPrice *big.Float) error {
 	if newPrice == nil || newPrice.Sign() < 0 {
 		return errors.New("new price must be non-negative")
 	}
-	
+
 	p.Price = new(big.Float).Copy(newPrice)
 	p.Value = new(big.Float).Mul(p.Size, p.Price)
 	p.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -636,9 +636,9 @@ func (p *Position) AddReturn(returnValue *big.Float) {
 	if returnValue == nil {
 		return
 	}
-	
+
 	p.Returns = append(p.Returns, new(big.Float).Copy(returnValue))
-	
+
 	// Keep only the last 100 returns to avoid memory issues
 	if len(p.Returns) > 100 {
 		p.Returns = p.Returns[len(p.Returns)-100:]

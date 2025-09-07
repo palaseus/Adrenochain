@@ -328,7 +328,7 @@ func (pb *PerformanceBenchmarks) GetResults() map[string]*BenchmarkResult {
 func (pb *PerformanceBenchmarks) PrintResults() {
 	fmt.Println("\n📊 adrenochain Performance Benchmark Results")
 	fmt.Println("==========================================")
-	
+
 	for _, result := range pb.results {
 		fmt.Printf("\n🏷️  %s - %s\n", result.Component, result.Operation)
 		fmt.Printf("   ⏱️  Duration: %v\n", result.Duration)

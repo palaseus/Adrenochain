@@ -9,35 +9,35 @@ import (
 
 // TradingPair represents a trading pair (e.g., BTC/USDT)
 type TradingPair struct {
-	ID              string    `json:"id"`
-	BaseAsset       string    `json:"base_asset"`
-	QuoteAsset      string    `json:"quote_asset"`
-	Symbol          string    `json:"symbol"`
-	Status          PairStatus `json:"status"`
-	MinQuantity     *big.Int  `json:"min_quantity"`
-	MaxQuantity     *big.Int  `json:"max_quantity"`
-	MinPrice        *big.Int  `json:"min_price"`
-	MaxPrice        *big.Int  `json:"max_price"`
-	TickSize        *big.Int  `json:"tick_size"`
-	StepSize        *big.Int  `json:"step_size"`
-	MakerFee        *big.Int  `json:"maker_fee"`
-	TakerFee        *big.Int  `json:"taker_fee"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	LastTradePrice  *big.Int  `json:"last_trade_price,omitempty"`
-	LastTradeTime   *time.Time `json:"last_trade_time,omitempty"`
-	Volume24h       *big.Int  `json:"volume_24h"`
-	PriceChange24h  *big.Int  `json:"price_change_24h"`
-	PriceChangePercent24h *big.Int `json:"price_change_percent_24h"`
+	ID                    string     `json:"id"`
+	BaseAsset             string     `json:"base_asset"`
+	QuoteAsset            string     `json:"quote_asset"`
+	Symbol                string     `json:"symbol"`
+	Status                PairStatus `json:"status"`
+	MinQuantity           *big.Int   `json:"min_quantity"`
+	MaxQuantity           *big.Int   `json:"max_quantity"`
+	MinPrice              *big.Int   `json:"min_price"`
+	MaxPrice              *big.Int   `json:"max_price"`
+	TickSize              *big.Int   `json:"tick_size"`
+	StepSize              *big.Int   `json:"step_size"`
+	MakerFee              *big.Int   `json:"maker_fee"`
+	TakerFee              *big.Int   `json:"taker_fee"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
+	LastTradePrice        *big.Int   `json:"last_trade_price,omitempty"`
+	LastTradeTime         *time.Time `json:"last_trade_time,omitempty"`
+	Volume24h             *big.Int   `json:"volume_24h"`
+	PriceChange24h        *big.Int   `json:"price_change_24h"`
+	PriceChangePercent24h *big.Int   `json:"price_change_percent_24h"`
 }
 
 // PairStatus represents the status of a trading pair
 type PairStatus string
 
 const (
-	PairStatusActive   PairStatus = "active"
-	PairStatusInactive PairStatus = "inactive"
-	PairStatusSuspended PairStatus = "suspended"
+	PairStatusActive      PairStatus = "active"
+	PairStatusInactive    PairStatus = "inactive"
+	PairStatusSuspended   PairStatus = "suspended"
 	PairStatusMaintenance PairStatus = "maintenance"
 )
 
@@ -105,23 +105,23 @@ func NewTradingPair(
 	}
 
 	pair := &TradingPair{
-		ID:            fmt.Sprintf("%s_%s", baseAsset, quoteAsset),
-		BaseAsset:     baseAsset,
-		QuoteAsset:    quoteAsset,
-		Symbol:        fmt.Sprintf("%s/%s", baseAsset, quoteAsset),
-		Status:        PairStatusActive,
-		MinQuantity:   minQuantity,
-		MaxQuantity:   maxQuantity,
-		MinPrice:      minPrice,
-		MaxPrice:      maxPrice,
-		TickSize:      tickSize,
-		StepSize:      stepSize,
-		MakerFee:      makerFee,
-		TakerFee:      takerFee,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		Volume24h:     big.NewInt(0),
-		PriceChange24h: big.NewInt(0),
+		ID:                    fmt.Sprintf("%s_%s", baseAsset, quoteAsset),
+		BaseAsset:             baseAsset,
+		QuoteAsset:            quoteAsset,
+		Symbol:                fmt.Sprintf("%s/%s", baseAsset, quoteAsset),
+		Status:                PairStatusActive,
+		MinQuantity:           minQuantity,
+		MaxQuantity:           maxQuantity,
+		MinPrice:              minPrice,
+		MaxPrice:              maxPrice,
+		TickSize:              tickSize,
+		StepSize:              stepSize,
+		MakerFee:              makerFee,
+		TakerFee:              takerFee,
+		CreatedAt:             time.Now(),
+		UpdatedAt:             time.Now(),
+		Volume24h:             big.NewInt(0),
+		PriceChange24h:        big.NewInt(0),
 		PriceChangePercent24h: big.NewInt(0),
 	}
 
@@ -166,8 +166,8 @@ func (tp *TradingPair) CanTrade() bool {
 
 // UpdateStatus updates the status of the trading pair
 func (tp *TradingPair) UpdateStatus(status PairStatus) error {
-	if status != PairStatusActive && status != PairStatusInactive && 
-	   status != PairStatusSuspended && status != PairStatusMaintenance {
+	if status != PairStatusActive && status != PairStatusInactive &&
+		status != PairStatusSuspended && status != PairStatusMaintenance {
 		return &TradingPairError{Operation: "UpdateStatus", Message: "invalid status", PairID: tp.ID}
 	}
 
@@ -212,7 +212,7 @@ func (tp *TradingPair) UpdateVolume24h(volume *big.Int) {
 // UpdatePriceChange24h updates the 24-hour price change
 func (tp *TradingPair) UpdatePriceChange24h(priceChange, priceChangePercent *big.Int) {
 	updated := false
-	
+
 	if priceChange != nil {
 		tp.PriceChange24h = priceChange
 		updated = true
@@ -221,7 +221,7 @@ func (tp *TradingPair) UpdatePriceChange24h(priceChange, priceChangePercent *big
 		tp.PriceChangePercent24h = priceChangePercent
 		updated = true
 	}
-	
+
 	// Only update timestamp if actual changes were made
 	if updated {
 		tp.UpdatedAt = time.Now()

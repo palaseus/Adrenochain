@@ -39,21 +39,21 @@ func (lru *LRUCache) Get(key string) (*CacheItem, bool) {
 
 	if element, found := lru.cache[key]; found {
 		node := element.Value.(*LRUNode)
-		
+
 		// Check if item has expired
 		if !node.ExpiresAt.IsZero() && time.Now().After(node.ExpiresAt) {
 			lru.removeElement(element)
 			return nil, false
 		}
-		
+
 		// Move to front (most recently used)
 		lru.list.MoveToFront(element)
 		node.Value.Accessed = time.Now()
 		node.Value.Hits++
-		
+
 		return node.Value, true
 	}
-	
+
 	return nil, false
 }
 
@@ -146,16 +146,16 @@ func (lru *LRUCache) Cleanup() {
 	defer lru.mu.Unlock()
 
 	now := time.Now()
-	
+
 	// Iterate from back to front (oldest first)
 	for element := lru.list.Back(); element != nil; {
 		node := element.Value.(*LRUNode)
 		next := element.Prev() // Get next before removing
-		
+
 		if !node.ExpiresAt.IsZero() && now.After(node.ExpiresAt) {
 			lru.removeElement(element)
 		}
-		
+
 		element = next
 	}
 }
@@ -164,7 +164,7 @@ func (lru *LRUCache) Cleanup() {
 func (lru *LRUCache) Size() int {
 	lru.mu.RLock()
 	defer lru.mu.RUnlock()
-	
+
 	return lru.list.Len()
 }
 
@@ -178,7 +178,7 @@ func (lru *LRUCache) evictOldest() {
 	if lru.list.Len() == 0 {
 		return
 	}
-	
+
 	// Remove from back of list (oldest)
 	element := lru.list.Back()
 	lru.removeElement(element)
@@ -195,11 +195,11 @@ func (lru *LRUCache) removeElement(element *list.Element) {
 func (lru *LRUCache) GetKeys() []string {
 	lru.mu.RLock()
 	defer lru.mu.RUnlock()
-	
+
 	keys := make([]string, 0, len(lru.cache))
 	for key := range lru.cache {
 		keys = append(keys, key)
 	}
-	
+
 	return keys
 }

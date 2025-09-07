@@ -15,38 +15,38 @@ type FundingRate struct {
 
 // PerpetualContract represents a perpetual futures contract
 type PerpetualContract struct {
-	Symbol           string
-	UnderlyingAsset  string
-	ContractSize     *big.Float
-	MarkPrice        *big.Float
-	IndexPrice       *big.Float
-	FundingRate      *FundingRate
-	NextFundingTime  time.Time
-	OpenInterest     *big.Float
-	Volume24h        *big.Float
-	High24h          *big.Float
-	Low24h           *big.Float
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	Symbol          string
+	UnderlyingAsset string
+	ContractSize    *big.Float
+	MarkPrice       *big.Float
+	IndexPrice      *big.Float
+	FundingRate     *FundingRate
+	NextFundingTime time.Time
+	OpenInterest    *big.Float
+	Volume24h       *big.Float
+	High24h         *big.Float
+	Low24h          *big.Float
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // PerpetualPosition represents a position in perpetual futures
 type PerpetualPosition struct {
-	ID              string
-	UserID          string
-	Contract        *PerpetualContract
-	Side            PositionSide
-	Size            *big.Float
-	EntryPrice      *big.Float
-	MarkPrice      *big.Float
-	UnrealizedPnL   *big.Float
-	RealizedPnL     *big.Float
-	FundingPaid     *big.Float
+	ID               string
+	UserID           string
+	Contract         *PerpetualContract
+	Side             PositionSide
+	Size             *big.Float
+	EntryPrice       *big.Float
+	MarkPrice        *big.Float
+	UnrealizedPnL    *big.Float
+	RealizedPnL      *big.Float
+	FundingPaid      *big.Float
 	LiquidationPrice *big.Float
-	Margin          *big.Float
-	Leverage        *big.Float
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	Margin           *big.Float
+	Leverage         *big.Float
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // PositionSide represents the side of a futures position
@@ -68,10 +68,10 @@ func NewPerpetualContract(symbol, underlyingAsset string, contractSize *big.Floa
 	if contractSize == nil || contractSize.Sign() <= 0 {
 		return nil, errors.New("contract size must be positive")
 	}
-	
+
 	now := time.Now()
 	nextFunding := now.Add(8 * time.Hour) // Default 8-hour funding interval
-	
+
 	return &PerpetualContract{
 		Symbol:          symbol,
 		UnderlyingAsset: underlyingAsset,
@@ -110,25 +110,25 @@ func NewPerpetualPosition(userID string, contract *PerpetualContract, side Posit
 	if leverage == nil || leverage.Sign() <= 0 {
 		return nil, errors.New("leverage must be positive")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &PerpetualPosition{
-		ID:              generatePositionID(userID, contract.Symbol),
-		UserID:          userID,
-		Contract:        contract,
-		Side:            side,
-		Size:            new(big.Float).Copy(size),
-		EntryPrice:      new(big.Float).Copy(entryPrice),
-		MarkPrice:       new(big.Float).Copy(entryPrice),
-		UnrealizedPnL:   big.NewFloat(0),
-		RealizedPnL:     big.NewFloat(0),
-		FundingPaid:     big.NewFloat(0),
+		ID:               generatePositionID(userID, contract.Symbol),
+		UserID:           userID,
+		Contract:         contract,
+		Side:             side,
+		Size:             new(big.Float).Copy(size),
+		EntryPrice:       new(big.Float).Copy(entryPrice),
+		MarkPrice:        new(big.Float).Copy(entryPrice),
+		UnrealizedPnL:    big.NewFloat(0),
+		RealizedPnL:      big.NewFloat(0),
+		FundingPaid:      big.NewFloat(0),
 		LiquidationPrice: big.NewFloat(0),
-		Margin:          big.NewFloat(0),
-		Leverage:        new(big.Float).Copy(leverage),
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		Margin:           big.NewFloat(0),
+		Leverage:         new(big.Float).Copy(leverage),
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}, nil
 }
 
@@ -137,10 +137,10 @@ func (pc *PerpetualContract) UpdateMarkPrice(markPrice *big.Float) error {
 	if markPrice == nil || markPrice.Sign() < 0 {
 		return errors.New("mark price must be non-negative")
 	}
-	
+
 	pc.MarkPrice = new(big.Float).Copy(markPrice)
 	pc.UpdatedAt = time.Now()
-	
+
 	// Update 24h high/low
 	if pc.High24h.Sign() == 0 || markPrice.Cmp(pc.High24h) > 0 {
 		pc.High24h = new(big.Float).Copy(markPrice)
@@ -148,7 +148,7 @@ func (pc *PerpetualContract) UpdateMarkPrice(markPrice *big.Float) error {
 	if pc.Low24h.Sign() == 0 || markPrice.Cmp(pc.Low24h) < 0 {
 		pc.Low24h = new(big.Float).Copy(markPrice)
 	}
-	
+
 	return nil
 }
 
@@ -157,10 +157,10 @@ func (pc *PerpetualContract) UpdateIndexPrice(indexPrice *big.Float) error {
 	if indexPrice == nil || indexPrice.Sign() < 0 {
 		return errors.New("index price must be non-negative")
 	}
-	
+
 	pc.IndexPrice = new(big.Float).Copy(indexPrice)
 	pc.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -169,12 +169,12 @@ func (pc *PerpetualContract) UpdateFundingRate(rate *big.Float) error {
 	if rate == nil {
 		return errors.New("funding rate cannot be nil")
 	}
-	
+
 	pc.FundingRate.Rate = new(big.Float).Copy(rate)
 	pc.FundingRate.Timestamp = time.Now()
 	pc.NextFundingTime = time.Now().Add(pc.FundingRate.Interval)
 	pc.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -183,11 +183,11 @@ func (pc *PerpetualContract) CalculateFundingPayment(position *PerpetualPosition
 	if position == nil || pc.FundingRate.Rate.Sign() == 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	// Funding payment = Position Size * Mark Price * Funding Rate
 	fundingPayment := new(big.Float).Mul(position.Size, position.MarkPrice)
 	fundingPayment.Mul(fundingPayment, pc.FundingRate.Rate)
-	
+
 	// Adjust for position side (long pays, short receives)
 	if position.Side == Long {
 		return fundingPayment
@@ -206,13 +206,13 @@ func (pp *PerpetualPosition) UpdatePosition(markPrice *big.Float) error {
 	if markPrice == nil || markPrice.Sign() < 0 {
 		return errors.New("mark price must be non-negative")
 	}
-	
+
 	pp.MarkPrice = new(big.Float).Copy(markPrice)
 	pp.UpdatedAt = time.Now()
-	
+
 	// Calculate unrealized PnL
 	pp.calculateUnrealizedPnL()
-	
+
 	return nil
 }
 
@@ -234,7 +234,7 @@ func (pp *PerpetualPosition) CalculateMargin() *big.Float {
 	// Required margin = Position Value / Leverage
 	positionValue := new(big.Float).Mul(pp.Size, pp.MarkPrice)
 	margin := new(big.Float).Quo(positionValue, pp.Leverage)
-	
+
 	pp.Margin = margin
 	return margin
 }
@@ -244,14 +244,14 @@ func (pp *PerpetualPosition) CalculateLiquidationPrice(maintenanceMargin *big.Fl
 	if maintenanceMargin == nil || maintenanceMargin.Sign() <= 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	// Liquidation price calculation depends on position side
 	if pp.Side == Long {
 		// For long: Liquidation Price = Entry Price * (1 - 1/Leverage + Maintenance Margin)
 		leverageRatio := new(big.Float).Quo(big.NewFloat(1), pp.Leverage)
 		marginBuffer := new(big.Float).Sub(big.NewFloat(1), leverageRatio)
 		marginBuffer.Add(marginBuffer, maintenanceMargin)
-		
+
 		liquidationPrice := new(big.Float).Mul(pp.EntryPrice, marginBuffer)
 		pp.LiquidationPrice = liquidationPrice
 		return liquidationPrice
@@ -260,7 +260,7 @@ func (pp *PerpetualPosition) CalculateLiquidationPrice(maintenanceMargin *big.Fl
 		leverageRatio := new(big.Float).Quo(big.NewFloat(1), pp.Leverage)
 		marginBuffer := new(big.Float).Add(big.NewFloat(1), leverageRatio)
 		marginBuffer.Sub(marginBuffer, maintenanceMargin)
-		
+
 		liquidationPrice := new(big.Float).Mul(pp.EntryPrice, marginBuffer)
 		pp.LiquidationPrice = liquidationPrice
 		return liquidationPrice
@@ -272,11 +272,11 @@ func (pp *PerpetualPosition) IsLiquidated(maintenanceMargin *big.Float) bool {
 	if maintenanceMargin == nil || maintenanceMargin.Sign() <= 0 {
 		return false
 	}
-	
+
 	// Calculate current margin ratio
 	positionValue := new(big.Float).Mul(pp.Size, pp.MarkPrice)
 	currentMargin := new(big.Float).Quo(pp.Margin, positionValue)
-	
+
 	// If current margin is below maintenance margin, position should be liquidated
 	return currentMargin.Cmp(maintenanceMargin) < 0
 }
@@ -286,7 +286,7 @@ func (pp *PerpetualPosition) AddFundingPayment(payment *big.Float) {
 	if payment == nil {
 		return
 	}
-	
+
 	pp.FundingPaid.Add(pp.FundingPaid, payment)
 	pp.UpdatedAt = time.Now()
 }
@@ -296,7 +296,7 @@ func (pp *PerpetualPosition) ClosePosition(exitPrice *big.Float) *big.Float {
 	if exitPrice == nil || exitPrice.Sign() < 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	// Calculate realized PnL
 	var realizedPnL *big.Float
 	if pp.Side == Long {
@@ -308,13 +308,13 @@ func (pp *PerpetualPosition) ClosePosition(exitPrice *big.Float) *big.Float {
 		priceDiff := new(big.Float).Sub(pp.EntryPrice, exitPrice)
 		realizedPnL = new(big.Float).Mul(priceDiff, pp.Size)
 	}
-	
+
 	// Subtract funding payments
 	realizedPnL.Sub(realizedPnL, pp.FundingPaid)
-	
+
 	pp.RealizedPnL = realizedPnL
 	pp.UpdatedAt = time.Now()
-	
+
 	return realizedPnL
 }
 
@@ -329,11 +329,11 @@ func (pp *PerpetualPosition) GetROI() *big.Float {
 	if pp.Margin.Sign() == 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	totalPnL := pp.GetTotalPnL()
 	roi := new(big.Float).Quo(totalPnL, pp.Margin)
 	roi.Mul(roi, big.NewFloat(100)) // Convert to percentage
-	
+
 	return roi
 }
 

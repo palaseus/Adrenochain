@@ -9,16 +9,16 @@ import (
 
 // RiskScore represents a risk assessment score
 type RiskScore struct {
-	OverallScore     int       `json:"overall_score"`      // 0-100, higher = riskier
-	CreditScore      int       `json:"credit_score"`       // 0-100, higher = better credit
-	CollateralScore  int       `json:"collateral_score"`   // 0-100, higher = better collateral
-	LiquidityScore   int       `json:"liquidity_score"`    // 0-100, higher = better liquidity
-	MarketScore      int       `json:"market_score"`       // 0-100, higher = better market conditions
-	BehaviorScore    int       `json:"behavior_score"`     // 0-100, higher = better behavior
-	LastUpdated      time.Time `json:"last_updated"`
-	RiskLevel        RiskLevel `json:"risk_level"`
-	RiskFactors      []string  `json:"risk_factors"`
-	Recommendations  []string  `json:"recommendations"`
+	OverallScore    int       `json:"overall_score"`    // 0-100, higher = riskier
+	CreditScore     int       `json:"credit_score"`     // 0-100, higher = better credit
+	CollateralScore int       `json:"collateral_score"` // 0-100, higher = better collateral
+	LiquidityScore  int       `json:"liquidity_score"`  // 0-100, higher = better liquidity
+	MarketScore     int       `json:"market_score"`     // 0-100, higher = better market conditions
+	BehaviorScore   int       `json:"behavior_score"`   // 0-100, higher = better behavior
+	LastUpdated     time.Time `json:"last_updated"`
+	RiskLevel       RiskLevel `json:"risk_level"`
+	RiskFactors     []string  `json:"risk_factors"`
+	Recommendations []string  `json:"recommendations"`
 }
 
 // RiskLevel represents the overall risk level
@@ -26,8 +26,8 @@ type RiskLevel string
 
 const (
 	RiskLevelLow      RiskLevel = "low"
-	RiskLevelMedium  RiskLevel = "medium"
-	RiskLevelHigh    RiskLevel = "high"
+	RiskLevelMedium   RiskLevel = "medium"
+	RiskLevelHigh     RiskLevel = "high"
 	RiskLevelCritical RiskLevel = "critical"
 )
 
@@ -45,17 +45,17 @@ type RiskFactor struct {
 
 // RiskAssessment represents a comprehensive risk assessment
 type RiskAssessment struct {
-	UserID           string                 `json:"user_id"`
-	RiskScore        *RiskScore             `json:"risk_score"`
-	RiskFactors      map[string]*RiskFactor `json:"risk_factors"`
-	HistoricalData   []HistoricalRiskData  `json:"historical_data"`
-	CollateralValue  *big.Int              `json:"collateral_value"`
-	BorrowValue      *big.Int              `json:"borrow_value"`
-	LiquidationRisk  float64               `json:"liquidation_risk"`
-	MarketExposure   float64               `json:"market_exposure"`
-	LastAssessment   time.Time             `json:"last_assessment"`
-	NextAssessment   time.Time             `json:"next_assessment"`
-	AssessmentCount  int                   `json:"assessment_count"`
+	UserID          string                 `json:"user_id"`
+	RiskScore       *RiskScore             `json:"risk_score"`
+	RiskFactors     map[string]*RiskFactor `json:"risk_factors"`
+	HistoricalData  []HistoricalRiskData   `json:"historical_data"`
+	CollateralValue *big.Int               `json:"collateral_value"`
+	BorrowValue     *big.Int               `json:"borrow_value"`
+	LiquidationRisk float64                `json:"liquidation_risk"`
+	MarketExposure  float64                `json:"market_exposure"`
+	LastAssessment  time.Time              `json:"last_assessment"`
+	NextAssessment  time.Time              `json:"next_assessment"`
+	AssessmentCount int                    `json:"assessment_count"`
 }
 
 // HistoricalRiskData represents historical risk assessment data
@@ -79,21 +79,21 @@ func (e RiskAssessmentError) Error() string {
 
 // Risk assessment errors
 var (
-	ErrInvalidRiskScore     = errors.New("invalid risk score")
-	ErrInvalidRiskFactor    = errors.New("invalid risk factor")
-	ErrAssessmentNotFound   = errors.New("risk assessment not found")
-	ErrInvalidThreshold     = errors.New("invalid threshold value")
-	ErrInvalidWeight        = errors.New("invalid weight value")
+	ErrInvalidRiskScore   = errors.New("invalid risk score")
+	ErrInvalidRiskFactor  = errors.New("invalid risk factor")
+	ErrAssessmentNotFound = errors.New("risk assessment not found")
+	ErrInvalidThreshold   = errors.New("invalid threshold value")
+	ErrInvalidWeight      = errors.New("invalid weight value")
 )
 
 // RiskAssessor manages risk assessment operations
 type RiskAssessor struct {
-	lendingPool     *LendingPool
-	riskFactors     map[string]*RiskFactor
-	assessments     map[string]*RiskAssessment
-	mutex           sync.RWMutex
-	updateInterval  time.Duration
-	alertThreshold  int
+	lendingPool    *LendingPool
+	riskFactors    map[string]*RiskFactor
+	assessments    map[string]*RiskAssessment
+	mutex          sync.RWMutex
+	updateInterval time.Duration
+	alertThreshold int
 }
 
 // NewRiskAssessor creates a new risk assessor
@@ -247,31 +247,31 @@ func (ra *RiskAssessor) AssessRisk(userID string) (*RiskAssessment, error) {
 // calculateRiskScore calculates the overall risk score
 func (ra *RiskAssessor) calculateRiskScore(account *Account, assessment *RiskAssessment) *RiskScore {
 	riskScore := &RiskScore{
-		LastUpdated: time.Now(),
-		RiskFactors: make([]string, 0),
+		LastUpdated:     time.Now(),
+		RiskFactors:     make([]string, 0),
 		Recommendations: make([]string, 0),
 	}
 
 	// Calculate collateral score
 	riskScore.CollateralScore = ra.calculateCollateralScore(account)
-	
+
 	// Calculate credit score
 	riskScore.CreditScore = ra.calculateCreditScore(account, assessment)
-	
+
 	// Calculate liquidity score
 	riskScore.LiquidityScore = ra.calculateLiquidityScore(account)
-	
+
 	// Calculate market score
 	riskScore.MarketScore = ra.calculateMarketScore(assessment)
-	
+
 	// Calculate behavior score
 	riskScore.BehaviorScore = ra.calculateBehaviorScore(assessment)
 
 	// Calculate overall score (weighted average)
-	overallScore := (riskScore.CollateralScore*25 + 
-		riskScore.CreditScore*20 + 
-		riskScore.LiquidityScore*20 + 
-		riskScore.MarketScore*15 + 
+	overallScore := (riskScore.CollateralScore*25 +
+		riskScore.CreditScore*20 +
+		riskScore.LiquidityScore*20 +
+		riskScore.MarketScore*15 +
 		riskScore.BehaviorScore*20) / 100
 
 	riskScore.OverallScore = overallScore
@@ -447,7 +447,7 @@ func (ra *RiskAssessor) calculateBehaviorScore(assessment *RiskAssessment) int {
 					goodAssessments++
 				}
 			}
-			
+
 			if goodAssessments >= 2 {
 				score += 20 // Bonus for consistent good behavior
 			} else if goodAssessments == 0 {
@@ -498,7 +498,7 @@ func (ra *RiskAssessor) generateRecommendations(riskScore *RiskScore) []string {
 	if riskScore.CollateralScore > 70 {
 		recommendations = append(recommendations, "Increase collateral to improve collateral ratio")
 	}
-	
+
 	if riskScore.CreditScore < 40 {
 		recommendations = append(recommendations, "Improve account health factor by reducing borrows or adding collateral")
 	}
@@ -556,7 +556,7 @@ func (ra *RiskAssessor) calculateMarketExposure(account *Account) float64 {
 	// Calculate exposure as percentage of total portfolio
 	// This is a simplified calculation
 	exposure := float64(account.BorrowValue.Int64()) / float64(account.CollateralValue.Int64())
-	
+
 	// Convert to percentage
 	return exposure * 100.0
 }
@@ -584,7 +584,7 @@ func (ra *RiskAssessor) updateRiskFactors(assessment *RiskAssessment) {
 		if id == "collateral_ratio" || id == "liquidation_proximity" {
 			continue // Already updated
 		}
-		
+
 		// Map factor to appropriate score
 		switch id {
 		case "market_volatility":
@@ -596,7 +596,7 @@ func (ra *RiskAssessor) updateRiskFactors(assessment *RiskAssessment) {
 		case "liquidity_access":
 			factor.Score = assessment.RiskScore.LiquidityScore
 		}
-		
+
 		factor.IsTriggered = factor.Score >= factor.Threshold
 		factor.LastUpdated = time.Now()
 		assessment.RiskFactors[factor.ID] = factor
@@ -717,7 +717,7 @@ func (ra *RiskAssessor) GetRiskStats() map[string]interface{} {
 	}
 
 	stats["risk_level_distribution"] = riskLevelCounts
-	
+
 	if validAssessments > 0 {
 		stats["average_risk_score"] = totalScore / validAssessments
 	} else {

@@ -8,7 +8,7 @@ import (
 
 func TestNewStandardFuturesContract(t *testing.T) {
 	now := time.Now()
-	expirationDate := now.Add(30 * 24 * time.Hour) // 30 days from now
+	expirationDate := now.Add(30 * 24 * time.Hour)         // 30 days from now
 	deliveryDate := expirationDate.Add(2 * 24 * time.Hour) // 2 days after expiration
 
 	tests := []struct {
@@ -797,10 +797,10 @@ func TestStandardFuturesPositionCalculations(t *testing.T) {
 		// Use a tolerance for floating point precision
 		expectedRatio := big.NewFloat(0.0909)
 		tolerance := big.NewFloat(0.0001)
-		
+
 		diff := new(big.Float).Sub(marginRatio, expectedRatio)
 		absDiff := new(big.Float).Abs(diff)
-		
+
 		if absDiff.Cmp(tolerance) > 0 {
 			t.Errorf("Expected margin ratio %v ± %v, got %v", expectedRatio, tolerance, marginRatio)
 		}

@@ -34,14 +34,14 @@ type Chain struct {
 
 // Asset represents a cross-chain asset
 type Asset struct {
-	ID           string
-	Symbol       string
-	Name         string
-	Decimals     uint8
-	TotalSupply  *big.Int
-	IsActive     bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID          string
+	Symbol      string
+	Name        string
+	Decimals    uint8
+	TotalSupply *big.Int
+	IsActive    bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // BridgeAsset represents an asset on a specific chain
@@ -58,21 +58,21 @@ type BridgeAsset struct {
 
 // Transfer represents a cross-chain transfer
 type Transfer struct {
-	ID              string
-	SourceChainID   string
-	TargetChainID   string
-	AssetID         string
-	Amount          *big.Int
-	Sender          string
-	Recipient       string
-	Status          TransferStatus
-	SourceTxHash    string
-	TargetTxHash    string
-	BridgeFee       *big.Int
-	GasFee          *big.Int
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	CompletedAt     *time.Time
+	ID            string
+	SourceChainID string
+	TargetChainID string
+	AssetID       string
+	Amount        *big.Int
+	Sender        string
+	Recipient     string
+	Status        TransferStatus
+	SourceTxHash  string
+	TargetTxHash  string
+	BridgeFee     *big.Int
+	GasFee        *big.Int
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	CompletedAt   *time.Time
 }
 
 // TransferStatus represents the status of a transfer
@@ -100,38 +100,38 @@ type Validator struct {
 
 // Bridge represents a cross-chain bridge
 type Bridge struct {
-	ID              string
-	Name            string
-	Description     string
-	SourceChainID   string
-	TargetChainID   string
-	Status          BridgeStatus
-	MinTransfer     *big.Int
-	MaxTransfer     *big.Int
-	BridgeFee       *big.Int
-	Validators      []string
-	IsActive        bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID            string
+	Name          string
+	Description   string
+	SourceChainID string
+	TargetChainID string
+	Status        BridgeStatus
+	MinTransfer   *big.Int
+	MaxTransfer   *big.Int
+	BridgeFee     *big.Int
+	Validators    []string
+	IsActive      bool
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // BridgeManager manages cross-chain bridges
 type BridgeManager struct {
-	Chains      map[string]*Chain
-	Assets      map[string]*Asset
+	Chains       map[string]*Chain
+	Assets       map[string]*Asset
 	BridgeAssets map[string]*BridgeAsset
-	Bridges     map[string]*Bridge
-	Transfers   map[string]*Transfer
-	Validators  map[string]*Validator
-	mu          sync.RWMutex
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Bridges      map[string]*Bridge
+	Transfers    map[string]*Transfer
+	Validators   map[string]*Validator
+	mu           sync.RWMutex
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // NewBridgeManager creates a new bridge manager
 func NewBridgeManager() *BridgeManager {
 	now := time.Now()
-	
+
 	return &BridgeManager{
 		Chains:       make(map[string]*Chain),
 		Assets:       make(map[string]*Asset),
@@ -158,9 +158,9 @@ func NewChain(id, name, symbol string, chainID uint64, rpcURL, explorerURL strin
 	if rpcURL == "" {
 		return nil, errors.New("RPC URL cannot be empty")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Chain{
 		ID:          id,
 		Name:        name,
@@ -188,9 +188,9 @@ func NewAsset(id, symbol, name string, decimals uint8, totalSupply *big.Int) (*A
 	if totalSupply == nil || totalSupply.Sign() < 0 {
 		return nil, errors.New("total supply must be non-negative")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Asset{
 		ID:          id,
 		Symbol:      symbol,
@@ -220,9 +220,9 @@ func NewBridgeAsset(id, assetID, chainID, contractAddr string, balance *big.Int)
 	if balance == nil || balance.Sign() < 0 {
 		return nil, errors.New("balance must be non-negative")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &BridgeAsset{
 		ID:           id,
 		AssetID:      assetID,
@@ -264,9 +264,9 @@ func NewBridge(id, name, description, sourceChainID, targetChainID string, minTr
 	if bridgeFee == nil || bridgeFee.Sign() < 0 {
 		return nil, errors.New("bridge fee must be non-negative")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Bridge{
 		ID:            id,
 		Name:          name,
@@ -310,9 +310,9 @@ func NewTransfer(id, sourceChainID, targetChainID, assetID string, amount *big.I
 	if recipient == "" {
 		return nil, errors.New("recipient cannot be empty")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Transfer{
 		ID:            id,
 		SourceChainID: sourceChainID,
@@ -346,9 +346,9 @@ func NewValidator(id, address, chainID string, stakeAmount *big.Int) (*Validator
 	if stakeAmount == nil || stakeAmount.Sign() < 0 {
 		return nil, errors.New("stake amount must be non-negative")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Validator{
 		ID:          id,
 		Address:     address,
@@ -365,17 +365,17 @@ func (bm *BridgeManager) AddChain(chain *Chain) error {
 	if chain == nil {
 		return errors.New("chain cannot be nil")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	if _, exists := bm.Chains[chain.ID]; exists {
 		return errors.New("chain with this ID already exists")
 	}
-	
+
 	bm.Chains[chain.ID] = chain
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -384,17 +384,17 @@ func (bm *BridgeManager) AddAsset(asset *Asset) error {
 	if asset == nil {
 		return errors.New("asset cannot be nil")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	if _, exists := bm.Assets[asset.ID]; exists {
 		return errors.New("asset with this ID already exists")
 	}
-	
+
 	bm.Assets[asset.ID] = asset
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -403,27 +403,27 @@ func (bm *BridgeManager) AddBridgeAsset(bridgeAsset *BridgeAsset) error {
 	if bridgeAsset == nil {
 		return errors.New("bridge asset cannot be nil")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	// Validate asset exists
 	if _, exists := bm.Assets[bridgeAsset.AssetID]; !exists {
 		return errors.New("asset not found")
 	}
-	
+
 	// Validate chain exists
 	if _, exists := bm.Chains[bridgeAsset.ChainID]; !exists {
 		return errors.New("chain not found")
 	}
-	
+
 	if _, exists := bm.BridgeAssets[bridgeAsset.ID]; exists {
 		return errors.New("bridge asset with this ID already exists")
 	}
-	
+
 	bm.BridgeAssets[bridgeAsset.ID] = bridgeAsset
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -432,27 +432,27 @@ func (bm *BridgeManager) AddBridge(bridge *Bridge) error {
 	if bridge == nil {
 		return errors.New("bridge cannot be nil")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	// Validate source chain exists
 	if _, exists := bm.Chains[bridge.SourceChainID]; !exists {
 		return errors.New("source chain not found")
 	}
-	
+
 	// Validate target chain exists
 	if _, exists := bm.Chains[bridge.TargetChainID]; !exists {
 		return errors.New("target chain not found")
 	}
-	
+
 	if _, exists := bm.Bridges[bridge.ID]; exists {
 		return errors.New("bridge with this ID already exists")
 	}
-	
+
 	bm.Bridges[bridge.ID] = bridge
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -461,22 +461,22 @@ func (bm *BridgeManager) AddValidator(validator *Validator) error {
 	if validator == nil {
 		return errors.New("validator cannot be nil")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	// Validate chain exists
 	if _, exists := bm.Chains[validator.ChainID]; !exists {
 		return errors.New("chain not found")
 	}
-	
+
 	if _, exists := bm.Validators[validator.ID]; exists {
 		return errors.New("validator with this ID already exists")
 	}
-	
+
 	bm.Validators[validator.ID] = validator
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -485,10 +485,10 @@ func (bm *BridgeManager) InitiateTransfer(transfer *Transfer) error {
 	if transfer == nil {
 		return errors.New("transfer cannot be nil")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	// Validate transfer parameters
 	if _, exists := bm.Chains[transfer.SourceChainID]; !exists {
 		return errors.New("source chain not found")
@@ -499,23 +499,23 @@ func (bm *BridgeManager) InitiateTransfer(transfer *Transfer) error {
 	if _, exists := bm.Assets[transfer.AssetID]; !exists {
 		return errors.New("asset not found")
 	}
-	
+
 	// Find bridge for this transfer
 	var bridge *Bridge
 	for _, b := range bm.Bridges {
-		if b.SourceChainID == transfer.SourceChainID && 
-		   b.TargetChainID == transfer.TargetChainID && 
-		   b.IsActive && 
-		   b.Status == BridgeActive {
+		if b.SourceChainID == transfer.SourceChainID &&
+			b.TargetChainID == transfer.TargetChainID &&
+			b.IsActive &&
+			b.Status == BridgeActive {
 			bridge = b
 			break
 		}
 	}
-	
+
 	if bridge == nil {
 		return errors.New("no active bridge found for this transfer")
 	}
-	
+
 	// Validate transfer amount
 	if transfer.Amount.Cmp(bridge.MinTransfer) < 0 {
 		return errors.New("transfer amount below minimum")
@@ -523,18 +523,18 @@ func (bm *BridgeManager) InitiateTransfer(transfer *Transfer) error {
 	if transfer.Amount.Cmp(bridge.MaxTransfer) > 0 {
 		return errors.New("transfer amount above maximum")
 	}
-	
+
 	// Calculate bridge fee
 	transfer.BridgeFee = new(big.Int).Set(bridge.BridgeFee)
-	
+
 	// Check if transfer already exists
 	if _, exists := bm.Transfers[transfer.ID]; exists {
 		return errors.New("transfer with this ID already exists")
 	}
-	
+
 	bm.Transfers[transfer.ID] = transfer
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -546,24 +546,24 @@ func (bm *BridgeManager) ConfirmTransfer(transferID, sourceTxHash string) error 
 	if sourceTxHash == "" {
 		return errors.New("source transaction hash cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	transfer, exists := bm.Transfers[transferID]
 	if !exists {
 		return errors.New("transfer not found")
 	}
-	
+
 	if transfer.Status != TransferPending {
 		return errors.New("transfer is not in pending status")
 	}
-	
+
 	transfer.SourceTxHash = sourceTxHash
 	transfer.Status = TransferConfirmed
 	transfer.UpdatedAt = time.Now()
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -575,24 +575,24 @@ func (bm *BridgeManager) ProcessTransfer(transferID, targetTxHash string) error 
 	if targetTxHash == "" {
 		return errors.New("target transaction hash cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	transfer, exists := bm.Transfers[transferID]
 	if !exists {
 		return errors.New("transfer not found")
 	}
-	
+
 	if transfer.Status != TransferConfirmed {
 		return errors.New("transfer is not in confirmed status")
 	}
-	
+
 	transfer.TargetTxHash = targetTxHash
 	transfer.Status = TransferProcessing
 	transfer.UpdatedAt = time.Now()
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -601,25 +601,25 @@ func (bm *BridgeManager) CompleteTransfer(transferID string) error {
 	if transferID == "" {
 		return errors.New("transfer ID cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	transfer, exists := bm.Transfers[transferID]
 	if !exists {
 		return errors.New("transfer not found")
 	}
-	
+
 	if transfer.Status != TransferProcessing {
 		return errors.New("transfer is not in processing status")
 	}
-	
+
 	transfer.Status = TransferCompleted
 	now := time.Now()
 	transfer.CompletedAt = &now
 	transfer.UpdatedAt = now
 	bm.UpdatedAt = now
-	
+
 	return nil
 }
 
@@ -628,23 +628,23 @@ func (bm *BridgeManager) FailTransfer(transferID string, reason string) error {
 	if transferID == "" {
 		return errors.New("transfer ID cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	transfer, exists := bm.Transfers[transferID]
 	if !exists {
 		return errors.New("transfer not found")
 	}
-	
+
 	if transfer.Status == TransferCompleted || transfer.Status == TransferFailed {
 		return errors.New("transfer cannot be marked as failed")
 	}
-	
+
 	transfer.Status = TransferFailed
 	transfer.UpdatedAt = time.Now()
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -653,15 +653,15 @@ func (bm *BridgeManager) GetTransfer(transferID string) (*Transfer, error) {
 	if transferID == "" {
 		return nil, errors.New("transfer ID cannot be empty")
 	}
-	
+
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	transfer, exists := bm.Transfers[transferID]
 	if !exists {
 		return nil, errors.New("transfer not found")
 	}
-	
+
 	return transfer, nil
 }
 
@@ -669,14 +669,14 @@ func (bm *BridgeManager) GetTransfer(transferID string) (*Transfer, error) {
 func (bm *BridgeManager) GetTransfersByStatus(status TransferStatus) []*Transfer {
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	var transfers []*Transfer
 	for _, transfer := range bm.Transfers {
 		if transfer.Status == status {
 			transfers = append(transfers, transfer)
 		}
 	}
-	
+
 	return transfers
 }
 
@@ -685,17 +685,17 @@ func (bm *BridgeManager) GetTransfersByChain(chainID string) []*Transfer {
 	if chainID == "" {
 		return nil
 	}
-	
+
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	var transfers []*Transfer
 	for _, transfer := range bm.Transfers {
 		if transfer.SourceChainID == chainID || transfer.TargetChainID == chainID {
 			transfers = append(transfers, transfer)
 		}
 	}
-	
+
 	return transfers
 }
 
@@ -704,15 +704,15 @@ func (bm *BridgeManager) GetBridge(bridgeID string) (*Bridge, error) {
 	if bridgeID == "" {
 		return nil, errors.New("bridge ID cannot be empty")
 	}
-	
+
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	bridge, exists := bm.Bridges[bridgeID]
 	if !exists {
 		return nil, errors.New("bridge not found")
 	}
-	
+
 	return bridge, nil
 }
 
@@ -721,17 +721,17 @@ func (bm *BridgeManager) GetBridgesByChain(chainID string) []*Bridge {
 	if chainID == "" {
 		return nil
 	}
-	
+
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	var bridges []*Bridge
 	for _, bridge := range bm.Bridges {
 		if bridge.SourceChainID == chainID || bridge.TargetChainID == chainID {
 			bridges = append(bridges, bridge)
 		}
 	}
-	
+
 	return bridges
 }
 
@@ -740,19 +740,19 @@ func (bm *BridgeManager) UpdateBridgeStatus(bridgeID string, status BridgeStatus
 	if bridgeID == "" {
 		return errors.New("bridge ID cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	bridge, exists := bm.Bridges[bridgeID]
 	if !exists {
 		return errors.New("bridge not found")
 	}
-	
+
 	bridge.Status = status
 	bridge.UpdatedAt = time.Now()
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -764,30 +764,30 @@ func (bm *BridgeManager) AddValidatorToBridge(bridgeID, validatorID string) erro
 	if validatorID == "" {
 		return errors.New("validator ID cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	bridge, exists := bm.Bridges[bridgeID]
 	if !exists {
 		return errors.New("bridge not found")
 	}
-	
+
 	if _, exists := bm.Validators[validatorID]; !exists {
 		return errors.New("validator not found")
 	}
-	
+
 	// Check if validator is already in the bridge
 	for _, vID := range bridge.Validators {
 		if vID == validatorID {
 			return errors.New("validator already in bridge")
 		}
 	}
-	
+
 	bridge.Validators = append(bridge.Validators, validatorID)
 	bridge.UpdatedAt = time.Now()
 	bm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -799,15 +799,15 @@ func (bm *BridgeManager) RemoveValidatorFromBridge(bridgeID, validatorID string)
 	if validatorID == "" {
 		return errors.New("validator ID cannot be empty")
 	}
-	
+
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
-	
+
 	bridge, exists := bm.Bridges[bridgeID]
 	if !exists {
 		return errors.New("bridge not found")
 	}
-	
+
 	// Find and remove validator
 	for i, vID := range bridge.Validators {
 		if vID == validatorID {
@@ -817,7 +817,7 @@ func (bm *BridgeManager) RemoveValidatorFromBridge(bridgeID, validatorID string)
 			return nil
 		}
 	}
-	
+
 	return errors.New("validator not found in bridge")
 }
 
@@ -825,7 +825,7 @@ func (bm *BridgeManager) RemoveValidatorFromBridge(bridgeID, validatorID string)
 func (bm *BridgeManager) GetTotalTransfers() int {
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	return len(bm.Transfers)
 }
 
@@ -833,14 +833,14 @@ func (bm *BridgeManager) GetTotalTransfers() int {
 func (bm *BridgeManager) GetTotalVolume() *big.Int {
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	totalVolume := big.NewInt(0)
 	for _, transfer := range bm.Transfers {
 		if transfer.Status == TransferCompleted {
 			totalVolume.Add(totalVolume, transfer.Amount)
 		}
 	}
-	
+
 	return totalVolume
 }
 
@@ -848,14 +848,14 @@ func (bm *BridgeManager) GetTotalVolume() *big.Int {
 func (bm *BridgeManager) GetTotalFees() *big.Int {
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
-	
+
 	totalFees := big.NewInt(0)
 	for _, transfer := range bm.Transfers {
 		if transfer.Status == TransferCompleted {
 			totalFees.Add(totalFees, transfer.BridgeFee)
 		}
 	}
-	
+
 	return totalFees
 }
 
@@ -871,7 +871,7 @@ func (bm *BridgeManager) ValidateTransfer(transfer *Transfer) error {
 	if transfer == nil {
 		return errors.New("transfer cannot be nil")
 	}
-	
+
 	// Validate chains
 	if _, exists := bm.Chains[transfer.SourceChainID]; !exists {
 		return errors.New("source chain not found")
@@ -879,17 +879,17 @@ func (bm *BridgeManager) ValidateTransfer(transfer *Transfer) error {
 	if _, exists := bm.Chains[transfer.TargetChainID]; !exists {
 		return errors.New("target chain not found")
 	}
-	
+
 	// Validate asset
 	if _, exists := bm.Assets[transfer.AssetID]; !exists {
 		return errors.New("asset not found")
 	}
-	
+
 	// Validate amount
 	if transfer.Amount.Sign() <= 0 {
 		return errors.New("amount must be positive")
 	}
-	
+
 	// Validate addresses
 	if transfer.Sender == "" {
 		return errors.New("sender address cannot be empty")
@@ -897,6 +897,6 @@ func (bm *BridgeManager) ValidateTransfer(transfer *Transfer) error {
 	if transfer.Recipient == "" {
 		return errors.New("recipient address cannot be empty")
 	}
-	
+
 	return nil
 }

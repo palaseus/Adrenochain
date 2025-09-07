@@ -82,31 +82,31 @@ func TestNewAdvancedRiskManager(t *testing.T) {
 
 func TestNewStressTestScenario(t *testing.T) {
 	tests := []struct {
-		name        string
-		id          string
+		name         string
+		id           string
 		scenarioName string
-		description string
-		parameters  map[string]*big.Float
-		severity    StressSeverity
-		expectError bool
+		description  string
+		parameters   map[string]*big.Float
+		severity     StressSeverity
+		expectError  bool
 	}{
 		{
-			name:        "Valid Scenario",
-			id:          "scenario1",
+			name:         "Valid Scenario",
+			id:           "scenario1",
 			scenarioName: "Market Crash",
-			description: "Simulate a severe market crash",
+			description:  "Simulate a severe market crash",
 			parameters: map[string]*big.Float{
-				"price_shock_BTC": big.NewFloat(0.7), // 30% price drop
+				"price_shock_BTC":      big.NewFloat(0.7), // 30% price drop
 				"volatility_shock_BTC": big.NewFloat(2.0), // 2x volatility
 			},
 			severity:    SevereStress,
 			expectError: false,
 		},
 		{
-			name:        "Empty ID",
-			id:          "",
+			name:         "Empty ID",
+			id:           "",
 			scenarioName: "Market Crash",
-			description: "Simulate a severe market crash",
+			description:  "Simulate a severe market crash",
 			parameters: map[string]*big.Float{
 				"price_shock_BTC": big.NewFloat(0.7),
 			},
@@ -114,10 +114,10 @@ func TestNewStressTestScenario(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "Empty Name",
-			id:          "scenario1",
+			name:         "Empty Name",
+			id:           "scenario1",
 			scenarioName: "",
-			description: "Simulate a severe market crash",
+			description:  "Simulate a severe market crash",
 			parameters: map[string]*big.Float{
 				"price_shock_BTC": big.NewFloat(0.7),
 			},
@@ -125,13 +125,13 @@ func TestNewStressTestScenario(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "Nil Parameters",
-			id:          "scenario1",
+			name:         "Nil Parameters",
+			id:           "scenario1",
 			scenarioName: "Market Crash",
-			description: "Simulate a severe market crash",
-			parameters:  nil,
-			severity:    SevereStress,
-			expectError: true,
+			description:  "Simulate a severe market crash",
+			parameters:   nil,
+			severity:     SevereStress,
+			expectError:  true,
 		},
 	}
 
@@ -181,84 +181,84 @@ func TestNewStressTestScenario(t *testing.T) {
 
 func TestNewMonteCarloSimulation(t *testing.T) {
 	tests := []struct {
-		name              string
-		id                string
-		numSimulations    int
-		timeHorizon       *big.Float
-		confidenceLevel   *big.Float
-		expectError       bool
+		name            string
+		id              string
+		numSimulations  int
+		timeHorizon     *big.Float
+		confidenceLevel *big.Float
+		expectError     bool
 	}{
 		{
-			name:              "Valid Simulation",
-			id:                "mc1",
-			numSimulations:    10000,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   big.NewFloat(0.95),
-			expectError:       false,
+			name:            "Valid Simulation",
+			id:              "mc1",
+			numSimulations:  10000,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: big.NewFloat(0.95),
+			expectError:     false,
 		},
 		{
-			name:              "Empty ID",
-			id:                "",
-			numSimulations:    10000,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   big.NewFloat(0.95),
-			expectError:       true,
+			name:            "Empty ID",
+			id:              "",
+			numSimulations:  10000,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: big.NewFloat(0.95),
+			expectError:     true,
 		},
 		{
-			name:              "Zero Simulations",
-			id:                "mc1",
-			numSimulations:    0,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   big.NewFloat(0.95),
-			expectError:       true,
+			name:            "Zero Simulations",
+			id:              "mc1",
+			numSimulations:  0,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: big.NewFloat(0.95),
+			expectError:     true,
 		},
 		{
-			name:              "Negative Simulations",
-			id:                "mc1",
-			numSimulations:    -1000,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   big.NewFloat(0.95),
-			expectError:       true,
+			name:            "Negative Simulations",
+			id:              "mc1",
+			numSimulations:  -1000,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: big.NewFloat(0.95),
+			expectError:     true,
 		},
 		{
-			name:              "Nil Time Horizon",
-			id:                "mc1",
-			numSimulations:    10000,
-			timeHorizon:       nil,
-			confidenceLevel:   big.NewFloat(0.95),
-			expectError:       true,
+			name:            "Nil Time Horizon",
+			id:              "mc1",
+			numSimulations:  10000,
+			timeHorizon:     nil,
+			confidenceLevel: big.NewFloat(0.95),
+			expectError:     true,
 		},
 		{
-			name:              "Zero Time Horizon",
-			id:                "mc1",
-			numSimulations:    10000,
-			timeHorizon:       big.NewFloat(0),
-			confidenceLevel:   big.NewFloat(0.95),
-			expectError:       true,
+			name:            "Zero Time Horizon",
+			id:              "mc1",
+			numSimulations:  10000,
+			timeHorizon:     big.NewFloat(0),
+			confidenceLevel: big.NewFloat(0.95),
+			expectError:     true,
 		},
 		{
-			name:              "Nil Confidence Level",
-			id:                "mc1",
-			numSimulations:    10000,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   nil,
-			expectError:       true,
+			name:            "Nil Confidence Level",
+			id:              "mc1",
+			numSimulations:  10000,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: nil,
+			expectError:     true,
 		},
 		{
-			name:              "Invalid Confidence Level - Too High",
-			id:                "mc1",
-			numSimulations:    10000,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   big.NewFloat(1.1),
-			expectError:       true,
+			name:            "Invalid Confidence Level - Too High",
+			id:              "mc1",
+			numSimulations:  10000,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: big.NewFloat(1.1),
+			expectError:     true,
 		},
 		{
-			name:              "Invalid Confidence Level - Too Low",
-			id:                "mc1",
-			numSimulations:    10000,
-			timeHorizon:       big.NewFloat(1.0),
-			confidenceLevel:   big.NewFloat(-0.1),
-			expectError:       true,
+			name:            "Invalid Confidence Level - Too Low",
+			id:              "mc1",
+			numSimulations:  10000,
+			timeHorizon:     big.NewFloat(1.0),
+			confidenceLevel: big.NewFloat(-0.1),
+			expectError:     true,
 		},
 	}
 
@@ -538,8 +538,8 @@ func TestAdvancedRiskManagerStressTesting(t *testing.T) {
 		"Market Crash",
 		"Simulate a severe market crash",
 		map[string]*big.Float{
-			"price_shock_BTC":      big.NewFloat(0.7),  // 30% price drop
-			"volatility_shock_BTC": big.NewFloat(2.0),  // 2x volatility
+			"price_shock_BTC":      big.NewFloat(0.7), // 30% price drop
+			"volatility_shock_BTC": big.NewFloat(2.0), // 2x volatility
 		},
 		SevereStress,
 	)

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/palaseus/adrenochain/pkg/explorer/service"
 	"github.com/gorilla/mux"
+	"github.com/palaseus/adrenochain/pkg/explorer/service"
 )
 
 // Rate limiter for API endpoints

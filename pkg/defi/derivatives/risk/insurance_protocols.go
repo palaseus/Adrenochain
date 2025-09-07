@@ -61,19 +61,19 @@ type InsurancePool struct {
 
 // InsurancePolicy represents an individual insurance policy
 type InsurancePolicy struct {
-	ID              string
-	PoolID          string
-	UserID          string
-	CoverageAmount  *big.Float
-	PremiumAmount   *big.Float
-	PremiumRate     *big.Float
-	CoverageType    InsuranceType
-	RiskAssessment  *big.Float
-	Status          CoverageStatus
-	StartDate       time.Time
-	EndDate         time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID             string
+	PoolID         string
+	UserID         string
+	CoverageAmount *big.Float
+	PremiumAmount  *big.Float
+	PremiumRate    *big.Float
+	CoverageType   InsuranceType
+	RiskAssessment *big.Float
+	Status         CoverageStatus
+	StartDate      time.Time
+	EndDate        time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // InsuranceClaim represents a claim against an insurance policy
@@ -96,13 +96,13 @@ type InsuranceClaim struct {
 
 // PremiumCalculation represents the calculation of insurance premiums
 type PremiumCalculation struct {
-	BasePremium     *big.Float
-	RiskMultiplier  *big.Float
+	BasePremium        *big.Float
+	RiskMultiplier     *big.Float
 	CoverageMultiplier *big.Float
 	DurationMultiplier *big.Float
-	FinalPremium    *big.Float
-	RiskFactors     map[string]*big.Float
-	CreatedAt       time.Time
+	FinalPremium       *big.Float
+	RiskFactors        map[string]*big.Float
+	CreatedAt          time.Time
 }
 
 // RiskAssessment represents a comprehensive risk assessment for insurance
@@ -351,60 +351,60 @@ func NewRiskAssessment(
 func (ra *RiskAssessment) calculateOverallRisk() {
 	// Weighted average of risk factors
 	weights := map[string]*big.Float{
-		"var":             big.NewFloat(0.25),
-		"cvar":            big.NewFloat(0.20),
-		"volatility":      big.NewFloat(0.15),
-		"leverage":        big.NewFloat(0.15),
-		"liquidity":       big.NewFloat(0.10),
-		"correlation":     big.NewFloat(0.05),
-		"market":          big.NewFloat(0.05),
-		"credit":          big.NewFloat(0.03),
-		"operational":     big.NewFloat(0.02),
+		"var":         big.NewFloat(0.25),
+		"cvar":        big.NewFloat(0.20),
+		"volatility":  big.NewFloat(0.15),
+		"leverage":    big.NewFloat(0.15),
+		"liquidity":   big.NewFloat(0.10),
+		"correlation": big.NewFloat(0.05),
+		"market":      big.NewFloat(0.05),
+		"credit":      big.NewFloat(0.03),
+		"operational": big.NewFloat(0.02),
 	}
 
 	overallRisk := big.NewFloat(0)
-	
+
 	// Apply weights to each risk factor
 	if ra.VaR != nil {
 		weighted := new(big.Float).Mul(ra.VaR, weights["var"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.CVaR != nil {
 		weighted := new(big.Float).Mul(ra.CVaR, weights["cvar"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.Volatility != nil {
 		weighted := new(big.Float).Mul(ra.Volatility, weights["volatility"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.Leverage != nil {
 		weighted := new(big.Float).Mul(ra.Leverage, weights["leverage"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.LiquidityScore != nil {
 		weighted := new(big.Float).Mul(ra.LiquidityScore, weights["liquidity"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.CorrelationRisk != nil {
 		weighted := new(big.Float).Mul(ra.CorrelationRisk, weights["correlation"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.MarketRisk != nil {
 		weighted := new(big.Float).Mul(ra.MarketRisk, weights["market"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.CreditRisk != nil {
 		weighted := new(big.Float).Mul(ra.CreditRisk, weights["credit"])
 		overallRisk.Add(overallRisk, weighted)
 	}
-	
+
 	if ra.OperationalRisk != nil {
 		weighted := new(big.Float).Mul(ra.OperationalRisk, weights["operational"])
 		overallRisk.Add(overallRisk, weighted)
@@ -449,11 +449,11 @@ func (im *InsuranceManager) CalculatePremium(
 
 	// Store risk factors for transparency
 	riskFactors := map[string]*big.Float{
-		"base_risk":      pool.PremiumRate,
-		"risk_multiplier": riskMultiplier,
+		"base_risk":           pool.PremiumRate,
+		"risk_multiplier":     riskMultiplier,
 		"coverage_multiplier": coverageMultiplier,
 		"duration_multiplier": durationMultiplier,
-		"overall_risk_score": assessment.OverallRisk,
+		"overall_risk_score":  assessment.OverallRisk,
 	}
 
 	calculation := &PremiumCalculation{
@@ -483,16 +483,16 @@ func (im *InsuranceManager) calculateRiskMultiplier(assessment *RiskAssessment) 
 
 	// Convert to float64 for calculation
 	riskScore, _ := assessment.OverallRisk.Float64()
-	
+
 	// Risk multiplier formula: 1 + (risk_score * 0.5)
 	// This means a risk score of 0.1 results in a 1.05x multiplier
 	multiplier := 1.0 + (riskScore * 0.5)
-	
+
 	// Cap the multiplier at 3.0x to prevent excessive premiums
 	if multiplier > 3.0 {
 		multiplier = 3.0
 	}
-	
+
 	// Minimum multiplier of 0.5x for very low risk
 	if multiplier < 0.5 {
 		multiplier = 0.5
@@ -505,14 +505,14 @@ func (im *InsuranceManager) calculateRiskMultiplier(assessment *RiskAssessment) 
 func (im *InsuranceManager) calculateCoverageMultiplier(policy *InsurancePolicy, pool *InsurancePool) *big.Float {
 	// Calculate coverage ratio relative to pool capacity
 	coverageRatio := new(big.Float).Quo(policy.CoverageAmount, pool.TotalCapacity)
-	
+
 	// Convert to float64 for calculation
 	ratio, _ := coverageRatio.Float64()
-	
+
 	// Coverage multiplier formula: 1 + (coverage_ratio * 0.3)
 	// This means covering 10% of pool capacity results in a 1.03x multiplier
 	multiplier := 1.0 + (ratio * 0.3)
-	
+
 	// Cap the multiplier at 2.0x
 	if multiplier > 2.0 {
 		multiplier = 2.0
@@ -526,11 +526,11 @@ func (im *InsuranceManager) calculateDurationMultiplier(policy *InsurancePolicy)
 	// Calculate policy duration in days
 	duration := policy.EndDate.Sub(policy.StartDate)
 	days := duration.Hours() / 24
-	
+
 	// Duration multiplier formula: 1 + (days / 365 * 0.2)
 	// This means a 1-year policy gets a 1.2x multiplier
 	multiplier := 1.0 + (days / 365.0 * 0.2)
-	
+
 	// Cap the multiplier at 1.5x
 	if multiplier > 1.5 {
 		multiplier = 1.5

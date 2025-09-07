@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/palaseus/adrenochain/pkg/api"
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/chain"
@@ -26,7 +27,6 @@ import (
 	"github.com/palaseus/adrenochain/pkg/storage"
 	"github.com/palaseus/adrenochain/pkg/utxo"
 	"github.com/palaseus/adrenochain/pkg/wallet"
-	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/protobuf/proto"
@@ -758,7 +758,7 @@ func getBlockchainInfoCmd() *cobra.Command {
 
 			// MINIMAL APPROACH: Read chainstate directly without loading full chain
 			fmt.Printf("Blockchain Information:\n")
-			
+
 			// Read chainstate directly
 			chainState, err := nodeStorage.GetChainState()
 			if err != nil {
@@ -772,7 +772,7 @@ func getBlockchainInfoCmd() *cobra.Command {
 					fmt.Printf("Best Block Hash: Not available\n")
 				}
 			}
-			
+
 			// Count block files
 			blockCount := 0
 			if entries, err := os.ReadDir(dataDir); err == nil {
@@ -783,7 +783,7 @@ func getBlockchainInfoCmd() *cobra.Command {
 				}
 			}
 			fmt.Printf("Block Files: %d\n", blockCount)
-			
+
 			// Storage information
 			fmt.Printf("Storage Type: %s\n", storageType)
 			fmt.Printf("Data Directory: %s\n", dataDir)
@@ -826,7 +826,7 @@ func getSafeInfoCmd() *cobra.Command {
 
 			// MINIMAL APPROACH: Read chainstate directly without loading full chain
 			fmt.Printf("Safe Blockchain Information:\n")
-			
+
 			// Read chainstate directly
 			chainState, err := nodeStorage.GetChainState()
 			if err != nil {
@@ -840,7 +840,7 @@ func getSafeInfoCmd() *cobra.Command {
 					fmt.Printf("Best Block Hash: Not available\n")
 				}
 			}
-			
+
 			// Count block files
 			blockCount := 0
 			if entries, err := os.ReadDir(dataDir); err == nil {
@@ -851,7 +851,7 @@ func getSafeInfoCmd() *cobra.Command {
 				}
 			}
 			fmt.Printf("Block Files: %d\n", blockCount)
-			
+
 			// Storage information
 			fmt.Printf("Storage Type: %s\n", storageType)
 			fmt.Printf("Data Directory: %s\n", dataDir)

@@ -459,7 +459,7 @@ func (oe *OptionsEngine) determineExecutionQuantity(buyOrder, sellOrder *Options
 func (oe *OptionsEngine) updatePositions(buyOrder, sellOrder *OptionsOrder, quantity, price *big.Float) {
 	// Update buyer position
 	buyerPositionID := fmt.Sprintf("%s_%d", buyOrder.UserID, buyOrder.Option.Type)
-	
+
 	oe.mu.Lock()
 	buyerPosition, exists := oe.positions[buyerPositionID]
 

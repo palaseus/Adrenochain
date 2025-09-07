@@ -25,44 +25,44 @@ type RiskAdjustmentStrategy struct {
 type RiskAdjustmentType string
 
 const (
-	RiskAdjustmentTypeSharpeRatio    RiskAdjustmentType = "sharpe_ratio"
-	RiskAdjustmentTypeSortinoRatio   RiskAdjustmentType = "sortino_ratio"
-	RiskAdjustmentTypeCalmarRatio    RiskAdjustmentType = "calmar_ratio"
+	RiskAdjustmentTypeSharpeRatio      RiskAdjustmentType = "sharpe_ratio"
+	RiskAdjustmentTypeSortinoRatio     RiskAdjustmentType = "sortino_ratio"
+	RiskAdjustmentTypeCalmarRatio      RiskAdjustmentType = "calmar_ratio"
 	RiskAdjustmentTypeInformationRatio RiskAdjustmentType = "information_ratio"
-	RiskAdjustmentTypeCustom         RiskAdjustmentType = "custom"
+	RiskAdjustmentTypeCustom           RiskAdjustmentType = "custom"
 )
 
 // RiskAdjustmentStatus represents the status of a risk adjustment strategy
 type RiskAdjustmentStatus string
 
 const (
-	RiskAdjustmentStatusActive   RiskAdjustmentStatus = "active"
-	RiskAdjustmentStatusPaused   RiskAdjustmentStatus = "paused"
-	RiskAdjustmentStatusStopped  RiskAdjustmentStatus = "stopped"
+	RiskAdjustmentStatusActive  RiskAdjustmentStatus = "active"
+	RiskAdjustmentStatusPaused  RiskAdjustmentStatus = "paused"
+	RiskAdjustmentStatusStopped RiskAdjustmentStatus = "stopped"
 )
 
 // RiskAdjustedMetrics represents risk-adjusted performance metrics
 type RiskAdjustedMetrics struct {
-	StrategyID        string     `json:"strategy_id"`
-	SharpeRatio       *big.Float `json:"sharpe_ratio"`
-	SortinoRatio      *big.Float `json:"sortino_ratio"`
-	CalmarRatio       *big.Float `json:"calmar_ratio"`
-	InformationRatio  *big.Float `json:"information_ratio"`
-	TreynorRatio      *big.Float `json:"treynor_ratio"`
-	JensenAlpha      *big.Float `json:"jensen_alpha"`
+	StrategyID         string     `json:"strategy_id"`
+	SharpeRatio        *big.Float `json:"sharpe_ratio"`
+	SortinoRatio       *big.Float `json:"sortino_ratio"`
+	CalmarRatio        *big.Float `json:"calmar_ratio"`
+	InformationRatio   *big.Float `json:"information_ratio"`
+	TreynorRatio       *big.Float `json:"treynor_ratio"`
+	JensenAlpha        *big.Float `json:"jensen_alpha"`
 	RiskAdjustedReturn *big.Float `json:"risk_adjusted_return"`
-	RiskScore         *big.Float `json:"risk_score"`
-	LastCalculated    time.Time  `json:"last_calculated"`
+	RiskScore          *big.Float `json:"risk_score"`
+	LastCalculated     time.Time  `json:"last_calculated"`
 }
 
 // RiskProfile represents a comprehensive risk profile
 type RiskProfile struct {
-	UserID            string                 `json:"user_id"`
-	RiskTolerance     RiskToleranceLevel     `json:"risk_tolerance"`
-	InvestmentHorizon time.Duration          `json:"investment_horizon"`
-	LiquidityNeeds    LiquidityRequirement   `json:"liquidity_needs"`
-	RiskConstraints   map[string]*big.Float  `json:"risk_constraints"`
-	LastUpdated       time.Time              `json:"last_updated"`
+	UserID            string                `json:"user_id"`
+	RiskTolerance     RiskToleranceLevel    `json:"risk_tolerance"`
+	InvestmentHorizon time.Duration         `json:"investment_horizon"`
+	LiquidityNeeds    LiquidityRequirement  `json:"liquidity_needs"`
+	RiskConstraints   map[string]*big.Float `json:"risk_constraints"`
+	LastUpdated       time.Time             `json:"last_updated"`
 }
 
 // RiskToleranceLevel represents user risk tolerance
@@ -70,8 +70,8 @@ type RiskToleranceLevel string
 
 const (
 	RiskToleranceConservative RiskToleranceLevel = "conservative"
-	RiskToleranceModerate    RiskToleranceLevel = "moderate"
-	RiskToleranceAggressive  RiskToleranceLevel = "aggressive"
+	RiskToleranceModerate     RiskToleranceLevel = "moderate"
+	RiskToleranceAggressive   RiskToleranceLevel = "aggressive"
 )
 
 // LiquidityRequirement represents liquidity requirements
@@ -524,16 +524,16 @@ func (rae *RiskAdjustmentEngine) OptimizePortfolioRisk(ctx context.Context, user
 // optimizeConservativePortfolio optimizes portfolio for conservative risk tolerance
 func (rae *RiskAdjustmentEngine) optimizeConservativePortfolio(ctx context.Context, strategies []*YieldStrategy, targetReturn *big.Float) (map[string]*big.Float, error) {
 	allocations := make(map[string]*big.Float)
-	
+
 	// Conservative approach: favor low-risk strategies
 	var lowRiskStrategies []*YieldStrategy
 	var mediumRiskStrategies []*YieldStrategy
-	
+
 	for _, strategy := range strategies {
 		if strategy.Status != StrategyStatusActive {
 			continue
 		}
-		
+
 		switch strategy.RiskLevel {
 		case StrategyRiskLevelLow:
 			lowRiskStrategies = append(lowRiskStrategies, strategy)
@@ -541,11 +541,11 @@ func (rae *RiskAdjustmentEngine) optimizeConservativePortfolio(ctx context.Conte
 			mediumRiskStrategies = append(mediumRiskStrategies, strategy)
 		}
 	}
-	
+
 	// Allocate 70% to low-risk, 30% to medium-risk
 	totalLowRiskWeight := big.NewFloat(0.7)
 	totalMediumRiskWeight := big.NewFloat(0.3)
-	
+
 	// Distribute among low-risk strategies
 	if len(lowRiskStrategies) > 0 {
 		weightPerStrategy := new(big.Float).Quo(totalLowRiskWeight, big.NewFloat(float64(len(lowRiskStrategies))))
@@ -553,7 +553,7 @@ func (rae *RiskAdjustmentEngine) optimizeConservativePortfolio(ctx context.Conte
 			allocations[strategy.ID] = weightPerStrategy
 		}
 	}
-	
+
 	// Distribute among medium-risk strategies
 	if len(mediumRiskStrategies) > 0 {
 		weightPerStrategy := new(big.Float).Quo(totalMediumRiskWeight, big.NewFloat(float64(len(mediumRiskStrategies))))
@@ -561,24 +561,24 @@ func (rae *RiskAdjustmentEngine) optimizeConservativePortfolio(ctx context.Conte
 			allocations[strategy.ID] = weightPerStrategy
 		}
 	}
-	
+
 	return allocations, nil
 }
 
 // optimizeModeratePortfolio optimizes portfolio for moderate risk tolerance
 func (rae *RiskAdjustmentEngine) optimizeModeratePortfolio(ctx context.Context, strategies []*YieldStrategy, targetReturn *big.Float) (map[string]*big.Float, error) {
 	allocations := make(map[string]*big.Float)
-	
+
 	// Moderate approach: balanced allocation
 	var lowRiskStrategies []*YieldStrategy
 	var mediumRiskStrategies []*YieldStrategy
 	var highRiskStrategies []*YieldStrategy
-	
+
 	for _, strategy := range strategies {
 		if strategy.Status != StrategyStatusActive {
 			continue
 		}
-		
+
 		switch strategy.RiskLevel {
 		case StrategyRiskLevelLow:
 			lowRiskStrategies = append(lowRiskStrategies, strategy)
@@ -588,12 +588,12 @@ func (rae *RiskAdjustmentEngine) optimizeModeratePortfolio(ctx context.Context, 
 			highRiskStrategies = append(highRiskStrategies, strategy)
 		}
 	}
-	
+
 	// Allocate 40% to low-risk, 40% to medium-risk, 20% to high-risk
 	totalLowRiskWeight := big.NewFloat(0.4)
 	totalMediumRiskWeight := big.NewFloat(0.4)
 	totalHighRiskWeight := big.NewFloat(0.2)
-	
+
 	// Distribute weights
 	if len(lowRiskStrategies) > 0 {
 		weightPerStrategy := new(big.Float).Quo(totalLowRiskWeight, big.NewFloat(float64(len(lowRiskStrategies))))
@@ -601,42 +601,42 @@ func (rae *RiskAdjustmentEngine) optimizeModeratePortfolio(ctx context.Context, 
 			allocations[strategy.ID] = weightPerStrategy
 		}
 	}
-	
+
 	if len(mediumRiskStrategies) > 0 {
 		weightPerStrategy := new(big.Float).Quo(totalMediumRiskWeight, big.NewFloat(float64(len(mediumRiskStrategies))))
 		for _, strategy := range mediumRiskStrategies {
 			allocations[strategy.ID] = weightPerStrategy
 		}
 	}
-	
+
 	if len(highRiskStrategies) > 0 {
 		weightPerStrategy := new(big.Float).Quo(totalHighRiskWeight, big.NewFloat(float64(len(highRiskStrategies))))
 		for _, strategy := range highRiskStrategies {
 			allocations[strategy.ID] = weightPerStrategy
 		}
 	}
-	
+
 	return allocations, nil
 }
 
 // optimizeAggressivePortfolio optimizes portfolio for aggressive risk tolerance
 func (rae *RiskAdjustmentEngine) optimizeAggressivePortfolio(ctx context.Context, strategies []*YieldStrategy, targetReturn *big.Float) (map[string]*big.Float, error) {
 	allocations := make(map[string]*big.Float)
-	
+
 	// Aggressive approach: favor high-return strategies
 	var allStrategies []*YieldStrategy
-	
+
 	for _, strategy := range strategies {
 		if strategy.Status != StrategyStatusActive {
 			continue
 		}
 		allStrategies = append(allStrategies, strategy)
 	}
-	
+
 	// Sort strategies by APY (descending)
 	// In a real implementation, you'd want proper sorting
 	// For now, use equal weights but favor strategies with higher APY
-	
+
 	if len(allStrategies) > 0 {
 		// Equal weight distribution
 		weightPerStrategy := new(big.Float).Quo(big.NewFloat(1.0), big.NewFloat(float64(len(allStrategies))))
@@ -644,7 +644,7 @@ func (rae *RiskAdjustmentEngine) optimizeAggressivePortfolio(ctx context.Context
 			allocations[strategy.ID] = weightPerStrategy
 		}
 	}
-	
+
 	return allocations, nil
 }
 
@@ -691,23 +691,23 @@ func (rae *RiskAdjustmentEngine) GetRiskAdjustedRecommendations(ctx context.Cont
 
 // InvestmentRecommendation represents an investment recommendation
 type InvestmentRecommendation struct {
-	StrategyID        string     `json:"strategy_id"`
-	StrategyName      string     `json:"strategy_name"`
-	Recommendation    string     `json:"recommendation"`
-	Score             *big.Float `json:"score"`
-	RiskLevel         string     `json:"risk_level"`
-	ExpectedReturn    *big.Float `json:"expected_return"`
+	StrategyID         string     `json:"strategy_id"`
+	StrategyName       string     `json:"strategy_name"`
+	Recommendation     string     `json:"recommendation"`
+	Score              *big.Float `json:"score"`
+	RiskLevel          string     `json:"risk_level"`
+	ExpectedReturn     *big.Float `json:"expected_return"`
 	RiskAdjustedReturn *big.Float `json:"risk_adjusted_return"`
-	Reasoning         string     `json:"reasoning"`
+	Reasoning          string     `json:"reasoning"`
 }
 
 // generateRecommendation generates an investment recommendation
 func (rae *RiskAdjustmentEngine) generateRecommendation(strategy *YieldStrategy, metrics *RiskAdjustedMetrics, profile *RiskProfile) *InvestmentRecommendation {
 	recommendation := &InvestmentRecommendation{
-		StrategyID:        strategy.ID,
-		StrategyName:      strategy.Name,
-		RiskLevel:         string(strategy.RiskLevel),
-		ExpectedReturn:    strategy.APY,
+		StrategyID:         strategy.ID,
+		StrategyName:       strategy.Name,
+		RiskLevel:          string(strategy.RiskLevel),
+		ExpectedReturn:     strategy.APY,
 		RiskAdjustedReturn: metrics.RiskAdjustedReturn,
 	}
 

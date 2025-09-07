@@ -418,10 +418,10 @@ func BenchmarkHybridConsensus_ValidateBlock(b *testing.B) {
 func TestOptimizedHybridConsensus(t *testing.T) {
 	t.Run("new_optimized_hybrid_consensus", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
@@ -433,10 +433,10 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("get_optimized_metrics", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
@@ -450,10 +450,10 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("close_consensus", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
@@ -465,16 +465,16 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("propose_block_basic", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
-			MaxBlockSize:        1000,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
+			MaxBlockSize:      1000,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
 		consensus.CurrentRound = 100
-		
+
 		// Set up participants explicitly
 		consensus.Participants = map[string]*Participant{
 			"p1": {TrustScore: 0.9, Stake: big.NewInt(1000)},
@@ -488,10 +488,10 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("should_use_fast_path", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
@@ -521,11 +521,11 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("validate_block", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
-			MaxBlockSize:        1000,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
+			MaxBlockSize:      1000,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
@@ -582,11 +582,11 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("update_metrics", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
-			BlockTime:           10 * time.Second,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
+			BlockTime:         10 * time.Second,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)
@@ -608,10 +608,10 @@ func TestOptimizedHybridConsensus(t *testing.T) {
 
 	t.Run("generate_block_cache_key", func(t *testing.T) {
 		config := OptimizedConsensusConfig{
-			WorkerPoolSize:      4,
-			FastPathThreshold:   0.5,
-			SlowPathThreshold:   0.5,
-			ConsensusTimeout:    2 * time.Second,
+			WorkerPoolSize:    4,
+			FastPathThreshold: 0.5,
+			SlowPathThreshold: 0.5,
+			ConsensusTimeout:  2 * time.Second,
 		}
 
 		consensus := NewOptimizedHybridConsensus(config)

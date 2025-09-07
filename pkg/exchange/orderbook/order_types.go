@@ -37,21 +37,21 @@ const (
 
 // Order represents a trading order in the order book
 type Order struct {
-	ID            string      `json:"id"`
-	UserID        string      `json:"user_id"`
-	TradingPair   string      `json:"trading_pair"`
-	Side          OrderSide   `json:"side"`
-	Type          OrderType   `json:"type"`
-	Status        OrderStatus `json:"status"`
-	Quantity      *big.Int    `json:"quantity"`
-	Price         *big.Int    `json:"price"`
-	FilledQuantity *big.Int   `json:"filled_quantity"`
-	RemainingQuantity *big.Int `json:"remaining_quantity"`
-	StopPrice     *big.Int    `json:"stop_price,omitempty"`
-	TimeInForce   TimeInForce `json:"time_in_force"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
-	ExpiresAt     *time.Time  `json:"expires_at,omitempty"`
+	ID                string      `json:"id"`
+	UserID            string      `json:"user_id"`
+	TradingPair       string      `json:"trading_pair"`
+	Side              OrderSide   `json:"side"`
+	Type              OrderType   `json:"type"`
+	Status            OrderStatus `json:"status"`
+	Quantity          *big.Int    `json:"quantity"`
+	Price             *big.Int    `json:"price"`
+	FilledQuantity    *big.Int    `json:"filled_quantity"`
+	RemainingQuantity *big.Int    `json:"remaining_quantity"`
+	StopPrice         *big.Int    `json:"stop_price,omitempty"`
+	TimeInForce       TimeInForce `json:"time_in_force"`
+	CreatedAt         time.Time   `json:"created_at"`
+	UpdatedAt         time.Time   `json:"updated_at"`
+	ExpiresAt         *time.Time  `json:"expires_at,omitempty"`
 }
 
 // TimeInForce represents when the order should be executed
@@ -75,21 +75,21 @@ func (e OrderValidationError) Error() string {
 
 // Validation errors
 var (
-	ErrInvalidOrderID          = errors.New("invalid order ID")
-	ErrInvalidUserID           = errors.New("invalid user ID")
-	ErrInvalidTradingPair      = errors.New("invalid trading pair")
-	ErrInvalidQuantity         = errors.New("invalid quantity")
-	ErrInvalidPrice            = errors.New("invalid price")
-	ErrInvalidStopPrice        = errors.New("invalid stop price")
-	ErrInvalidTimeInForce      = errors.New("invalid time in force")
-	ErrInvalidOrderType        = errors.New("invalid order type")
-	ErrInvalidOrderSide        = errors.New("invalid order side")
-	ErrMarketOrderWithPrice    = errors.New("market orders cannot have a price")
+	ErrInvalidOrderID            = errors.New("invalid order ID")
+	ErrInvalidUserID             = errors.New("invalid user ID")
+	ErrInvalidTradingPair        = errors.New("invalid trading pair")
+	ErrInvalidQuantity           = errors.New("invalid quantity")
+	ErrInvalidPrice              = errors.New("invalid price")
+	ErrInvalidStopPrice          = errors.New("invalid stop price")
+	ErrInvalidTimeInForce        = errors.New("invalid time in force")
+	ErrInvalidOrderType          = errors.New("invalid order type")
+	ErrInvalidOrderSide          = errors.New("invalid order side")
+	ErrMarketOrderWithPrice      = errors.New("market orders cannot have a price")
 	ErrStopOrderWithoutStopPrice = errors.New("stop orders must have a stop price")
-	ErrExpiredOrder            = errors.New("order has expired")
-	ErrOrderAlreadyFilled      = errors.New("order is already filled")
-	ErrOrderAlreadyCancelled   = errors.New("order is already cancelled")
-	ErrOrderAlreadyRejected    = errors.New("order is already rejected")
+	ErrExpiredOrder              = errors.New("order has expired")
+	ErrOrderAlreadyFilled        = errors.New("order is already filled")
+	ErrOrderAlreadyCancelled     = errors.New("order is already cancelled")
+	ErrOrderAlreadyRejected      = errors.New("order is already rejected")
 )
 
 // NewOrder creates a new order with validation
@@ -103,21 +103,21 @@ func NewOrder(
 	expiresAt *time.Time,
 ) (*Order, error) {
 	order := &Order{
-		ID:              id,
-		UserID:          userID,
-		TradingPair:     tradingPair,
-		Side:            side,
-		Type:            orderType,
-		Status:          OrderStatusPending,
-		Quantity:        quantity,
-		Price:           price,
-		FilledQuantity:  big.NewInt(0),
+		ID:                id,
+		UserID:            userID,
+		TradingPair:       tradingPair,
+		Side:              side,
+		Type:              orderType,
+		Status:            OrderStatusPending,
+		Quantity:          quantity,
+		Price:             price,
+		FilledQuantity:    big.NewInt(0),
 		RemainingQuantity: quantity,
-		StopPrice:       stopPrice,
-		TimeInForce:     timeInForce,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-		ExpiresAt:       expiresAt,
+		StopPrice:         stopPrice,
+		TimeInForce:       timeInForce,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+		ExpiresAt:         expiresAt,
 	}
 
 	if err := order.Validate(); err != nil {
@@ -146,8 +146,8 @@ func (o *Order) Validate() error {
 	}
 
 	// Validate order type
-	if o.Type != OrderTypeLimit && o.Type != OrderTypeMarket && 
-	   o.Type != OrderTypeStopLoss && o.Type != OrderTypeTakeProfit {
+	if o.Type != OrderTypeLimit && o.Type != OrderTypeMarket &&
+		o.Type != OrderTypeStopLoss && o.Type != OrderTypeTakeProfit {
 		return ErrInvalidOrderType
 	}
 
@@ -175,8 +175,8 @@ func (o *Order) Validate() error {
 	}
 
 	// Validate time in force
-	if o.TimeInForce != TimeInForceGTC && o.TimeInForce != TimeInForceIOC && 
-	   o.TimeInForce != TimeInForceFOK {
+	if o.TimeInForce != TimeInForceGTC && o.TimeInForce != TimeInForceIOC &&
+		o.TimeInForce != TimeInForceFOK {
 		return ErrInvalidTimeInForce
 	}
 
@@ -195,9 +195,9 @@ func (o *Order) IsValid() bool {
 
 // CanFill checks if the order can be filled
 func (o *Order) CanFill() bool {
-	if o.Status == OrderStatusFilled || 
-	   o.Status == OrderStatusCancelled || 
-	   o.Status == OrderStatusRejected {
+	if o.Status == OrderStatusFilled ||
+		o.Status == OrderStatusCancelled ||
+		o.Status == OrderStatusRejected {
 		return false
 	}
 
@@ -293,7 +293,7 @@ func (o *Order) IsExpired() bool {
 func (o *Order) GetPriority() int64 {
 	// Base priority is the timestamp (earlier = higher priority)
 	priority := o.CreatedAt.UnixNano()
-	
+
 	// For limit orders, price also affects priority
 	if o.Type == OrderTypeLimit && o.Price != nil {
 		// Convert price to priority (higher price for buy orders, lower for sell)
@@ -304,14 +304,14 @@ func (o *Order) GetPriority() int64 {
 			priority -= pricePriority * 1000000 // Sell orders: lower price = higher priority
 		}
 	}
-	
+
 	return priority
 }
 
 // Clone creates a deep copy of the order
 func (o *Order) Clone() *Order {
 	clone := *o
-	
+
 	// Deep copy big.Int fields
 	if o.Quantity != nil {
 		clone.Quantity = new(big.Int).Set(o.Quantity)
@@ -328,6 +328,6 @@ func (o *Order) Clone() *Order {
 	if o.StopPrice != nil {
 		clone.StopPrice = new(big.Int).Set(o.StopPrice)
 	}
-	
+
 	return &clone
 }

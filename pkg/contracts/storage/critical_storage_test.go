@@ -1139,20 +1139,20 @@ func TestRollbackContractState(t *testing.T) {
 	// Now test the rollbackContractState function directly
 	// Create a backup of the original state
 	backupState := csm.backupContractState(originalState)
-	
+
 	// Modify the state again
 	modifiedState.Storage[key1] = []byte("another_modified_value")
 	modifiedState.Balance = big.NewInt(2000)
 	modifiedState.Nonce = 10
-	
+
 	// Verify modifications
 	if string(modifiedState.Storage[key1]) != "another_modified_value" {
 		t.Error("State should be modified again")
 	}
-	
+
 	// Now rollback to the backup
 	csm.rollbackContractState(modifiedState, backupState)
-	
+
 	// Verify rollback worked
 	rolledBackState := csm.GetContractState(address)
 	assert.Equal(t, "initial_value_1", string(rolledBackState.Storage[key1]))
@@ -1195,7 +1195,7 @@ func TestPruneOldSnapshots(t *testing.T) {
 				Timestamp: time.Now(),
 			},
 		}
-		
+
 		err = csm.UpdateContractState(address, changes, uint64(i+1))
 		if err != nil {
 			t.Fatalf("UpdateContractState %d failed: %v", i, err)

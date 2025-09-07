@@ -34,31 +34,31 @@ const (
 
 // Position represents a position in an asset
 type Position struct {
-	AssetID     string
-	Quantity    *big.Float
-	EntryPrice  *big.Float
+	AssetID      string
+	Quantity     *big.Float
+	EntryPrice   *big.Float
 	CurrentPrice *big.Float
-	Value       *big.Float
-	Pnl         *big.Float
-	PnlPercent  *big.Float
-	Weight      *big.Float
-	LastUpdated time.Time
+	Value        *big.Float
+	Pnl          *big.Float
+	PnlPercent   *big.Float
+	Weight       *big.Float
+	LastUpdated  time.Time
 }
 
 // Portfolio represents a DeFi portfolio
 type Portfolio struct {
-	ID                 string
-	Name               string
-	Description        string
-	Owner              string
-	TotalValue         *big.Float
-	Positions          map[string]*Position
-	RiskProfile        RiskProfile
-	Strategy           Strategy
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	mu                 sync.RWMutex
-	rebalancingTrades  []*RebalanceTrade
+	ID                string
+	Name              string
+	Description       string
+	Owner             string
+	TotalValue        *big.Float
+	Positions         map[string]*Position
+	RiskProfile       RiskProfile
+	Strategy          Strategy
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	mu                sync.RWMutex
+	rebalancingTrades []*RebalanceTrade
 }
 
 // RiskProfile represents the risk tolerance of a portfolio
@@ -96,7 +96,7 @@ type PortfolioManager struct {
 // NewPortfolioManager creates a new portfolio manager
 func NewPortfolioManager() *PortfolioManager {
 	now := time.Now()
-	
+
 	return &PortfolioManager{
 		Portfolios: make(map[string]*Portfolio),
 		Assets:     make(map[string]*Asset),
@@ -116,9 +116,9 @@ func NewPortfolio(id, name, description, owner string, riskProfile RiskProfile, 
 	if owner == "" {
 		return nil, errors.New("owner cannot be empty")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Portfolio{
 		ID:          id,
 		Name:        name,
@@ -147,9 +147,9 @@ func NewAsset(id, symbol, name string, assetType AssetType, price, marketCap, vo
 	if price == nil || price.Sign() < 0 {
 		return nil, errors.New("asset price must be non-negative")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Asset{
 		ID:          id,
 		Symbol:      symbol,
@@ -174,19 +174,19 @@ func NewPosition(assetID string, quantity, entryPrice *big.Float) (*Position, er
 	if entryPrice == nil || entryPrice.Sign() <= 0 {
 		return nil, errors.New("entry price must be positive")
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Position{
-		AssetID:     assetID,
-		Quantity:    new(big.Float).Copy(quantity),
-		EntryPrice:  new(big.Float).Copy(entryPrice),
+		AssetID:      assetID,
+		Quantity:     new(big.Float).Copy(quantity),
+		EntryPrice:   new(big.Float).Copy(entryPrice),
 		CurrentPrice: new(big.Float).Copy(entryPrice),
-		Value:       new(big.Float).Mul(quantity, entryPrice),
-		Pnl:         big.NewFloat(0),
-		PnlPercent:  big.NewFloat(0),
-		Weight:      big.NewFloat(0),
-		LastUpdated: now,
+		Value:        new(big.Float).Mul(quantity, entryPrice),
+		Pnl:          big.NewFloat(0),
+		PnlPercent:   big.NewFloat(0),
+		Weight:       big.NewFloat(0),
+		LastUpdated:  now,
 	}, nil
 }
 
@@ -195,17 +195,17 @@ func (pm *PortfolioManager) AddPortfolio(portfolio *Portfolio) error {
 	if portfolio == nil {
 		return errors.New("portfolio cannot be nil")
 	}
-	
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	if _, exists := pm.Portfolios[portfolio.ID]; exists {
 		return errors.New("portfolio with this ID already exists")
 	}
-	
+
 	pm.Portfolios[portfolio.ID] = portfolio
 	pm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -214,17 +214,17 @@ func (pm *PortfolioManager) RemovePortfolio(portfolioID string) error {
 	if portfolioID == "" {
 		return errors.New("portfolio ID cannot be empty")
 	}
-	
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	if _, exists := pm.Portfolios[portfolioID]; !exists {
 		return errors.New("portfolio not found")
 	}
-	
+
 	delete(pm.Portfolios, portfolioID)
 	pm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -233,17 +233,17 @@ func (pm *PortfolioManager) AddAsset(asset *Asset) error {
 	if asset == nil {
 		return errors.New("asset cannot be nil")
 	}
-	
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	if _, exists := pm.Assets[asset.ID]; exists {
 		return errors.New("asset with this ID already exists")
 	}
-	
+
 	pm.Assets[asset.ID] = asset
 	pm.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -255,19 +255,19 @@ func (pm *PortfolioManager) UpdateAssetPrice(assetID string, newPrice *big.Float
 	if newPrice == nil || newPrice.Sign() < 0 {
 		return errors.New("new price must be non-negative")
 	}
-	
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	asset, exists := pm.Assets[assetID]
 	if !exists {
 		return errors.New("asset not found")
 	}
-	
+
 	asset.Price = new(big.Float).Copy(newPrice)
 	asset.LastUpdated = time.Now()
 	pm.UpdatedAt = time.Now()
-	
+
 	// Update all portfolio positions for this asset
 	for _, portfolio := range pm.Portfolios {
 		if _, exists := portfolio.Positions[assetID]; exists {
@@ -275,7 +275,7 @@ func (pm *PortfolioManager) UpdateAssetPrice(assetID string, newPrice *big.Float
 			portfolio.UpdatedAt = time.Now()
 		}
 	}
-	
+
 	return nil
 }
 
@@ -284,18 +284,18 @@ func (p *Portfolio) AddPosition(position *Position) error {
 	if position == nil {
 		return errors.New("position cannot be nil")
 	}
-	
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if _, exists := p.Positions[position.AssetID]; exists {
 		return errors.New("position for this asset already exists")
 	}
-	
+
 	p.Positions[position.AssetID] = position
 	p.updatePortfolioValue()
 	p.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -310,30 +310,30 @@ func (p *Portfolio) UpdatePosition(assetID string, quantity, price *big.Float) e
 	if price == nil || price.Sign() <= 0 {
 		return errors.New("price must be positive")
 	}
-	
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	position, exists := p.Positions[assetID]
 	if !exists {
 		return errors.New("position not found")
 	}
-	
+
 	// Update position
 	position.Quantity = new(big.Float).Copy(quantity)
 	position.EntryPrice = new(big.Float).Copy(price)
 	position.CurrentPrice = new(big.Float).Copy(price)
 	position.Value = new(big.Float).Mul(quantity, price)
 	position.LastUpdated = time.Now()
-	
+
 	// Recalculate PnL
 	p.calculatePositionPnL(assetID)
-	
+
 	// Update portfolio value and weights
 	p.updatePortfolioValue()
 	p.updatePositionWeights()
 	p.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -342,19 +342,19 @@ func (p *Portfolio) RemovePosition(assetID string) error {
 	if assetID == "" {
 		return errors.New("asset ID cannot be empty")
 	}
-	
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if _, exists := p.Positions[assetID]; !exists {
 		return errors.New("position not found")
 	}
-	
+
 	delete(p.Positions, assetID)
 	p.updatePortfolioValue()
 	p.updatePositionWeights()
 	p.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -364,11 +364,11 @@ func (p *Portfolio) updatePositionPrice(assetID string, newPrice *big.Float) {
 	if !exists {
 		return
 	}
-	
+
 	position.CurrentPrice = new(big.Float).Copy(newPrice)
 	position.Value = new(big.Float).Mul(position.Quantity, newPrice)
 	position.LastUpdated = time.Now()
-	
+
 	p.calculatePositionPnL(assetID)
 }
 
@@ -378,13 +378,13 @@ func (p *Portfolio) calculatePositionPnL(assetID string) {
 	if !exists {
 		return
 	}
-	
+
 	// Calculate PnL
 	entryValue := new(big.Float).Mul(position.Quantity, position.EntryPrice)
 	currentValue := new(big.Float).Mul(position.Quantity, position.CurrentPrice)
-	
+
 	position.Pnl = new(big.Float).Sub(currentValue, entryValue)
-	
+
 	// Calculate PnL percentage
 	if entryValue.Sign() > 0 {
 		position.PnlPercent = new(big.Float).Quo(position.Pnl, entryValue)
@@ -395,11 +395,11 @@ func (p *Portfolio) calculatePositionPnL(assetID string) {
 // updatePortfolioValue updates the total portfolio value
 func (p *Portfolio) updatePortfolioValue() {
 	totalValue := big.NewFloat(0)
-	
+
 	for _, position := range p.Positions {
 		totalValue.Add(totalValue, position.Value)
 	}
-	
+
 	p.TotalValue = totalValue
 }
 
@@ -408,7 +408,7 @@ func (p *Portfolio) updatePositionWeights() {
 	if p.TotalValue.Sign() <= 0 {
 		return
 	}
-	
+
 	for _, position := range p.Positions {
 		position.Weight = new(big.Float).Quo(position.Value, p.TotalValue)
 		position.Weight.Mul(position.Weight, big.NewFloat(100)) // Convert to percentage
@@ -420,15 +420,15 @@ func (pm *PortfolioManager) GetPortfolio(portfolioID string) (*Portfolio, error)
 	if portfolioID == "" {
 		return nil, errors.New("portfolio ID cannot be empty")
 	}
-	
+
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	portfolio, exists := pm.Portfolios[portfolioID]
 	if !exists {
 		return nil, errors.New("portfolio not found")
 	}
-	
+
 	return portfolio, nil
 }
 
@@ -437,15 +437,15 @@ func (pm *PortfolioManager) GetAsset(assetID string) (*Asset, error) {
 	if assetID == "" {
 		return nil, errors.New("asset ID cannot be empty")
 	}
-	
+
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	asset, exists := pm.Assets[assetID]
 	if !exists {
 		return nil, errors.New("asset not found")
 	}
-	
+
 	return asset, nil
 }
 
@@ -454,17 +454,17 @@ func (pm *PortfolioManager) GetPortfoliosByOwner(owner string) []*Portfolio {
 	if owner == "" {
 		return nil
 	}
-	
+
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	var portfolios []*Portfolio
 	for _, portfolio := range pm.Portfolios {
 		if portfolio.Owner == owner {
 			portfolios = append(portfolios, portfolio)
 		}
 	}
-	
+
 	return portfolios
 }
 
@@ -472,7 +472,7 @@ func (pm *PortfolioManager) GetPortfoliosByOwner(owner string) []*Portfolio {
 func (p *Portfolio) GetPortfolioValue() *big.Float {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	return new(big.Float).Copy(p.TotalValue)
 }
 
@@ -481,15 +481,15 @@ func (p *Portfolio) GetPosition(assetID string) (*Position, error) {
 	if assetID == "" {
 		return nil, errors.New("asset ID cannot be empty")
 	}
-	
+
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	position, exists := p.Positions[assetID]
 	if !exists {
 		return nil, errors.New("position not found")
 	}
-	
+
 	return position, nil
 }
 
@@ -497,12 +497,12 @@ func (p *Portfolio) GetPosition(assetID string) (*Position, error) {
 func (p *Portfolio) GetTotalPnL() *big.Float {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	totalPnL := big.NewFloat(0)
 	for _, position := range p.Positions {
 		totalPnL.Add(totalPnL, position.Pnl)
 	}
-	
+
 	return totalPnL
 }
 
@@ -510,16 +510,16 @@ func (p *Portfolio) GetTotalPnL() *big.Float {
 func (p *Portfolio) GetTotalPnLPercent() *big.Float {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	totalPnL := p.GetTotalPnL()
-	
+
 	if p.TotalValue.Sign() <= 0 {
 		return big.NewFloat(0)
 	}
-	
+
 	totalPnLPercent := new(big.Float).Quo(totalPnL, p.TotalValue)
 	totalPnLPercent.Mul(totalPnLPercent, big.NewFloat(100)) // Convert to percentage
-	
+
 	return totalPnLPercent
 }
 
@@ -527,12 +527,12 @@ func (p *Portfolio) GetTotalPnLPercent() *big.Float {
 func (p *Portfolio) GetAssetAllocation() map[string]*big.Float {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	allocation := make(map[string]*big.Float)
 	for assetID, position := range p.Positions {
 		allocation[assetID] = new(big.Float).Copy(position.Weight)
 	}
-	
+
 	return allocation
 }
 
@@ -541,20 +541,20 @@ func (p *Portfolio) RebalancePortfolio(targetWeights map[string]*big.Float) erro
 	if targetWeights == nil {
 		return errors.New("target weights cannot be nil")
 	}
-	
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	// Validate target weights sum to 100%
 	totalWeight := big.NewFloat(0)
 	for _, weight := range targetWeights {
 		totalWeight.Add(totalWeight, weight)
 	}
-	
+
 	if totalWeight.Cmp(big.NewFloat(100)) != 0 {
 		return errors.New("target weights must sum to 100%")
 	}
-	
+
 	// Calculate target values for each asset
 	targetValues := make(map[string]*big.Float)
 	for assetID, weight := range targetWeights {
@@ -562,7 +562,7 @@ func (p *Portfolio) RebalancePortfolio(targetWeights map[string]*big.Float) erro
 		targetValue.Quo(targetValue, big.NewFloat(100))
 		targetValues[assetID] = targetValue
 	}
-	
+
 	// Calculate required trades
 	var trades []*RebalanceTrade
 	for assetID, targetValue := range targetValues {
@@ -600,7 +600,7 @@ func (p *Portfolio) RebalancePortfolio(targetWeights map[string]*big.Float) erro
 			}
 		}
 	}
-	
+
 	// Check for assets to sell that are not in target weights
 	for assetID, position := range p.Positions {
 		if _, exists := targetWeights[assetID]; !exists {
@@ -613,11 +613,11 @@ func (p *Portfolio) RebalancePortfolio(targetWeights map[string]*big.Float) erro
 			trades = append(trades, trade)
 		}
 	}
-	
+
 	// Store rebalancing trades (in a real implementation, these would be executed)
 	p.rebalancingTrades = trades
 	p.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -637,17 +637,15 @@ const (
 	Hold
 )
 
-
-
 // GetRebalancingTrades returns the rebalancing trades
 func (p *Portfolio) GetRebalancingTrades() []*RebalanceTrade {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	if p.rebalancingTrades == nil {
 		return nil
 	}
-	
+
 	trades := make([]*RebalanceTrade, len(p.rebalancingTrades))
 	for i, trade := range p.rebalancingTrades {
 		trades[i] = &RebalanceTrade{
@@ -656,7 +654,7 @@ func (p *Portfolio) GetRebalancingTrades() []*RebalanceTrade {
 			Value:   new(big.Float).Copy(trade.Value),
 		}
 	}
-	
+
 	return trades
 }
 
@@ -664,7 +662,7 @@ func (p *Portfolio) GetRebalancingTrades() []*RebalanceTrade {
 func (p *Portfolio) ClearRebalancingTrades() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	p.rebalancingTrades = nil
 	p.UpdatedAt = time.Now()
 }

@@ -13,66 +13,66 @@ type LendingProtocol struct {
 	mu sync.RWMutex
 
 	// Protocol information
-	ProtocolID   string
-	Name         string
-	Symbol       string
-	Decimals     uint8
-	Owner        engine.Address
-	Paused       bool
-	
+	ProtocolID string
+	Name       string
+	Symbol     string
+	Decimals   uint8
+	Owner      engine.Address
+	Paused     bool
+
 	// Assets
 	Assets map[engine.Address]*Asset
-	
+
 	// Users
 	Users map[engine.Address]*User
-	
+
 	// Interest rate model
 	InterestRateModel InterestRateModel
-	
+
 	// Liquidation settings
 	LiquidationThreshold *big.Int // Collateral ratio threshold for liquidation
 	LiquidationBonus     *big.Int // Bonus for liquidators (basis points)
-	
+
 	// Events
-	SupplyEvents     []SupplyEvent
-	BorrowEvents     []BorrowEvent
-	RepayEvents      []RepayEvent
-	WithdrawEvents   []WithdrawEvent
-	LiquidateEvents  []LiquidateEvent
-	InterestEvents   []InterestEvent
-	
+	SupplyEvents    []SupplyEvent
+	BorrowEvents    []BorrowEvent
+	RepayEvents     []RepayEvent
+	WithdrawEvents  []WithdrawEvent
+	LiquidateEvents []LiquidateEvent
+	InterestEvents  []InterestEvent
+
 	// Statistics
-	TotalSupply     *big.Int
-	TotalBorrow     *big.Int
-	TotalReserves   *big.Int
-	LastUpdate      time.Time
-	SupplyCount     uint64
-	BorrowCount     uint64
+	TotalSupply   *big.Int
+	TotalBorrow   *big.Int
+	TotalReserves *big.Int
+	LastUpdate    time.Time
+	SupplyCount   uint64
+	BorrowCount   uint64
 }
 
 // Asset represents a lending asset
 type Asset struct {
-	Token           engine.Address
-	Symbol          string
-	Decimals        uint8
-	TotalSupply     *big.Int
-	TotalBorrow     *big.Int
-	Reserves        *big.Int
-	BorrowRate      *big.Int // Annual rate in basis points
-	SupplyRate      *big.Int // Annual rate in basis points
-	CollateralRatio *big.Int // Collateral ratio in basis points
-	MaxLTV          *big.Int // Maximum loan-to-value ratio
+	Token                engine.Address
+	Symbol               string
+	Decimals             uint8
+	TotalSupply          *big.Int
+	TotalBorrow          *big.Int
+	Reserves             *big.Int
+	BorrowRate           *big.Int // Annual rate in basis points
+	SupplyRate           *big.Int // Annual rate in basis points
+	CollateralRatio      *big.Int // Collateral ratio in basis points
+	MaxLTV               *big.Int // Maximum loan-to-value ratio
 	LiquidationThreshold *big.Int
-	Paused          bool
+	Paused               bool
 }
 
 // User represents a lending protocol user
 type User struct {
-	Address     engine.Address
-	Assets      map[engine.Address]*UserAsset
-	Collateral  map[engine.Address]*big.Int
-	Borrows     map[engine.Address]*big.Int
-	LastUpdate  time.Time
+	Address    engine.Address
+	Assets     map[engine.Address]*UserAsset
+	Collateral map[engine.Address]*big.Int
+	Borrows    map[engine.Address]*big.Int
+	LastUpdate time.Time
 }
 
 // UserAsset represents a user's position in an asset
@@ -93,19 +93,19 @@ type InterestRateModel interface {
 
 // DefaultInterestRateModel implements a simple interest rate model
 type DefaultInterestRateModel struct {
-	BaseRate      *big.Int // Base rate in basis points
-	Multiplier    *big.Int // Multiplier for utilization
+	BaseRate       *big.Int // Base rate in basis points
+	Multiplier     *big.Int // Multiplier for utilization
 	JumpMultiplier *big.Int // Jump multiplier for high utilization
-	Kink          *big.Int // Utilization rate at which jump occurs
+	Kink           *big.Int // Utilization rate at which jump occurs
 }
 
 // NewDefaultInterestRateModel creates a new interest rate model
 func NewDefaultInterestRateModel(baseRate, multiplier, jumpMultiplier, kink *big.Int) *DefaultInterestRateModel {
 	return &DefaultInterestRateModel{
-		BaseRate:      new(big.Int).Set(baseRate),
-		Multiplier:    new(big.Int).Set(multiplier),
+		BaseRate:       new(big.Int).Set(baseRate),
+		Multiplier:     new(big.Int).Set(multiplier),
 		JumpMultiplier: new(big.Int).Set(jumpMultiplier),
-		Kink:          new(big.Int).Set(kink),
+		Kink:           new(big.Int).Set(kink),
 	}
 }
 
@@ -120,11 +120,11 @@ func (irm *DefaultInterestRateModel) CalculateBorrowRate(utilizationRate *big.In
 		// Above kink: baseRate + (kink * multiplier) + ((utilizationRate - kink) * jumpMultiplier)
 		normalRate := new(big.Int).Mul(irm.Kink, irm.Multiplier)
 		normalRate = new(big.Int).Div(normalRate, big.NewInt(10000))
-		
+
 		excessUtilization := new(big.Int).Sub(utilizationRate, irm.Kink)
 		jumpRate := new(big.Int).Mul(excessUtilization, irm.JumpMultiplier)
 		jumpRate = new(big.Int).Div(jumpRate, big.NewInt(10000))
-		
+
 		totalRate := new(big.Int).Add(irm.BaseRate, normalRate)
 		return new(big.Int).Add(totalRate, jumpRate)
 	}
@@ -145,19 +145,19 @@ func NewLendingProtocol(
 	liquidationThreshold, liquidationBonus *big.Int,
 ) *LendingProtocol {
 	return &LendingProtocol{
-		ProtocolID:          protocolID,
-		Name:                name,
-		Symbol:              symbol,
-		Decimals:            decimals,
-		Owner:               owner,
-		Paused:              false,
-		Assets:              make(map[engine.Address]*Asset),
-		Users:               make(map[engine.Address]*User),
-		InterestRateModel:   NewDefaultInterestRateModel(
-			big.NewInt(200),   // 2% base rate
-			big.NewInt(1000),  // 10% multiplier
-			big.NewInt(2000),  // 20% jump multiplier
-			big.NewInt(8000),  // 80% kink
+		ProtocolID: protocolID,
+		Name:       name,
+		Symbol:     symbol,
+		Decimals:   decimals,
+		Owner:      owner,
+		Paused:     false,
+		Assets:     make(map[engine.Address]*Asset),
+		Users:      make(map[engine.Address]*User),
+		InterestRateModel: NewDefaultInterestRateModel(
+			big.NewInt(200),  // 2% base rate
+			big.NewInt(1000), // 10% multiplier
+			big.NewInt(2000), // 20% jump multiplier
+			big.NewInt(8000), // 80% kink
 		),
 		LiquidationThreshold: new(big.Int).Set(liquidationThreshold),
 		LiquidationBonus:     new(big.Int).Set(liquidationBonus),
@@ -252,11 +252,11 @@ func (lp *LendingProtocol) AddAsset(
 ) error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	if _, exists := lp.Assets[token]; exists {
 		return ErrAssetAlreadyExists
 	}
-	
+
 	asset := &Asset{
 		Token:                token,
 		Symbol:               symbol,
@@ -271,7 +271,7 @@ func (lp *LendingProtocol) AddAsset(
 		LiquidationThreshold: new(big.Int).Set(lp.LiquidationThreshold),
 		Paused:               false,
 	}
-	
+
 	lp.Assets[token] = asset
 	return nil
 }
@@ -286,17 +286,17 @@ func (lp *LendingProtocol) Supply(
 ) error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	// Check if protocol is paused
 	if lp.Paused {
 		return ErrProtocolPaused
 	}
-	
+
 	// Validate input
 	if err := lp.validateSupplyInput(asset, amount); err != nil {
 		return err
 	}
-	
+
 	// Get or create user
 	if lp.Users[user] == nil {
 		lp.Users[user] = &User{
@@ -307,7 +307,7 @@ func (lp *LendingProtocol) Supply(
 			LastUpdate: time.Now(),
 		}
 	}
-	
+
 	// Get or create user asset
 	if lp.Users[user].Assets[asset] == nil {
 		lp.Users[user].Assets[asset] = &UserAsset{
@@ -319,18 +319,18 @@ func (lp *LendingProtocol) Supply(
 			LastUpdate:      time.Now(),
 		}
 	}
-	
+
 	// Update balances
 	lp.Assets[asset].TotalSupply = new(big.Int).Add(lp.Assets[asset].TotalSupply, amount)
 	lp.Users[user].Assets[asset].Balance = new(big.Int).Add(lp.Users[user].Assets[asset].Balance, amount)
-	
+
 	// Update protocol totals
 	lp.TotalSupply = new(big.Int).Add(lp.TotalSupply, amount)
 	lp.SupplyCount++
-	
+
 	// Update interest rates
 	lp.updateInterestRates(asset)
-	
+
 	// Record event
 	event := SupplyEvent{
 		User:        user,
@@ -342,7 +342,7 @@ func (lp *LendingProtocol) Supply(
 		TxHash:      txHash,
 	}
 	lp.SupplyEvents = append(lp.SupplyEvents, event)
-	
+
 	return nil
 }
 
@@ -356,33 +356,33 @@ func (lp *LendingProtocol) Withdraw(
 ) error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	// Check if protocol is paused
 	if lp.Paused {
 		return ErrProtocolPaused
 	}
-	
+
 	// Validate input
 	if err := lp.validateWithdrawInput(user, asset, amount); err != nil {
 		return err
 	}
-	
+
 	// Check if user has sufficient balance
 	userAsset := lp.Users[user].Assets[asset]
 	if userAsset.Balance.Cmp(amount) < 0 {
 		return ErrInsufficientBalance
 	}
-	
+
 	// Update balances
 	lp.Assets[asset].TotalSupply = new(big.Int).Sub(lp.Assets[asset].TotalSupply, amount)
 	userAsset.Balance = new(big.Int).Sub(userAsset.Balance, amount)
-	
+
 	// Update protocol totals
 	lp.TotalSupply = new(big.Int).Sub(lp.TotalSupply, amount)
-	
+
 	// Update interest rates
 	lp.updateInterestRates(asset)
-	
+
 	// Record event
 	event := WithdrawEvent{
 		User:        user,
@@ -394,7 +394,7 @@ func (lp *LendingProtocol) Withdraw(
 		TxHash:      txHash,
 	}
 	lp.WithdrawEvents = append(lp.WithdrawEvents, event)
-	
+
 	return nil
 }
 
@@ -408,22 +408,22 @@ func (lp *LendingProtocol) Borrow(
 ) error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	// Check if protocol is paused
 	if lp.Paused {
 		return ErrProtocolPaused
 	}
-	
+
 	// Validate input
 	if err := lp.validateBorrowInput(asset, amount); err != nil {
 		return err
 	}
-	
+
 	// Check if user has sufficient collateral
 	if err := lp.checkCollateralRatio(user, asset, amount); err != nil {
 		return err
 	}
-	
+
 	// Get or create user
 	if lp.Users[user] == nil {
 		lp.Users[user] = &User{
@@ -434,7 +434,7 @@ func (lp *LendingProtocol) Borrow(
 			LastUpdate: time.Now(),
 		}
 	}
-	
+
 	// Get or create user asset
 	if lp.Users[user].Assets[asset] == nil {
 		lp.Users[user].Assets[asset] = &UserAsset{
@@ -446,18 +446,18 @@ func (lp *LendingProtocol) Borrow(
 			LastUpdate:      time.Now(),
 		}
 	}
-	
+
 	// Update balances
 	lp.Assets[asset].TotalBorrow = new(big.Int).Add(lp.Assets[asset].TotalBorrow, amount)
 	lp.Users[user].Assets[asset].BorrowBalance = new(big.Int).Add(lp.Users[user].Assets[asset].BorrowBalance, amount)
-	
+
 	// Update protocol totals
 	lp.TotalBorrow = new(big.Int).Add(lp.TotalBorrow, amount)
 	lp.BorrowCount++
-	
+
 	// Update interest rates
 	lp.updateInterestRates(asset)
-	
+
 	// Record event
 	event := BorrowEvent{
 		User:        user,
@@ -470,7 +470,7 @@ func (lp *LendingProtocol) Borrow(
 		TxHash:      txHash,
 	}
 	lp.BorrowEvents = append(lp.BorrowEvents, event)
-	
+
 	return nil
 }
 
@@ -484,33 +484,33 @@ func (lp *LendingProtocol) Repay(
 ) error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	// Check if protocol is paused
 	if lp.Paused {
 		return ErrProtocolPaused
 	}
-	
+
 	// Validate input
 	if err := lp.validateRepayInput(user, asset, amount); err != nil {
 		return err
 	}
-	
+
 	// Check if user has sufficient borrow balance
 	userAsset := lp.Users[user].Assets[asset]
 	if userAsset.BorrowBalance.Cmp(amount) < 0 {
 		return ErrInsufficientBorrowBalance
 	}
-	
+
 	// Update balances
 	lp.Assets[asset].TotalBorrow = new(big.Int).Sub(lp.Assets[asset].TotalBorrow, amount)
 	userAsset.BorrowBalance = new(big.Int).Sub(userAsset.BorrowBalance, amount)
-	
+
 	// Update protocol totals
 	lp.TotalBorrow = new(big.Int).Sub(lp.TotalBorrow, amount)
-	
+
 	// Update interest rates
 	lp.updateInterestRates(asset)
-	
+
 	// Record event
 	event := RepayEvent{
 		User:        user,
@@ -522,7 +522,7 @@ func (lp *LendingProtocol) Repay(
 		TxHash:      txHash,
 	}
 	lp.RepayEvents = append(lp.RepayEvents, event)
-	
+
 	return nil
 }
 
@@ -537,47 +537,47 @@ func (lp *LendingProtocol) Liquidate(
 ) error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	// Check if protocol is paused
 	if lp.Paused {
 		return ErrProtocolPaused
 	}
-	
+
 	// Validate input
 	if err := lp.validateLiquidateInput(liquidator, borrower, asset, amount); err != nil {
 		return err
 	}
-	
+
 	// Check if liquidation is necessary
 	if err := lp.checkLiquidationEligibility(borrower, asset); err != nil {
 		return err
 	}
-	
+
 	// Calculate liquidation bonus
 	bonus := lp.calculateLiquidationBonus(amount)
 	totalAmount := new(big.Int).Add(amount, bonus)
-	
+
 	// Check if liquidator has sufficient collateral
 	liquidatorAsset := lp.Users[liquidator].Assets[asset]
 	if liquidatorAsset == nil || liquidatorAsset.Balance.Cmp(totalAmount) < 0 {
 		return ErrInsufficientLiquidationCollateral
 	}
-	
+
 	// Update borrower balances
 	borrowerAsset := lp.Users[borrower].Assets[asset]
 	borrowerAsset.BorrowBalance = new(big.Int).Sub(borrowerAsset.BorrowBalance, amount)
-	
+
 	// Update liquidator balances
 	liquidatorAsset.Balance = new(big.Int).Sub(liquidatorAsset.Balance, totalAmount)
-	
+
 	// Update asset totals
 	lp.Assets[asset].TotalBorrow = new(big.Int).Sub(lp.Assets[asset].TotalBorrow, amount)
 	lp.Assets[asset].TotalSupply = new(big.Int).Sub(lp.Assets[asset].TotalSupply, bonus)
-	
+
 	// Update protocol totals
 	lp.TotalBorrow = new(big.Int).Sub(lp.TotalBorrow, amount)
 	lp.TotalSupply = new(big.Int).Sub(lp.TotalSupply, bonus)
-	
+
 	// Record event
 	event := LiquidateEvent{
 		Liquidator:  liquidator,
@@ -590,7 +590,7 @@ func (lp *LendingProtocol) Liquidate(
 		TxHash:      txHash,
 	}
 	lp.LiquidateEvents = append(lp.LiquidateEvents, event)
-	
+
 	return nil
 }
 
@@ -598,7 +598,7 @@ func (lp *LendingProtocol) Liquidate(
 func (lp *LendingProtocol) GetUserInfo(user engine.Address) *User {
 	lp.mu.RLock()
 	defer lp.mu.RUnlock()
-	
+
 	if userInfo, exists := lp.Users[user]; exists {
 		// Return a copy to avoid race conditions
 		userCopy := &User{
@@ -608,7 +608,7 @@ func (lp *LendingProtocol) GetUserInfo(user engine.Address) *User {
 			Borrows:    make(map[engine.Address]*big.Int),
 			LastUpdate: userInfo.LastUpdate,
 		}
-		
+
 		for token, asset := range userInfo.Assets {
 			userCopy.Assets[token] = &UserAsset{
 				Token:           asset.Token,
@@ -619,18 +619,18 @@ func (lp *LendingProtocol) GetUserInfo(user engine.Address) *User {
 				LastUpdate:      asset.LastUpdate,
 			}
 		}
-		
+
 		for token, collateral := range userInfo.Collateral {
 			userCopy.Collateral[token] = new(big.Int).Set(collateral)
 		}
-		
+
 		for token, borrow := range userInfo.Borrows {
 			userCopy.Borrows[token] = new(big.Int).Set(borrow)
 		}
-		
+
 		return userCopy
 	}
-	
+
 	return nil
 }
 
@@ -638,7 +638,7 @@ func (lp *LendingProtocol) GetUserInfo(user engine.Address) *User {
 func (lp *LendingProtocol) GetAssetInfo(asset engine.Address) *Asset {
 	lp.mu.RLock()
 	defer lp.mu.RUnlock()
-	
+
 	if assetInfo, exists := lp.Assets[asset]; exists {
 		// Return a copy to avoid race conditions
 		assetCopy := &Asset{
@@ -655,10 +655,10 @@ func (lp *LendingProtocol) GetAssetInfo(asset engine.Address) *Asset {
 			LiquidationThreshold: new(big.Int).Set(assetInfo.LiquidationThreshold),
 			Paused:               assetInfo.Paused,
 		}
-		
+
 		return assetCopy
 	}
-	
+
 	return nil
 }
 
@@ -666,23 +666,23 @@ func (lp *LendingProtocol) GetAssetInfo(asset engine.Address) *Asset {
 func (lp *LendingProtocol) GetProtocolStats() (uint64, uint64, *big.Int, *big.Int, *big.Int) {
 	lp.mu.RLock()
 	defer lp.mu.RUnlock()
-	
+
 	return lp.SupplyCount,
-		   lp.BorrowCount,
-		   new(big.Int).Set(lp.TotalSupply),
-		   new(big.Int).Set(lp.TotalBorrow),
-		   new(big.Int).Set(lp.TotalReserves)
+		lp.BorrowCount,
+		new(big.Int).Set(lp.TotalSupply),
+		new(big.Int).Set(lp.TotalBorrow),
+		new(big.Int).Set(lp.TotalReserves)
 }
 
 // Pause pauses the protocol
 func (lp *LendingProtocol) Pause() error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	if lp.Paused {
 		return ErrProtocolAlreadyPaused
 	}
-	
+
 	lp.Paused = true
 	return nil
 }
@@ -691,11 +691,11 @@ func (lp *LendingProtocol) Pause() error {
 func (lp *LendingProtocol) Unpause() error {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	
+
 	if !lp.Paused {
 		return ErrProtocolNotPaused
 	}
-	
+
 	lp.Paused = false
 	return nil
 }
@@ -706,18 +706,18 @@ func (lp *LendingProtocol) updateInterestRates(asset engine.Address) {
 	if assetInfo == nil {
 		return
 	}
-	
+
 	// Calculate utilization rate
 	utilizationRate := lp.calculateUtilizationRate(assetInfo)
-	
+
 	// Calculate new rates
 	borrowRate := lp.InterestRateModel.CalculateBorrowRate(utilizationRate)
 	supplyRate := lp.InterestRateModel.CalculateSupplyRate(utilizationRate, borrowRate)
-	
+
 	// Update asset rates
 	assetInfo.BorrowRate = borrowRate
 	assetInfo.SupplyRate = supplyRate
-	
+
 	// Record interest event
 	event := InterestEvent{
 		Asset:       asset,
@@ -735,7 +735,7 @@ func (lp *LendingProtocol) calculateUtilizationRate(asset *Asset) *big.Int {
 	if asset.TotalSupply.Sign() == 0 {
 		return big.NewInt(0)
 	}
-	
+
 	// Utilization = TotalBorrow / TotalSupply
 	utilization := new(big.Int).Mul(asset.TotalBorrow, big.NewInt(10000))
 	return new(big.Int).Div(utilization, asset.TotalSupply)
@@ -753,7 +753,7 @@ func (lp *LendingProtocol) checkCollateralRatio(user engine.Address, asset engin
 	if userInfo == nil {
 		return ErrInsufficientCollateral
 	}
-	
+
 	// Calculate total collateral value
 	totalCollateralValue := big.NewInt(0)
 	for token, collateral := range userInfo.Collateral {
@@ -763,7 +763,7 @@ func (lp *LendingProtocol) checkCollateralRatio(user engine.Address, asset engin
 			totalCollateralValue = new(big.Int).Add(totalCollateralValue, collateralValue)
 		}
 	}
-	
+
 	// Calculate total borrow value
 	totalBorrowValue := big.NewInt(0)
 	for token, borrow := range userInfo.Borrows {
@@ -773,19 +773,19 @@ func (lp *LendingProtocol) checkCollateralRatio(user engine.Address, asset engin
 			totalBorrowValue = new(big.Int).Add(totalBorrowValue, borrowValue)
 		}
 	}
-	
+
 	// Add new borrow amount
 	newBorrowValue := new(big.Int).Mul(amount, big.NewInt(10000))
 	if assetInfo, exists := lp.Assets[asset]; exists {
 		newBorrowValue = new(big.Int).Div(newBorrowValue, assetInfo.MaxLTV)
 	}
 	totalBorrowValue = new(big.Int).Add(totalBorrowValue, newBorrowValue)
-	
+
 	// Check if collateral is sufficient
 	if totalCollateralValue.Cmp(totalBorrowValue) < 0 {
 		return ErrInsufficientCollateral
 	}
-	
+
 	return nil
 }
 
@@ -795,13 +795,13 @@ func (lp *LendingProtocol) checkLiquidationEligibility(borrower engine.Address, 
 	if userInfo == nil {
 		return ErrUserNotFound
 	}
-	
+
 	// Calculate health factor
 	healthFactor := lp.calculateHealthFactor(borrower)
 	if healthFactor.Cmp(big.NewInt(10000)) >= 0 {
 		return ErrNotEligibleForLiquidation
 	}
-	
+
 	return nil
 }
 
@@ -811,7 +811,7 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 	if userInfo == nil {
 		return big.NewInt(0)
 	}
-	
+
 	// Calculate total collateral value
 	totalCollateralValue := big.NewInt(0)
 	for token, collateral := range userInfo.Collateral {
@@ -821,7 +821,7 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 			totalCollateralValue = new(big.Int).Add(totalCollateralValue, collateralValue)
 		}
 	}
-	
+
 	// Calculate total borrow value
 	totalBorrowValue := big.NewInt(0)
 	for token, borrow := range userInfo.Borrows {
@@ -831,11 +831,11 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 			totalBorrowValue = new(big.Int).Add(totalBorrowValue, borrowValue)
 		}
 	}
-	
+
 	if totalBorrowValue.Sign() == 0 {
 		return big.NewInt(10000) // 100% health factor
 	}
-	
+
 	// Health factor = (total collateral value / total borrow value) * 10000
 	healthFactor := new(big.Int).Mul(totalCollateralValue, big.NewInt(10000))
 	return new(big.Int).Div(healthFactor, totalBorrowValue)
@@ -846,11 +846,11 @@ func (lp *LendingProtocol) validateSupplyInput(asset engine.Address, amount *big
 	if amount == nil || amount.Sign() <= 0 {
 		return ErrInvalidAmount
 	}
-	
+
 	if assetInfo, exists := lp.Assets[asset]; !exists || assetInfo.Paused {
 		return ErrAssetNotSupported
 	}
-	
+
 	return nil
 }
 
@@ -858,15 +858,15 @@ func (lp *LendingProtocol) validateWithdrawInput(user engine.Address, asset engi
 	if amount == nil || amount.Sign() <= 0 {
 		return ErrInvalidAmount
 	}
-	
+
 	if assetInfo, exists := lp.Assets[asset]; !exists || assetInfo.Paused {
 		return ErrAssetNotSupported
 	}
-	
+
 	if lp.Users[user] == nil || lp.Users[user].Assets[asset] == nil {
 		return ErrUserNotFound
 	}
-	
+
 	return nil
 }
 
@@ -874,11 +874,11 @@ func (lp *LendingProtocol) validateBorrowInput(asset engine.Address, amount *big
 	if amount == nil || amount.Sign() <= 0 {
 		return ErrInvalidAmount
 	}
-	
+
 	if assetInfo, exists := lp.Assets[asset]; !exists || assetInfo.Paused {
 		return ErrAssetNotSupported
 	}
-	
+
 	return nil
 }
 
@@ -886,15 +886,15 @@ func (lp *LendingProtocol) validateRepayInput(user engine.Address, asset engine.
 	if amount == nil || amount.Sign() <= 0 {
 		return ErrInvalidAmount
 	}
-	
+
 	if assetInfo, exists := lp.Assets[asset]; !exists || assetInfo.Paused {
 		return ErrAssetNotSupported
 	}
-	
+
 	if lp.Users[user] == nil || lp.Users[user].Assets[asset] == nil {
 		return ErrUserNotFound
 	}
-	
+
 	return nil
 }
 
@@ -902,14 +902,14 @@ func (lp *LendingProtocol) validateLiquidateInput(liquidator engine.Address, bor
 	if amount == nil || amount.Sign() <= 0 {
 		return ErrInvalidAmount
 	}
-	
+
 	if assetInfo, exists := lp.Assets[asset]; !exists || assetInfo.Paused {
 		return ErrAssetNotSupported
 	}
-	
+
 	if liquidator == borrower {
 		return ErrCannotLiquidateSelf
 	}
-	
+
 	return nil
 }

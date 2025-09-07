@@ -19,29 +19,29 @@ type ERC721Token struct {
 	TotalSupply *big.Int
 
 	// State
-	TokenOwners    map[uint64]engine.Address
-	TokenApprovals map[uint64]engine.Address
+	TokenOwners       map[uint64]engine.Address
+	TokenApprovals    map[uint64]engine.Address
 	OperatorApprovals map[engine.Address]map[engine.Address]bool
-	Owner           engine.Address
-	Paused          bool
-	Blacklisted     map[engine.Address]bool
+	Owner             engine.Address
+	Paused            bool
+	Blacklisted       map[engine.Address]bool
 
 	// Events
-	TransferEvents    []ERC721TransferEvent
-	ApprovalEvents    []ERC721ApprovalEvent
+	TransferEvents       []ERC721TransferEvent
+	ApprovalEvents       []ERC721ApprovalEvent
 	ApprovalForAllEvents []ERC721ApprovalForAllEvent
-	MintEvents        []ERC721MintEvent
-	BurnEvents        []ERC721BurnEvent
-	PauseEvents       []PauseEvent
-	BlacklistEvents   []BlacklistEvent
+	MintEvents           []ERC721MintEvent
+	BurnEvents           []ERC721BurnEvent
+	PauseEvents          []PauseEvent
+	BlacklistEvents      []BlacklistEvent
 
 	// Configuration
-	MaxSupply        *big.Int
-	Mintable         bool
-	Burnable         bool
-	Pausable         bool
-	Blacklistable    bool
-	MetadataURI      bool
+	MaxSupply     *big.Int
+	Mintable      bool
+	Burnable      bool
+	Pausable      bool
+	Blacklistable bool
+	MetadataURI   bool
 }
 
 // NewERC721Token creates a new ERC-721 token
@@ -75,7 +75,7 @@ func NewERC721Token(
 		Blacklistable:        config.Blacklistable,
 		MetadataURI:          config.MetadataURI,
 	}
-	
+
 	return token
 }
 
@@ -181,7 +181,7 @@ func (t *ERC721Token) GetTotalSupply() *big.Int {
 func (t *ERC721Token) GetOwnerOf(tokenID uint64) engine.Address {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if owner, exists := t.TokenOwners[tokenID]; exists {
 		return owner
 	}
@@ -192,7 +192,7 @@ func (t *ERC721Token) GetOwnerOf(tokenID uint64) engine.Address {
 func (t *ERC721Token) GetTokenApproval(tokenID uint64) engine.Address {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if approved, exists := t.TokenApprovals[tokenID]; exists {
 		return approved
 	}
@@ -203,7 +203,7 @@ func (t *ERC721Token) GetTokenApproval(tokenID uint64) engine.Address {
 func (t *ERC721Token) IsApprovedForAll(owner, operator engine.Address) bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if operatorApprovals, exists := t.OperatorApprovals[owner]; exists {
 		return operatorApprovals[operator]
 	}
@@ -214,7 +214,7 @@ func (t *ERC721Token) IsApprovedForAll(owner, operator engine.Address) bool {
 func (t *ERC721Token) GetBalanceOf(owner engine.Address) uint64 {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	count := uint64(0)
 	for _, tokenOwner := range t.TokenOwners {
 		if tokenOwner == owner {
@@ -228,7 +228,7 @@ func (t *ERC721Token) GetBalanceOf(owner engine.Address) uint64 {
 func (t *ERC721Token) GetTokensOfOwner(owner engine.Address) []uint64 {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	var tokens []uint64
 	for tokenID, tokenOwner := range t.TokenOwners {
 		if tokenOwner == owner {
@@ -589,11 +589,11 @@ func (t *ERC721Token) AddToBlacklist(address engine.Address, txHash engine.Hash,
 
 	// Record event
 	event := BlacklistEvent{
-		Address:    address,
+		Address:     address,
 		Blacklisted: true,
-		TxHash:     txHash,
-		Block:      block,
-		Time:       time.Now(),
+		TxHash:      txHash,
+		Block:       block,
+		Time:        time.Now(),
 	}
 	t.BlacklistEvents = append(t.BlacklistEvents, event)
 
@@ -618,11 +618,11 @@ func (t *ERC721Token) RemoveFromBlacklist(address engine.Address, txHash engine.
 
 	// Record event
 	event := BlacklistEvent{
-		Address:    address,
+		Address:     address,
 		Blacklisted: false,
-		TxHash:     txHash,
-		Block:      block,
-		Time:       time.Now(),
+		TxHash:      txHash,
+		Block:       block,
+		Time:        time.Now(),
 	}
 	t.BlacklistEvents = append(t.BlacklistEvents, event)
 
@@ -633,7 +633,7 @@ func (t *ERC721Token) RemoveFromBlacklist(address engine.Address, txHash engine.
 func (t *ERC721Token) GetTransferEvents() []ERC721TransferEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]ERC721TransferEvent, len(t.TransferEvents))
 	copy(events, t.TransferEvents)
 	return events
@@ -643,7 +643,7 @@ func (t *ERC721Token) GetTransferEvents() []ERC721TransferEvent {
 func (t *ERC721Token) GetApprovalEvents() []ERC721ApprovalEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]ERC721ApprovalEvent, len(t.ApprovalEvents))
 	copy(events, t.ApprovalEvents)
 	return events
@@ -653,7 +653,7 @@ func (t *ERC721Token) GetApprovalEvents() []ERC721ApprovalEvent {
 func (t *ERC721Token) GetApprovalForAllEvents() []ERC721ApprovalForAllEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]ERC721ApprovalForAllEvent, len(t.ApprovalForAllEvents))
 	copy(events, t.ApprovalForAllEvents)
 	return events
@@ -663,7 +663,7 @@ func (t *ERC721Token) GetApprovalForAllEvents() []ERC721ApprovalForAllEvent {
 func (t *ERC721Token) GetMintEvents() []ERC721MintEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]ERC721MintEvent, len(t.MintEvents))
 	copy(events, t.MintEvents)
 	return events
@@ -673,7 +673,7 @@ func (t *ERC721Token) GetMintEvents() []ERC721MintEvent {
 func (t *ERC721Token) GetBurnEvents() []ERC721BurnEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]ERC721BurnEvent, len(t.BurnEvents))
 	copy(events, t.BurnEvents)
 	return events
@@ -683,7 +683,7 @@ func (t *ERC721Token) GetBurnEvents() []ERC721BurnEvent {
 func (t *ERC721Token) GetPauseEvents() []PauseEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]PauseEvent, len(t.PauseEvents))
 	copy(events, t.PauseEvents)
 	return events
@@ -693,7 +693,7 @@ func (t *ERC721Token) GetPauseEvents() []PauseEvent {
 func (t *ERC721Token) GetBlacklistEvents() []BlacklistEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]BlacklistEvent, len(t.BlacklistEvents))
 	copy(events, t.BlacklistEvents)
 	return events
@@ -774,7 +774,7 @@ func (t *ERC721Token) SetAllowanceForTesting(owner, spender engine.Address, allo
 func (t *ERC721Token) Clone() *ERC721Token {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	clone := &ERC721Token{
 		Name:                 t.Name,
 		Symbol:               t.Symbol,
@@ -800,17 +800,17 @@ func (t *ERC721Token) Clone() *ERC721Token {
 		Blacklistable:        t.Blacklistable,
 		MetadataURI:          t.MetadataURI,
 	}
-	
+
 	// Copy token owners
 	for tokenID, owner := range t.TokenOwners {
 		clone.TokenOwners[tokenID] = owner
 	}
-	
+
 	// Copy token approvals
 	for tokenID, approved := range t.TokenApprovals {
 		clone.TokenApprovals[tokenID] = approved
 	}
-	
+
 	// Copy operator approvals
 	for owner, approvals := range t.OperatorApprovals {
 		clone.OperatorApprovals[owner] = make(map[engine.Address]bool)
@@ -818,17 +818,17 @@ func (t *ERC721Token) Clone() *ERC721Token {
 			clone.OperatorApprovals[owner][operator] = approved
 		}
 	}
-	
+
 	// Copy blacklisted addresses
 	for addr, blacklisted := range t.Blacklisted {
 		clone.Blacklisted[addr] = blacklisted
 	}
-	
+
 	// Copy max supply
 	if t.MaxSupply != nil {
 		clone.MaxSupply = new(big.Int).Set(t.MaxSupply)
 	}
-	
+
 	// Copy events
 	copy(clone.TransferEvents, t.TransferEvents)
 	copy(clone.ApprovalEvents, t.ApprovalEvents)
@@ -837,7 +837,7 @@ func (t *ERC721Token) Clone() *ERC721Token {
 	copy(clone.BurnEvents, t.BurnEvents)
 	copy(clone.PauseEvents, t.PauseEvents)
 	copy(clone.BlacklistEvents, t.BlacklistEvents)
-	
+
 	return clone
 }
 

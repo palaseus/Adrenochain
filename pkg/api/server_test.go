@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/wallet"
-	"github.com/gorilla/mux"
 )
 
 // MockChain implements ChainInterface for testing

@@ -20,11 +20,11 @@ const (
 type ChainID string
 
 const (
-	ChainIDadrenochain  ChainID = "adrenochain"
-	ChainIDEthereum ChainID = "ethereum"
-	ChainIDPolygon  ChainID = "polygon"
-	ChainIDArbitrum ChainID = "arbitrum"
-	ChainIDOptimism ChainID = "optimism"
+	ChainIDadrenochain ChainID = "adrenochain"
+	ChainIDEthereum    ChainID = "ethereum"
+	ChainIDPolygon     ChainID = "polygon"
+	ChainIDArbitrum    ChainID = "arbitrum"
+	ChainIDOptimism    ChainID = "optimism"
 )
 
 // TransactionStatus represents the status of a cross-chain transaction

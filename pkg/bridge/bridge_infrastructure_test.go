@@ -15,7 +15,7 @@ func TestValidatorManager(t *testing.T) {
 	t.Run("AddValidator", func(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		stakeAmount := big.NewInt(2000000000000000000) // 2 ETH
-		
+
 		validator, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
 		if err != nil {
 			t.Fatalf("Failed to add validator: %v", err)
@@ -37,7 +37,7 @@ func TestValidatorManager(t *testing.T) {
 	t.Run("AddValidatorInsufficientStake", func(t *testing.T) {
 		address := "0x2345678901234567890123456789012345678901"
 		stakeAmount := big.NewInt(500000000000000000) // 0.5 ETH (below threshold)
-		
+
 		_, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
 		if err == nil {
 			t.Error("Expected error for insufficient stake")
@@ -47,7 +47,7 @@ func TestValidatorManager(t *testing.T) {
 	t.Run("AddDuplicateValidator", func(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		stakeAmount := big.NewInt(2000000000000000000) // 2 ETH
-		
+
 		_, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
 		if err == nil {
 			t.Error("Expected error for duplicate validator")
@@ -63,7 +63,7 @@ func TestValidatorManager(t *testing.T) {
 
 	t.Run("Heartbeat", func(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
-		
+
 		err := vm.Heartbeat(address)
 		if err != nil {
 			t.Fatalf("Failed to update heartbeat: %v", err)
@@ -82,7 +82,7 @@ func TestValidatorManager(t *testing.T) {
 	t.Run("UpdateValidatorStake", func(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		newStake := big.NewInt(3000000000000000000) // 3 ETH
-		
+
 		err := vm.UpdateValidatorStake(address, newStake)
 		if err != nil {
 			t.Fatalf("Failed to update stake: %v", err)
@@ -100,7 +100,7 @@ func TestValidatorManager(t *testing.T) {
 
 	t.Run("RemoveValidator", func(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
-		
+
 		err := vm.RemoveValidator(address)
 		if err != nil {
 			t.Fatalf("Failed to remove validator: %v", err)
@@ -147,7 +147,7 @@ func TestConsensusEngine(t *testing.T) {
 
 	t.Run("HasEnoughConfirmations", func(t *testing.T) {
 		txID := "tx123"
-		
+
 		// Add second confirmation
 		confirmation2 := &Confirmation{
 			ValidatorID:   "validator2",
@@ -185,13 +185,13 @@ func TestCrossChainTransactionManager(t *testing.T) {
 	t.Run("InitiateBatchTransfer", func(t *testing.T) {
 		transfers := []*TransferRequest{
 			{
-				SourceChain:       ChainIDadrenochain,
-				DestinationChain:  ChainIDEthereum,
-				SourceAddress:     "0x1234567890123456789012345678901234567890",
+				SourceChain:        ChainIDadrenochain,
+				DestinationChain:   ChainIDEthereum,
+				SourceAddress:      "0x1234567890123456789012345678901234567890",
 				DestinationAddress: "0x0987654321098765432109876543210987654321",
-				AssetType:         AssetTypeNative,
-				AssetAddress:      "0x0000000000000000000000000000000000000000",
-				Amount:            big.NewInt(1000000000000000000), // 1 ETH
+				AssetType:          AssetTypeNative,
+				AssetAddress:       "0x0000000000000000000000000000000000000000",
+				Amount:             big.NewInt(1000000000000000000), // 1 ETH
 			},
 		}
 
@@ -260,7 +260,7 @@ func TestCrossChainTransactionManager(t *testing.T) {
 
 	t.Run("GetBatchStats", func(t *testing.T) {
 		stats := ctm.GetBatchStats()
-		
+
 		expectedKeys := []string{"total_batches", "pending_batches", "confirmed_batches", "executed_batches", "failed_batches"}
 		for _, key := range expectedKeys {
 			if _, exists := stats[key]; !exists {
@@ -275,9 +275,9 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		address := "0x1234567890123456789012345678901234567890"
-		
+
 		// First 10 requests should succeed
 		for i := 0; i < 10; i++ {
 			err := sm.CheckRateLimit(address)
@@ -297,7 +297,7 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		sourceAddress := "0x1234567890123456789012345678901234567890"
 		destinationAddress := "0x0987654321098765432109876543210987654321"
 		amount := big.NewInt(1000000000000000000) // 1 ETH
@@ -313,7 +313,7 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		pattern := "high_frequency"
 		riskScore := 0.8
 		threshold := 0.7
@@ -328,7 +328,7 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		address := "0x1111111111111111111111111111111111111111"
 		reason := "Suspicious activity detected"
 
@@ -342,7 +342,7 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		pausedBy := "admin"
 		reason := "Emergency maintenance"
 
@@ -356,7 +356,7 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		// First pause the bridge
 		pausedBy := "admin"
 		reason := "Emergency maintenance"
@@ -364,7 +364,7 @@ func TestSecurityManager(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to pause bridge: %v", err)
 		}
-		
+
 		// Then resume it
 		resumedBy := "admin"
 		err = sm.ResumeBridge(resumedBy)
@@ -377,9 +377,9 @@ func TestSecurityManager(t *testing.T) {
 		// Create fresh bridge and security manager for this test
 		bridge := NewBridge(nil)
 		sm := bridge.GetSecurityManager()
-		
+
 		stats := sm.GetSecurityStats()
-		
+
 		expectedKeys := []string{"total_security_events", "emergency_paused", "blacklisted_addresses", "suspicious_patterns", "rate_limiters"}
 		for _, key := range expectedKeys {
 			if _, exists := stats[key]; !exists {
@@ -395,7 +395,7 @@ func TestBridgeIntegration(t *testing.T) {
 
 	t.Run("BridgeStats", func(t *testing.T) {
 		stats := bridge.GetBridgeStats()
-		
+
 		// Check that all expected stats are present
 		expectedKeys := []string{
 			"total_transactions", "pending_transactions", "confirmed_transactions",
@@ -403,7 +403,7 @@ func TestBridgeIntegration(t *testing.T) {
 			"active_validators", "total_asset_mappings", "bridge_status",
 			"daily_volume_used", "max_daily_volume", "active_validators_count",
 		}
-		
+
 		for _, key := range expectedKeys {
 			if _, exists := stats[key]; !exists {
 				t.Errorf("Expected stat key %s", key)

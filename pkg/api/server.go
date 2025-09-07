@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -72,6 +73,10 @@ func (s *Server) setupRoutes() {
 	// Health check
 	s.router.HandleFunc("/health", s.healthHandler).Methods("GET")
 
+	// Metrics endpoint for Prometheus
+	s.router.HandleFunc("/metrics", s.metricsHandler).Methods("GET")
+	s.router.HandleFunc("/prometheus", s.prometheusHandler).Methods("GET")
+
 	// Blockchain information
 	s.router.HandleFunc("/api/v1/chain/info", s.getChainInfoHandler).Methods("GET")
 	s.router.HandleFunc("/api/v1/chain/height", s.getChainHeightHandler).Methods("GET")
@@ -98,7 +103,7 @@ func (s *Server) setupRoutes() {
 // Start starts the HTTP server
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%d", s.port)
-	
+
 	return http.ListenAndServe(addr, s.router)
 }
 
@@ -461,4 +466,92 @@ func (s *Server) getNetworkStatusHandler(w http.ResponseWriter, r *http.Request)
 		"listening":  true,
 		"timestamp":  time.Now().UTC().Format(time.RFC3339),
 	})
+}
+
+// metricsHandler provides basic metrics in JSON format
+func (s *Server) metricsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	metrics := map[string]interface{}{
+		"blockchain": map[string]interface{}{
+			"height": s.chain.GetHeight(),
+			"difficulty": func() uint64 {
+				if bestBlock := s.chain.GetBestBlock(); bestBlock != nil {
+					return bestBlock.Header.Difficulty
+				}
+				return 0
+			}(),
+		},
+		"network": map[string]interface{}{
+			"peer_count": func() int {
+				if s.network != nil {
+					return s.network.GetPeerCount()
+				}
+				return 0
+			}(),
+		},
+		"system": map[string]interface{}{
+			"memory_usage_bytes": m.Alloc,
+			"goroutines":         runtime.NumGoroutine(),
+		},
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	json.NewEncoder(w).Encode(metrics)
+}
+
+// prometheusHandler provides metrics in Prometheus format
+func (s *Server) prometheusHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	bestBlock := s.chain.GetBestBlock()
+	var difficulty uint64
+	if bestBlock != nil {
+		difficulty = bestBlock.Header.Difficulty
+	}
+
+	peerCount := 0
+	if s.network != nil {
+		peerCount = s.network.GetPeerCount()
+	}
+
+	prometheusMetrics := fmt.Sprintf(`# HELP adrenochain_block_height Current blockchain height
+# TYPE adrenochain_block_height gauge
+adrenochain_block_height %d
+
+# HELP adrenochain_chain_difficulty Current chain difficulty
+# TYPE adrenochain_chain_difficulty gauge
+adrenochain_chain_difficulty %d
+
+# HELP adrenochain_connected_peers Number of connected peers
+# TYPE adrenochain_connected_peers gauge
+adrenochain_connected_peers %d
+
+# HELP adrenochain_memory_usage_bytes Current memory usage in bytes
+# TYPE adrenochain_memory_usage_bytes gauge
+adrenochain_memory_usage_bytes %d
+
+# HELP adrenochain_goroutines Number of goroutines
+# TYPE adrenochain_goroutines gauge
+adrenochain_goroutines %d
+
+# HELP adrenochain_uptime_seconds Node uptime in seconds
+# TYPE adrenochain_uptime_seconds gauge
+adrenochain_uptime_seconds %d
+`,
+		s.chain.GetHeight(),
+		difficulty,
+		peerCount,
+		m.Alloc,
+		runtime.NumGoroutine(),
+		int64(time.Since(time.Now().Add(-time.Hour)).Seconds()), // Mock uptime
+	)
+
+	w.Write([]byte(prometheusMetrics))
 }

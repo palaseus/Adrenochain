@@ -2,9 +2,9 @@ package ibc
 
 import (
 	"fmt"
-	"time"
 	"gopkg.in/yaml.v3"
 	"os"
+	"time"
 )
 
 // IBCConfig represents the complete IBC configuration
@@ -13,8 +13,8 @@ type IBCConfig struct {
 	Connections map[string]ConnectionConfigSection `yaml:"connections"`
 	Channels    map[string]ChannelConfigSection    `yaml:"channels"`
 	Packets     map[string]PacketConfigSection     `yaml:"packets"`
-	Security    SecurityConfigSection               `yaml:"security"`
-	Performance PerformanceConfigSection            `yaml:"performance"`
+	Security    SecurityConfigSection              `yaml:"security"`
+	Performance PerformanceConfigSection           `yaml:"performance"`
 }
 
 // ClientConfigSection represents client configuration section
@@ -49,19 +49,19 @@ type ChannelConfigSection struct {
 
 // PacketConfigSection represents packet configuration section
 type PacketConfigSection struct {
-	MaxRetries       int    `yaml:"max_retries"`
-	RetryDelay       string `yaml:"retry_delay"`
-	Timeout          string `yaml:"timeout"`
-	EnableCompression bool  `yaml:"enable_compression"`
-	SecurityLevel    string `yaml:"security_level"`
-	AutoRetry        bool   `yaml:"auto_retry"`
+	MaxRetries        int    `yaml:"max_retries"`
+	RetryDelay        string `yaml:"retry_delay"`
+	Timeout           string `yaml:"timeout"`
+	EnableCompression bool   `yaml:"enable_compression"`
+	SecurityLevel     string `yaml:"security_level"`
+	AutoRetry         bool   `yaml:"auto_retry"`
 }
 
 // SecurityConfigSection represents security configuration
 type SecurityConfigSection struct {
 	RateLimit  RateLimitConfig  `yaml:"rate_limit"`
-	Validation ValidationConfig  `yaml:"validation"`
-	Monitoring MonitoringConfig  `yaml:"monitoring"`
+	Validation ValidationConfig `yaml:"validation"`
+	Monitoring MonitoringConfig `yaml:"monitoring"`
 }
 
 // RateLimitConfig represents rate limiting configuration
@@ -81,10 +81,10 @@ type ValidationConfig struct {
 
 // MonitoringConfig represents monitoring configuration
 type MonitoringConfig struct {
-	EnableMetrics     bool   `yaml:"enable_metrics"`
-	EnableLogging     bool   `yaml:"enable_logging"`
-	LogLevel          string `yaml:"log_level"`
-	MetricsInterval   string `yaml:"metrics_interval"`
+	EnableMetrics   bool   `yaml:"enable_metrics"`
+	EnableLogging   bool   `yaml:"enable_logging"`
+	LogLevel        string `yaml:"log_level"`
+	MetricsInterval string `yaml:"metrics_interval"`
 }
 
 // PerformanceConfigSection represents performance configuration
@@ -229,12 +229,12 @@ func (c PacketConfigSection) ConvertToPacketConfig() (PacketConfig, error) {
 	}
 
 	return PacketConfig{
-		MaxRetries:       c.MaxRetries,
-		RetryDelay:       retryDelay,
-		Timeout:          timeout,
+		MaxRetries:        c.MaxRetries,
+		RetryDelay:        retryDelay,
+		Timeout:           timeout,
 		EnableCompression: c.EnableCompression,
-		SecurityLevel:    securityLevel,
-		AutoRetry:        c.AutoRetry,
+		SecurityLevel:     securityLevel,
+		AutoRetry:         c.AutoRetry,
 	}, nil
 }
 

@@ -7,10 +7,12 @@
 
 # Test binary, built with `go test -c`
 *.test
+utxo.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 *.html
+coverage_report.html
 
 # Go workspace file
 go.work
@@ -18,6 +20,7 @@ go.work
 # Build and test artifacts
 test_results/
 coverage/
+docker_test_results/
 *.prof
 *.trace
 
@@ -41,6 +44,9 @@ Thumbs.db
 *.tmp
 *.temp
 debug_*
+*.pid
+*.sock
+*.lock
 
 # Log files
 *.log
@@ -113,3 +119,59 @@ test_results/*.log
 
 # Database files
 data/*.db
+
+# Docker-related files
+docker-compose.override.yml
+docker-compose.*.yml
+.env.docker
+.dockerignore
+docker-data/
+docker-volumes/
+
+# Temporary monitoring and metrics files
+scripts/simple_metrics_server.go
+scripts/monitoring_fix.go
+scripts/*_temp.go
+scripts/*_workaround.go
+
+# Generated configuration files
+config/*_generated.yaml
+config/*_temp.yaml
+config/*_local.yaml
+
+# Runtime and process files
+*.pid
+*.sock
+*.lock
+*.fifo
+
+# Performance and profiling files
+*.pprof
+*.memprof
+*.cpuprof
+*.blockprof
+*.mutexprof
+*.trace
+
+# Build cache and temporary directories
+.cache/
+.tmp/
+tmp/
+temp/
+
+# IDE and editor specific files
+*.sublime-project
+*.sublime-workspace
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# OS specific files (additional)
+.fuse_hidden*
+.nfs*
+.directory
+.Trash-*

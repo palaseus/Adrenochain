@@ -84,19 +84,35 @@ logging:
 
 # Monitoring Configuration
 monitoring:
+  enabled: true
   enable_metrics: true
   metrics_port: 9090
   enable_prometheus: true
   enable_grafana: true
   
   # Health checks
-  health_check_interval: 30s
-  health_check_timeout: 10s
+  health:
+    listen_addr: "0.0.0.0:8081"
+    check_interval: 15s
+  
+  # Metrics
+  metrics:
+    listen_addr: "0.0.0.0:9090"
+    collect_interval: 15s
+    prometheus_enabled: true
   
   # Performance metrics
   collect_performance_metrics: true
   collect_network_metrics: true
   collect_storage_metrics: true
+
+# API Configuration
+api:
+  enabled: true
+  listen_addr: "0.0.0.0:8080"
+  cors_enabled: true
+  rate_limit: 1000
+  timeout: 30s
 
 # Performance Configuration
 performance:

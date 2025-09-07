@@ -479,18 +479,18 @@ func (mit *MasterIntegrationTest) testConsensusMechanism(t *testing.T) {
 		// Test that all nodes have the same chain state
 		// Since the block_propagation test already broadcast blocks,
 		// we need to ensure all nodes have the same final state
-		
+
 		// Find the node with the longest chain (should be node 0)
 		longestChainNode := nodes[0]
 		longestChainLength := len(longestChainNode.Chain)
-		
+
 		for _, node := range nodes {
 			if len(node.Chain) > longestChainLength {
 				longestChainNode = node
 				longestChainLength = len(node.Chain)
 			}
 		}
-		
+
 		// Synchronize all nodes to the longest chain
 		for _, node := range nodes {
 			if node != longestChainNode {
@@ -499,14 +499,14 @@ func (mit *MasterIntegrationTest) testConsensusMechanism(t *testing.T) {
 				copy(node.Chain, longestChainNode.Chain)
 			}
 		}
-		
+
 		// Wait for synchronization
 		time.Sleep(100 * time.Millisecond)
-		
+
 		// After synchronization, all nodes should have the same chain length
 		expectedLength := longestChainNode.GetChainLength()
 		for i := 0; i < len(nodes); i++ {
-			assert.Equal(t, expectedLength, nodes[i].GetChainLength(), 
+			assert.Equal(t, expectedLength, nodes[i].GetChainLength(),
 				"Node %d should have the same chain length after synchronization", i)
 		}
 	})

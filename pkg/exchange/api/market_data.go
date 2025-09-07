@@ -36,8 +36,8 @@ type Client struct {
 // NewMarketDataWebSocket creates a new WebSocket market data service
 func NewMarketDataWebSocket() *MarketDataWebSocket {
 	return &MarketDataWebSocket{
-		clients:   make(map[*Client]bool),
-		broadcast: make(chan interface{}),
+		clients:    make(map[*Client]bool),
+		broadcast:  make(chan interface{}),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		upgrader: websocket.Upgrader{
@@ -191,7 +191,7 @@ func (c *Client) handleSubscription(message []byte) {
 // subscribe subscribes a client to a channel
 func (c *Client) subscribe(channel, tradingPair string) {
 	channelKey := fmt.Sprintf("%s:%s", channel, tradingPair)
-	
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -214,7 +214,7 @@ func (c *Client) subscribe(channel, tradingPair string) {
 // unsubscribe unsubscribes a client from a channel
 func (c *Client) unsubscribe(channel, tradingPair string) {
 	channelKey := fmt.Sprintf("%s:%s", channel, tradingPair)
-	
+
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -291,11 +291,11 @@ func (mdws *MarketDataWebSocket) shouldSendToClient(client *Client, message inte
 // BroadcastOrderBookUpdate broadcasts order book updates
 func (mdws *MarketDataWebSocket) BroadcastOrderBookUpdate(tradingPair string, orderBook *orderbook.OrderBook) {
 	update := OrderBookUpdate{
-		Type:         "orderbook_update",
-		TradingPair:  tradingPair,
-		Timestamp:    time.Now(),
-		Bids:         []OrderBookEntry{}, // Would populate from order book
-		Asks:         []OrderBookEntry{}, // Would populate from order book
+		Type:        "orderbook_update",
+		TradingPair: tradingPair,
+		Timestamp:   time.Now(),
+		Bids:        []OrderBookEntry{}, // Would populate from order book
+		Asks:        []OrderBookEntry{}, // Would populate from order book
 	}
 
 	mdws.broadcast <- update
@@ -317,12 +317,12 @@ func (mdws *MarketDataWebSocket) BroadcastTradeUpdate(trade *orderbook.Trade) {
 // BroadcastMarketDataUpdate broadcasts market data updates
 func (mdws *MarketDataWebSocket) BroadcastMarketDataUpdate(tradingPair string, marketData *MarketDataResponse) {
 	update := MarketDataUpdate{
-		Type:         "market_data_update",
-		TradingPair:  tradingPair,
-		LastPrice:    marketData.LastPrice,
-		Volume24h:    marketData.Volume24h,
+		Type:           "market_data_update",
+		TradingPair:    tradingPair,
+		LastPrice:      marketData.LastPrice,
+		Volume24h:      marketData.Volume24h,
 		PriceChange24h: marketData.PriceChange24h,
-		Timestamp:    marketData.Timestamp,
+		Timestamp:      marketData.Timestamp,
 	}
 
 	mdws.broadcast <- update
@@ -353,11 +353,11 @@ type ErrorMessage struct {
 
 // OrderBookUpdate represents an order book update
 type OrderBookUpdate struct {
-	Type         string           `json:"type"`
-	TradingPair  string           `json:"trading_pair"`
-	Timestamp    time.Time        `json:"timestamp"`
-	Bids         []OrderBookEntry `json:"bids"`
-	Asks         []OrderBookEntry `json:"asks"`
+	Type        string           `json:"type"`
+	TradingPair string           `json:"trading_pair"`
+	Timestamp   time.Time        `json:"timestamp"`
+	Bids        []OrderBookEntry `json:"bids"`
+	Asks        []OrderBookEntry `json:"asks"`
 }
 
 // TradeUpdate represents a trade update

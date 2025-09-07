@@ -12,9 +12,9 @@ import (
 // Define missing types for the optimized consensus
 type ConsensusStatus int
 type Participant struct {
-	ID          string
-	Stake       *big.Int
-	TrustScore  float64
+	ID         string
+	Stake      *big.Int
+	TrustScore float64
 }
 
 const (
@@ -22,8 +22,6 @@ const (
 	ConsensusStatusInactive
 	ConsensusStatusError
 )
-
-
 
 // Add new consensus types for optimized consensus
 const (

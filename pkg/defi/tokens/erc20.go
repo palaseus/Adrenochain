@@ -26,21 +26,21 @@ type ERC20Token struct {
 	Blacklisted map[engine.Address]bool
 
 	// Events
-	TransferEvents    []TransferEvent
-	ApprovalEvents   []ApprovalEvent
-	MintEvents       []MintEvent
-	BurnEvents       []BurnEvent
-	PauseEvents      []PauseEvent
-	BlacklistEvents  []BlacklistEvent
+	TransferEvents  []TransferEvent
+	ApprovalEvents  []ApprovalEvent
+	MintEvents      []MintEvent
+	BurnEvents      []BurnEvent
+	PauseEvents     []PauseEvent
+	BlacklistEvents []BlacklistEvent
 
 	// Configuration
-	MaxSupply        *big.Int
-	TransferFee      *big.Int
+	MaxSupply            *big.Int
+	TransferFee          *big.Int
 	TransferFeeRecipient engine.Address
-	Mintable        bool
-	Burnable        bool
-	Pausable        bool
-	Blacklistable   bool
+	Mintable             bool
+	Burnable             bool
+	Pausable             bool
+	Blacklistable        bool
 }
 
 // NewERC20Token creates a new ERC-20 token
@@ -75,10 +75,10 @@ func NewERC20Token(
 		Pausable:             config.Pausable,
 		Blacklistable:        config.Blacklistable,
 	}
-	
+
 	// Set initial balance for owner
 	token.Balances[owner] = new(big.Int).Set(totalSupply)
-	
+
 	return token
 }
 
@@ -96,7 +96,7 @@ type TokenConfig struct {
 // DefaultTokenConfig returns a default token configuration
 func DefaultTokenConfig() TokenConfig {
 	return TokenConfig{
-		MaxSupply:            nil, // No max supply
+		MaxSupply:            nil,           // No max supply
 		TransferFee:          big.NewInt(0), // No transfer fee
 		TransferFeeRecipient: engine.Address{},
 		Mintable:             false,
@@ -154,11 +154,11 @@ type PauseEvent struct {
 
 // BlacklistEvent represents a blacklist add/remove event
 type BlacklistEvent struct {
-	Address engine.Address
+	Address     engine.Address
 	Blacklisted bool
-	TxHash     engine.Hash
-	Block      uint64
-	Time       time.Time
+	TxHash      engine.Hash
+	Block       uint64
+	Time        time.Time
 }
 
 // GetName returns the token name
@@ -193,7 +193,7 @@ func (t *ERC20Token) GetTotalSupply() *big.Int {
 func (t *ERC20Token) GetBalance(address engine.Address) *big.Int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if balance, exists := t.Balances[address]; exists {
 		return new(big.Int).Set(balance)
 	}
@@ -204,7 +204,7 @@ func (t *ERC20Token) GetBalance(address engine.Address) *big.Int {
 func (t *ERC20Token) GetAllowance(owner, spender engine.Address) *big.Int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if ownerAllowances, exists := t.Allowances[owner]; exists {
 		if allowance, exists := ownerAllowances[spender]; exists {
 			return new(big.Int).Set(allowance)
@@ -568,11 +568,11 @@ func (t *ERC20Token) AddToBlacklist(address engine.Address, txHash engine.Hash, 
 
 	// Record event
 	event := BlacklistEvent{
-		Address:    address,
+		Address:     address,
 		Blacklisted: true,
-		TxHash:     txHash,
-		Block:      block,
-		Time:       time.Now(),
+		TxHash:      txHash,
+		Block:       block,
+		Time:        time.Now(),
 	}
 	t.BlacklistEvents = append(t.BlacklistEvents, event)
 
@@ -597,11 +597,11 @@ func (t *ERC20Token) RemoveFromBlacklist(address engine.Address, txHash engine.H
 
 	// Record event
 	event := BlacklistEvent{
-		Address:    address,
+		Address:     address,
 		Blacklisted: false,
-		TxHash:     txHash,
-		Block:      block,
-		Time:       time.Now(),
+		TxHash:      txHash,
+		Block:       block,
+		Time:        time.Now(),
 	}
 	t.BlacklistEvents = append(t.BlacklistEvents, event)
 
@@ -612,7 +612,7 @@ func (t *ERC20Token) RemoveFromBlacklist(address engine.Address, txHash engine.H
 func (t *ERC20Token) GetTransferEvents() []TransferEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]TransferEvent, len(t.TransferEvents))
 	copy(events, t.TransferEvents)
 	return events
@@ -622,7 +622,7 @@ func (t *ERC20Token) GetTransferEvents() []TransferEvent {
 func (t *ERC20Token) GetApprovalEvents() []ApprovalEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]ApprovalEvent, len(t.ApprovalEvents))
 	copy(events, t.ApprovalEvents)
 	return events
@@ -632,7 +632,7 @@ func (t *ERC20Token) GetApprovalEvents() []ApprovalEvent {
 func (t *ERC20Token) GetMintEvents() []MintEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]MintEvent, len(t.MintEvents))
 	copy(events, t.MintEvents)
 	return events
@@ -642,7 +642,7 @@ func (t *ERC20Token) GetMintEvents() []MintEvent {
 func (t *ERC20Token) GetBurnEvents() []BurnEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]BurnEvent, len(t.BurnEvents))
 	copy(events, t.BurnEvents)
 	return events
@@ -652,7 +652,7 @@ func (t *ERC20Token) GetBurnEvents() []BurnEvent {
 func (t *ERC20Token) GetPauseEvents() []PauseEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]PauseEvent, len(t.PauseEvents))
 	copy(events, t.PauseEvents)
 	return events
@@ -662,7 +662,7 @@ func (t *ERC20Token) GetPauseEvents() []PauseEvent {
 func (t *ERC20Token) GetBlacklistEvents() []BlacklistEvent {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	events := make([]BlacklistEvent, len(t.BlacklistEvents))
 	copy(events, t.BlacklistEvents)
 	return events
@@ -765,7 +765,7 @@ func (t *ERC20Token) IsBlacklistable() bool {
 func (t *ERC20Token) Clone() *ERC20Token {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	clone := &ERC20Token{
 		Name:                 t.Name,
 		Symbol:               t.Symbol,
@@ -790,12 +790,12 @@ func (t *ERC20Token) Clone() *ERC20Token {
 		Pausable:             t.Pausable,
 		Blacklistable:        t.Blacklistable,
 	}
-	
+
 	// Copy balances
 	for addr, balance := range t.Balances {
 		clone.Balances[addr] = new(big.Int).Set(balance)
 	}
-	
+
 	// Copy allowances
 	for owner, allowances := range t.Allowances {
 		clone.Allowances[owner] = make(map[engine.Address]*big.Int)
@@ -803,22 +803,22 @@ func (t *ERC20Token) Clone() *ERC20Token {
 			clone.Allowances[owner][spender] = new(big.Int).Set(allowance)
 		}
 	}
-	
+
 	// Copy blacklisted addresses
 	for addr, blacklisted := range t.Blacklisted {
 		clone.Blacklisted[addr] = blacklisted
 	}
-	
+
 	// Copy max supply
 	if t.MaxSupply != nil {
 		clone.MaxSupply = new(big.Int).Set(t.MaxSupply)
 	}
-	
+
 	// Copy transfer fee
 	if t.TransferFee != nil {
 		clone.TransferFee = new(big.Int).Set(t.TransferFee)
 	}
-	
+
 	// Copy events
 	copy(clone.TransferEvents, t.TransferEvents)
 	copy(clone.ApprovalEvents, t.ApprovalEvents)
@@ -826,7 +826,7 @@ func (t *ERC20Token) Clone() *ERC20Token {
 	copy(clone.BurnEvents, t.BurnEvents)
 	copy(clone.PauseEvents, t.PauseEvents)
 	copy(clone.BlacklistEvents, t.BlacklistEvents)
-	
+
 	return clone
 }
 

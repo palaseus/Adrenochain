@@ -573,16 +573,16 @@ func BenchmarkRiskAssessment(b *testing.B) {
 func BenchmarkRiskScoreCalculation(b *testing.B) {
 	assessor := NewRiskAssessor(createTestPool(), 1*time.Hour, 75)
 	account := &Account{
-		UserID:           "benchmark_user",
-		SupplyBalance:    big.NewInt(10000000),
-		BorrowBalance:    big.NewInt(5000000),
-		SupplyIndex:      big.NewInt(1000000000000000000),
-		BorrowIndex:      big.NewInt(1000000000000000000),
-		CollateralValue:  big.NewInt(15000000),
-		BorrowValue:      big.NewInt(5000000),
-		HealthFactor:     big.NewInt(120),
-		LastUpdate:       time.Now(),
-		IsLiquidatable:   false,
+		UserID:          "benchmark_user",
+		SupplyBalance:   big.NewInt(10000000),
+		BorrowBalance:   big.NewInt(5000000),
+		SupplyIndex:     big.NewInt(1000000000000000000),
+		BorrowIndex:     big.NewInt(1000000000000000000),
+		CollateralValue: big.NewInt(15000000),
+		BorrowValue:     big.NewInt(5000000),
+		HealthFactor:    big.NewInt(120),
+		LastUpdate:      time.Now(),
+		IsLiquidatable:  false,
 	}
 	assessment := &RiskAssessment{
 		AssessmentCount: 5,
@@ -598,16 +598,16 @@ func BenchmarkRiskScoreCalculation(b *testing.B) {
 func BenchmarkCollateralScoreCalculation(b *testing.B) {
 	assessor := NewRiskAssessor(createTestPool(), 1*time.Hour, 75)
 	account := &Account{
-		UserID:           "benchmark_user",
-		SupplyBalance:    big.NewInt(10000000),
-		BorrowBalance:    big.NewInt(5000000),
-		SupplyIndex:      big.NewInt(1000000000000000000),
-		BorrowIndex:      big.NewInt(1000000000000000000),
-		CollateralValue:  big.NewInt(15000000),
-		BorrowValue:      big.NewInt(5000000),
-		HealthFactor:     big.NewInt(120),
-		LastUpdate:       time.Now(),
-		IsLiquidatable:   false,
+		UserID:          "benchmark_user",
+		SupplyBalance:   big.NewInt(10000000),
+		BorrowBalance:   big.NewInt(5000000),
+		SupplyIndex:     big.NewInt(1000000000000000000),
+		BorrowIndex:     big.NewInt(1000000000000000000),
+		CollateralValue: big.NewInt(15000000),
+		BorrowValue:     big.NewInt(5000000),
+		HealthFactor:    big.NewInt(120),
+		LastUpdate:      time.Now(),
+		IsLiquidatable:  false,
 	}
 
 	b.ResetTimer()
@@ -619,16 +619,16 @@ func BenchmarkCollateralScoreCalculation(b *testing.B) {
 func BenchmarkCreditScoreCalculation(b *testing.B) {
 	assessor := NewRiskAssessor(createTestPool(), 1*time.Hour, 75)
 	account := &Account{
-		UserID:           "benchmark_user",
-		SupplyBalance:    big.NewInt(10000000),
-		BorrowBalance:    big.NewInt(5000000),
-		SupplyIndex:      big.NewInt(1000000000000000000),
-		BorrowIndex:      big.NewInt(1000000000000000000),
-		CollateralValue:  big.NewInt(15000000),
-		BorrowValue:      big.NewInt(5000000),
-		HealthFactor:     big.NewInt(120),
-		LastUpdate:       time.Now(),
-		IsLiquidatable:   false,
+		UserID:          "benchmark_user",
+		SupplyBalance:   big.NewInt(10000000),
+		BorrowBalance:   big.NewInt(5000000),
+		SupplyIndex:     big.NewInt(1000000000000000000),
+		BorrowIndex:     big.NewInt(1000000000000000000),
+		CollateralValue: big.NewInt(15000000),
+		BorrowValue:     big.NewInt(5000000),
+		HealthFactor:    big.NewInt(120),
+		LastUpdate:      time.Now(),
+		IsLiquidatable:  false,
 	}
 	assessment := &RiskAssessment{
 		AssessmentCount: 5,

@@ -450,8 +450,6 @@ func TestLevelDBStorageEdgeCases(t *testing.T) {
 		}
 	})
 
-
-
 	t.Run("ConcurrentAccessEdgeCases", func(t *testing.T) {
 		tempDir := t.TempDir()
 		config := DefaultLevelDBStorageConfig().WithDataDir(tempDir)

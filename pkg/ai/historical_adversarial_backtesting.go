@@ -60,7 +60,7 @@ func (hde *HistoricalDataEngine) GetCrashEvent(id string) (*CrashEvent, bool) {
 func (hde *HistoricalDataEngine) SimulateCrashScenario(strategy *Strategy, crash *CrashEvent) (bool, float64, time.Duration) {
 	// Base survival probability based on strategy type
 	baseSurvivalProb := 0.4 // 40% base survival (realistic, not 100%)
-	
+
 	// Adjust based on crash severity
 	var severityMultiplier float64
 	switch crash.Impact {
@@ -73,7 +73,7 @@ func (hde *HistoricalDataEngine) SimulateCrashScenario(strategy *Strategy, crash
 	case CrashImpactCatastrophic:
 		severityMultiplier = 0.4
 	}
-	
+
 	// Adjust based on strategy stress resistance
 	stressResistanceMultiplier := 1.0
 	if strategy.RiskLevel > 0.8 {
@@ -83,20 +83,20 @@ func (hde *HistoricalDataEngine) SimulateCrashScenario(strategy *Strategy, crash
 	} else if strategy.RiskLevel < 0.3 {
 		stressResistanceMultiplier = 0.8
 	}
-	
+
 	// Calculate final survival probability
 	finalSurvivalProb := baseSurvivalProb * severityMultiplier * stressResistanceMultiplier
-	
+
 	// Cap at realistic maximum (not 100%)
 	if finalSurvivalProb > 0.85 {
 		finalSurvivalProb = 0.85
 	}
-	
+
 	// Determine survival with random component
 	rand.Seed(time.Now().UnixNano())
 	randomValue := rand.Float64()
 	survived := randomValue < finalSurvivalProb
-	
+
 	// Calculate capital loss (realistic, not 0%)
 	var capitalLoss float64
 	if survived {
@@ -106,7 +106,7 @@ func (hde *HistoricalDataEngine) SimulateCrashScenario(strategy *Strategy, crash
 		// Failed completely
 		capitalLoss = crash.PriceDrop * (0.8 + rand.Float64()*0.2) // 80-100% of crash loss
 	}
-	
+
 	// Calculate recovery time
 	var recoveryTime time.Duration
 	if survived {
@@ -114,45 +114,45 @@ func (hde *HistoricalDataEngine) SimulateCrashScenario(strategy *Strategy, crash
 	} else {
 		recoveryTime = crash.RecoveryTime * time.Duration(2.0+rand.Float64()*2.0) // 200-400% of crash recovery time
 	}
-	
+
 	return survived, capitalLoss, recoveryTime
 }
 
 // RunHistoricalBacktest runs a comprehensive historical backtest
 func (hde *HistoricalDataEngine) RunHistoricalBacktest(strategy *Strategy) *BacktestResult {
 	result := &BacktestResult{
-		StrategyID:    strategy.ID,
-		TotalScenarios: len(hde.CrashEvents),
-		Survived:      0,
-		Failed:        0,
-		TotalLoss:     0.0,
+		StrategyID:      strategy.ID,
+		TotalScenarios:  len(hde.CrashEvents),
+		Survived:        0,
+		Failed:          0,
+		TotalLoss:       0.0,
 		AverageRecovery: 0,
-		StartTime:     time.Now(),
+		StartTime:       time.Now(),
 	}
-	
+
 	// Test against all historical crashes
 	for _, crash := range hde.CrashEvents {
 		survived, loss, recovery := hde.SimulateCrashScenario(strategy, crash)
-		
+
 		if survived {
 			result.Survived++
 		} else {
 			result.Failed++
 		}
-		
+
 		result.TotalLoss += loss
 		result.AverageRecovery += int64(recovery)
 	}
-	
+
 	// Calculate final metrics
 	if result.TotalScenarios > 0 {
 		result.SurvivalRate = float64(result.Survived) / float64(result.TotalScenarios)
 		result.AverageRecovery = result.AverageRecovery / int64(result.TotalScenarios)
 	}
-	
+
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
-	
+
 	return result
 }
 

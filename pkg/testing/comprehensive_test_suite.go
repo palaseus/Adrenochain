@@ -719,7 +719,7 @@ func (cts *ComprehensiveTestSuite) teardownIntegrationTests() error {
 // Additional test creation functions (simplified for brevity)
 func (cts *ComprehensiveTestSuite) createTokenStandardTests() []*TestCase {
 	var tests []*TestCase
-	
+
 	// ERC-20 token tests
 	tests = append(tests, &TestCase{
 		ID:          "erc20_basic",
@@ -729,7 +729,7 @@ func (cts *ComprehensiveTestSuite) createTokenStandardTests() []*TestCase {
 		Priority:    TestPriorityHigh,
 		Tags:        []string{"token", "erc20", "basic"},
 	})
-	
+
 	// ERC-721 token tests
 	tests = append(tests, &TestCase{
 		ID:          "erc721_basic",
@@ -739,13 +739,13 @@ func (cts *ComprehensiveTestSuite) createTokenStandardTests() []*TestCase {
 		Priority:    TestPriorityHigh,
 		Tags:        []string{"token", "erc721", "basic"},
 	})
-	
+
 	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createAMMTests() []*TestCase {
 	var tests []*TestCase
-	
+
 	// Uniswap-style AMM tests
 	tests = append(tests, &TestCase{
 		ID:          "amm_swap",
@@ -755,7 +755,7 @@ func (cts *ComprehensiveTestSuite) createAMMTests() []*TestCase {
 		Priority:    TestPriorityHigh,
 		Tags:        []string{"amm", "swap", "defi"},
 	})
-	
+
 	// Liquidity provision tests
 	tests = append(tests, &TestCase{
 		ID:          "amm_liquidity",
@@ -765,13 +765,13 @@ func (cts *ComprehensiveTestSuite) createAMMTests() []*TestCase {
 		Priority:    TestPriorityNormal,
 		Tags:        []string{"amm", "liquidity", "defi"},
 	})
-	
+
 	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createLendingTests() []*TestCase {
 	var tests []*TestCase
-	
+
 	// Lending protocol tests
 	tests = append(tests, &TestCase{
 		ID:          "lending_borrow",
@@ -781,7 +781,7 @@ func (cts *ComprehensiveTestSuite) createLendingTests() []*TestCase {
 		Priority:    TestPriorityHigh,
 		Tags:        []string{"lending", "borrow", "defi"},
 	})
-	
+
 	// Collateral management tests
 	tests = append(tests, &TestCase{
 		ID:          "lending_collateral",
@@ -791,13 +791,13 @@ func (cts *ComprehensiveTestSuite) createLendingTests() []*TestCase {
 		Priority:    TestPriorityNormal,
 		Tags:        []string{"lending", "collateral", "defi"},
 	})
-	
+
 	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createYieldFarmingTests() []*TestCase {
 	var tests []*TestCase
-	
+
 	// Yield farming tests
 	tests = append(tests, &TestCase{
 		ID:          "yield_farming_stake",
@@ -807,13 +807,13 @@ func (cts *ComprehensiveTestSuite) createYieldFarmingTests() []*TestCase {
 		Priority:    TestPriorityNormal,
 		Tags:        []string{"yield", "farming", "stake", "defi"},
 	})
-	
+
 	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createGovernanceTests() []*TestCase {
 	var tests []*TestCase
-	
+
 	// Governance proposal tests
 	tests = append(tests, &TestCase{
 		ID:          "governance_proposal",
@@ -823,13 +823,13 @@ func (cts *ComprehensiveTestSuite) createGovernanceTests() []*TestCase {
 		Priority:    TestPriorityNormal,
 		Tags:        []string{"governance", "proposal", "defi"},
 	})
-	
+
 	return tests
 }
 
 func (cts *ComprehensiveTestSuite) createOracleTests() []*TestCase {
 	var tests []*TestCase
-	
+
 	// Price oracle tests
 	tests = append(tests, &TestCase{
 		ID:          "oracle_price",
@@ -839,7 +839,7 @@ func (cts *ComprehensiveTestSuite) createOracleTests() []*TestCase {
 		Priority:    TestPriorityHigh,
 		Tags:        []string{"oracle", "price", "defi"},
 	})
-	
+
 	return tests
 }
 

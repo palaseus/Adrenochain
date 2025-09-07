@@ -22,141 +22,131 @@ func NewCrossChainBenchmarkSuite() *CrossChainBenchmarkSuite {
 
 // RunAllCrossChainBenchmarks runs comprehensive benchmarks for all cross-chain packages
 func (bs *CrossChainBenchmarkSuite) RunAllCrossChainBenchmarks() error {
-	
-	
+
 	// Benchmark IBC Protocol Package
 	if err := bs.benchmarkIBCProtocol(); err != nil {
 		return fmt.Errorf("IBC protocol benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Atomic Swaps Package
 	if err := bs.benchmarkAtomicSwaps(); err != nil {
 		return fmt.Errorf("atomic swaps benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Multi-Chain Validators Package
 	if err := bs.benchmarkMultiChainValidators(); err != nil {
 		return fmt.Errorf("multi-chain validators benchmarks failed: %v", err)
 	}
-	
+
 	// Benchmark Cross-Chain DeFi Package
 	if err := bs.benchmarkCrossChainDeFi(); err != nil {
 		return fmt.Errorf("cross-chain DeFi benchmarks failed: %v", err)
 	}
-	
-	
+
 	return nil
 }
 
 // benchmarkIBCProtocol runs benchmarks for the IBC Protocol Package
 func (bs *CrossChainBenchmarkSuite) benchmarkIBCProtocol() error {
-	
-	
+
 	// Benchmark 1: Connection Establishment Performance
 	result := bs.benchmarkIBCConnectionEstablishment()
 	bs.AddResult(result)
-	
+
 	// Benchmark 2: Channel Creation Performance
 	result = bs.benchmarkIBCChannelCreation()
 	bs.AddResult(result)
-	
+
 	// Benchmark 3: Packet Relay Performance
 	result = bs.benchmarkIBCPacketRelay()
 	bs.AddResult(result)
-	
+
 	// Benchmark 4: Concurrent Operations
 	result = bs.benchmarkIBCConcurrentOperations()
 	bs.AddResult(result)
-	
+
 	// Benchmark 5: Memory Efficiency
 	result = bs.benchmarkIBCMemoryEfficiency()
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkAtomicSwaps runs benchmarks for the Atomic Swaps Package
 func (bs *CrossChainBenchmarkSuite) benchmarkAtomicSwaps() error {
-	
-	
+
 	// Benchmark 1: HTLC Creation Performance
 	result := bs.benchmarkAtomicSwapHTLCCreation()
 	bs.AddResult(result)
-	
+
 	// Benchmark 2: Swap Execution Performance
 	result = bs.benchmarkAtomicSwapExecution()
 	bs.AddResult(result)
-	
+
 	// Benchmark 3: Dispute Resolution Performance
 	result = bs.benchmarkAtomicSwapDispute()
 	bs.AddResult(result)
-	
+
 	// Benchmark 4: Concurrent Operations
 	result = bs.benchmarkAtomicSwapConcurrent()
 	bs.AddResult(result)
-	
+
 	// Benchmark 5: Memory Efficiency
 	result = bs.benchmarkAtomicSwapMemory()
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkMultiChainValidators runs benchmarks for the Multi-Chain Validators Package
 func (bs *CrossChainBenchmarkSuite) benchmarkMultiChainValidators() error {
-	
-	
+
 	// Benchmark 1: Validator Registration Performance
 	result := bs.benchmarkValidatorRegistration()
 	bs.AddResult(result)
-	
+
 	// Benchmark 2: Cross-Chain Consensus Performance
 	result = bs.benchmarkCrossChainConsensus()
 	bs.AddResult(result)
-	
+
 	// Benchmark 3: Validator Rotation Performance
 	result = bs.benchmarkValidatorRotation()
 	bs.AddResult(result)
-	
+
 	// Benchmark 4: Concurrent Operations
 	result = bs.benchmarkValidatorConcurrent()
 	bs.AddResult(result)
-	
+
 	// Benchmark 5: Memory Efficiency
 	result = bs.benchmarkValidatorMemory()
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
 // benchmarkCrossChainDeFi runs benchmarks for the Cross-Chain DeFi Package
 func (bs *CrossChainBenchmarkSuite) benchmarkCrossChainDeFi() error {
-	
-	
+
 	// Benchmark 1: Multi-Chain Lending Performance
 	result := bs.benchmarkMultiChainLending()
 	bs.AddResult(result)
-	
+
 	// Benchmark 2: Cross-Chain Yield Farming Performance
 	result = bs.benchmarkCrossChainYieldFarming()
 	bs.AddResult(result)
-	
+
 	// Benchmark 3: Multi-Chain Derivatives Performance
 	result = bs.benchmarkMultiChainDerivatives()
 	bs.AddResult(result)
-	
+
 	// Benchmark 4: Concurrent Operations
 	result = bs.benchmarkDeFiConcurrent()
 	bs.AddResult(result)
-	
+
 	// Benchmark 5: Memory Efficiency
 	result = bs.benchmarkDeFiMemory()
 	bs.AddResult(result)
-	
-	
+
 	return nil
 }
 
@@ -250,21 +240,21 @@ func (bs *CrossChainBenchmarkSuite) runGenericCrossChainBenchmark(packageName, t
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	startMem := m.Alloc
-	
+
 	// Simulate cross-chain operations
 	for i := 0; i < operations; i++ {
 		_ = fmt.Sprintf("crosschain_op_%d", i)
 		// Simulate some cross-chain overhead
 		time.Sleep(time.Nanosecond)
 	}
-	
+
 	duration := time.Since(start)
 	runtime.ReadMemStats(&m)
 	endMem := m.Alloc
-	
+
 	throughput := float64(operations) / duration.Seconds()
 	memoryUsage := endMem - startMem
-	
+
 	return &BenchmarkResult{
 		PackageName:     packageName,
 		TestName:        testName,
@@ -275,8 +265,8 @@ func (bs *CrossChainBenchmarkSuite) runGenericCrossChainBenchmark(packageName, t
 		MemoryPerOp:     float64(memoryUsage) / float64(operations),
 		Timestamp:       time.Now(),
 		Metadata: map[string]interface{}{
-			"operation_count": operations,
-			"package_type":    "crosschain",
+			"operation_count":     operations,
+			"package_type":        "crosschain",
 			"cross_chain_latency": "simulated",
 		},
 	}
@@ -293,7 +283,7 @@ func (bs *CrossChainBenchmarkSuite) AddResult(result *BenchmarkResult) {
 func (bs *CrossChainBenchmarkSuite) GetResults() []*BenchmarkResult {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
-	
+
 	results := make([]*BenchmarkResult, len(bs.Results))
 	copy(results, bs.Results)
 	return results

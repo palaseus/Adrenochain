@@ -11,24 +11,24 @@ import (
 
 // CrossChainTransactionManager handles cross-chain transaction operations
 type CrossChainTransactionManager struct {
-	bridge        *Bridge
-	transactions  map[string]*CrossChainTransaction
-	batches       map[string]*TransactionBatch
-	mutex         sync.RWMutex
-	batchTimeout  time.Duration
-	maxBatchSize  int
+	bridge       *Bridge
+	transactions map[string]*CrossChainTransaction
+	batches      map[string]*TransactionBatch
+	mutex        sync.RWMutex
+	batchTimeout time.Duration
+	maxBatchSize int
 }
 
 // TransactionBatch represents a batch of cross-chain transactions
 type TransactionBatch struct {
-	ID           string                    `json:"id"`
-	Transactions []*CrossChainTransaction  `json:"transactions"`
-	Status       BatchStatus               `json:"status"`
-	CreatedAt    time.Time                 `json:"created_at"`
-	UpdatedAt    time.Time                 `json:"updated_at"`
-	ExecutedAt   *time.Time                `json:"executed_at,omitempty"`
-	GasUsed      *big.Int                  `json:"gas_used,omitempty"`
-	TotalFee     *big.Int                  `json:"total_fee,omitempty"`
+	ID           string                   `json:"id"`
+	Transactions []*CrossChainTransaction `json:"transactions"`
+	Status       BatchStatus              `json:"status"`
+	CreatedAt    time.Time                `json:"created_at"`
+	UpdatedAt    time.Time                `json:"updated_at"`
+	ExecutedAt   *time.Time               `json:"executed_at,omitempty"`
+	GasUsed      *big.Int                 `json:"gas_used,omitempty"`
+	TotalFee     *big.Int                 `json:"total_fee,omitempty"`
 }
 
 // BatchStatus represents the status of a transaction batch

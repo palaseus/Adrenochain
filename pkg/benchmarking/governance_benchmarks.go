@@ -22,7 +22,6 @@ func NewGovernanceBenchmarkSuite() *GovernanceBenchmarkSuite {
 
 // RunAllGovernanceBenchmarks runs comprehensive benchmarks for all governance packages
 func (bs *GovernanceBenchmarkSuite) RunAllGovernanceBenchmarks() error {
-	
 
 	// Benchmark Quadratic Voting Package
 	if err := bs.benchmarkQuadraticVoting(); err != nil {
@@ -44,13 +43,11 @@ func (bs *GovernanceBenchmarkSuite) RunAllGovernanceBenchmarks() error {
 		return fmt.Errorf("cross-protocol governance benchmarks failed: %v", err)
 	}
 
-	
 	return nil
 }
 
 // benchmarkQuadraticVoting runs benchmarks for the Quadratic Voting Package
 func (bs *GovernanceBenchmarkSuite) benchmarkQuadraticVoting() error {
-	
 
 	// Benchmark 1: Vote Creation Performance
 	result := bs.benchmarkQuadraticVoteCreation()
@@ -72,13 +69,11 @@ func (bs *GovernanceBenchmarkSuite) benchmarkQuadraticVoting() error {
 	result = bs.benchmarkQuadraticMemory()
 	bs.AddResult(result)
 
-	
 	return nil
 }
 
 // benchmarkDelegatedGovernance runs benchmarks for the Delegated Governance Package
 func (bs *GovernanceBenchmarkSuite) benchmarkDelegatedGovernance() error {
-	
 
 	// Benchmark 1: Delegation Creation Performance
 	result := bs.benchmarkDelegationCreation()
@@ -100,13 +95,11 @@ func (bs *GovernanceBenchmarkSuite) benchmarkDelegatedGovernance() error {
 	result = bs.benchmarkDelegatedMemory()
 	bs.AddResult(result)
 
-	
 	return nil
 }
 
 // benchmarkProposalMarkets runs benchmarks for the Proposal Markets Package
 func (bs *GovernanceBenchmarkSuite) benchmarkProposalMarkets() error {
-	
 
 	// Benchmark 1: Market Creation Performance
 	result := bs.benchmarkMarketCreation()
@@ -128,13 +121,11 @@ func (bs *GovernanceBenchmarkSuite) benchmarkProposalMarkets() error {
 	result = bs.benchmarkMarketsMemory()
 	bs.AddResult(result)
 
-	
 	return nil
 }
 
 // benchmarkCrossProtocolGovernance runs benchmarks for the Cross-Protocol Governance Package
 func (bs *GovernanceBenchmarkSuite) benchmarkCrossProtocolGovernance() error {
-	
 
 	// Benchmark 1: Protocol Registration Performance
 	result := bs.benchmarkProtocolRegistration()
@@ -156,7 +147,6 @@ func (bs *GovernanceBenchmarkSuite) benchmarkCrossProtocolGovernance() error {
 	result = bs.benchmarkCrossProtocolMemory()
 	bs.AddResult(result)
 
-	
 	return nil
 }
 

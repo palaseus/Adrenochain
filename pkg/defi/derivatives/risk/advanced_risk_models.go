@@ -41,11 +41,11 @@ const (
 
 // ScenarioAnalysis represents a scenario analysis result
 type ScenarioAnalysis struct {
-	ID          string
-	Scenario    *StressTestScenario
-	Portfolio   *Portfolio
-	Results     map[MetricType]*big.Float
-	CreatedAt   time.Time
+	ID        string
+	Scenario  *StressTestScenario
+	Portfolio *Portfolio
+	Results   map[MetricType]*big.Float
+	CreatedAt time.Time
 }
 
 // MonteCarloSimulation represents a Monte Carlo simulation configuration
@@ -60,22 +60,22 @@ type MonteCarloSimulation struct {
 
 // MonteCarloResult represents the result of a Monte Carlo simulation
 type MonteCarloResult struct {
-	ID           string
-	Simulation   *MonteCarloSimulation
-	Portfolio    *Portfolio
-	VaR          *big.Float
-	CVaR         *big.Float
-	Percentiles  map[int]*big.Float
-	Simulations  []*big.Float
-	CreatedAt    time.Time
+	ID          string
+	Simulation  *MonteCarloSimulation
+	Portfolio   *Portfolio
+	VaR         *big.Float
+	CVaR        *big.Float
+	Percentiles map[int]*big.Float
+	Simulations []*big.Float
+	CreatedAt   time.Time
 }
 
 // AdvancedRiskManager extends the basic risk manager with advanced models
 type AdvancedRiskManager struct {
 	*RiskManager
-	scenarios        map[string]*StressTestScenario
-	simulations      map[string]*MonteCarloSimulation
-	historicalData   map[string][]*big.Float
+	scenarios         map[string]*StressTestScenario
+	simulations       map[string]*MonteCarloSimulation
+	historicalData    map[string][]*big.Float
 	correlationMatrix map[string]map[string]*big.Float
 }
 
@@ -87,10 +87,10 @@ func NewAdvancedRiskManager(riskFreeRate, confidenceLevel *big.Float) (*Advanced
 	}
 
 	return &AdvancedRiskManager{
-		RiskManager:      baseManager,
-		scenarios:        make(map[string]*StressTestScenario),
-		simulations:      make(map[string]*MonteCarloSimulation),
-		historicalData:   make(map[string][]*big.Float),
+		RiskManager:       baseManager,
+		scenarios:         make(map[string]*StressTestScenario),
+		simulations:       make(map[string]*MonteCarloSimulation),
+		historicalData:    make(map[string][]*big.Float),
 		correlationMatrix: make(map[string]map[string]*big.Float),
 	}, nil
 }
@@ -256,7 +256,7 @@ func (arm *AdvancedRiskManager) calculateMonteCarloVaR(portfolio *Portfolio, tim
 func (arm *AdvancedRiskManager) calculateFilteredHistoricalVaR(portfolio *Portfolio, timeHorizon *big.Float) (*big.Float, error) {
 	// This is a simplified version of filtered historical VaR
 	// In practice, this would use GARCH or similar models to filter volatility clustering
-	
+
 	// For now, use historical VaR as a base
 	baseVaR, err := arm.calculateHistoricalVaR(portfolio, timeHorizon)
 	if err != nil {
@@ -312,10 +312,10 @@ func (arm *AdvancedRiskManager) RunMonteCarloSimulation(
 	for i := 0; i < simulation.NumSimulations; i++ {
 		// Generate random return using normal distribution
 		randomReturn := rand.NormFloat64()*stdDevFloat + meanFloat
-		
+
 		// Scale by time horizon
 		scaledReturn := randomReturn * math.Sqrt(timeHorizonFloat)
-		
+
 		simulations[i] = big.NewFloat(scaledReturn)
 	}
 
@@ -346,7 +346,7 @@ func (arm *AdvancedRiskManager) RunMonteCarloSimulation(
 	var sumLosses float64
 	var countLosses int
 	varFloat, _ := varValue.Float64()
-	
+
 	for _, sim := range sortedSimulations {
 		if sim < varFloat {
 			sumLosses += sim
@@ -367,7 +367,7 @@ func (arm *AdvancedRiskManager) RunMonteCarloSimulation(
 	// Calculate key percentiles
 	percentiles := make(map[int]*big.Float)
 	keyPercentiles := []int{1, 5, 10, 25, 50, 75, 90, 95, 99}
-	
+
 	for _, p := range keyPercentiles {
 		index := int(float64(len(sortedSimulations)) * float64(p) / 100.0)
 		if index >= 0 && index < len(sortedSimulations) {
@@ -467,16 +467,16 @@ func (arm *AdvancedRiskManager) createStressedPortfolio(
 	// Apply stress parameters to positions
 	for id, position := range portfolio.Positions {
 		stressedPosition := &Position{
-			ID:        position.ID,
-			AssetID:   position.AssetID,
-			Size:      new(big.Float).Copy(position.Size),
-			Price:     new(big.Float).Copy(position.Price),
-			Value:     new(big.Float).Copy(position.Value),
-			Weight:    new(big.Float).Copy(position.Weight),
-			Returns:   make([]*big.Float, len(position.Returns)),
+			ID:         position.ID,
+			AssetID:    position.AssetID,
+			Size:       new(big.Float).Copy(position.Size),
+			Price:      new(big.Float).Copy(position.Price),
+			Value:      new(big.Float).Copy(position.Value),
+			Weight:     new(big.Float).Copy(position.Weight),
+			Returns:    make([]*big.Float, len(position.Returns)),
 			Volatility: new(big.Float).Copy(position.Volatility),
-			Beta:      new(big.Float).Copy(position.Beta),
-			UpdatedAt: time.Now(),
+			Beta:       new(big.Float).Copy(position.Beta),
+			UpdatedAt:  time.Now(),
 		}
 
 		// Copy returns

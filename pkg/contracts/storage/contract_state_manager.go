@@ -141,7 +141,7 @@ type ContractStateConfig struct {
 // NewContractStateManager creates a new contract state manager
 func NewContractStateManager(
 	storageManager interface{}, // Placeholder for storage.StateManager
-	trieManager interface{},    // Placeholder for storage.TrieManager
+	trieManager interface{}, // Placeholder for storage.TrieManager
 	config ContractStateConfig,
 ) *ContractStateManager {
 	return &ContractStateManager{

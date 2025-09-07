@@ -9,19 +9,19 @@ import (
 
 // FlashLoan represents a flash loan transaction
 type FlashLoan struct {
-	ID              string    `json:"id"`
-	UserID          string    `json:"user_id"`
-	Asset           string    `json:"asset"`
-	Amount          *big.Int  `json:"amount"`
-	Fee             *big.Int  `json:"fee"`
-	FeeRate         *big.Int  `json:"fee_rate"`
-	BorrowTime      time.Time `json:"borrow_time"`
-	RepayTime       time.Time `json:"repay_time,omitempty"`
-	Status          FlashLoanStatus `json:"status"`
-	CallbackData    []byte    `json:"callback_data,omitempty"`
-	GasUsed         *big.Int  `json:"gas_used,omitempty"`
-	IsSuccessful    bool      `json:"is_successful"`
-	ErrorMessage    string    `json:"error_message,omitempty"`
+	ID           string          `json:"id"`
+	UserID       string          `json:"user_id"`
+	Asset        string          `json:"asset"`
+	Amount       *big.Int        `json:"amount"`
+	Fee          *big.Int        `json:"fee"`
+	FeeRate      *big.Int        `json:"fee_rate"`
+	BorrowTime   time.Time       `json:"borrow_time"`
+	RepayTime    time.Time       `json:"repay_time,omitempty"`
+	Status       FlashLoanStatus `json:"status"`
+	CallbackData []byte          `json:"callback_data,omitempty"`
+	GasUsed      *big.Int        `json:"gas_used,omitempty"`
+	IsSuccessful bool            `json:"is_successful"`
+	ErrorMessage string          `json:"error_message,omitempty"`
 }
 
 // FlashLoanStatus represents the status of a flash loan
@@ -52,27 +52,27 @@ func (e FlashLoanError) Error() string {
 
 // Flash loan errors
 var (
-	ErrFlashLoanNotSupported = errors.New("flash loan not supported for this asset")
-	ErrFlashLoanAmountTooHigh = errors.New("flash loan amount exceeds maximum allowed")
-	ErrFlashLoanAmountTooLow = errors.New("flash loan amount below minimum required")
+	ErrFlashLoanNotSupported          = errors.New("flash loan not supported for this asset")
+	ErrFlashLoanAmountTooHigh         = errors.New("flash loan amount exceeds maximum allowed")
+	ErrFlashLoanAmountTooLow          = errors.New("flash loan amount below minimum required")
 	ErrFlashLoanInsufficientLiquidity = errors.New("insufficient liquidity for flash loan")
-	ErrFlashLoanCallbackFailed = errors.New("flash loan callback execution failed")
-	ErrFlashLoanNotRepaid = errors.New("flash loan not repaid within deadline")
-	ErrFlashLoanExpired = errors.New("flash loan has expired")
-	ErrFlashLoanAlreadyActive = errors.New("flash loan is already active")
-	ErrFlashLoanInvalidStatus = errors.New("invalid flash loan status for this operation")
+	ErrFlashLoanCallbackFailed        = errors.New("flash loan callback execution failed")
+	ErrFlashLoanNotRepaid             = errors.New("flash loan not repaid within deadline")
+	ErrFlashLoanExpired               = errors.New("flash loan has expired")
+	ErrFlashLoanAlreadyActive         = errors.New("flash loan is already active")
+	ErrFlashLoanInvalidStatus         = errors.New("invalid flash loan status for this operation")
 )
 
 // FlashLoanManager manages flash loan operations
 type FlashLoanManager struct {
-	lendingPool     *LendingPool
-	maxFlashLoanAmount *big.Int
-	minFlashLoanAmount *big.Int
-	flashLoanFeeRate *big.Int
+	lendingPool          *LendingPool
+	maxFlashLoanAmount   *big.Int
+	minFlashLoanAmount   *big.Int
+	flashLoanFeeRate     *big.Int
 	maxFlashLoanDuration time.Duration
-	activeLoans      map[string]*FlashLoan
-	mutex            sync.RWMutex
-	loanCounter      uint64
+	activeLoans          map[string]*FlashLoan
+	mutex                sync.RWMutex
+	loanCounter          uint64
 }
 
 // NewFlashLoanManager creates a new flash loan manager
@@ -82,13 +82,13 @@ func NewFlashLoanManager(
 	maxDuration time.Duration,
 ) *FlashLoanManager {
 	return &FlashLoanManager{
-		lendingPool:         lendingPool,
-		maxFlashLoanAmount:  maxAmount,
-		minFlashLoanAmount:  minAmount,
-		flashLoanFeeRate:    feeRate,
+		lendingPool:          lendingPool,
+		maxFlashLoanAmount:   maxAmount,
+		minFlashLoanAmount:   minAmount,
+		flashLoanFeeRate:     feeRate,
 		maxFlashLoanDuration: maxDuration,
-		activeLoans:         make(map[string]*FlashLoan),
-		loanCounter:         0,
+		activeLoans:          make(map[string]*FlashLoan),
+		loanCounter:          0,
 	}
 }
 
@@ -355,7 +355,7 @@ func (flm *FlashLoanManager) CleanupExpiredLoans() {
 				loan.Status = FlashLoanStatusExpired
 				loan.ErrorMessage = "flash loan expired"
 				loan.IsSuccessful = false
-				
+
 				// Restore liquidity if loan was active
 				if loan.Status == FlashLoanStatusActive {
 					flm.lendingPool.AvailableLiquidity.Add(flm.lendingPool.AvailableLiquidity, loan.Amount)

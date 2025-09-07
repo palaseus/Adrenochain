@@ -611,7 +611,7 @@ func TestERC20TokenClone(t *testing.T) {
 // TestERC20TokenConcurrency tests concurrent access to token
 func TestERC20TokenConcurrency(t *testing.T) {
 	token := NewERC20Token("Test", "TEST", 18, big.NewInt(1000), generateRandomAddress(), DefaultTokenConfig())
-	
+
 	// Test concurrent reads
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {

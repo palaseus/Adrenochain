@@ -9,49 +9,49 @@ import (
 
 // LendingPool represents a lending pool for a specific asset
 type LendingPool struct {
-	ID                    string    `json:"id"`
-	Asset                 string    `json:"asset"`
-	TotalSupply           *big.Int  `json:"total_supply"`
-	TotalBorrowed         *big.Int  `json:"total_borrowed"`
-	AvailableLiquidity    *big.Int  `json:"available_liquidity"`
-	UtilizationRate       *big.Int  `json:"utilization_rate"`
-	SupplyRate            *big.Int  `json:"supply_rate"`
-	BorrowRate            *big.Int  `json:"borrow_rate"`
-	BaseRate              *big.Int  `json:"base_rate"`
-	KinkRate              *big.Int  `json:"kink_rate"`
-	Multiplier            *big.Int  `json:"multiplier"`
-	JumpMultiplier        *big.Int  `json:"jump_multiplier"`
-	ReserveFactor         *big.Int  `json:"reserve_factor"`
-	CollateralFactor      *big.Int  `json:"collateral_factor"`
-	LiquidationThreshold  *big.Int  `json:"liquidation_threshold"`
-	LiquidationPenalty    *big.Int  `json:"liquidation_penalty"`
-	MaxBorrowAmount       *big.Int  `json:"max_borrow_amount"`
-	MinBorrowAmount       *big.Int  `json:"min_borrow_amount"`
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
-	LastInterestUpdate    time.Time `json:"last_interest_update"`
-	IsActive              bool      `json:"is_active"`
-	
+	ID                   string    `json:"id"`
+	Asset                string    `json:"asset"`
+	TotalSupply          *big.Int  `json:"total_supply"`
+	TotalBorrowed        *big.Int  `json:"total_borrowed"`
+	AvailableLiquidity   *big.Int  `json:"available_liquidity"`
+	UtilizationRate      *big.Int  `json:"utilization_rate"`
+	SupplyRate           *big.Int  `json:"supply_rate"`
+	BorrowRate           *big.Int  `json:"borrow_rate"`
+	BaseRate             *big.Int  `json:"base_rate"`
+	KinkRate             *big.Int  `json:"kink_rate"`
+	Multiplier           *big.Int  `json:"multiplier"`
+	JumpMultiplier       *big.Int  `json:"jump_multiplier"`
+	ReserveFactor        *big.Int  `json:"reserve_factor"`
+	CollateralFactor     *big.Int  `json:"collateral_factor"`
+	LiquidationThreshold *big.Int  `json:"liquidation_threshold"`
+	LiquidationPenalty   *big.Int  `json:"liquidation_penalty"`
+	MaxBorrowAmount      *big.Int  `json:"max_borrow_amount"`
+	MinBorrowAmount      *big.Int  `json:"min_borrow_amount"`
+	CreatedAt            time.Time `json:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	LastInterestUpdate   time.Time `json:"last_interest_update"`
+	IsActive             bool      `json:"is_active"`
+
 	// Internal state
-	mutex                 sync.RWMutex
-	accounts              map[string]*Account
-	interestAccrualIndex  *big.Int
-	borrowIndex           *big.Int
-	supplyIndex           *big.Int
+	mutex                sync.RWMutex
+	accounts             map[string]*Account
+	interestAccrualIndex *big.Int
+	borrowIndex          *big.Int
+	supplyIndex          *big.Int
 }
 
 // Account represents a user's position in the lending pool
 type Account struct {
-	UserID                string    `json:"user_id"`
-	SupplyBalance         *big.Int  `json:"supply_balance"`
-	BorrowBalance         *big.Int  `json:"borrow_balance"`
-	SupplyIndex           *big.Int  `json:"supply_index"`
-	BorrowIndex           *big.Int  `json:"borrow_index"`
-	CollateralValue       *big.Int  `json:"collateral_value"`
-	BorrowValue           *big.Int  `json:"borrow_value"`
-	HealthFactor          *big.Int  `json:"health_factor"`
-	LastUpdate            time.Time `json:"last_update"`
-	IsLiquidatable        bool      `json:"is_liquidatable"`
+	UserID          string    `json:"user_id"`
+	SupplyBalance   *big.Int  `json:"supply_balance"`
+	BorrowBalance   *big.Int  `json:"borrow_balance"`
+	SupplyIndex     *big.Int  `json:"supply_index"`
+	BorrowIndex     *big.Int  `json:"borrow_index"`
+	CollateralValue *big.Int  `json:"collateral_value"`
+	BorrowValue     *big.Int  `json:"borrow_value"`
+	HealthFactor    *big.Int  `json:"health_factor"`
+	LastUpdate      time.Time `json:"last_update"`
+	IsLiquidatable  bool      `json:"is_liquidatable"`
 }
 
 // LendingPoolError represents lending pool specific errors
@@ -70,13 +70,13 @@ func (e LendingPoolError) Error() string {
 var (
 	ErrPoolNotFound           = errors.New("lending pool not found")
 	ErrPoolInactive           = errors.New("lending pool is inactive")
-	ErrInsufficientLiquidity = errors.New("insufficient liquidity")
+	ErrInsufficientLiquidity  = errors.New("insufficient liquidity")
 	ErrInsufficientCollateral = errors.New("insufficient collateral")
-	ErrBorrowLimitExceeded   = errors.New("borrow limit exceeded")
-	ErrInvalidAmount         = errors.New("invalid amount")
-	ErrAccountNotFound       = errors.New("account not found")
-	ErrHealthFactorTooLow    = errors.New("health factor too low")
-	ErrLiquidationNotAllowed = errors.New("liquidation not allowed")
+	ErrBorrowLimitExceeded    = errors.New("borrow limit exceeded")
+	ErrInvalidAmount          = errors.New("invalid amount")
+	ErrAccountNotFound        = errors.New("account not found")
+	ErrHealthFactorTooLow     = errors.New("health factor too low")
+	ErrLiquidationNotAllowed  = errors.New("liquidation not allowed")
 )
 
 // NewLendingPool creates a new lending pool
@@ -85,7 +85,7 @@ func NewLendingPool(
 	baseRate, kinkRate, multiplier, jumpMultiplier, reserveFactor, collateralFactor, liquidationThreshold, liquidationPenalty *big.Int,
 ) *LendingPool {
 	now := time.Now()
-	
+
 	return &LendingPool{
 		ID:                   "pool_" + asset,
 		Asset:                asset,
@@ -121,7 +121,7 @@ func (lp *LendingPool) Supply(userID string, amount *big.Int) error {
 	if !lp.IsActive {
 		return &LendingPoolError{Operation: "Supply", Message: ErrPoolInactive.Error(), PoolID: lp.ID}
 	}
-	
+
 	if amount == nil || amount.Cmp(big.NewInt(0)) <= 0 {
 		return &LendingPoolError{Operation: "Supply", Message: ErrInvalidAmount.Error(), PoolID: lp.ID}
 	}
@@ -161,7 +161,7 @@ func (lp *LendingPool) Borrow(userID string, amount *big.Int) error {
 	if !lp.IsActive {
 		return &LendingPoolError{Operation: "Borrow", Message: ErrPoolInactive.Error(), PoolID: lp.ID}
 	}
-	
+
 	if amount == nil || amount.Cmp(big.NewInt(0)) <= 0 {
 		return &LendingPoolError{Operation: "Borrow", Message: ErrInvalidAmount.Error(), PoolID: lp.ID}
 	}
@@ -219,7 +219,7 @@ func (lp *LendingPool) Repay(userID string, amount *big.Int) error {
 	if !lp.IsActive {
 		return &LendingPoolError{Operation: "Repay", Message: ErrPoolInactive.Error(), PoolID: lp.ID}
 	}
-	
+
 	if amount == nil || amount.Cmp(big.NewInt(0)) <= 0 {
 		return &LendingPoolError{Operation: "Repay", Message: ErrInvalidAmount.Error(), PoolID: lp.ID}
 	}
@@ -271,7 +271,7 @@ func (lp *LendingPool) Withdraw(userID string, amount *big.Int) error {
 	if !lp.IsActive {
 		return &LendingPoolError{Operation: "Withdraw", Message: ErrPoolInactive.Error(), PoolID: lp.ID}
 	}
-	
+
 	if amount == nil || amount.Cmp(big.NewInt(0)) <= 0 {
 		return &LendingPoolError{Operation: "Withdraw", Message: ErrInvalidAmount.Error(), PoolID: lp.ID}
 	}
@@ -322,7 +322,7 @@ func (lp *LendingPool) Withdraw(userID string, amount *big.Int) error {
 func (lp *LendingPool) updateInterestRates() {
 	now := time.Now()
 	timeElapsed := now.Sub(lp.LastInterestUpdate)
-	
+
 	if timeElapsed < time.Minute {
 		return // Update at most once per minute
 	}
@@ -340,7 +340,7 @@ func (lp *LendingPool) updateInterestRates() {
 		kinkMultiplier := new(big.Int).Mul(lp.KinkRate, lp.Multiplier)
 		excessUtilization := new(big.Int).Sub(utilization, lp.KinkRate)
 		excessMultiplier := new(big.Int).Mul(excessUtilization, lp.JumpMultiplier)
-		
+
 		borrowRate.Add(lp.BaseRate, kinkMultiplier)
 		borrowRate.Add(borrowRate, excessMultiplier)
 	}
@@ -369,7 +369,7 @@ func (lp *LendingPool) updateUtilizationRate() {
 		lp.UtilizationRate = big.NewInt(0)
 		return
 	}
-	
+
 	// Utilization = total borrowed / total supply
 	utilization := new(big.Int).Mul(lp.TotalBorrowed, big.NewInt(10000)) // 10000 = 100%
 	utilization.Div(utilization, lp.TotalSupply)
@@ -381,20 +381,20 @@ func (lp *LendingPool) getOrCreateAccount(userID string) *Account {
 	if account, exists := lp.accounts[userID]; exists {
 		return account
 	}
-	
+
 	account := &Account{
-		UserID:        userID,
-		SupplyBalance: big.NewInt(0),
-		BorrowBalance: big.NewInt(0),
-		SupplyIndex:   lp.supplyIndex,
-		BorrowIndex:   lp.borrowIndex,
+		UserID:          userID,
+		SupplyBalance:   big.NewInt(0),
+		BorrowBalance:   big.NewInt(0),
+		SupplyIndex:     lp.supplyIndex,
+		BorrowIndex:     lp.borrowIndex,
 		CollateralValue: big.NewInt(0),
-		BorrowValue:   big.NewInt(0),
-		HealthFactor:  big.NewInt(0),
-		LastUpdate:    time.Now(),
-		IsLiquidatable: false,
+		BorrowValue:     big.NewInt(0),
+		HealthFactor:    big.NewInt(0),
+		LastUpdate:      time.Now(),
+		IsLiquidatable:  false,
 	}
-	
+
 	lp.accounts[userID] = account
 	return account
 }
@@ -404,12 +404,12 @@ func (lp *LendingPool) calculateInterestEarned(account *Account) *big.Int {
 	if account.SupplyBalance.Cmp(big.NewInt(0)) == 0 {
 		return big.NewInt(0)
 	}
-	
+
 	// Interest = supply balance * (current index - user index) / user index
 	indexDelta := new(big.Int).Sub(lp.supplyIndex, account.SupplyIndex)
 	interest := new(big.Int).Mul(account.SupplyBalance, indexDelta)
 	interest.Div(interest, account.SupplyIndex)
-	
+
 	return interest
 }
 
@@ -418,12 +418,12 @@ func (lp *LendingPool) calculateInterestOwed(account *Account) *big.Int {
 	if account.BorrowBalance.Cmp(big.NewInt(0)) == 0 {
 		return big.NewInt(0)
 	}
-	
+
 	// Interest = borrow balance * (current index - user index) / user index
 	indexDelta := new(big.Int).Sub(lp.borrowIndex, account.BorrowIndex)
 	interest := new(big.Int).Mul(account.BorrowBalance, indexDelta)
 	interest.Div(interest, account.BorrowIndex)
-	
+
 	return interest
 }
 
@@ -431,11 +431,11 @@ func (lp *LendingPool) calculateInterestOwed(account *Account) *big.Int {
 func (lp *LendingPool) checkBorrowLimit(account *Account, borrowAmount *big.Int) bool {
 	// Calculate total borrow value after this borrow
 	totalBorrowValue := new(big.Int).Add(account.BorrowValue, borrowAmount)
-	
+
 	// Calculate maximum borrow value based on collateral
 	maxBorrowValue := new(big.Int).Mul(account.CollateralValue, lp.CollateralFactor)
 	maxBorrowValue.Div(maxBorrowValue, big.NewInt(10000)) // 10000 = 100%
-	
+
 	return totalBorrowValue.Cmp(maxBorrowValue) <= 0
 }
 
@@ -446,12 +446,12 @@ func (lp *LendingPool) updateAccountHealthFactor(account *Account) {
 		account.IsLiquidatable = false
 		return
 	}
-	
+
 	// Health factor = (collateral value * liquidation threshold) / borrow value
 	healthFactor := new(big.Int).Mul(account.CollateralValue, lp.LiquidationThreshold)
 	healthFactor.Div(healthFactor, account.BorrowValue)
 	healthFactor.Div(healthFactor, big.NewInt(100)) // Convert to percentage
-	
+
 	account.HealthFactor = healthFactor
 	account.IsLiquidatable = healthFactor.Cmp(big.NewInt(100)) < 0 // Below 100% = liquidatable
 }
@@ -460,12 +460,12 @@ func (lp *LendingPool) updateAccountHealthFactor(account *Account) {
 func (lp *LendingPool) GetAccount(userID string) (*Account, error) {
 	lp.mutex.RLock()
 	defer lp.mutex.RUnlock()
-	
+
 	account, exists := lp.accounts[userID]
 	if !exists {
 		return nil, &LendingPoolError{Operation: "GetAccount", Message: ErrAccountNotFound.Error(), PoolID: lp.ID, UserID: userID}
 	}
-	
+
 	return account, nil
 }
 
@@ -473,18 +473,18 @@ func (lp *LendingPool) GetAccount(userID string) (*Account, error) {
 func (lp *LendingPool) GetPoolStats() map[string]interface{} {
 	lp.mutex.RLock()
 	defer lp.mutex.RUnlock()
-	
+
 	return map[string]interface{}{
-		"id":                 lp.ID,
-		"asset":              lp.Asset,
-		"total_supply":       lp.TotalSupply.String(),
-		"total_borrowed":     lp.TotalBorrowed.String(),
+		"id":                  lp.ID,
+		"asset":               lp.Asset,
+		"total_supply":        lp.TotalSupply.String(),
+		"total_borrowed":      lp.TotalBorrowed.String(),
 		"available_liquidity": lp.AvailableLiquidity.String(),
-		"utilization_rate":   lp.UtilizationRate.String(),
-		"supply_rate":        lp.SupplyRate.String(),
-		"borrow_rate":        lp.BorrowRate.String(),
-		"base_rate":          lp.BaseRate.String(),
-		"is_active":          lp.IsActive,
-		"account_count":      len(lp.accounts),
+		"utilization_rate":    lp.UtilizationRate.String(),
+		"supply_rate":         lp.SupplyRate.String(),
+		"borrow_rate":         lp.BorrowRate.String(),
+		"base_rate":           lp.BaseRate.String(),
+		"is_active":           lp.IsActive,
+		"account_count":       len(lp.accounts),
 	}
 }

@@ -543,7 +543,7 @@ func TestERC721TokenClone(t *testing.T) {
 	// Add some state
 	address1 := generateRandomAddress()
 	tokenID := uint64(1)
-	
+
 	// Mint a token
 	err := token.Mint(address1, tokenID, generateRandomHash(), 12345)
 	if err != nil {
@@ -580,7 +580,7 @@ func TestERC721TokenClone(t *testing.T) {
 // TestERC721TokenConcurrency tests concurrent access to token
 func TestERC721TokenConcurrency(t *testing.T) {
 	token := NewERC721Token("Test NFT", "TNFT", "https://api.example.com/metadata/", generateRandomAddress(), DefaultERC721TokenConfig())
-	
+
 	// Test concurrent reads
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {
