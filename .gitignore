@@ -107,8 +107,8 @@ test.pdf
 # Generated config during audit process
 pkg/config/
 
-# PDF test files (generated during testing)
-pkg/pdf/*_test.go
+# PDF test files (generated during testing) - but allow actual test files
+# pkg/pdf/*_test.go
 
 # Backup files from development
 *.bak
