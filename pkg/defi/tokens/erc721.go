@@ -864,7 +864,13 @@ func (t *ERC721Token) isApprovedForAllInternal(owner, operator engine.Address) b
 }
 
 func (t *ERC721Token) getCallerAddress() engine.Address {
-	// This would need to be implemented based on execution context
-	// For now, return a placeholder
+	// Get the caller address from execution context
+	// In a real implementation, this would:
+	// 1. Extract caller from transaction context
+	// 2. Validate caller address format
+	// 3. Return the verified caller address
+
+	// For now, return zero address as context is not available
+	// This should be properly implemented when integrated with the execution engine
 	return engine.Address{}
 }

@@ -207,7 +207,16 @@ func (ac *AdvancedCache) GetStats() *CacheStats {
 	ac.stats.mu.RLock()
 	defer ac.stats.mu.RUnlock()
 
-	stats := *ac.stats
+	stats := CacheStats{
+		Hits:           ac.stats.Hits,
+		Misses:         ac.stats.Misses,
+		Evictions:      ac.stats.Evictions,
+		Compressions:   ac.stats.Compressions,
+		Decompressions: ac.stats.Decompressions,
+		L1Hits:         ac.stats.L1Hits,
+		L2Hits:         ac.stats.L2Hits,
+		L3Hits:         ac.stats.L3Hits,
+	}
 	return &stats
 }
 

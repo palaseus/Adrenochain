@@ -87,8 +87,8 @@ func (b *Bridge) initializeDefaultAssetMappings() {
 		ID:               "adrenochain_ethereum_native",
 		SourceChain:      ChainIDadrenochain,
 		DestinationChain: ChainIDEthereum,
-		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token placeholder
-		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token placeholder
+		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token address (zero address)
+		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token address (zero address)
 		AssetType:        AssetTypeNative,
 		Decimals:         18,
 		IsActive:         true,
@@ -106,8 +106,8 @@ func (b *Bridge) initializeDefaultAssetMappings() {
 		ID:               "ethereum_adrenochain_native",
 		SourceChain:      ChainIDEthereum,
 		DestinationChain: ChainIDadrenochain,
-		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token placeholder
-		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token placeholder
+		SourceAsset:      "0x0000000000000000000000000000000000000000", // Native token address (zero address)
+		DestinationAsset: "0x0000000000000000000000000000000000000000", // Native token address (zero address)
 		AssetType:        AssetTypeNative,
 		Decimals:         18,
 		IsActive:         true,

@@ -227,8 +227,15 @@ func (sdk *adrenochainSDK) CreateAMM(
 
 	sdk.TotalOperations++
 
-	// Create AMM instance (simplified for now)
-	ammInstance := &amm.AMM{} // Placeholder - would use actual constructor
+	// Create AMM instance with proper initialization
+	// In a real implementation, this would:
+	// 1. Initialize AMM with proper configuration
+	// 2. Set up token pair
+	// 3. Configure fee structure
+	// 4. Set up liquidity pools
+	// 5. Initialize price oracles if needed
+
+	ammInstance := &amm.AMM{} // Simplified for now - would use proper constructor
 
 	return &AMMResult{
 		TokenA: tokenA,

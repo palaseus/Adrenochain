@@ -27,7 +27,9 @@ type StateTransitionManager struct {
 	stateManager   StateManager
 
 	// Consensus integration
-	consensusEngine interface{} // Placeholder for consensus.ConsensusEngine
+	// In a real implementation, this would be properly typed:
+	// consensusEngine consensus.ConsensusEngine
+	consensusEngine interface{} // Will be properly typed when consensus package is integrated
 
 	// Transaction management
 	pendingTransactions  map[string]*ConsensusTransaction

@@ -367,9 +367,17 @@ func (sp *SyncProtocol) syncBlocks(peerID peer.ID) error {
 
 // syncStateData synchronizes state with a peer
 func (sp *SyncProtocol) syncStateData(peerID peer.ID) error {
-	// This is a placeholder for state synchronization
-	// In a real implementation, this would sync account states, contract storage, etc.
+	// Synchronize state data with peer
+	// In a real implementation, this would:
+	// 1. Request state trie root from peer
+	// 2. Compare with local state trie root
+	// 3. Identify missing or different state nodes
+	// 4. Request and download missing state data
+	// 5. Validate state data integrity
+	// 6. Update local state trie
+	// 7. Handle state synchronization conflicts
 
+	// For now, return success as state sync is not fully implemented
 	return nil
 }
 
@@ -537,7 +545,7 @@ func (sp *SyncProtocol) getKnownHeaders() [][]byte {
 		}()
 
 		hash = block.CalculateHash()
-		if hash != nil && len(hash) > 0 {
+		if len(hash) > 0 {
 			headers = append(headers, hash)
 		}
 	}

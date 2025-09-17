@@ -66,8 +66,12 @@ class TestAnalyzer:
         for log_file in self.test_results_dir.glob("*_tests.log"):
             package_name = log_file.stem.replace("_tests", "")
             
-            with open(log_file, 'r') as f:
-                content = f.read()
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+            except UnicodeDecodeError:
+                # Skip files that can't be decoded as UTF-8
+                continue
             
             # Parse test results
             test_count = len(re.findall(r"=== RUN", content))

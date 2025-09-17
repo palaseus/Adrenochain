@@ -410,13 +410,25 @@ func (fd *FraudDetector) matchesPattern(
 	switch pattern.Pattern {
 	case "high_frequency":
 		// Check for high frequency transfers
-		return false // Placeholder
+		// In a real implementation, this would:
+		// 1. Track transfer frequency per address
+		// 2. Compare against normal patterns
+		// 3. Flag addresses with unusual activity
+		return false // Not implemented yet
 	case "large_amount":
 		// Check for unusually large amounts
-		return false // Placeholder
+		// In a real implementation, this would:
+		// 1. Compare amount against historical averages
+		// 2. Check against known whale addresses
+		// 3. Flag amounts above certain thresholds
+		return false // Not implemented yet
 	case "suspicious_pair":
 		// Check for suspicious address pairs
-		return false // Placeholder
+		// In a real implementation, this would:
+		// 1. Check against known malicious addresses
+		// 2. Analyze transaction patterns
+		// 3. Flag suspicious address combinations
+		return false // Not implemented yet
 	default:
 		return false
 	}

@@ -14,8 +14,11 @@ type ContractStateManager struct {
 	mu sync.RWMutex
 
 	// Core storage integration (will be integrated with existing storage layer)
-	storageManager interface{} // Placeholder for storage.StateManager
-	trieManager    interface{} // Placeholder for storage.TrieManager
+	// In a real implementation, these would be properly typed:
+	// storageManager storage.StateManager
+	// trieManager storage.TrieManager
+	storageManager interface{} // Will be properly typed when storage package is integrated
+	trieManager    interface{} // Will be properly typed when storage package is integrated
 
 	// Contract state tracking
 	contractStates map[engine.Address]*ContractState

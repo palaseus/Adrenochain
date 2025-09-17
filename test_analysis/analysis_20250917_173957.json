@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-09-17T17:39:57.394289",
+  "summary": {
+    "coverage": {
+      "total": 82.9
+    }
+  },
+  "packages": {},
+  "performance": {},
+  "coverage": {
+    "total": 82.9,
+    "combined_file": "coverage/combined_coverage.out"
+  },
+  "trends": {}
+}

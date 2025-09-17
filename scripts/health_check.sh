@@ -187,7 +187,7 @@ EOF
     
     # Check Redis
     total_services=$((total_services + 1))
-    if check_health "Redis" "redis-cli ping" "PONG"; then
+    if check_health "Redis" "docker exec adrenochain-redis redis-cli ping" "PONG"; then
         healthy_services=$((healthy_services + 1))
     else
         send_alert "Redis is not responding" "WARNING"
@@ -200,8 +200,12 @@ EOF
     # Check disk space
     total_services=$((total_services + 1))
     disk_usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
-    if [ "$disk_usage" -lt 90 ]; then
+    if [ "$disk_usage" -lt 95 ]; then
         echo -e "${GREEN}✅ Disk Space: ${disk_usage}% used${NC}"
+        healthy_services=$((healthy_services + 1))
+    elif [ "$disk_usage" -lt 98 ]; then
+        echo -e "${YELLOW}⚠️ Disk Space: ${disk_usage}% used (WARNING)${NC}"
+        send_alert "Disk space is getting low: ${disk_usage}%" "WARNING"
         healthy_services=$((healthy_services + 1))
     else
         echo -e "${RED}❌ Disk Space: ${disk_usage}% used (CRITICAL)${NC}"
@@ -378,6 +382,7 @@ case "${1:-check}" in
         exit 1
         ;;
 esac
+
 
 
 

@@ -232,9 +232,15 @@ func TestInitializeInfrastructureTests(t *testing.T) {
 		t.Error("infrastructure suite is nil")
 	}
 
-	// Check that test cases were added (these are placeholder functions that return empty slices)
-	if len(suite.TestCases) != 0 {
-		t.Error("Expected empty test cases for infrastructure suite (placeholder implementation)")
+	// Check that test cases were added (now properly implemented)
+	if len(suite.TestCases) == 0 {
+		t.Error("Expected test cases for infrastructure suite (now properly implemented)")
+	}
+
+	// Verify we have the expected number of test cases
+	expectedCount := 12 // storage (4) + consensus (4) + networking (4) tests
+	if len(suite.TestCases) != expectedCount {
+		t.Errorf("Expected %d test cases for infrastructure suite, got %d", expectedCount, len(suite.TestCases))
 	}
 }
 
@@ -257,9 +263,15 @@ func TestInitializeAPITests(t *testing.T) {
 		t.Error("api_sdk suite is nil")
 	}
 
-	// Check that test cases were added (these are placeholder functions that return empty slices)
-	if len(suite.TestCases) != 0 {
-		t.Error("Expected empty test cases for api_sdk suite (placeholder implementation)")
+	// Check that test cases were added (now properly implemented)
+	if len(suite.TestCases) == 0 {
+		t.Error("Expected test cases for api_sdk suite (now properly implemented)")
+	}
+
+	// Verify we have the expected number of test cases
+	expectedCount := 8 // API (3) + SDK (3) + API integration (2) tests
+	if len(suite.TestCases) != expectedCount {
+		t.Errorf("Expected %d test cases for api_sdk suite, got %d", expectedCount, len(suite.TestCases))
 	}
 }
 
@@ -282,9 +294,15 @@ func TestInitializeIntegrationTests(t *testing.T) {
 		t.Error("integration suite is nil")
 	}
 
-	// Check that test cases were added (these are placeholder functions that return empty slices)
-	if len(suite.TestCases) != 0 {
-		t.Error("Expected empty test cases for integration suite (placeholder implementation)")
+	// Check that test cases were added (now properly implemented)
+	if len(suite.TestCases) == 0 {
+		t.Error("Expected test cases for integration suite (now properly implemented)")
+	}
+
+	// Verify we have the expected number of test cases
+	expectedCount := 6 // end-to-end (2) + cross-component (2) + performance integration (2) tests
+	if len(suite.TestCases) != expectedCount {
+		t.Errorf("Expected %d test cases for integration suite, got %d", expectedCount, len(suite.TestCases))
 	}
 }
 
@@ -716,8 +734,14 @@ func TestCreateStorageTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createStorageTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty storage tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected storage tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of storage tests
+	expectedCount := 4 // storage engine, trie operations, state management, persistence
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d storage tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -726,8 +750,14 @@ func TestCreateConsensusTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createConsensusTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty consensus tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected consensus tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of consensus tests
+	expectedCount := 4 // algorithm basic, block validation, finality, fork choice
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d consensus tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -736,8 +766,14 @@ func TestCreateNetworkingTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createNetworkingTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty networking tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected networking tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of networking tests
+	expectedCount := 4 // protocol basic, peer discovery, message handling, connection management
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d networking tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -746,8 +782,14 @@ func TestCreateAPITests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createAPITests()
-	if len(tests) != 0 {
-		t.Error("Expected empty API tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected API tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of API tests
+	expectedCount := 3 // endpoints basic, authentication, rate limiting
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d API tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -756,8 +798,14 @@ func TestCreateSDKTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createSDKTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty SDK tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected SDK tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of SDK tests
+	expectedCount := 3 // initialization, transaction handling, contract interaction
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d SDK tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -766,8 +814,14 @@ func TestCreateAPIIntegrationTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createAPIIntegrationTests()
-	if len(tests) != 0 {
-		t.Errorf("Expected empty API integration tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected API integration tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of API integration tests
+	expectedCount := 2 // API-SDK integration, workflow end-to-end
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d API integration tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -776,8 +830,14 @@ func TestCreateEndToEndTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createEndToEndTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty end-to-end tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected end-to-end tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of end-to-end tests
+	expectedCount := 2 // transaction flow, contract deployment
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d end-to-end tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -786,8 +846,14 @@ func TestCreateCrossComponentTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createCrossComponentTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty cross-component tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected cross-component tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of cross-component tests
+	expectedCount := 2 // storage-consensus, network-consensus
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d cross-component tests, got %d", expectedCount, len(tests))
 	}
 }
 
@@ -796,8 +862,14 @@ func TestCreatePerformanceIntegrationTests(t *testing.T) {
 	cts := NewComprehensiveTestSuite()
 
 	tests := cts.createPerformanceIntegrationTests()
-	if len(tests) != 0 {
-		t.Error("Expected empty performance integration tests (placeholder implementation)")
+	if len(tests) == 0 {
+		t.Error("Expected performance integration tests (now properly implemented)")
+	}
+
+	// Verify we have the expected number of performance integration tests
+	expectedCount := 2 // load testing, scalability testing
+	if len(tests) != expectedCount {
+		t.Errorf("Expected %d performance integration tests, got %d", expectedCount, len(tests))
 	}
 }
 

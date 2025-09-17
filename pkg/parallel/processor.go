@@ -226,10 +226,14 @@ func (pp *ParallelProcessor) GetStats() *ProcessorStats {
 	pp.stats.mu.RLock()
 	defer pp.stats.mu.RUnlock()
 
-	stats := *pp.stats
-	stats.QueueDepth = len(pp.workQueue)
-	stats.ActiveWorkers = len(pp.workers)
-
+	stats := ProcessorStats{
+		TotalItemsProcessed: pp.stats.TotalItemsProcessed,
+		TotalProcessingTime: pp.stats.TotalProcessingTime,
+		AverageLatency:      pp.stats.AverageLatency,
+		QueueDepth:          len(pp.workQueue),
+		ActiveWorkers:       len(pp.workers),
+		Errors:              pp.stats.Errors,
+	}
 	return &stats
 }
 
