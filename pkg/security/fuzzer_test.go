@@ -1,8 +1,8 @@
 package security
 
 import (
+	"bytes"
 	"fmt"
-	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -107,7 +107,7 @@ func TestFuzzer_GenerateFuzzInput(t *testing.T) {
 	fuzzer := NewFuzzer(mockChain, mockStorage)
 
 	// Test input generation
-	input := fuzzer.generateFuzzInput(rand.New(rand.NewSource(1)))
+	input := fuzzer.generateFuzzInput(bytes.NewReader([]byte{1, 2, 3, 4, 5}))
 
 	assert.NotNil(t, input)
 	assert.GreaterOrEqual(t, len(input), fuzzer.config.MinInputSize)
@@ -122,7 +122,7 @@ func TestFuzzer_MutateInput(t *testing.T) {
 
 	// Test input mutation
 	original := []byte{1, 2, 3, 4, 5}
-	mutated := fuzzer.mutateInput(original, rand.New(rand.NewSource(1)))
+	mutated := fuzzer.mutateInput(original, bytes.NewReader([]byte{1, 2, 3, 4, 5}))
 
 	assert.NotNil(t, mutated)
 	// Mutation should change the input in some way

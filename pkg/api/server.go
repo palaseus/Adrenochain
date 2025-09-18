@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -43,6 +45,55 @@ type Server struct {
 	wallet  WalletInterface
 	network NetworkInterface
 	port    int
+
+	// SECURITY FIX: Rate limiting
+	rateLimiter *RateLimiter
+}
+
+// SECURITY FIX: RateLimiter implements rate limiting for API endpoints
+type RateLimiter struct {
+	requests map[string][]time.Time
+	mu       sync.RWMutex
+	window   time.Duration
+	limit    int
+}
+
+// NewRateLimiter creates a new rate limiter
+func NewRateLimiter(window time.Duration, limit int) *RateLimiter {
+	return &RateLimiter{
+		requests: make(map[string][]time.Time),
+		window:   window,
+		limit:    limit,
+	}
+}
+
+// IsAllowed checks if a request is allowed based on rate limiting
+func (rl *RateLimiter) IsAllowed(identifier string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	windowStart := now.Add(-rl.window)
+
+	// Clean old requests
+	if requests, exists := rl.requests[identifier]; exists {
+		var validRequests []time.Time
+		for _, reqTime := range requests {
+			if reqTime.After(windowStart) {
+				validRequests = append(validRequests, reqTime)
+			}
+		}
+		rl.requests[identifier] = validRequests
+	}
+
+	// Check if under limit
+	if len(rl.requests[identifier]) >= rl.limit {
+		return false
+	}
+
+	// Add current request
+	rl.requests[identifier] = append(rl.requests[identifier], now)
+	return true
 }
 
 // ServerConfig holds configuration for the API server
@@ -62,10 +113,52 @@ func NewServer(config *ServerConfig) *Server {
 		wallet:  config.Wallet,
 		network: config.Network,
 		port:    config.Port,
+
+		// SECURITY FIX: Initialize rate limiter
+		rateLimiter: NewRateLimiter(1*time.Minute, 100), // 100 requests per minute
 	}
+
+	// SECURITY FIX: Add rate limiting middleware
+	router.Use(server.rateLimitMiddleware)
 
 	server.setupRoutes()
 	return server
+}
+
+// SECURITY FIX: rateLimitMiddleware implements rate limiting for all endpoints
+func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get client IP
+		clientIP := s.getClientIP(r)
+
+		// Check rate limit
+		if !s.rateLimiter.IsAllowed(clientIP) {
+			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// SECURITY FIX: getClientIP extracts client IP from request
+func (s *Server) getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		return strings.Split(xff, ",")[0]
+	}
+
+	// Check X-Real-IP header
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
+	}
+
+	// Use RemoteAddr as fallback
+	ip := r.RemoteAddr
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		ip = ip[:idx]
+	}
+	return ip
 }
 
 // setupRoutes configures all the API routes
@@ -201,6 +294,13 @@ func (s *Server) getBlockHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	hashHex := vars["hash"]
 
+	// SECURITY FIX: Comprehensive input validation
+	if err := s.validateHashInput(hashHex); err != nil {
+		// SECURITY FIX: Sanitize error message to prevent information disclosure
+		http.Error(w, "Invalid input provided", http.StatusBadRequest)
+		return
+	}
+
 	// Convert hex string to bytes
 	hash, err := hex.DecodeString(hashHex)
 	if err != nil {
@@ -238,6 +338,53 @@ func (s *Server) getBlockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(blockInfo)
+}
+
+// SECURITY FIX: validateHashInput performs comprehensive hash input validation
+func (s *Server) validateHashInput(hashHex string) error {
+	// Check length
+	if len(hashHex) == 0 {
+		return fmt.Errorf("hash cannot be empty")
+	}
+	if len(hashHex) < 32 {
+		return fmt.Errorf("hash too short: minimum 32 characters required")
+	}
+	if len(hashHex) > 128 {
+		return fmt.Errorf("hash too long: maximum 128 characters allowed")
+	}
+
+	// Check for malicious patterns
+	maliciousPatterns := []string{
+		"<script", "javascript:", "onload=", "onerror=", "eval(", "expression(",
+		"../", "..\\", "union select", "drop table", "delete from", "insert into",
+		"rm -rf", "chmod 777", "cat /etc/passwd", "wget", "curl",
+	}
+
+	hashLower := strings.ToLower(hashHex)
+	for _, pattern := range maliciousPatterns {
+		if strings.Contains(hashLower, pattern) {
+			return fmt.Errorf("hash contains blocked pattern: %s", pattern)
+		}
+	}
+
+	// Check for null bytes
+	if strings.Contains(hashHex, "\x00") {
+		return fmt.Errorf("hash contains null bytes")
+	}
+
+	// Validate hex format
+	if len(hashHex)%2 != 0 {
+		return fmt.Errorf("invalid hex format: odd length")
+	}
+
+	// Check if all characters are valid hex
+	for _, char := range hashHex {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+			return fmt.Errorf("invalid hex character: %c", char)
+		}
+	}
+
+	return nil
 }
 
 // getBlockByHeightHandler returns a block by its height

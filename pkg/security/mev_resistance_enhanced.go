@@ -6,14 +6,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"sync"
 	"time"
 )
 
 var (
 	cryptoRand = crand.Reader
-	mathRand   = rand.New(rand.NewSource(time.Now().UnixNano()))
+	// SECURITY FIX: Removed math/rand usage for security-critical operations
 )
 
 // EnhancedMEVResistance provides advanced protection against MEV extraction and frontrunning
@@ -496,7 +495,13 @@ func (o *OrderRandomization) RandomizeOrder(order *Order) (*RandomizedOrder, err
 	crand.Read(seed)
 
 	// Create randomized order with random delay
-	randomDelay := time.Duration(mathRand.Int63n(int64(o.config.MaxDelay)))
+	// SECURITY FIX: Use crypto/rand for secure random delay generation
+	randomBytes := make([]byte, 8)
+	if _, err := cryptoRand.Read(randomBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate random delay: %w", err)
+	}
+	randomValue := new(big.Int).SetBytes(randomBytes)
+	randomDelay := time.Duration(randomValue.Int64() % int64(o.config.MaxDelay))
 	randomizedOrder := &Order{
 		ID:         generateRandomizedOrderID(),
 		Trader:     order.Trader,

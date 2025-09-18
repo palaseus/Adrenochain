@@ -1,9 +1,13 @@
 package storage
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"encoding/hex" // Added import
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -14,11 +18,19 @@ import (
 // Storage implements a file-based storage for blocks and chain state.
 type Storage struct {
 	dataDir string
+
+	// SECURITY FIX: Encryption support
+	encryptionKey    []byte
+	enableEncryption bool
 }
 
 // StorageConfig holds configuration for storage.
 type StorageConfig struct {
 	DataDir string
+
+	// SECURITY FIX: Encryption configuration
+	EnableEncryption bool
+	EncryptionKey    []byte
 }
 
 // DefaultStorageConfig returns the default storage configuration.
@@ -37,12 +49,26 @@ func (c *StorageConfig) WithDataDir(dataDir string) *StorageConfig {
 
 // NewStorage creates a new file-based storage.
 func NewStorage(storageConfig *StorageConfig) (*Storage, error) {
-	systemConfig := config.DefaultSystemConfig()
-	filePerms := os.FileMode(systemConfig.Storage.FilePermissions)
+	// SECURITY FIX: Use secure file permissions (owner read/write only)
+	filePerms := os.FileMode(0700) // Owner read/write/execute only
 	if err := os.MkdirAll(storageConfig.DataDir, filePerms); err != nil {
 		return nil, err
 	}
-	return &Storage{dataDir: storageConfig.DataDir}, nil
+
+	// SECURITY FIX: Generate encryption key if not provided
+	encryptionKey := storageConfig.EncryptionKey
+	if storageConfig.EnableEncryption && len(encryptionKey) == 0 {
+		encryptionKey = make([]byte, 32) // 256-bit key
+		if _, err := rand.Read(encryptionKey); err != nil {
+			return nil, fmt.Errorf("failed to generate encryption key: %w", err)
+		}
+	}
+
+	return &Storage{
+		dataDir:          storageConfig.DataDir,
+		encryptionKey:    encryptionKey,
+		enableEncryption: storageConfig.EnableEncryption,
+	}, nil
 }
 
 // StoreBlock stores a block to a file.
@@ -138,7 +164,19 @@ func (s *Storage) Write(key []byte, value []byte) error {
 	}
 
 	filename := filepath.Join(s.dataDir, hex.EncodeToString(key))
-	if err := os.WriteFile(filename, value, 0644); err != nil {
+
+	// SECURITY FIX: Encrypt data if encryption is enabled
+	dataToWrite := value
+	if s.enableEncryption && len(s.encryptionKey) > 0 {
+		encryptedData, err := s.encryptData(value)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt data: %w", err)
+		}
+		dataToWrite = encryptedData
+	}
+
+	// SECURITY FIX: Use secure file permissions (owner read/write only)
+	if err := os.WriteFile(filename, dataToWrite, 0600); err != nil {
 		return fmt.Errorf("failed to write key-value pair: %w", err)
 	}
 	return nil
@@ -158,7 +196,73 @@ func (s *Storage) Read(key []byte) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("failed to read key-value pair: %w", err)
 	}
+
+	// SECURITY FIX: Decrypt data if encryption is enabled
+	if s.enableEncryption && len(s.encryptionKey) > 0 {
+		decryptedData, err := s.decryptData(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt data: %w", err)
+		}
+		return decryptedData, nil
+	}
+
 	return data, nil
+}
+
+// SECURITY FIX: encryptData encrypts data using AES-256-GCM
+func (s *Storage) encryptData(data []byte) ([]byte, error) {
+	// Create AES cipher
+	block, err := aes.NewCipher(s.encryptionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create GCM mode
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate random nonce
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	// Encrypt data
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
+	return ciphertext, nil
+}
+
+// SECURITY FIX: decryptData decrypts data using AES-256-GCM
+func (s *Storage) decryptData(encryptedData []byte) ([]byte, error) {
+	// Create AES cipher
+	block, err := aes.NewCipher(s.encryptionKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create GCM mode
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract nonce
+	nonceSize := gcm.NonceSize()
+	if len(encryptedData) < nonceSize {
+		return nil, fmt.Errorf("encrypted data too short")
+	}
+
+	nonce, ciphertext := encryptedData[:nonceSize], encryptedData[nonceSize:]
+
+	// Decrypt data
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }
 
 // Delete deletes a key-value pair from storage.

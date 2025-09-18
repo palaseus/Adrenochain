@@ -35,8 +35,22 @@ import (
 
 // Notifiee methods for network.Notifiee interface
 func (n *Network) Connected(net network.Network, conn network.Conn) {
+	peerID := conn.RemotePeer()
+
+	// SECURITY FIX: Check if peer is blocked or blacklisted
+	if n.isPeerBlocked(peerID) {
+		if n.logger != nil {
+			n.logger.Warn("Blocked peer attempted connection: %s", peerID.String())
+		}
+		conn.Close()
+		return
+	}
+
+	// SECURITY FIX: Initialize or update peer reputation
+	n.initializePeerReputation(peerID)
+
 	if n.logger != nil {
-		n.logger.Info("Connected to peer: %s at %s", conn.RemotePeer().String(), conn.RemoteMultiaddr().String())
+		n.logger.Info("Connected to peer: %s at %s", peerID.String(), conn.RemoteMultiaddr().String())
 	}
 }
 
@@ -138,6 +152,11 @@ type Network struct {
 	connectionPool   map[peer.ID]*ConnectionPool
 	bandwidthLimiter *BandwidthLimiter
 	messageQueue     chan *Message
+
+	// SECURITY FIX: Peer reputation system
+	peerReputation map[peer.ID]*PeerReputation
+	blockedPeers   map[peer.ID]time.Time
+	peerBlacklist  map[peer.ID]bool
 }
 
 // ConnectionPool manages connections to a peer
@@ -153,6 +172,146 @@ type BandwidthLimiter struct {
 	lastUpdate     time.Time
 	bytesUsed      int64
 	mu             sync.Mutex
+}
+
+// SECURITY FIX: PeerReputation tracks peer behavior and reputation
+type PeerReputation struct {
+	Score           float64   // Overall reputation score (0-100)
+	GoodActions     int       // Number of good actions
+	BadActions      int       // Number of bad actions
+	LastSeen        time.Time // Last time peer was seen
+	ConnectionCount int       // Number of connections
+	MessageCount    int       // Total messages received
+	InvalidMessages int       // Invalid messages received
+	SpamCount       int       // Spam messages detected
+	LastUpdate      time.Time // Last reputation update
+	mu              sync.RWMutex
+}
+
+// SECURITY FIX: NewPeerReputation creates a new peer reputation tracker
+func NewPeerReputation() *PeerReputation {
+	return &PeerReputation{
+		Score:      50.0, // Start with neutral reputation
+		LastSeen:   time.Now(),
+		LastUpdate: time.Now(),
+	}
+}
+
+// SECURITY FIX: UpdateReputation updates peer reputation based on action
+func (pr *PeerReputation) UpdateReputation(action string, isGood bool) {
+	pr.mu.Lock()
+	defer pr.mu.Unlock()
+
+	pr.LastSeen = time.Now()
+	pr.LastUpdate = time.Now()
+
+	if isGood {
+		pr.GoodActions++
+		// Increase score for good actions
+		pr.Score = pr.Score + 1.0
+		if pr.Score > 100.0 {
+			pr.Score = 100.0
+		}
+	} else {
+		pr.BadActions++
+		// Decrease score for bad actions
+		pr.Score = pr.Score - 2.0 // Bad actions have more impact
+		if pr.Score < 0.0 {
+			pr.Score = 0.0
+		}
+	}
+
+	// Update specific counters
+	switch action {
+	case "invalid_message":
+		pr.InvalidMessages++
+	case "spam":
+		pr.SpamCount++
+	case "valid_message":
+		pr.MessageCount++
+	}
+}
+
+// SECURITY FIX: GetReputationScore returns the current reputation score
+func (pr *PeerReputation) GetReputationScore() float64 {
+	pr.mu.RLock()
+	defer pr.mu.RUnlock()
+	return pr.Score
+}
+
+// SECURITY FIX: IsTrusted checks if peer is trusted based on reputation
+func (pr *PeerReputation) IsTrusted() bool {
+	pr.mu.RLock()
+	defer pr.mu.RUnlock()
+	return pr.Score >= 70.0 // Trust threshold
+}
+
+// SECURITY FIX: IsBlocked checks if peer should be blocked
+func (pr *PeerReputation) IsBlocked() bool {
+	pr.mu.RLock()
+	defer pr.mu.RUnlock()
+	return pr.Score <= 10.0 // Block threshold
+}
+
+// SECURITY FIX: isPeerBlocked checks if a peer is blocked or blacklisted
+func (n *Network) isPeerBlocked(peerID peer.ID) bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	// Check blacklist
+	if n.peerBlacklist[peerID] {
+		return true
+	}
+
+	// Check temporary block
+	if blockTime, exists := n.blockedPeers[peerID]; exists {
+		if time.Since(blockTime) < 24*time.Hour { // 24 hour block
+			return true
+		}
+		// Remove expired block
+		delete(n.blockedPeers, peerID)
+	}
+
+	return false
+}
+
+// SECURITY FIX: initializePeerReputation initializes reputation for a new peer
+func (n *Network) initializePeerReputation(peerID peer.ID) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if _, exists := n.peerReputation[peerID]; !exists {
+		n.peerReputation[peerID] = NewPeerReputation()
+	}
+}
+
+// SECURITY FIX: updatePeerReputation updates peer reputation based on behavior
+func (n *Network) updatePeerReputation(peerID peer.ID, action string, isGood bool) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if reputation, exists := n.peerReputation[peerID]; exists {
+		reputation.UpdateReputation(action, isGood)
+
+		// Check if peer should be blocked
+		if reputation.IsBlocked() {
+			n.peerBlacklist[peerID] = true
+			if n.logger != nil {
+				n.logger.Warn("Peer blacklisted due to poor reputation: %s", peerID.String())
+			}
+		}
+	}
+}
+
+// SECURITY FIX: getPeerReputation returns peer reputation score
+func (n *Network) getPeerReputation(peerID peer.ID) float64 {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	if reputation, exists := n.peerReputation[peerID]; exists {
+		return reputation.GetReputationScore()
+	}
+	return 50.0 // Default neutral score
 }
 
 // Message represents a network message
@@ -272,6 +431,11 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 		mempool:        mempool,
 		privKey:        priv,
 		logger:         networkLogger,
+
+		// SECURITY FIX: Initialize peer reputation system
+		peerReputation: make(map[peer.ID]*PeerReputation),
+		blockedPeers:   make(map[peer.ID]time.Time),
+		peerBlacklist:  make(map[peer.ID]bool),
 	}
 
 	// Set up event handlers

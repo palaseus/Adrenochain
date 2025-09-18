@@ -44,6 +44,9 @@ func TestEVMEngineExecute(t *testing.T) {
 	mockRegistry := &MockContractRegistry{}
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
+	// Initialize gas meter to prevent nil pointer dereference
+	evm.gasMeter = engine.NewGasMeter(50000)
+
 	// Create a test contract with simple code
 	contract := &engine.Contract{
 		Address: generateRandomAddress(),
@@ -52,7 +55,7 @@ func TestEVMEngineExecute(t *testing.T) {
 	}
 
 	// Test successful execution
-	result, err := evm.Execute(contract, nil, 1000, generateRandomAddress(), big.NewInt(0))
+	result, err := evm.Execute(contract, nil, 50000, generateRandomAddress(), big.NewInt(0))
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -66,7 +69,7 @@ func TestEVMEngineExecute(t *testing.T) {
 	}
 
 	// Test nil contract
-	_, err = evm.Execute(nil, nil, 1000, generateRandomAddress(), big.NewInt(0))
+	_, err = evm.Execute(nil, nil, 50000, generateRandomAddress(), big.NewInt(0))
 	if err == nil {
 		t.Error("expected error for nil contract")
 	}
@@ -80,7 +83,7 @@ func TestEVMEngineExecute(t *testing.T) {
 		Code:    []byte{},
 		Creator: generateRandomAddress(),
 	}
-	_, err = evm.Execute(emptyContract, nil, 1000, generateRandomAddress(), big.NewInt(0))
+	_, err = evm.Execute(emptyContract, nil, 50000, generateRandomAddress(), big.NewInt(0))
 	if err == nil {
 		t.Error("expected error for empty contract code")
 	}
@@ -98,7 +101,7 @@ func TestEVMEngineDeploy(t *testing.T) {
 	code := []byte{0x00} // STOP instruction
 	sender := generateRandomAddress()
 
-	contract, result, err := evm.Deploy(code, nil, 1000, sender, big.NewInt(0))
+	contract, result, err := evm.Deploy(code, nil, 50000, sender, big.NewInt(0))
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -121,7 +124,7 @@ func TestEVMEngineDeploy(t *testing.T) {
 
 	// Test deployment with constructor
 	constructorCode := []byte{0x00} // STOP instruction
-	contract, result, err = evm.Deploy(code, constructorCode, 1000, sender, big.NewInt(0))
+	contract, result, err = evm.Deploy(code, constructorCode, 50000, sender, big.NewInt(0))
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

@@ -28,6 +28,12 @@ type EVMEngine struct {
 	difficulty *big.Int
 	gasLimit   uint64
 	chainID    *big.Int
+
+	// SECURITY FIX: Add security limits
+	maxInputSize    int
+	maxContractSize int
+	maxGasLimit     uint64
+	minGasLimit     uint64
 }
 
 // NewEVMEngine creates a new EVM execution engine
@@ -44,7 +50,104 @@ func NewEVMEngine(storage storage.ContractStorage, registry engine.ContractRegis
 		difficulty: big.NewInt(0),
 		gasLimit:   0,
 		chainID:    big.NewInt(1),
+
+		// SECURITY FIX: Initialize security limits
+		maxInputSize:    1024 * 1024, // 1MB max input
+		maxContractSize: 24 * 1024,   // 24KB max contract (Ethereum limit)
+		maxGasLimit:     10000000,    // 10M gas max
+		minGasLimit:     21000,       // 21K gas min (basic transaction)
 	}
+}
+
+// SECURITY FIX: validateGasLimit performs comprehensive gas validation
+func (evm *EVMEngine) validateGasLimit(gas uint64, contract *engine.Contract) error {
+	// Check minimum gas limit
+	if gas < evm.minGasLimit {
+		return fmt.Errorf("gas limit %d below minimum %d", gas, evm.minGasLimit)
+	}
+
+	// Check maximum gas limit
+	if gas > evm.maxGasLimit {
+		return fmt.Errorf("gas limit %d exceeds maximum %d", gas, evm.maxGasLimit)
+	}
+
+	// Estimate gas based on contract complexity
+	estimatedGas := evm.estimateGasForContract(contract)
+	if gas < estimatedGas {
+		return fmt.Errorf("gas limit %d insufficient for contract complexity (estimated: %d)", gas, estimatedGas)
+	}
+
+	// Check for gas limit manipulation (prevent extremely high gas limits)
+	if gas > evm.maxGasLimit/2 {
+		// For high gas limits, require additional validation
+		if contract == nil || len(contract.Code) == 0 {
+			return fmt.Errorf("high gas limit %d requires valid contract", gas)
+		}
+	}
+
+	return nil
+}
+
+// SECURITY FIX: estimateGasForContract estimates gas based on contract complexity
+func (evm *EVMEngine) estimateGasForContract(contract *engine.Contract) uint64 {
+	if contract == nil || len(contract.Code) == 0 {
+		return evm.minGasLimit
+	}
+
+	// Base gas for contract execution
+	baseGas := uint64(21000)
+
+	// Add gas based on contract size
+	sizeGas := uint64(len(contract.Code)) * 200 // 200 gas per byte
+
+	// Add gas for complexity (count of different opcodes)
+	complexityGas := evm.calculateComplexityGas(contract.Code)
+
+	totalGas := baseGas + sizeGas + complexityGas
+
+	// Ensure minimum gas
+	if totalGas < evm.minGasLimit {
+		totalGas = evm.minGasLimit
+	}
+
+	return totalGas
+}
+
+// SECURITY FIX: calculateComplexityGas calculates gas based on opcode complexity
+func (evm *EVMEngine) calculateComplexityGas(code []byte) uint64 {
+	complexity := uint64(0)
+
+	// Count expensive operations
+	for _, opcode := range code {
+		switch opcode {
+		case 0xF0: // CREATE
+			complexity += 32000
+		case 0xF1: // CALL
+			complexity += 700
+		case 0xF2: // CALLCODE
+			complexity += 700
+		case 0xF4: // DELEGATECALL
+			complexity += 700
+		case 0xF5: // CREATE2
+			complexity += 32000
+		case 0x56: // JUMP
+			complexity += 8
+		case 0x57: // JUMPI
+			complexity += 10
+		case 0x52: // MSTORE
+			complexity += 3
+		case 0x53: // MSTORE8
+			complexity += 3
+		case 0x54: // SLOAD
+			complexity += 200
+		case 0x55: // SSTORE
+			complexity += 20000
+		default:
+			complexity += 1
+		}
+	}
+
+	return complexity
 }
 
 // Execute runs a contract with given input and gas limit
@@ -52,8 +155,19 @@ func (evm *EVMEngine) Execute(contract *engine.Contract, input []byte, gas uint6
 	evm.mu.RLock()
 	defer evm.mu.RUnlock()
 
+	// SECURITY FIX: Comprehensive gas validation
+	if err := evm.validateGasLimit(gas, contract); err != nil {
+		return nil, fmt.Errorf("gas validation failed: %w", err)
+	}
+
+	// SECURITY FIX: Validate input size to prevent DoS
+	if len(input) > evm.maxInputSize {
+		return nil, fmt.Errorf("input size %d exceeds maximum %d", len(input), evm.maxInputSize)
+	}
+
 	// Initialize execution context
 	evm.gasMeter = engine.NewGasMeter(gas)
+	evm.gasLimit = gas // SECURITY FIX: Store validated gas limit
 	evm.stack.Reset()
 	evm.memory.Reset()
 	evm.pc = 0
@@ -65,6 +179,11 @@ func (evm *EVMEngine) Execute(contract *engine.Contract, input []byte, gas uint6
 
 	if len(contract.Code) == 0 {
 		return nil, engine.ErrInvalidContract
+	}
+
+	// SECURITY FIX: Validate contract size
+	if len(contract.Code) > evm.maxContractSize {
+		return nil, fmt.Errorf("contract size %d exceeds maximum %d", len(contract.Code), evm.maxContractSize)
 	}
 
 	// Create execution context
@@ -565,6 +684,12 @@ func (evm *EVMEngine) Clone() *EVMEngine {
 		difficulty: new(big.Int).Set(evm.difficulty),
 		gasLimit:   evm.gasLimit,
 		chainID:    new(big.Int).Set(evm.chainID),
+
+		// Copy security limits
+		maxInputSize:    evm.maxInputSize,
+		maxContractSize: evm.maxContractSize,
+		maxGasLimit:     evm.maxGasLimit,
+		minGasLimit:     evm.minGasLimit,
 	}
 
 	return clone
@@ -600,7 +725,9 @@ func (evm *EVMEngine) SetChainID(chainID *big.Int) {
 // executeContract executes the actual contract code
 func (evm *EVMEngine) executeContract(ctx *ExecutionContext) (*engine.ExecutionResult, error) {
 	// Initialize execution state
-	evm.gasMeter = engine.NewGasMeter(1000000) // Use default gas limit
+	// SECURITY FIX: Use validated gas limit instead of hardcoded value
+	// The gas limit should be passed from the Execute method
+	evm.gasMeter = engine.NewGasMeter(evm.gasLimit) // Use validated gas limit
 	evm.stack.Reset()
 	evm.memory.Reset()
 	evm.pc = 0

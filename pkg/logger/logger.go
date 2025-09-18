@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	systemconfig "github.com/palaseus/adrenochain/pkg/config"
@@ -48,6 +49,10 @@ type Logger struct {
 	useJSON  bool
 	file     *os.File
 	filePath string
+
+	// SECURITY FIX: Log sanitization
+	sanitizeLogs      bool
+	sensitivePatterns []*regexp.Regexp
 }
 
 // Config holds logger configuration
@@ -60,6 +65,9 @@ type Config struct {
 	LogFile    string
 	MaxSize    int64 // Maximum file size in bytes before rotation
 	MaxBackups int   // Maximum number of backup files to keep
+
+	// SECURITY FIX: Log sanitization configuration
+	SanitizeLogs bool
 }
 
 // DefaultConfig returns a default logger configuration
@@ -89,6 +97,9 @@ func NewLogger(config *Config) *Logger {
 		timeFmt:  config.TimeFmt,
 		useJSON:  config.UseJSON,
 		filePath: config.LogFile,
+
+		// SECURITY FIX: Initialize log sanitization
+		sanitizeLogs: config.SanitizeLogs,
 	}
 
 	// Ensure output is always set
@@ -206,17 +217,80 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 	}
 }
 
+// SECURITY FIX: sanitizeLogMessage removes sensitive information from log messages
+func (l *Logger) sanitizeLogMessage(message string) string {
+	if !l.sanitizeLogs {
+		return message
+	}
+
+	// Initialize sensitive patterns if not already done
+	if l.sensitivePatterns == nil {
+		l.initSensitivePatterns()
+	}
+
+	sanitized := message
+
+	// Apply all sensitive pattern replacements
+	for _, pattern := range l.sensitivePatterns {
+		sanitized = pattern.ReplaceAllString(sanitized, "[REDACTED]")
+	}
+
+	return sanitized
+}
+
+// SECURITY FIX: initSensitivePatterns initializes regex patterns for sensitive data
+func (l *Logger) initSensitivePatterns() {
+	l.sensitivePatterns = []*regexp.Regexp{
+		// Private keys (hex format)
+		regexp.MustCompile(`(?i)(private[_-]?key|privkey|secret[_-]?key)\s*[:=]\s*[a-f0-9]{64,}`),
+
+		// API keys and tokens
+		regexp.MustCompile(`(?i)(api[_-]?key|token|auth[_-]?token)\s*[:=]\s*[a-zA-Z0-9_-]{20,}`),
+
+		// Passwords
+		regexp.MustCompile(`(?i)(password|passwd|pwd)\s*[:=]\s*[^\s]{3,}`),
+
+		// Credit card numbers
+		regexp.MustCompile(`\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b`),
+
+		// Social Security Numbers
+		regexp.MustCompile(`\b\d{3}-\d{2}-\d{4}\b`),
+
+		// Email addresses (partial redaction)
+		regexp.MustCompile(`\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b`),
+
+		// IP addresses (internal/private)
+		regexp.MustCompile(`\b(?:10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.)\d{1,3}\.\d{1,3}\b`),
+
+		// Database connection strings
+		regexp.MustCompile(`(?i)(mysql|postgres|mongodb)://[^\s]+`),
+
+		// JWT tokens
+		regexp.MustCompile(`eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*`),
+
+		// Bitcoin addresses
+		regexp.MustCompile(`\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b`),
+
+		// Ethereum addresses
+		regexp.MustCompile(`\b0x[a-fA-F0-9]{40}\b`),
+	}
+}
+
 // logText writes a text-formatted log message
 func (l *Logger) logText(level Level, timestamp, message string) {
+	// SECURITY FIX: Sanitize log message before output
+	sanitizedMessage := l.sanitizeLogMessage(message)
 	fmt.Fprintf(l.output, "[%s] %s [%s] %s: %s\n",
-		timestamp, level.String(), l.prefix, level.String(), message)
+		timestamp, level.String(), l.prefix, level.String(), sanitizedMessage)
 }
 
 // logJSON writes a JSON-formatted log message
 func (l *Logger) logJSON(level Level, timestamp, message string) {
+	// SECURITY FIX: Sanitize log message before output
+	sanitizedMessage := l.sanitizeLogMessage(message)
 	// Simple JSON format for now
 	jsonMsg := fmt.Sprintf(`{"timestamp":"%s","level":"%s","service":"%s","message":"%s"}`,
-		timestamp, level.String(), l.prefix, message)
+		timestamp, level.String(), l.prefix, sanitizedMessage)
 	fmt.Fprintln(l.output, jsonMsg)
 }
 

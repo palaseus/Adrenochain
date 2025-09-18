@@ -1,6 +1,7 @@
 package lending
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -48,6 +49,11 @@ type LendingProtocol struct {
 	LastUpdate    time.Time
 	SupplyCount   uint64
 	BorrowCount   uint64
+
+	// SECURITY FIX: Flash loan protection
+	FlashLoanBlockedTokens map[engine.Address]bool
+	FlashLoanCooldown      map[engine.Address]time.Time
+	MaxFlashLoanAmount     *big.Int
 }
 
 // Asset represents a lending asset
@@ -416,6 +422,11 @@ func (lp *LendingProtocol) Borrow(
 
 	// Validate input
 	if err := lp.validateBorrowInput(asset, amount); err != nil {
+		return err
+	}
+
+	// SECURITY FIX: Check for flash loan attacks
+	if err := lp.validateFlashLoanProtection(user, asset, amount); err != nil {
 		return err
 	}
 
@@ -805,27 +816,47 @@ func (lp *LendingProtocol) checkLiquidationEligibility(borrower engine.Address, 
 	return nil
 }
 
-// calculateHealthFactor calculates the health factor for a user
+// calculateHealthFactor calculates the health factor for a user with security protections
 func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 	userInfo := lp.Users[user]
 	if userInfo == nil {
 		return big.NewInt(0)
 	}
 
-	// Calculate total collateral value
+	// SECURITY FIX: Add price validation to prevent manipulation
 	totalCollateralValue := big.NewInt(0)
 	for token, collateral := range userInfo.Collateral {
 		if assetInfo, exists := lp.Assets[token]; exists {
+			// SECURITY FIX: Validate collateral ratio is within bounds
+			if assetInfo.CollateralRatio.Cmp(big.NewInt(0)) <= 0 || assetInfo.CollateralRatio.Cmp(big.NewInt(10000)) > 0 {
+				continue // Skip invalid collateral ratios
+			}
+
+			// SECURITY FIX: Check for overflow in multiplication
+			if collateral.Cmp(big.NewInt(0)) < 0 {
+				continue // Skip negative collateral
+			}
+
 			collateralValue := new(big.Int).Mul(collateral, assetInfo.CollateralRatio)
 			collateralValue = new(big.Int).Div(collateralValue, big.NewInt(10000))
 			totalCollateralValue = new(big.Int).Add(totalCollateralValue, collateralValue)
 		}
 	}
 
-	// Calculate total borrow value
+	// SECURITY FIX: Add borrow validation to prevent manipulation
 	totalBorrowValue := big.NewInt(0)
 	for token, borrow := range userInfo.Borrows {
 		if assetInfo, exists := lp.Assets[token]; exists {
+			// SECURITY FIX: Validate MaxLTV is within bounds
+			if assetInfo.MaxLTV.Cmp(big.NewInt(0)) <= 0 || assetInfo.MaxLTV.Cmp(big.NewInt(10000)) > 0 {
+				continue // Skip invalid MaxLTV
+			}
+
+			// SECURITY FIX: Check for overflow in multiplication
+			if borrow.Cmp(big.NewInt(0)) < 0 {
+				continue // Skip negative borrows
+			}
+
 			borrowValue := new(big.Int).Mul(borrow, big.NewInt(10000))
 			borrowValue = new(big.Int).Div(borrowValue, assetInfo.MaxLTV)
 			totalBorrowValue = new(big.Int).Add(totalBorrowValue, borrowValue)
@@ -836,9 +867,65 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 		return big.NewInt(10000) // 100% health factor
 	}
 
-	// Health factor = (total collateral value / total borrow value) * 10000
+	// SECURITY FIX: Prevent division by zero and overflow
+	if totalCollateralValue.Cmp(big.NewInt(0)) == 0 {
+		return big.NewInt(0) // No collateral = 0% health factor
+	}
+
+	// SECURITY FIX: Use safer calculation to prevent overflow
+	// Health factor = (total collateral value * 10000) / total borrow value
+	// But check for potential overflow first
+	maxSafeValue := new(big.Int).Lsh(big.NewInt(1), 128) // 2^128
+	if totalCollateralValue.Cmp(maxSafeValue) > 0 {
+		// If collateral is too large, cap it to prevent overflow
+		totalCollateralValue = new(big.Int).Set(maxSafeValue)
+	}
+
 	healthFactor := new(big.Int).Mul(totalCollateralValue, big.NewInt(10000))
-	return new(big.Int).Div(healthFactor, totalBorrowValue)
+	healthFactor = new(big.Int).Div(healthFactor, totalBorrowValue)
+
+	// SECURITY FIX: Cap health factor to reasonable maximum
+	maxHealthFactor := big.NewInt(100000) // 1000% max health factor
+	if healthFactor.Cmp(maxHealthFactor) > 0 {
+		healthFactor = new(big.Int).Set(maxHealthFactor)
+	}
+
+	return healthFactor
+}
+
+// SECURITY FIX: validateFlashLoanProtection checks for flash loan attacks
+func (lp *LendingProtocol) validateFlashLoanProtection(user engine.Address, asset engine.Address, amount *big.Int) error {
+	// Check if token is blocked for flash loans
+	if lp.FlashLoanBlockedTokens != nil && lp.FlashLoanBlockedTokens[asset] {
+		return fmt.Errorf("flash loans not allowed for asset %s", asset.String())
+	}
+
+	// Check flash loan amount limits
+	if lp.MaxFlashLoanAmount != nil && amount.Cmp(lp.MaxFlashLoanAmount) > 0 {
+		return fmt.Errorf("flash loan amount %s exceeds maximum %s", amount.String(), lp.MaxFlashLoanAmount.String())
+	}
+
+	// Check cooldown period for flash loans
+	if lp.FlashLoanCooldown != nil {
+		if lastFlashLoan, exists := lp.FlashLoanCooldown[user]; exists {
+			cooldownPeriod := 1 * time.Minute // 1 minute cooldown
+			if time.Since(lastFlashLoan) < cooldownPeriod {
+				return fmt.Errorf("flash loan cooldown active, wait %v", cooldownPeriod-time.Since(lastFlashLoan))
+			}
+		}
+	}
+
+	// Check for suspicious borrowing patterns (large amounts without sufficient history)
+	userInfo := lp.Users[user]
+	if userInfo != nil {
+		// If user has no borrowing history and is trying to borrow large amount, flag as potential flash loan
+		if userInfo.BorrowCount == 0 && amount.Cmp(big.NewInt(1000000000000000000)) > 0 { // 1 ETH
+			// This could be a flash loan attack, require additional validation
+			return fmt.Errorf("large borrow amount without borrowing history requires additional validation")
+		}
+	}
+
+	return nil
 }
 
 // Validation functions

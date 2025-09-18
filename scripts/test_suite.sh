@@ -742,7 +742,7 @@ generate_test_summary() {
                     local panic_count=$(grep -c "panic:" "$file" 2>/dev/null || echo "0")
                     local fail_count=$(grep -c "FAIL" "$file" 2>/dev/null || echo "0")
                     
-                    if [[ ${panic_count:-0} -gt 0 ]] || [[ ${fail_count:-0} -gt 0 ]]; then
+                    if [[ "${panic_count:-0}" -gt 0 ]] || [[ "${fail_count:-0}" -gt 0 ]]; then
                         echo "#### $filename"
                         echo "- **Panics:** $panic_count"
                         echo "- **Failures:** $fail_count"
