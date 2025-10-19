@@ -4,8 +4,27 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 )
+
+// Object pool for big.Int to reduce allocations
+var bigIntPool = sync.Pool{
+	New: func() interface{} {
+		return new(big.Int)
+	},
+}
+
+// getBigIntFromPool gets a big.Int from the pool
+func getBigIntFromPool() *big.Int {
+	return bigIntPool.Get().(*big.Int)
+}
+
+// putBigIntToPool returns a big.Int to the pool
+func putBigIntToPool(bi *big.Int) {
+	bi.SetInt64(0) // Reset to zero
+	bigIntPool.Put(bi)
+}
 
 // TradingPair represents a trading pair (e.g., BTC/USDT)
 type TradingPair struct {
@@ -309,42 +328,42 @@ func (tp *TradingPair) CalculateFee(quantity, price *big.Int, isMaker bool) (*bi
 func (tp *TradingPair) Clone() *TradingPair {
 	clone := *tp
 
-	// Deep copy big.Int fields
+	// Deep copy big.Int fields using object pool
 	if tp.MinQuantity != nil {
-		clone.MinQuantity = new(big.Int).Set(tp.MinQuantity)
+		clone.MinQuantity = getBigIntFromPool().Set(tp.MinQuantity)
 	}
 	if tp.MaxQuantity != nil {
-		clone.MaxQuantity = new(big.Int).Set(tp.MaxQuantity)
+		clone.MaxQuantity = getBigIntFromPool().Set(tp.MaxQuantity)
 	}
 	if tp.MinPrice != nil {
-		clone.MinPrice = new(big.Int).Set(tp.MinPrice)
+		clone.MinPrice = getBigIntFromPool().Set(tp.MinPrice)
 	}
 	if tp.MaxPrice != nil {
-		clone.MaxPrice = new(big.Int).Set(tp.MaxPrice)
+		clone.MaxPrice = getBigIntFromPool().Set(tp.MaxPrice)
 	}
 	if tp.TickSize != nil {
-		clone.TickSize = new(big.Int).Set(tp.TickSize)
+		clone.TickSize = getBigIntFromPool().Set(tp.TickSize)
 	}
 	if tp.StepSize != nil {
-		clone.StepSize = new(big.Int).Set(tp.StepSize)
+		clone.StepSize = getBigIntFromPool().Set(tp.StepSize)
 	}
 	if tp.MakerFee != nil {
-		clone.MakerFee = new(big.Int).Set(tp.MakerFee)
+		clone.MakerFee = getBigIntFromPool().Set(tp.MakerFee)
 	}
 	if tp.TakerFee != nil {
-		clone.TakerFee = new(big.Int).Set(tp.TakerFee)
+		clone.TakerFee = getBigIntFromPool().Set(tp.TakerFee)
 	}
 	if tp.LastTradePrice != nil {
-		clone.LastTradePrice = new(big.Int).Set(tp.LastTradePrice)
+		clone.LastTradePrice = getBigIntFromPool().Set(tp.LastTradePrice)
 	}
 	if tp.Volume24h != nil {
-		clone.Volume24h = new(big.Int).Set(tp.Volume24h)
+		clone.Volume24h = getBigIntFromPool().Set(tp.Volume24h)
 	}
 	if tp.PriceChange24h != nil {
-		clone.PriceChange24h = new(big.Int).Set(tp.PriceChange24h)
+		clone.PriceChange24h = getBigIntFromPool().Set(tp.PriceChange24h)
 	}
 	if tp.PriceChangePercent24h != nil {
-		clone.PriceChangePercent24h = new(big.Int).Set(tp.PriceChangePercent24h)
+		clone.PriceChangePercent24h = getBigIntFromPool().Set(tp.PriceChangePercent24h)
 	}
 
 	// Deep copy time fields

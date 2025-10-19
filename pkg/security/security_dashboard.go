@@ -314,9 +314,9 @@ func (sd *SecurityDashboard) anomaliesHandler(w http.ResponseWriter, r *http.Req
 func (sd *SecurityDashboard) eventsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// Get recent events (this would need to be implemented in SecurityMonitor)
-	events := []*SecurityEvent{} // Placeholder
-	json.NewEncoder(w).Encode(events)
+	// Get recent anomalies from the security monitor
+	anomalies := sd.monitor.GetAnomalies(10) // Get last 10 anomalies
+	json.NewEncoder(w).Encode(anomalies)
 }
 
 // statusHandler returns the current security status

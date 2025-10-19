@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
+	"math"
 	"math/big"
 	"sync"
 	"time"
@@ -137,12 +138,27 @@ type CrossProtocolMetrics struct {
 	LastUpdated       time.Time `json:"last_updated"`
 }
 
+// EconomicData holds economic information for a protocol
+type EconomicData struct {
+	Tokens    map[string]bool `json:"tokens"`    // Set of token addresses
+	Liquidity float64         `json:"liquidity"` // Total liquidity
+}
+
+// GovernanceData holds governance information for a protocol
+type GovernanceData struct {
+	Mechanisms  map[string]bool `json:"mechanisms"`   // Set of governance mechanisms
+	VotingPower float64         `json:"voting_power"` // Voting power
+}
+
 // CrossProtocolGovernance manages cross-protocol governance coordination
 type CrossProtocolGovernance struct {
 	protocols        map[ProtocolID]*Protocol
 	proposals        map[string]*GovernanceProposal
 	alignments       map[string]*ProtocolAlignment
 	metrics          *CrossProtocolMetrics
+	votingPatterns   map[ProtocolID]map[string]int // Protocol -> Topic -> Vote count
+	economicData     map[ProtocolID]*EconomicData
+	governanceData   map[ProtocolID]*GovernanceData
 	mu               sync.RWMutex
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -158,6 +174,9 @@ func NewCrossProtocolGovernance() *CrossProtocolGovernance {
 		proposals:        make(map[string]*GovernanceProposal),
 		alignments:       make(map[string]*ProtocolAlignment),
 		metrics:          &CrossProtocolMetrics{LastUpdated: time.Now()},
+		votingPatterns:   make(map[ProtocolID]map[string]int),
+		economicData:     make(map[ProtocolID]*EconomicData),
+		governanceData:   make(map[ProtocolID]*GovernanceData),
 		ctx:              ctx,
 		cancel:           cancel,
 		proposalQueue:    make(chan *GovernanceProposal, 100),
@@ -540,20 +559,41 @@ func (cpg *CrossProtocolGovernance) updateAlignments() {
 
 // updateProtocolAlignments updates alignment metrics for a specific protocol
 func (cpg *CrossProtocolGovernance) updateProtocolAlignments(protocolID ProtocolID) {
-	cpg.mu.Lock()
-	defer cpg.mu.Unlock()
-
+	// First check if protocol exists without holding a lock
+	cpg.mu.RLock()
 	_, exists := cpg.protocols[protocolID]
 	if !exists {
+		cpg.mu.RUnlock()
 		return
 	}
 
-	// Update alignments with all other protocols
-	for otherProtocolID, _ := range cpg.protocols {
-		if otherProtocolID == protocolID {
-			continue
+	// Get list of other protocols
+	otherProtocols := make([]ProtocolID, 0)
+	for otherProtocolID := range cpg.protocols {
+		if otherProtocolID != protocolID {
+			otherProtocols = append(otherProtocols, otherProtocolID)
 		}
+	}
+	cpg.mu.RUnlock()
 
+	// Calculate alignment scores without holding locks
+	alignmentScores := make(map[ProtocolID]float64)
+	votingHistories := make(map[ProtocolID]float64)
+	economicTies := make(map[ProtocolID]float64)
+	governanceTies := make(map[ProtocolID]float64)
+
+	for _, otherProtocolID := range otherProtocols {
+		alignmentScores[otherProtocolID] = cpg.calculateAlignmentScore(protocolID, otherProtocolID)
+		votingHistories[otherProtocolID] = cpg.calculateVotingHistory(protocolID, otherProtocolID)
+		economicTies[otherProtocolID] = cpg.calculateEconomicTies(protocolID, otherProtocolID)
+		governanceTies[otherProtocolID] = cpg.calculateGovernanceTies(protocolID, otherProtocolID)
+	}
+
+	// Now update alignments with write lock
+	cpg.mu.Lock()
+	defer cpg.mu.Unlock()
+
+	for _, otherProtocolID := range otherProtocols {
 		alignmentKey := cpg.getAlignmentKey(protocolID, otherProtocolID)
 		alignment, exists := cpg.alignments[alignmentKey]
 		if !exists {
@@ -565,11 +605,11 @@ func (cpg *CrossProtocolGovernance) updateProtocolAlignments(protocolID Protocol
 			cpg.alignments[alignmentKey] = alignment
 		}
 
-		// Calculate alignment score based on voting history
-		alignment.AlignmentScore = cpg.calculateAlignmentScore(protocolID, otherProtocolID)
-		alignment.VotingHistory = cpg.calculateVotingHistory(protocolID, otherProtocolID)
-		alignment.EconomicTies = cpg.calculateEconomicTies(protocolID, otherProtocolID)
-		alignment.GovernanceTies = cpg.calculateGovernanceTies(protocolID, otherProtocolID)
+		// Set the pre-calculated values
+		alignment.AlignmentScore = alignmentScores[otherProtocolID]
+		alignment.VotingHistory = votingHistories[otherProtocolID]
+		alignment.EconomicTies = economicTies[otherProtocolID]
+		alignment.GovernanceTies = governanceTies[otherProtocolID]
 		alignment.LastUpdated = time.Now()
 	}
 }
@@ -633,30 +673,152 @@ func (cpg *CrossProtocolGovernance) updateMetricsData() {
 
 // calculateAlignmentScore calculates the alignment score between two protocols
 func (cpg *CrossProtocolGovernance) calculateAlignmentScore(protocol1ID, protocol2ID ProtocolID) float64 {
-	// Simple alignment calculation based on voting history
-	// In a real implementation, this would be more sophisticated
-	return 0.75 // Placeholder value
+	// Calculate alignment based on multiple factors
+	votingHistory := cpg.calculateVotingHistory(protocol1ID, protocol2ID)
+	economicTies := cpg.calculateEconomicTies(protocol1ID, protocol2ID)
+	governanceTies := cpg.calculateGovernanceTies(protocol1ID, protocol2ID)
+
+	// Weighted average of factors
+	alignmentScore := (votingHistory * 0.4) + (economicTies * 0.3) + (governanceTies * 0.3)
+
+	// Ensure score is between 0 and 1
+	if alignmentScore > 1.0 {
+		alignmentScore = 1.0
+	}
+	if alignmentScore < 0.0 {
+		alignmentScore = 0.0
+	}
+
+	return alignmentScore
 }
 
 // calculateVotingHistory calculates voting history similarity
 func (cpg *CrossProtocolGovernance) calculateVotingHistory(protocol1ID, protocol2ID ProtocolID) float64 {
-	// Calculate voting history similarity
-	// In a real implementation, this would analyze actual voting patterns
-	return 0.8 // Placeholder value
+	// Calculate voting history similarity based on stored voting patterns
+	cpg.mu.RLock()
+	defer cpg.mu.RUnlock()
+
+	// Get voting patterns for both protocols
+	pattern1, exists1 := cpg.votingPatterns[protocol1ID]
+	pattern2, exists2 := cpg.votingPatterns[protocol2ID]
+
+	if !exists1 || !exists2 {
+		return 0.5 // Default similarity if no data
+	}
+
+	// Calculate similarity based on voting frequency and patterns
+	similarity := 0.0
+	totalComparisons := 0
+
+	// Compare voting patterns (simplified implementation)
+	for topic, votes1 := range pattern1 {
+		if votes2, exists := pattern2[topic]; exists {
+			// Calculate similarity for this topic
+			if votes1 == votes2 {
+				similarity += 1.0
+			} else {
+				similarity += 0.5 // Partial similarity
+			}
+			totalComparisons++
+		}
+	}
+
+	if totalComparisons == 0 {
+		return 0.5 // Default if no common topics
+	}
+
+	return similarity / float64(totalComparisons)
 }
 
 // calculateEconomicTies calculates economic interdependence
 func (cpg *CrossProtocolGovernance) calculateEconomicTies(protocol1ID, protocol2ID ProtocolID) float64 {
-	// Calculate economic ties between protocols
-	// In a real implementation, this would analyze token flows, etc.
-	return 0.6 // Placeholder value
+	// Calculate economic ties between protocols based on stored economic data
+	cpg.mu.RLock()
+	defer cpg.mu.RUnlock()
+
+	// Get economic data for both protocols
+	econ1, exists1 := cpg.economicData[protocol1ID]
+	econ2, exists2 := cpg.economicData[protocol2ID]
+
+	if !exists1 || !exists2 {
+		return 0.3 // Default low economic ties if no data
+	}
+
+	// Calculate economic interdependence based on shared tokens, liquidity, etc.
+	tieScore := 0.0
+
+	// Check for shared tokens
+	sharedTokens := 0
+	for token := range econ1.Tokens {
+		if _, exists := econ2.Tokens[token]; exists {
+			sharedTokens++
+		}
+	}
+
+	if len(econ1.Tokens) > 0 && len(econ2.Tokens) > 0 {
+		tieScore += float64(sharedTokens) / float64(len(econ1.Tokens)+len(econ2.Tokens)-sharedTokens)
+	}
+
+	// Check for liquidity sharing
+	if econ1.Liquidity > 0 && econ2.Liquidity > 0 {
+		// Simple liquidity interdependence calculation
+		avgLiquidity := (econ1.Liquidity + econ2.Liquidity) / 2
+		tieScore += 0.3 * (avgLiquidity / 1000000) // Normalize to reasonable range
+	}
+
+	// Ensure score is between 0 and 1
+	if tieScore > 1.0 {
+		tieScore = 1.0
+	}
+
+	return tieScore
 }
 
 // calculateGovernanceTies calculates governance interdependence
 func (cpg *CrossProtocolGovernance) calculateGovernanceTies(protocol1ID, protocol2ID ProtocolID) float64 {
+	// Calculate governance interdependence based on shared governance mechanisms
+	cpg.mu.RLock()
+	defer cpg.mu.RUnlock()
+
+	// Get governance data for both protocols
+	gov1, exists1 := cpg.governanceData[protocol1ID]
+	gov2, exists2 := cpg.governanceData[protocol2ID]
+
+	if !exists1 || !exists2 {
+		return 0.4 // Default moderate governance ties if no data
+	}
+
 	// Calculate governance interdependence
-	// In a real implementation, this would analyze shared governance mechanisms
-	return 0.7 // Placeholder value
+	tieScore := 0.0
+
+	// Check for shared governance mechanisms
+	sharedMechanisms := 0
+	for mechanism := range gov1.Mechanisms {
+		if _, exists := gov2.Mechanisms[mechanism]; exists {
+			sharedMechanisms++
+		}
+	}
+
+	if len(gov1.Mechanisms) > 0 && len(gov2.Mechanisms) > 0 {
+		tieScore += float64(sharedMechanisms) / float64(len(gov1.Mechanisms)+len(gov2.Mechanisms)-sharedMechanisms)
+	}
+
+	// Check for similar voting power distribution
+	if gov1.VotingPower > 0 && gov2.VotingPower > 0 {
+		powerDiff := math.Abs(gov1.VotingPower - gov2.VotingPower)
+		avgPower := (gov1.VotingPower + gov2.VotingPower) / 2
+		similarity := 1.0 - (powerDiff / avgPower)
+		if similarity > 0 {
+			tieScore += 0.3 * similarity
+		}
+	}
+
+	// Ensure score is between 0 and 1
+	if tieScore > 1.0 {
+		tieScore = 1.0
+	}
+
+	return tieScore
 }
 
 // getAlignmentKey generates a consistent key for protocol alignments

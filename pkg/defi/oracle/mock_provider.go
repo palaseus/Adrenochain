@@ -1,5 +1,6 @@
-//go:build testing
-// +build testing
+// Package oracle provides test utilities for oracle testing.
+// This file contains TestOracleProvider for testing purposes only.
+// Do not use in production code.
 
 package oracle
 

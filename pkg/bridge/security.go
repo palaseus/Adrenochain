@@ -34,7 +34,11 @@ type FraudDetector struct {
 	suspiciousPatterns   map[string]*SuspiciousPattern
 	blacklistedAddresses map[string]bool
 	anomalyThresholds    map[string]float64
-	mutex                sync.RWMutex
+	// Pattern tracking data
+	addressFrequencies map[string][]time.Time    // Track transfer times per address
+	addressAmounts     map[string][]*big.Int     // Track amounts per address
+	addressPairs       map[string]map[string]int // Track address pair frequencies
+	mutex              sync.RWMutex
 }
 
 // SuspiciousPattern represents a pattern that might indicate fraud
@@ -118,6 +122,9 @@ func NewFraudDetector() *FraudDetector {
 		suspiciousPatterns:   make(map[string]*SuspiciousPattern),
 		blacklistedAddresses: make(map[string]bool),
 		anomalyThresholds:    make(map[string]float64),
+		addressFrequencies:   make(map[string][]time.Time),
+		addressAmounts:       make(map[string][]*big.Int),
+		addressPairs:         make(map[string]map[string]int),
 	}
 }
 
@@ -404,34 +411,137 @@ func (fd *FraudDetector) matchesPattern(
 	assetType AssetType,
 	pattern *SuspiciousPattern,
 ) bool {
-	// Simple pattern matching implementation
-	// In a real system, this would use more sophisticated ML-based detection
+	fd.mutex.Lock()
+	defer fd.mutex.Unlock()
+
+	// Update tracking data
+	fd.updateTrackingData(sourceAddress, destinationAddress, amount)
 
 	switch pattern.Pattern {
 	case "high_frequency":
-		// Check for high frequency transfers
-		// In a real implementation, this would:
-		// 1. Track transfer frequency per address
-		// 2. Compare against normal patterns
-		// 3. Flag addresses with unusual activity
-		return false // Not implemented yet
+		return fd.detectHighFrequency(sourceAddress, pattern.Threshold)
 	case "large_amount":
-		// Check for unusually large amounts
-		// In a real implementation, this would:
-		// 1. Compare amount against historical averages
-		// 2. Check against known whale addresses
-		// 3. Flag amounts above certain thresholds
-		return false // Not implemented yet
+		return fd.detectLargeAmount(sourceAddress, amount, pattern.Threshold)
 	case "suspicious_pair":
-		// Check for suspicious address pairs
-		// In a real implementation, this would:
-		// 1. Check against known malicious addresses
-		// 2. Analyze transaction patterns
-		// 3. Flag suspicious address combinations
-		return false // Not implemented yet
+		return fd.detectSuspiciousPair(sourceAddress, destinationAddress, pattern.Threshold)
 	default:
 		return false
 	}
+}
+
+// updateTrackingData updates the tracking data for pattern analysis
+func (fd *FraudDetector) updateTrackingData(sourceAddress, destinationAddress string, amount *big.Int) {
+	now := time.Now()
+
+	// Update frequency tracking
+	fd.addressFrequencies[sourceAddress] = append(fd.addressFrequencies[sourceAddress], now)
+
+	// Update amount tracking
+	fd.addressAmounts[sourceAddress] = append(fd.addressAmounts[sourceAddress], new(big.Int).Set(amount))
+
+	// Update pair tracking
+	if fd.addressPairs[sourceAddress] == nil {
+		fd.addressPairs[sourceAddress] = make(map[string]int)
+	}
+	fd.addressPairs[sourceAddress][destinationAddress]++
+
+	// Clean old data (keep only last 24 hours)
+	fd.cleanOldData()
+}
+
+// cleanOldData removes tracking data older than 24 hours
+func (fd *FraudDetector) cleanOldData() {
+	cutoff := time.Now().Add(-24 * time.Hour)
+
+	for addr, times := range fd.addressFrequencies {
+		var newTimes []time.Time
+		for _, t := range times {
+			if t.After(cutoff) {
+				newTimes = append(newTimes, t)
+			}
+		}
+		fd.addressFrequencies[addr] = newTimes
+	}
+}
+
+// detectHighFrequency detects high frequency transfer patterns
+func (fd *FraudDetector) detectHighFrequency(address string, threshold float64) bool {
+	times, exists := fd.addressFrequencies[address]
+	if !exists || len(times) < 2 {
+		return false
+	}
+
+	// Count transfers in last 10 minutes
+	tenMinutesAgo := time.Now().Add(-10 * time.Minute)
+	recentTransfers := 0
+	for _, t := range times {
+		if t.After(tenMinutesAgo) {
+			recentTransfers++
+		}
+	}
+
+	// Flag if more than threshold transfers per minute
+	transfersPerMinute := float64(recentTransfers) / 10.0
+	return transfersPerMinute > threshold
+}
+
+// detectLargeAmount detects unusually large transfer amounts
+func (fd *FraudDetector) detectLargeAmount(address string, amount *big.Int, threshold float64) bool {
+	amounts, exists := fd.addressAmounts[address]
+	if !exists || len(amounts) < 2 {
+		return false
+	}
+
+	// Calculate average and standard deviation
+	var sum big.Int
+	for _, amt := range amounts {
+		sum.Add(&sum, amt)
+	}
+	avg := new(big.Int).Div(&sum, big.NewInt(int64(len(amounts))))
+
+	// Calculate variance
+	var variance big.Int
+	for _, amt := range amounts {
+		diff := new(big.Int).Sub(amt, avg)
+		diff.Mul(diff, diff)
+		variance.Add(&variance, diff)
+	}
+	variance.Div(&variance, big.NewInt(int64(len(amounts))))
+
+	// Calculate standard deviation (simplified)
+	stdDev := new(big.Int).Sqrt(&variance)
+
+	// Check if amount is more than threshold standard deviations above mean
+	thresholdAmount := new(big.Int).Add(avg, new(big.Int).Mul(stdDev, big.NewInt(int64(threshold))))
+	return amount.Cmp(thresholdAmount) > 0
+}
+
+// detectSuspiciousPair detects suspicious address pair patterns
+func (fd *FraudDetector) detectSuspiciousPair(sourceAddress, destinationAddress string, threshold float64) bool {
+	// Check if either address is blacklisted
+	if fd.blacklistedAddresses[sourceAddress] || fd.blacklistedAddresses[destinationAddress] {
+		return true
+	}
+
+	// Check pair frequency
+	pairs, exists := fd.addressPairs[sourceAddress]
+	if !exists {
+		return false
+	}
+
+	pairCount := pairs[destinationAddress]
+	totalPairs := 0
+	for _, count := range pairs {
+		totalPairs += count
+	}
+
+	if totalPairs == 0 {
+		return false
+	}
+
+	// Flag if this pair represents more than threshold of total pairs
+	pairRatio := float64(pairCount) / float64(totalPairs)
+	return pairRatio > threshold
 }
 
 // Emergency Controls Methods

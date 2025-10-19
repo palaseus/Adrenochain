@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"time"
-
 )
 
 // Level represents the logging level
@@ -48,6 +47,7 @@ type Logger struct {
 	useJSON  bool
 	file     *os.File
 	filePath string
+	fields   map[string]interface{} // Additional context fields
 
 	// SECURITY FIX: Log sanitization
 	sanitizeLogs      bool
@@ -96,6 +96,7 @@ func NewLogger(config *Config) *Logger {
 		timeFmt:  config.TimeFmt,
 		useJSON:  config.UseJSON,
 		filePath: config.LogFile,
+		fields:   make(map[string]interface{}),
 
 		// SECURITY FIX: Initialize log sanitization
 		sanitizeLogs: config.SanitizeLogs,
@@ -286,9 +287,17 @@ func (l *Logger) logText(level Level, timestamp, message string) {
 func (l *Logger) logJSON(level Level, timestamp, message string) {
 	// SECURITY FIX: Sanitize log message before output
 	sanitizedMessage := l.sanitizeLogMessage(message)
-	// Simple JSON format for now
-	jsonMsg := fmt.Sprintf(`{"timestamp":"%s","level":"%s","service":"%s","message":"%s"}`,
+
+	// Build JSON message with all fields
+	jsonMsg := fmt.Sprintf(`{"timestamp":"%s","level":"%s","service":"%s","message":"%s"`,
 		timestamp, level.String(), l.prefix, sanitizedMessage)
+
+	// Add additional fields if present
+	for key, value := range l.fields {
+		jsonMsg += fmt.Sprintf(`,"%s":"%v"`, key, value)
+	}
+
+	jsonMsg += "}"
 	fmt.Fprintln(l.output, jsonMsg)
 }
 
@@ -320,9 +329,29 @@ func (l *Logger) Fatal(format string, args ...interface{}) {
 
 // WithFields creates a new logger with additional context fields
 func (l *Logger) WithFields(fields map[string]interface{}) *Logger {
-	// For now, just return the same logger
-	// In a more advanced implementation, this would add fields to JSON output
-	return l
+	// Create a new logger instance with merged fields
+	newFields := make(map[string]interface{})
+
+	// Copy existing fields
+	for k, v := range l.fields {
+		newFields[k] = v
+	}
+
+	// Add new fields
+	for k, v := range fields {
+		newFields[k] = v
+	}
+
+	return &Logger{
+		level:    l.level,
+		prefix:   l.prefix,
+		output:   l.output,
+		timeFmt:  l.timeFmt,
+		useJSON:  l.useJSON,
+		file:     l.file,
+		filePath: l.filePath,
+		fields:   newFields,
+	}
 }
 
 // SetLevel changes the logging level

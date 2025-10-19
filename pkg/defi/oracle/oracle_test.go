@@ -29,8 +29,8 @@ func TestNewOracleAggregator(t *testing.T) {
 func TestOracleAggregatorAddProvider(t *testing.T) {
 	aggregator := NewOracleAggregator(DefaultOracleConfig())
 
-	provider1 := NewMockOracleProvider("provider1", "Test Provider 1", "http://test1.com", 0.95)
-	provider2 := NewMockOracleProvider("provider2", "Test Provider 2", "http://test2.com", 0.90)
+	provider1 := NewTestOracleProvider("provider1", "Test Provider 1", "http://test1.com", 0.95)
+	provider2 := NewTestOracleProvider("provider2", "Test Provider 2", "http://test2.com", 0.90)
 
 	// Test adding providers
 	err := aggregator.AddProvider("provider1", provider1, 1.0)
@@ -66,7 +66,7 @@ func TestOracleAggregatorAddProvider(t *testing.T) {
 func TestOracleAggregatorRemoveProvider(t *testing.T) {
 	aggregator := NewOracleAggregator(DefaultOracleConfig())
 
-	provider := NewMockOracleProvider("test", "Test Provider", "http://test.com", 0.95)
+	provider := NewTestOracleProvider("test", "Test Provider", "http://test.com", 0.95)
 
 	// Add provider first
 	err := aggregator.AddProvider("test", provider, 1.0)
@@ -100,8 +100,8 @@ func TestOracleAggregatorGetAggregatedPrice(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add providers
-	provider1 := NewMockOracleProvider("provider1", "Test Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Test Provider 2", "http://test2.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Test Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Test Provider 2", "http://test2.com", 1.0)
 
 	err := aggregator.AddProvider("provider1", provider1, 1.0)
 	if err != nil {
@@ -144,8 +144,8 @@ func TestOracleAggregatorInsufficientProviders(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add only 2 providers when 3 are required
-	provider1 := NewMockOracleProvider("provider1", "Test Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Test Provider 2", "http://test2.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Test Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Test Provider 2", "http://test2.com", 1.0)
 
 	aggregator.AddProvider("provider1", provider1, 1.0)
 	aggregator.AddProvider("provider2", provider2, 1.0)
@@ -165,7 +165,7 @@ func TestOracleAggregatorPriceValidation(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add provider with low confidence
-	provider := NewMockOracleProvider("low_confidence", "Low Confidence Provider", "http://test.com", 0.5)
+	provider := NewTestOracleProvider("low_confidence", "Low Confidence Provider", "http://test.com", 0.5)
 	aggregator.AddProvider("low_confidence", provider, 1.0)
 
 	// Test getting price with low confidence
@@ -183,10 +183,10 @@ func TestOracleAggregatorOutlierRemoval(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add providers with different reliability
-	provider1 := NewMockOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
-	provider3 := NewMockOracleProvider("provider3", "Provider 3", "http://test3.com", 1.0)
-	provider4 := NewMockOracleProvider("provider4", "Provider 4", "http://test4.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
+	provider3 := NewTestOracleProvider("provider3", "Provider 3", "http://test3.com", 1.0)
+	provider4 := NewTestOracleProvider("provider4", "Provider 4", "http://test4.com", 1.0)
 
 	aggregator.AddProvider("provider1", provider1, 1.0)
 	aggregator.AddProvider("provider2", provider2, 1.0)
@@ -223,8 +223,8 @@ func TestOracleAggregatorWeightedAverage(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add providers with different weights
-	provider1 := NewMockOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
 	aggregator.AddProvider("provider1", provider1, 2.0) // Higher weight
 	aggregator.AddProvider("provider2", provider2, 1.0) // Lower weight
@@ -256,8 +256,8 @@ func TestOracleAggregatorStatistics(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add providers
-	provider1 := NewMockOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
 	aggregator.AddProvider("provider1", provider1, 1.0)
 	aggregator.AddProvider("provider2", provider2, 1.0)
@@ -303,8 +303,8 @@ func TestOracleAggregatorEvents(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add providers
-	provider1 := NewMockOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
 	aggregator.AddProvider("provider1", provider1, 1.0)
 	aggregator.AddProvider("provider2", provider2, 1.0)
@@ -343,8 +343,8 @@ func TestOracleAggregatorConcurrency(t *testing.T) {
 	aggregator := NewOracleAggregator(config)
 
 	// Add providers
-	provider1 := NewMockOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
-	provider2 := NewMockOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
+	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
+	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
 	aggregator.AddProvider("provider1", provider1, 1.0)
 	aggregator.AddProvider("provider2", provider2, 1.0)
@@ -379,7 +379,7 @@ func TestOracleAggregatorConcurrency(t *testing.T) {
 
 // TestMockOracleProvider tests mock provider functionality
 func TestMockOracleProvider(t *testing.T) {
-	provider := NewMockOracleProvider("test", "Test Provider", "http://test.com", 1.0) // 100% reliability for consistent testing
+	provider := NewTestOracleProvider("test", "Test Provider", "http://test.com", 1.0) // 100% reliability for consistent testing
 
 	// Test GetPrice
 	ctx := context.Background()

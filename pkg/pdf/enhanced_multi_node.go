@@ -1,7 +1,4 @@
-//go:build testing
-// +build testing
-
-// Package pdf provides test-only enhanced multi-node PDF testing functionality.
+// Package pdf provides enhanced multi-node PDF testing functionality.
 // This file contains simulation and testing code for development purposes only.
 // Do not use in production code.
 

@@ -16,6 +16,13 @@ type OrderBook struct {
 	orders      map[string]*Order // Map of order ID to order for quick lookup
 	mutex       sync.RWMutex
 	lastUpdate  time.Time
+	// Caching for performance optimization
+	depthCache       []PriceLevel
+	depthCacheTime   time.Time
+	depthCacheLevels int
+	// Reusable buffers to reduce allocations
+	priceLevelMap map[string]*PriceLevel
+	depthBuffer   []PriceLevel
 }
 
 // OrderHeap implements heap.Interface for efficient order management
@@ -47,11 +54,13 @@ func NewOrderBook(tradingPair string) (*OrderBook, error) {
 	}
 
 	return &OrderBook{
-		tradingPair: tradingPair,
-		buyOrders:   &OrderHeap{},
-		sellOrders:  &OrderHeap{},
-		orders:      make(map[string]*Order),
-		lastUpdate:  time.Now(),
+		tradingPair:   tradingPair,
+		buyOrders:     &OrderHeap{},
+		sellOrders:    &OrderHeap{},
+		orders:        make(map[string]*Order),
+		lastUpdate:    time.Now(),
+		priceLevelMap: make(map[string]*PriceLevel, 100), // Pre-allocate for common use case
+		depthBuffer:   make([]PriceLevel, 0, 200),        // Pre-allocate buffer
 	}, nil
 }
 
@@ -91,6 +100,9 @@ func (ob *OrderBook) AddOrder(order *Order) error {
 	ob.orders[order.ID] = order
 	ob.lastUpdate = time.Now()
 
+	// Invalidate depth cache
+	ob.depthCache = nil
+
 	return nil
 }
 
@@ -119,6 +131,9 @@ func (ob *OrderBook) RemoveOrder(orderID string) error {
 	// Remove from orders map
 	delete(ob.orders, orderID)
 	ob.lastUpdate = time.Now()
+
+	// Invalidate depth cache
+	ob.depthCache = nil
 
 	return nil
 }
@@ -325,17 +340,33 @@ func (ob *OrderBook) GetDepth(levels int) ([]PriceLevel, error) {
 	ob.mutex.RLock()
 	defer ob.mutex.RUnlock()
 
-	depth := make([]PriceLevel, 0, levels*2) // Buy + Sell levels
+	// Check cache validity (cache for 100ms)
+	if ob.depthCache != nil && ob.depthCacheLevels >= levels &&
+		time.Since(ob.depthCacheTime) < 100*time.Millisecond {
+		// Return cached result if it has enough levels
+		if len(ob.depthCache) >= levels*2 {
+			return ob.depthCache[:levels*2], nil
+		}
+	}
 
-	// Get buy levels (highest to lowest)
-	buyLevels := ob.getPriceLevels(ob.buyOrders, levels, OrderSideBuy)
-	depth = append(depth, buyLevels...)
+	// Reset reusable buffer
+	ob.depthBuffer = ob.depthBuffer[:0]
 
-	// Get sell levels (lowest to highest)
-	sellLevels := ob.getPriceLevels(ob.sellOrders, levels, OrderSideSell)
-	depth = append(depth, sellLevels...)
+	// Get buy levels (highest to lowest) - optimized
+	buyLevels := ob.getPriceLevelsOptimized(ob.buyOrders, levels, OrderSideBuy)
+	ob.depthBuffer = append(ob.depthBuffer, buyLevels...)
 
-	return depth, nil
+	// Get sell levels (lowest to highest) - optimized
+	sellLevels := ob.getPriceLevelsOptimized(ob.sellOrders, levels, OrderSideSell)
+	ob.depthBuffer = append(ob.depthBuffer, sellLevels...)
+
+	// Update cache with a copy
+	ob.depthCache = make([]PriceLevel, len(ob.depthBuffer))
+	copy(ob.depthCache, ob.depthBuffer)
+	ob.depthCacheTime = time.Now()
+	ob.depthCacheLevels = levels
+
+	return ob.depthBuffer, nil
 }
 
 // PriceLevel represents a price level with aggregated volume
@@ -404,6 +435,117 @@ func (ob *OrderBook) getPriceLevels(h *OrderHeap, levels int, side OrderSide) []
 	}
 
 	return result
+}
+
+// getPriceLevelsOptimized aggregates orders by price level with optimized performance
+func (ob *OrderBook) getPriceLevelsOptimized(h *OrderHeap, levels int, side OrderSide) []PriceLevel {
+	if h.Len() == 0 {
+		return []PriceLevel{}
+	}
+
+	// Clear and reuse the price level map
+	for k := range ob.priceLevelMap {
+		delete(ob.priceLevelMap, k)
+	}
+
+	// Process orders directly from heap without cloning (more efficient)
+	orders := *h
+	processed := 0
+
+	for i := 0; i < len(orders) && processed < levels*2; i++ {
+		order := orders[i]
+		priceKey := order.Price.String()
+
+		if level, exists := ob.priceLevelMap[priceKey]; exists {
+			level.Volume.Add(level.Volume, order.RemainingQuantity)
+			level.OrderCount++
+		} else {
+			ob.priceLevelMap[priceKey] = &PriceLevel{
+				Price:      order.Price,
+				Volume:     new(big.Int).Set(order.RemainingQuantity),
+				Side:       side,
+				OrderCount: 1,
+			}
+			processed++
+		}
+	}
+
+	// Convert map to slice using pre-allocated buffer
+	result := make([]PriceLevel, 0, len(ob.priceLevelMap))
+	for _, level := range ob.priceLevelMap {
+		result = append(result, *level)
+	}
+
+	// Use more efficient sorting (quicksort-like approach)
+	ob.quickSortPriceLevels(result, side)
+
+	return result
+}
+
+// quickSortPriceLevels sorts price levels efficiently
+func (ob *OrderBook) quickSortPriceLevels(levels []PriceLevel, side OrderSide) {
+	if len(levels) <= 1 {
+		return
+	}
+
+	// Use insertion sort for small arrays (more efficient than quicksort)
+	if len(levels) <= 10 {
+		ob.insertionSortPriceLevels(levels, side)
+		return
+	}
+
+	// Quicksort for larger arrays
+	ob.quicksortPriceLevels(levels, 0, len(levels)-1, side)
+}
+
+// insertionSortPriceLevels performs insertion sort on price levels
+func (ob *OrderBook) insertionSortPriceLevels(levels []PriceLevel, side OrderSide) {
+	for i := 1; i < len(levels); i++ {
+		key := levels[i]
+		j := i - 1
+
+		// Move elements greater than key one position ahead
+		for j >= 0 && ob.comparePriceLevels(levels[j], key, side) > 0 {
+			levels[j+1] = levels[j]
+			j--
+		}
+		levels[j+1] = key
+	}
+}
+
+// quicksortPriceLevels performs quicksort on price levels
+func (ob *OrderBook) quicksortPriceLevels(levels []PriceLevel, low, high int, side OrderSide) {
+	if low < high {
+		pi := ob.partitionPriceLevels(levels, low, high, side)
+		ob.quicksortPriceLevels(levels, low, pi-1, side)
+		ob.quicksortPriceLevels(levels, pi+1, high, side)
+	}
+}
+
+// partitionPriceLevels partitions the array for quicksort
+func (ob *OrderBook) partitionPriceLevels(levels []PriceLevel, low, high int, side OrderSide) int {
+	pivot := levels[high]
+	i := low - 1
+
+	for j := low; j < high; j++ {
+		if ob.comparePriceLevels(levels[j], pivot, side) <= 0 {
+			i++
+			levels[i], levels[j] = levels[j], levels[i]
+		}
+	}
+	levels[i+1], levels[high] = levels[high], levels[i+1]
+	return i + 1
+}
+
+// comparePriceLevels compares two price levels based on side
+func (ob *OrderBook) comparePriceLevels(a, b PriceLevel, side OrderSide) int {
+	if side == OrderSideBuy {
+		// Buy orders: higher price first (descending)
+		return b.Price.Cmp(a.Price)
+	} else {
+		// Sell orders: lower price first (ascending)
+		return a.Price.Cmp(b.Price)
+	}
 }
 
 // CancelExpiredOrders removes expired orders from the order book

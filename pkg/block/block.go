@@ -14,6 +14,7 @@ type Block struct {
 	Header       *Header        // Header contains the block's metadata.
 	Transactions []*Transaction // Transactions is a list of transactions included in this block.
 	MerkleRoot   []byte         // MerkleRoot is the Merkle root of the block's transactions.
+	Hash         []byte         // Hash is the SHA256 hash of the block header.
 }
 
 // Header contains the block header information.
@@ -143,6 +144,7 @@ func (b *Block) CalculateHash() []byte {
 	data = append(data, heightBytes...)
 
 	hash := sha256.Sum256(data)
+	b.Hash = hash[:] // Store the hash in the block
 	return hash[:]
 }
 

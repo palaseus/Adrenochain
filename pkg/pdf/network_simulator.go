@@ -1,7 +1,4 @@
-//go:build testing
-// +build testing
-
-// Package pdf provides test-only network simulation functionality.
+// Package pdf provides network simulation functionality.
 // This file contains simulation code for testing purposes only.
 // Do not use in production code.
 

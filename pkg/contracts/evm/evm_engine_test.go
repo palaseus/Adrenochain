@@ -279,6 +279,12 @@ func TestEVMEngineClone(t *testing.T) {
 }
 
 // Mock implementations for testing
+
+// MockContractStorage implements ContractStorage interface for testing
+// This mock provides a simplified contract storage implementation that stores
+// key-value pairs in memory and supports basic operations like getting, setting,
+// and deleting storage values. It's designed for testing EVM operations without
+// requiring actual persistent storage or complex state management.
 type MockContractStorage struct{}
 
 func (m *MockContractStorage) Get(address engine.Address, key engine.Hash) ([]byte, error) {
@@ -329,6 +335,12 @@ func (m *MockContractStorage) VerifyStorageProof(root engine.Hash, key engine.Ha
 	return true
 }
 
+// MockContractRegistry implements ContractRegistry interface for testing
+// This mock provides a simplified contract registry implementation that manages
+// contract deployments and lookups in memory. It supports basic operations like
+// registering contracts, retrieving contracts by address, and checking contract
+// existence. It's designed for testing EVM contract management without requiring
+// actual persistent contract storage.
 type MockContractRegistry struct{}
 
 func (m *MockContractRegistry) Register(contract *engine.Contract) error {
@@ -682,18 +694,22 @@ func TestEVMBasicInstructions(t *testing.T) {
 		ChainID:    big.NewInt(1),
 	}
 
-	// Test CREATE instruction (currently just a stub)
+	// Test CREATE instruction - should consume 3 operands and push result
 	evm.stack.Push(big.NewInt(0)) // value
 	evm.stack.Push(big.NewInt(0)) // offset
 	evm.stack.Push(big.NewInt(0)) // size
-	evm.executeCREATE(ctx)
-
-	// CREATE is currently a stub, so it doesn't consume operands
-	if evm.stack.Size() != 3 {
-		t.Error("CREATE stub should not consume operands")
+	initialSize := evm.stack.Size()
+	err := evm.executeCREATE(ctx)
+	if err != nil {
+		t.Errorf("CREATE failed: %v", err)
 	}
 
-	// Test CALL instruction (currently just a stub)
+	// CREATE should consume 3 operands and push 1 result (0 for failure in this case)
+	if evm.stack.Size() != initialSize-2 {
+		t.Errorf("CREATE should consume 3 operands and push 1 result, got stack size %d", evm.stack.Size())
+	}
+
+	// Test CALL instruction - should consume 7 operands and push result
 	evm.stack.Push(big.NewInt(0)) // gas
 	evm.stack.Push(big.NewInt(0)) // address
 	evm.stack.Push(big.NewInt(0)) // value
@@ -701,20 +717,28 @@ func TestEVMBasicInstructions(t *testing.T) {
 	evm.stack.Push(big.NewInt(0)) // argsSize
 	evm.stack.Push(big.NewInt(0)) // retOffset
 	evm.stack.Push(big.NewInt(0)) // retSize
-	evm.executeCALL(ctx)
-
-	// CALL is currently a stub, so it doesn't consume operands
-	if evm.stack.Size() != 10 {
-		t.Error("CALL stub should not consume operands")
+	initialSize = evm.stack.Size()
+	err = evm.executeCALL(ctx)
+	if err != nil {
+		t.Errorf("CALL failed: %v", err)
 	}
 
-	// Test SUICIDE instruction (currently just a stub)
-	evm.stack.Push(big.NewInt(0)) // address
-	evm.executeSUICIDE(ctx)
+	// CALL should consume 7 operands and push 1 result
+	if evm.stack.Size() != initialSize-6 {
+		t.Errorf("CALL should consume 7 operands and push 1 result, got stack size %d", evm.stack.Size())
+	}
 
-	// SUICIDE is currently a stub, so it doesn't consume operands
-	if evm.stack.Size() != 11 {
-		t.Error("SUICIDE stub should not consume operands")
+	// Test SUICIDE instruction - should consume 1 operand
+	evm.stack.Push(big.NewInt(0)) // address
+	initialSize = evm.stack.Size()
+	err = evm.executeSUICIDE(ctx)
+	if err != nil {
+		t.Errorf("SUICIDE failed: %v", err)
+	}
+
+	// SUICIDE should consume 1 operand
+	if evm.stack.Size() != initialSize-1 {
+		t.Errorf("SUICIDE should consume 1 operand, got stack size %d", evm.stack.Size())
 	}
 }
 
@@ -944,7 +968,7 @@ func TestEVMExecuteInstruction(t *testing.T) {
 			tc.setup()
 
 			// Execute the instruction
-			if tc.instruction.Opcode == 0x56 || tc.instruction.Opcode == 0x57 {
+			if tc.instruction.Opcode == 0x56 || tc.instruction.Opcode == 0x57 || tc.instruction.Opcode == 0xFF {
 				evm.executeInstruction(tc.instruction, ctx)
 			} else {
 				evm.executeInstruction(tc.instruction, nil)

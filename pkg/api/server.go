@@ -38,16 +38,36 @@ type NetworkInterface interface {
 	GetPeerCount() int
 }
 
+// MempoolInterface defines the interface for mempool operations
+type MempoolInterface interface {
+	GetPendingTransactions() []*block.Transaction
+	GetPendingTransactionCount() int
+	AddTransaction(tx *block.Transaction) error
+	RemoveTransaction(txHash []byte) error
+}
+
 // Server represents the HTTP API server
 type Server struct {
 	router  *mux.Router
 	chain   ChainInterface
 	wallet  WalletInterface
 	network NetworkInterface
+	mempool MempoolInterface
 	port    int
 
 	// SECURITY FIX: Rate limiting
 	rateLimiter *RateLimiter
+
+	// Transaction index for O(1) lookup
+	txIndex map[string]*TxIndexEntry
+	txMutex sync.RWMutex
+}
+
+// TxIndexEntry represents a transaction index entry
+type TxIndexEntry struct {
+	BlockHeight uint64
+	TxIndex     int
+	BlockHash   []byte
 }
 
 // SECURITY FIX: RateLimiter implements rate limiting for API endpoints
@@ -102,6 +122,7 @@ type ServerConfig struct {
 	Chain   ChainInterface
 	Wallet  WalletInterface
 	Network NetworkInterface
+	Mempool MempoolInterface
 }
 
 // NewServer creates a new API server
@@ -112,17 +133,70 @@ func NewServer(config *ServerConfig) *Server {
 		chain:   config.Chain,
 		wallet:  config.Wallet,
 		network: config.Network,
+		mempool: config.Mempool,
 		port:    config.Port,
 
 		// SECURITY FIX: Initialize rate limiter
 		rateLimiter: NewRateLimiter(1*time.Minute, 100), // 100 requests per minute
+
+		// Initialize transaction index
+		txIndex: make(map[string]*TxIndexEntry),
 	}
 
 	// SECURITY FIX: Add rate limiting middleware
 	router.Use(server.rateLimitMiddleware)
 
 	server.setupRoutes()
+
+	// Build initial transaction index
+	server.buildTransactionIndex()
+
 	return server
+}
+
+// buildTransactionIndex builds the transaction index from the blockchain
+func (s *Server) buildTransactionIndex() {
+	s.txMutex.Lock()
+	defer s.txMutex.Unlock()
+
+	if s.chain == nil {
+		return // No chain available, skip indexing
+	}
+
+	height := s.chain.GetHeight()
+	for h := uint64(0); h <= height; h++ {
+		block := s.chain.GetBlockByHeight(h)
+		if block == nil {
+			continue
+		}
+
+		for i, tx := range block.Transactions {
+			txHash := string(tx.Hash)
+			s.txIndex[txHash] = &TxIndexEntry{
+				BlockHeight: h,
+				TxIndex:     i,
+				BlockHash:   block.CalculateHash(),
+			}
+		}
+	}
+}
+
+// addTransactionToIndex adds a transaction to the index
+func (s *Server) addTransactionToIndex(tx *block.Transaction, blockHeight uint64, txIndex int, blockHash []byte) {
+	s.txMutex.Lock()
+	defer s.txMutex.Unlock()
+
+	txHash := string(tx.Hash)
+	s.txIndex[txHash] = &TxIndexEntry{
+		BlockHeight: blockHeight,
+		TxIndex:     txIndex,
+		BlockHash:   blockHash,
+	}
+}
+
+// BuildTransactionIndex manually builds the transaction index (for testing)
+func (s *Server) BuildTransactionIndex() {
+	s.buildTransactionIndex()
 }
 
 // SECURITY FIX: rateLimitMiddleware implements rate limiting for all endpoints
@@ -482,25 +556,16 @@ func (s *Server) getTransactionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For now, we'll search through blocks to find the transaction
-	// In a real implementation, you'd have a transaction index
-	height := s.chain.GetHeight()
+	// Use transaction index for O(1) lookup
+	s.txMutex.RLock()
+	indexEntry, exists := s.txIndex[string(hash)]
+	s.txMutex.RUnlock()
+
 	var foundTx *block.Transaction
-
-	for h := uint64(0); h <= height; h++ {
-		block := s.chain.GetBlockByHeight(h)
-		if block == nil {
-			continue
-		}
-
-		for _, tx := range block.Transactions {
-			if string(tx.Hash) == string(hash) {
-				foundTx = tx
-				break
-			}
-		}
-		if foundTx != nil {
-			break
+	if exists {
+		block := s.chain.GetBlockByHeight(indexEntry.BlockHeight)
+		if block != nil && indexEntry.TxIndex < len(block.Transactions) {
+			foundTx = block.Transactions[indexEntry.TxIndex]
 		}
 	}
 
@@ -524,11 +589,17 @@ func (s *Server) getTransactionHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getPendingTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// For now, return empty list since we don't have mempool access in this context
-	// In a real implementation, you'd access the mempool
+	if s.mempool == nil {
+		http.Error(w, "Mempool not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	pendingTxs := s.mempool.GetPendingTransactions()
+	count := s.mempool.GetPendingTransactionCount()
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"pending_transactions": []interface{}{},
-		"count":                0,
+		"pending_transactions": pendingTxs,
+		"count":                count,
 	})
 }
 
@@ -605,13 +676,33 @@ func (s *Server) getPeersHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getNetworkStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// For now, return basic network status
-	// In a real implementation, you'd access the network layer
+	if s.network == nil {
+		http.Error(w, "Network not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	peers := s.network.GetPeers()
+	peerCount := s.network.GetPeerCount()
+
+	// Get additional network metrics
+	chainHeight := s.chain.GetHeight()
+
+	// Calculate network health metrics
+	networkHealth := "healthy"
+	if peerCount == 0 {
+		networkHealth = "disconnected"
+	} else if peerCount < 3 {
+		networkHealth = "degraded"
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":     "active",
-		"peer_count": 0,
-		"listening":  true,
-		"timestamp":  time.Now().UTC().Format(time.RFC3339),
+		"status":         "active",
+		"peer_count":     peerCount,
+		"peers":          peers,
+		"listening":      true,
+		"chain_height":   chainHeight,
+		"network_health": networkHealth,
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
 	})
 }
 

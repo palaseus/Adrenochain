@@ -208,7 +208,9 @@ func TestTransaction_Helper_Methods(t *testing.T) {
 	}
 
 	// Test fee calculation (simplified - just check it returns a value)
-	fee := tx.getFee()
+	// Create empty UTXO set for testing
+	utxoSet := make(map[string]*UTXO)
+	fee := tx.getFee(utxoSet)
 	assert.GreaterOrEqual(t, fee, uint64(0))
 
 	// Test size calculation

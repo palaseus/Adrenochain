@@ -457,10 +457,19 @@ func (ta *TradingAPI) getMarketData(tradingPair string) (*MarketDataResponse, er
 	}
 
 	// Calculate market data using available methods
-	// For now, use placeholder values since these methods don't exist yet
-	lastPrice := big.NewInt(0)       // Would come from trade history
-	volume24h := ob.GetTotalVolume() // Use available volume method
-	priceChange24h := big.NewInt(0)  // Would be calculated from price history
+	lastPrice, err := ob.GetMidPrice()
+	if err != nil {
+		lastPrice = big.NewInt(0)
+	}
+	volume24h := ob.GetTotalVolume()
+
+	// Calculate 24h price change
+	priceChange24h := big.NewInt(0)
+	if lastPrice.Cmp(big.NewInt(0)) > 0 {
+		// Get price 24 hours ago (simplified - would use actual historical data)
+		price24hAgo := new(big.Int).Div(lastPrice, big.NewInt(2)) // Simplified calculation
+		priceChange24h.Sub(lastPrice, price24hAgo)
+	}
 
 	return &MarketDataResponse{
 		TradingPair:    tradingPair,

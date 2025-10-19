@@ -2,8 +2,12 @@ package router
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -349,7 +353,7 @@ func (hm *HealthMonitor) executeHealthCheck(healthCheck *HealthCheck) (*HealthRe
 
 // performTCPCheck performs a TCP connection check
 func (hm *HealthMonitor) performTCPCheck(healthCheck *HealthCheck, result *HealthResult) (*HealthResult, error) {
-	address := fmt.Sprintf("%s:%d", healthCheck.Address, healthCheck.Port)
+	address := net.JoinHostPort(healthCheck.Address, fmt.Sprintf("%d", healthCheck.Port))
 
 	conn, err := net.DialTimeout("tcp", address, healthCheck.Timeout)
 	if err != nil {
@@ -368,16 +372,147 @@ func (hm *HealthMonitor) performTCPCheck(healthCheck *HealthCheck, result *Healt
 
 // performHTTPCheck performs an HTTP health check
 func (hm *HealthMonitor) performHTTPCheck(healthCheck *HealthCheck, result *HealthResult) (*HealthResult, error) {
-	// This would implement HTTP health checks
-	// For now, fall back to TCP check
-	return hm.performTCPCheck(healthCheck, result)
+	// Build HTTP URL
+	url := fmt.Sprintf("http://%s:%d/health", healthCheck.Address, healthCheck.Port)
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: healthCheck.Timeout,
+	}
+
+	// Create request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("failed to create HTTP request: %w", err)
+		result.Details["error"] = err.Error()
+		return result, nil
+	}
+
+	// Set headers
+	req.Header.Set("User-Agent", "HealthMonitor/1.0")
+	req.Header.Set("Accept", "application/json")
+
+	// Make request
+	resp, err := client.Do(req)
+	if err != nil {
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("HTTP request failed: %w", err)
+		result.Details["error"] = err.Error()
+		return result, nil
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("HTTP health check failed with status %d", resp.StatusCode)
+		result.Details["status_code"] = resp.StatusCode
+		result.Details["status"] = resp.Status
+		return result, nil
+	}
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("failed to read response body: %w", err)
+		result.Details["error"] = err.Error()
+		return result, nil
+	}
+
+	// Parse health check response
+	var healthResponse struct {
+		Status    string                 `json:"status"`
+		Healthy   bool                   `json:"healthy"`
+		Timestamp string                 `json:"timestamp"`
+		Details   map[string]interface{} `json:"details"`
+	}
+
+	if err := json.Unmarshal(body, &healthResponse); err != nil {
+		// If JSON parsing fails, check if response contains "ok" or "healthy"
+		bodyStr := strings.ToLower(string(body))
+		if strings.Contains(bodyStr, "ok") || strings.Contains(bodyStr, "healthy") {
+			result.IsHealthy = true
+			result.Details["response"] = string(body)
+			result.Details["status_code"] = resp.StatusCode
+			return result, nil
+		}
+
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("failed to parse health check response: %w", err)
+		result.Details["error"] = err.Error()
+		result.Details["response"] = string(body)
+		return result, nil
+	}
+
+	// Check health status
+	if healthResponse.Status == "ok" || healthResponse.Healthy {
+		result.IsHealthy = true
+		result.Details["status"] = healthResponse.Status
+		result.Details["healthy"] = healthResponse.Healthy
+		result.Details["timestamp"] = healthResponse.Timestamp
+		result.Details["details"] = healthResponse.Details
+		result.Details["status_code"] = resp.StatusCode
+	} else {
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("health check returned unhealthy status: %s", healthResponse.Status)
+		result.Details["status"] = healthResponse.Status
+		result.Details["healthy"] = healthResponse.Healthy
+		result.Details["timestamp"] = healthResponse.Timestamp
+		result.Details["details"] = healthResponse.Details
+		result.Details["status_code"] = resp.StatusCode
+	}
+
+	return result, nil
 }
 
 // performPingCheck performs a ping check
 func (hm *HealthMonitor) performPingCheck(healthCheck *HealthCheck, result *HealthResult) (*HealthResult, error) {
-	// This would implement ICMP ping checks
-	// For now, fall back to TCP check
-	return hm.performTCPCheck(healthCheck, result)
+	// ICMP ping implementation
+	// Note: This requires raw socket privileges on most systems
+
+	// For now, we'll implement a TCP-based ping alternative
+	// In production, you would use raw sockets for true ICMP ping
+
+	// Try to connect to the node's port to simulate ping
+	address := net.JoinHostPort(healthCheck.Address, fmt.Sprintf("%d", healthCheck.Port))
+
+	// Use a shorter timeout for ping-like behavior
+	pingTimeout := healthCheck.Timeout
+	if pingTimeout > 3*time.Second {
+		pingTimeout = 3 * time.Second
+	}
+
+	conn, err := net.DialTimeout("tcp", address, pingTimeout)
+	if err != nil {
+		result.IsHealthy = false
+		result.Error = fmt.Errorf("ping failed: %w", err)
+		result.Details["error"] = err.Error()
+		result.Details["address"] = address
+		return result, nil
+	}
+
+	// Close connection immediately
+	conn.Close()
+
+	// Calculate latency
+	latency := time.Since(result.Timestamp)
+
+	result.IsHealthy = true
+	result.Latency = latency
+	result.Details["address"] = address
+	result.Details["latency_ms"] = latency.Milliseconds()
+	result.Details["method"] = "tcp_ping"
+
+	// In a real implementation, you would:
+	// 1. Create a raw socket
+	// 2. Send ICMP echo request
+	// 3. Wait for ICMP echo reply
+	// 4. Calculate round-trip time
+	// 5. Check for packet loss
+
+	return result, nil
 }
 
 // SetCheckInterval updates the health check interval

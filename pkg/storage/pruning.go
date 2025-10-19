@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -161,9 +162,25 @@ func (pm *PruningManager) PruneBlocks(currentHeight uint64) error {
 func (pm *PruningManager) getBlocksToPrune(cutoffHeight uint64) ([]*block.Block, error) {
 	var blocksToPrune []*block.Block
 
-	// This is a simplified implementation
-	// In a real implementation, you'd query the storage for blocks below cutoffHeight
-	// For now, we'll return an empty slice
+	// Query storage for blocks below cutoffHeight
+	if pm.storage == nil {
+		return blocksToPrune, nil
+	}
+
+	// Get all blocks from height 0 to cutoffHeight
+	for height := uint64(0); height < cutoffHeight; height++ {
+		// Create a mock block for querying (in real implementation, you'd have a proper query method)
+		// For now, we'll simulate getting blocks by height
+		block, err := pm.getBlockByHeight(height)
+		if err != nil {
+			// If block doesn't exist, continue to next height
+			continue
+		}
+
+		if block != nil {
+			blocksToPrune = append(blocksToPrune, block)
+		}
+	}
 
 	return blocksToPrune, nil
 }
@@ -247,9 +264,24 @@ func (pm *PruningManager) ArchiveBlocks(currentHeight uint64) error {
 func (pm *PruningManager) getBlocksToArchive(cutoffHeight uint64) ([]*block.Block, error) {
 	var blocksToArchive []*block.Block
 
-	// This is a simplified implementation
-	// In a real implementation, you'd query the storage for blocks below cutoffHeight
-	// For now, we'll return an empty slice
+	// Query storage for blocks below cutoffHeight
+	if pm.storage == nil {
+		return blocksToArchive, nil
+	}
+
+	// Get all blocks from height 0 to cutoffHeight
+	for height := uint64(0); height < cutoffHeight; height++ {
+		// Get block by height
+		block, err := pm.getBlockByHeight(height)
+		if err != nil {
+			// If block doesn't exist, continue to next height
+			continue
+		}
+
+		if block != nil {
+			blocksToArchive = append(blocksToArchive, block)
+		}
+	}
 
 	return blocksToArchive, nil
 }
@@ -403,8 +435,7 @@ func (pm *PruningManager) RestoreFromArchive(archiveID string) (*block.Block, er
 		return nil, fmt.Errorf("archive ID cannot be empty")
 	}
 
-	// Implement archive restoration (test expects not implemented for now)
-	return nil, fmt.Errorf("archive restoration not implemented")
+	// Archive restoration is now implemented - proceed with restoration
 
 	// The full implementation below can be re-enabled once tests are updated
 	// Implement archive restoration
@@ -489,9 +520,16 @@ func (pm *PruningManager) validateRestoredBlock(block *block.Block) error {
 		return fmt.Errorf("block timestamp is zero")
 	}
 
-	// Validate block hash (assuming it's stored in a different field)
-	// Note: The exact field name depends on the block.Header structure
-	// This is a placeholder - adjust based on actual structure
+	// Validate block hash
+	if len(block.Hash) == 0 {
+		return fmt.Errorf("block hash is empty")
+	}
+	
+	// Verify that the stored hash matches the calculated hash
+	calculatedHash := block.CalculateHash()
+	if !bytes.Equal(block.Hash, calculatedHash) {
+		return fmt.Errorf("block hash does not match calculated hash")
+	}
 
 	// Validate transactions
 	for i, tx := range block.Transactions {
@@ -503,20 +541,77 @@ func (pm *PruningManager) validateRestoredBlock(block *block.Block) error {
 	return nil
 }
 
+// getBlockByHeight retrieves a block by its height from storage
+func (pm *PruningManager) getBlockByHeight(height uint64) (*block.Block, error) {
+	if pm.storage == nil {
+		return nil, fmt.Errorf("storage not available")
+	}
+
+	// Create a key for the block height
+	// In a real implementation, you'd have a proper key format for blocks
+	heightKey := fmt.Sprintf("block_height_%d", height)
+
+	// Try to get the block from storage
+	blockData, err := pm.storage.Read([]byte(heightKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block at height %d: %w", height, err)
+	}
+
+	if blockData == nil {
+		return nil, fmt.Errorf("block not found at height %d", height)
+	}
+
+	// Unmarshal the block data
+	var block block.Block
+	if err := json.Unmarshal(blockData, &block); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal block at height %d: %w", height, err)
+	}
+
+	return &block, nil
+}
+
 // GetArchiveList returns a list of available archives
 func (pm *PruningManager) GetArchiveList() ([]ArchiveEntry, error) {
-	// Get list of available archives
-	// In a real implementation, this would:
-	// 1. Scan the archive directory
-	// 2. Read archive metadata files
-	// 3. Parse archive information
-	// 4. Return list of ArchiveEntry structures
-	// 5. Include archive size, creation date, block range, etc.
-
 	var archives []ArchiveEntry
 
-	// For now, return empty list as archive listing is not fully implemented
-	// pm.logger.Debug("Archive list requested, returning empty list")
+	// Scan the archive directory for available archives
+	archiveDir := filepath.Join(pm.config.ArchiveLocation, "archives")
+	if _, err := os.Stat(archiveDir); os.IsNotExist(err) {
+		// Archive directory doesn't exist, return empty list
+		return archives, nil
+	}
+
+	// Read archive directory
+	files, err := os.ReadDir(archiveDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read archive directory: %w", err)
+	}
+
+	// Process each archive file
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		if !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+
+		// Read archive metadata
+		archivePath := filepath.Join(archiveDir, file.Name())
+		archiveData, err := os.ReadFile(archivePath)
+		if err != nil {
+			continue // Skip files that can't be read
+		}
+
+		var archive ArchiveEntry
+		if err := json.Unmarshal(archiveData, &archive); err != nil {
+			continue // Skip files that can't be parsed
+		}
+
+		archives = append(archives, archive)
+	}
+
 	return archives, nil
 }
 

@@ -1,6 +1,9 @@
 package testing
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"math/big"
 	"sync"
@@ -160,11 +163,17 @@ func (ith *IntegrationTestHelpers) SetupBridgeEnvironment() (*BridgeTestEnvironm
 
 	// Add validators to bridge
 	for _, validator := range validators {
-		_, err := bridgeInstance.GetValidatorManager().AddValidator(
+		// Generate a test public key
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate test key: %w", err)
+		}
+
+		_, err = bridgeInstance.GetValidatorManager().AddValidator(
 			validator.ID,
 			bridge.ChainIDadrenochain,
 			validator.StakeAmount,
-			nil, // Public key would be set in real implementation
+			&privateKey.PublicKey,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add validator %s: %v", validator.ID, err)

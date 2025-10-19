@@ -1244,9 +1244,10 @@ func TestPruningManager(t *testing.T) {
 		config := DefaultPruningConfig()
 		pm := NewPruningManager(config, storage)
 
+		// Test archive restoration - should fail because archive doesn't exist
 		_, err := pm.RestoreFromArchive("test_archive")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "not implemented")
+		assert.Contains(t, err.Error(), "archive test_archive not found")
 	})
 
 	// Test archive listing

@@ -1,5 +1,5 @@
-//go:build testing
-// +build testing
+// Test command for PDF functionality testing.
+// This is a test utility and should not be used in production.
 
 package main
 

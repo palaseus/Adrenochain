@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"sync"
 	"time"
+	"crypto/rand"
+	"encoding/hex"
 
 	"github.com/palaseus/adrenochain/pkg/logger"
 )
@@ -66,6 +68,10 @@ type CrossCollateralPortfolio struct {
 	LastRebalanced       time.Time                           `json:"last_rebalanced"`
 	CreatedAt            time.Time                           `json:"created_at"`
 	UpdatedAt            time.Time                           `json:"updated_at"`
+	// Dirty state flags to prevent redundant recalculations
+	MetricsDirty         bool                                `json:"-"`
+	RiskMetricsDirty     bool                                `json:"-"`
+	LastMetricsUpdate    time.Time                           `json:"-"`
 }
 
 // CrossCollateralRiskMetrics represents risk metrics for a portfolio
@@ -82,6 +88,13 @@ type CrossCollateralManager struct {
 	portfolios map[string]*CrossCollateralPortfolio
 	mu         sync.RWMutex
 	logger     *logger.Logger
+}
+
+// generateContextID generates a unique context ID for tracing
+func generateContextID() string {
+	bytes := make([]byte, 4)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
 }
 
 // NewCrossCollateralManager creates a new cross-collateral manager
@@ -103,6 +116,12 @@ func (ccm *CrossCollateralManager) CreatePortfolio(ctx context.Context, userID s
 
 	if minCollateralRatio.Cmp(big.NewFloat(0)) <= 0 {
 		return nil, errors.New("minimum collateral ratio must be positive")
+	}
+
+	// Check if portfolio already exists
+	if existingPortfolio, exists := ccm.portfolios[userID]; exists {
+		ccm.logger.Debug("Portfolio already exists - user: %s, returning existing portfolio", userID)
+		return existingPortfolio, nil
 	}
 
 	portfolio := &CrossCollateralPortfolio{
@@ -145,6 +164,7 @@ func (ccm *CrossCollateralManager) GetPortfolio(userID string) (*CrossCollateral
 
 // AddCollateral adds collateral to a portfolio
 func (ccm *CrossCollateralManager) AddCollateral(ctx context.Context, userID string, asset *CrossCollateralAsset) error {
+	contextID := generateContextID()
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -168,18 +188,23 @@ func (ccm *CrossCollateralManager) AddCollateral(ctx context.Context, userID str
 	// Add to portfolio
 	portfolio.CollateralAssets[asset.ID] = asset
 
+	// Mark metrics as dirty
+	portfolio.MetricsDirty = true
+	portfolio.RiskMetricsDirty = true
+
 	// Update portfolio metrics
-	ccm.updatePortfolioMetrics(portfolio)
+	ccm.updatePortfolioMetrics(portfolio, contextID)
 	portfolio.UpdatedAt = time.Now()
 
-	ccm.logger.Info("Collateral added - user: %s, asset: %s, amount: %s, value: %s",
-		userID, asset.Symbol, asset.Amount.String(), asset.Value.String())
+	ccm.logger.Info("Collateral added - ctx: %s, user: %s, asset: %s, amount: %s, value: %s",
+		contextID, userID, asset.Symbol, asset.Amount.String(), asset.Value.String())
 
 	return nil
 }
 
 // RemoveCollateral removes collateral from a portfolio
 func (ccm *CrossCollateralManager) RemoveCollateral(ctx context.Context, userID string, assetID string, amount *big.Int) error {
+	contextID := generateContextID()
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -249,19 +274,24 @@ func (ccm *CrossCollateralManager) RemoveCollateral(ctx context.Context, userID 
 			userID, assetID, asset.Amount.String(), asset.Value.String())
 	}
 
+	// Mark metrics as dirty
+	portfolio.MetricsDirty = true
+	portfolio.RiskMetricsDirty = true
+
 	// Update portfolio metrics
-	ccm.updatePortfolioMetrics(portfolio)
+	ccm.updatePortfolioMetrics(portfolio, contextID)
 	portfolio.UpdatedAt = time.Now()
 
 	// Log final portfolio state
-	ccm.logger.Info("Portfolio updated after collateral removal - user: %s, total_collateral: %s, total_borrowed: %s, net_collateral: %s",
-		userID, portfolio.TotalCollateralValue.String(), portfolio.TotalBorrowedValue.String(), portfolio.NetCollateralValue.String())
+	ccm.logger.Info("Portfolio updated after collateral removal - ctx: %s, user: %s, total_collateral: %s, total_borrowed: %s, net_collateral: %s",
+		contextID, userID, portfolio.TotalCollateralValue.String(), portfolio.TotalBorrowedValue.String(), portfolio.NetCollateralValue.String())
 
 	return nil
 }
 
 // CreatePosition creates a new borrowing position
 func (ccm *CrossCollateralManager) CreatePosition(ctx context.Context, userID string, asset string, amount *big.Int, collateralRatio *big.Float) (*CrossCollateralPosition, error) {
+	contextID := generateContextID()
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -308,12 +338,16 @@ func (ccm *CrossCollateralManager) CreatePosition(ctx context.Context, userID st
 	// Add position to portfolio
 	portfolio.Positions[position.ID] = position
 
+	// Mark metrics as dirty
+	portfolio.MetricsDirty = true
+	portfolio.RiskMetricsDirty = true
+
 	// Update portfolio metrics
-	ccm.updatePortfolioMetrics(portfolio)
+	ccm.updatePortfolioMetrics(portfolio, contextID)
 	portfolio.UpdatedAt = time.Now()
 
-	ccm.logger.Info("Position created - user: %s, asset: %s, amount: %s, collateral_ratio: %v",
-		userID, asset, amount.String(), collateralRatio)
+	ccm.logger.Info("Position created - ctx: %s, user: %s, asset: %s, amount: %s, collateral_ratio: %v",
+		contextID, userID, asset, amount.String(), collateralRatio)
 
 	return position, nil
 }
@@ -354,6 +388,7 @@ func (ccm *CrossCollateralManager) allocateCollateralToPosition(portfolio *Cross
 
 // ClosePosition closes a borrowing position
 func (ccm *CrossCollateralManager) ClosePosition(ctx context.Context, userID string, positionID string) error {
+	contextID := generateContextID()
 	ccm.mu.Lock()
 	defer ccm.mu.Unlock()
 
@@ -377,18 +412,28 @@ func (ccm *CrossCollateralManager) ClosePosition(ctx context.Context, userID str
 	// Release collateral allocation
 	position.CollateralAllocation = make([]string, 0)
 
+	// Mark metrics as dirty
+	portfolio.MetricsDirty = true
+	portfolio.RiskMetricsDirty = true
+
 	// Update portfolio metrics
-	ccm.updatePortfolioMetrics(portfolio)
+	ccm.updatePortfolioMetrics(portfolio, contextID)
 	portfolio.UpdatedAt = time.Now()
 
-	ccm.logger.Info("Position closed - user: %s, position: %s", userID, positionID)
+	ccm.logger.Info("Position closed - ctx: %s, user: %s, position: %s", contextID, userID, positionID)
 
 	return nil
 }
 
 // updatePortfolioMetrics updates portfolio risk metrics and calculations
-func (ccm *CrossCollateralManager) updatePortfolioMetrics(portfolio *CrossCollateralPortfolio) {
-	ccm.logger.Info("Updating portfolio metrics for user: %s", portfolio.UserID)
+func (ccm *CrossCollateralManager) updatePortfolioMetrics(portfolio *CrossCollateralPortfolio, contextID string) {
+	// Check if metrics need updating (dirty state check)
+	if !portfolio.MetricsDirty && time.Since(portfolio.LastMetricsUpdate) < 100*time.Millisecond {
+		ccm.logger.Debug("Skipping metrics update - ctx: %s, user: %s, metrics not dirty", contextID, portfolio.UserID)
+		return
+	}
+
+	ccm.logger.Debug("Updating portfolio metrics - ctx: %s, user: %s", contextID, portfolio.UserID)
 
 	// Calculate total collateral value
 	totalCollateral := big.NewInt(0)
@@ -402,35 +447,22 @@ func (ccm *CrossCollateralManager) updatePortfolioMetrics(portfolio *CrossCollat
 		}
 		totalCollateral.Add(totalCollateral, asset.Value)
 		assetCount++
-		ccm.logger.Debug("Asset contribution - user: %s, asset: %s, amount: %s, value: %s, total_so_far: %s",
-			portfolio.UserID, assetID, asset.Amount.String(), asset.Value.String(), totalCollateral.String())
 	}
 	portfolio.TotalCollateralValue = totalCollateral
-
-	ccm.logger.Info("Total collateral calculated - user: %s, asset_count: %d, total_collateral: %s",
-		portfolio.UserID, assetCount, totalCollateral.String())
 
 	// Calculate total borrowed value
 	totalBorrowed := big.NewInt(0)
 	activePositionCount := 0
-	for positionID, position := range portfolio.Positions {
+	for _, position := range portfolio.Positions {
 		if position.Status == "active" {
 			totalBorrowed.Add(totalBorrowed, position.Amount)
 			activePositionCount++
-			ccm.logger.Debug("Active position - user: %s, position: %s, amount: %s, total_borrowed_so_far: %s",
-				portfolio.UserID, positionID, position.Amount.String(), totalBorrowed.String())
 		}
 	}
 	portfolio.TotalBorrowedValue = totalBorrowed
 
-	ccm.logger.Info("Total borrowed calculated - user: %s, active_positions: %d, total_borrowed: %s",
-		portfolio.UserID, activePositionCount, totalBorrowed.String())
-
 	// Calculate net collateral value
 	portfolio.NetCollateralValue = new(big.Int).Sub(totalCollateral, totalBorrowed)
-
-	ccm.logger.Info("Net collateral calculated - user: %s, net_collateral: %s (total_collateral: %s - total_borrowed: %s)",
-		portfolio.UserID, portfolio.NetCollateralValue.String(), totalCollateral.String(), totalBorrowed.String())
 
 	// Calculate collateral ratio
 	if totalBorrowed.Cmp(big.NewInt(0)) > 0 {
@@ -438,24 +470,28 @@ func (ccm *CrossCollateralManager) updatePortfolioMetrics(portfolio *CrossCollat
 			new(big.Float).SetInt(totalCollateral),
 			new(big.Float).SetInt(totalBorrowed),
 		)
-		ccm.logger.Info("Collateral ratio calculated - user: %s, ratio: %v",
-			portfolio.UserID, portfolio.CollateralRatio.String())
 	} else {
 		portfolio.CollateralRatio = big.NewFloat(0)
-		ccm.logger.Info("No borrowed value - user: %s, collateral_ratio set to 0", portfolio.UserID)
 	}
 
-	// Calculate risk metrics
-	ccm.calculateRiskMetrics(portfolio)
+	// Only calculate risk metrics if they're dirty or haven't been calculated recently
+	if portfolio.RiskMetricsDirty || time.Since(portfolio.LastMetricsUpdate) > 1*time.Second {
+		ccm.calculateRiskMetrics(portfolio)
+		portfolio.RiskMetricsDirty = false
+	}
 
-	ccm.logger.Info("Portfolio metrics update completed - user: %s, total_collateral: %s, total_borrowed: %s, net_collateral: %s, ratio: %v",
-		portfolio.UserID, portfolio.TotalCollateralValue.String(), portfolio.TotalBorrowedValue.String(),
+	// Update dirty state flags
+	portfolio.MetricsDirty = false
+	portfolio.LastMetricsUpdate = time.Now()
+
+	ccm.logger.Debug("Portfolio metrics updated - ctx: %s, user: %s, total_collateral: %s, total_borrowed: %s, net_collateral: %s, ratio: %v",
+		contextID, portfolio.UserID, portfolio.TotalCollateralValue.String(), portfolio.TotalBorrowedValue.String(),
 		portfolio.NetCollateralValue.String(), portfolio.CollateralRatio.String())
 }
 
 // calculateRiskMetrics calculates comprehensive risk metrics for the portfolio
 func (ccm *CrossCollateralManager) calculateRiskMetrics(portfolio *CrossCollateralPortfolio) {
-	ccm.logger.Info("Calculating risk metrics for user: %s", portfolio.UserID)
+	ccm.logger.Debug("Calculating risk metrics for user: %s", portfolio.UserID)
 	metrics := portfolio.RiskMetrics
 
 	// Calculate VaR (Value at Risk) - simplified 95% confidence
@@ -465,28 +501,23 @@ func (ccm *CrossCollateralManager) calculateRiskMetrics(portfolio *CrossCollater
 			new(big.Float).SetInt(portfolio.TotalCollateralValue),
 			big.NewFloat(0.02),
 		)
-		ccm.logger.Debug("VaR calculated - user: %s, var_95: %v", portfolio.UserID, metrics.VaR95.String())
 	} else {
 		metrics.VaR95 = big.NewFloat(0)
-		ccm.logger.Info("Zero collateral value - user: %s, var_95 set to 0", portfolio.UserID)
 	}
 
 	// Calculate volatility based on asset weights and individual volatilities
 	metrics.Volatility = ccm.calculatePortfolioVolatility(portfolio)
-	ccm.logger.Debug("Volatility calculated - user: %s, volatility: %v", portfolio.UserID, metrics.Volatility.String())
 
 	// Calculate concentration risk
 	metrics.ConcentrationRisk = ccm.calculateConcentrationRisk(portfolio)
-	ccm.logger.Debug("Concentration risk calculated - user: %s, concentration_risk: %v", portfolio.UserID, metrics.ConcentrationRisk.String())
 
 	// Calculate liquidity risk
 	metrics.LiquidityRisk = ccm.calculateLiquidityRisk(portfolio)
-	ccm.logger.Debug("Liquidity risk calculated - user: %s, liquidity_risk: %v", portfolio.UserID, metrics.LiquidityRisk.String())
 
 	// Calculate correlation matrix
 	ccm.updateCorrelationMatrix(portfolio)
 
-	ccm.logger.Info("Risk metrics calculation completed for user: %s", portfolio.UserID)
+	ccm.logger.Debug("Risk metrics calculation completed for user: %s", portfolio.UserID)
 }
 
 // calculatePortfolioVolatility calculates portfolio volatility

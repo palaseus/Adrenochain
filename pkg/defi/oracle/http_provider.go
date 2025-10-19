@@ -130,13 +130,81 @@ func (h *HTTPOracleProvider) ValidateProof(ctx context.Context, proof *OraclePro
 	}
 
 	// HTTP APIs typically don't provide cryptographic proofs
-	// For now, we'll do basic validation
+	// However, we can validate the data structure and basic integrity
+
+	// 1. Basic structure validation
 	if len(proof.Data) == 0 {
-		return ErrInvalidProof
+		return fmt.Errorf("proof data cannot be empty")
 	}
 
-	// HTTP APIs may not have signatures or public keys
-	// This is a limitation of HTTP-based oracles
+	// 2. Verify data integrity by checking data structure
+	var priceData PriceData
+	if err := json.Unmarshal(proof.Data, &priceData); err != nil {
+		return fmt.Errorf("invalid proof data format: %w", err)
+	}
+
+	// 3. Verify the data contains required fields
+	if priceData.Asset == "" {
+		return fmt.Errorf("proof data missing asset")
+	}
+
+	if priceData.Price == nil || priceData.Price.Cmp(big.NewInt(0)) <= 0 {
+		return fmt.Errorf("proof data contains invalid price")
+	}
+
+	// 4. Verify timestamp is reasonable (not too old, not in future)
+	if time.Since(priceData.Timestamp) > 24*time.Hour {
+		return fmt.Errorf("price data too old: %v", priceData.Timestamp)
+	}
+
+	if priceData.Timestamp.After(time.Now().Add(5 * time.Minute)) {
+		return fmt.Errorf("price data timestamp in future: %v", priceData.Timestamp)
+	}
+
+	// 5. For HTTP APIs, we rely on HTTPS and API key authentication
+	// rather than cryptographic signatures
+	if h.apiKey == "" {
+		return fmt.Errorf("HTTP oracle requires API key for authentication")
+	}
+
+	// 6. Verify the data source is from the expected provider
+	if priceData.Provider != h.name {
+		return fmt.Errorf("proof data from unexpected provider: %s", priceData.Provider)
+	}
+
+	// 7. HTTP APIs may not have signatures or public keys
+	// This is a limitation of HTTP-based oracles, but we can still validate data integrity
+	if len(proof.Signature) > 0 || len(proof.PublicKey) > 0 {
+		// If signatures are provided, they should be valid
+		if len(proof.Signature) > 0 && len(proof.PublicKey) > 0 {
+			// Basic signature validation for HTTP APIs
+			if err := h.validateHTTPSignature(proof.Data, proof.Signature, proof.PublicKey); err != nil {
+				return fmt.Errorf("HTTP signature validation failed: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateHTTPSignature validates a signature for HTTP-based oracle data
+func (h *HTTPOracleProvider) validateHTTPSignature(data, signature, publicKey []byte) error {
+	// HTTP APIs may use HMAC or other signature schemes
+	// This is a simplified implementation
+
+	if len(signature) == 0 {
+		return fmt.Errorf("signature cannot be empty")
+	}
+
+	if len(publicKey) == 0 {
+		return fmt.Errorf("public key cannot be empty")
+	}
+
+	// Basic validation - in production, this would verify HMAC or other signatures
+	// For now, we'll just check that the signature is not empty and has reasonable length
+	if len(signature) < 32 {
+		return fmt.Errorf("signature too short: %d bytes", len(signature))
+	}
 
 	return nil
 }

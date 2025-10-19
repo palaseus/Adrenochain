@@ -1,6 +1,11 @@
 package bridge
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -199,10 +204,15 @@ func TestBridgeConfirmTransaction(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		// Add a validator first
+		// Generate a test key pair
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+
+		// Add a validator with proper public key
 		validator := &Validator{
 			ID:            "validator1",
 			Address:       "0x1111111111111111111111111111111111111111",
+			PublicKey:     []byte("test_public_key"), // This will be set properly by AddValidator
 			ChainID:       ChainIDadrenochain,
 			StakeAmount:   big.NewInt(1000000000000000000),
 			IsActive:      true,
@@ -210,17 +220,38 @@ func TestBridgeConfirmTransaction(t *testing.T) {
 			CreatedAt:     time.Now(),
 			UpdatedAt:     time.Now(),
 		}
-		bridge.validators["validator1"] = validator
-		bridge.validatorSet[validator.Address] = true
 
-		err = bridge.ConfirmTransaction(transaction.ID, "validator1", []byte("signature"))
+		// Use the validator manager to add the validator properly
+		vm := bridge.GetValidatorManager()
+		_, err = vm.AddValidator(validator.Address, validator.ChainID, validator.StakeAmount, &privateKey.PublicKey)
+		require.NoError(t, err)
+
+		// Create a proper signature for the transaction
+		txData := fmt.Sprintf("%s_%s_%s_%s_%s_%s",
+			transaction.ID,
+			transaction.SourceChain,
+			transaction.DestinationChain,
+			transaction.SourceAddress,
+			transaction.DestinationAddress,
+			transaction.Amount.String(),
+		)
+		hash := sha256.Sum256([]byte(txData))
+		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hash[:])
+		require.NoError(t, err)
+
+		// Encode signature as raw r||s format
+		signature := make([]byte, 64)
+		copy(signature[:32], r.Bytes())
+		copy(signature[32:], s.Bytes())
+
+		err = bridge.ConfirmTransaction(transaction.ID, validator.Address, signature)
 		require.NoError(t, err)
 
 		// Check that transaction was confirmed
 		updatedTx, err := bridge.GetTransaction(transaction.ID)
 		require.NoError(t, err)
 		assert.Equal(t, TransactionStatusConfirmed, updatedTx.Status)
-		assert.Equal(t, "validator1", updatedTx.ValidatorID)
+		assert.Equal(t, validator.Address, updatedTx.ValidatorID)
 	})
 
 	t.Run("confirm non-existent transaction", func(t *testing.T) {
@@ -267,21 +298,34 @@ func TestBridgeExecuteTransaction(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Add validator and confirm
-	validator := &Validator{
-		ID:            "validator1",
-		Address:       "0x1111111111111111111111111111111111111111",
-		ChainID:       ChainIDadrenochain,
-		StakeAmount:   big.NewInt(1000000000000000000),
-		IsActive:      true,
-		LastHeartbeat: time.Now(),
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-	}
-	bridge.validators["validator1"] = validator
-	bridge.validatorSet[validator.Address] = true
+	// Generate a test key pair
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
 
-	err = bridge.ConfirmTransaction(transaction.ID, "validator1", []byte("signature"))
+	// Add validator through validator manager
+	vm := bridge.GetValidatorManager()
+	validator, err := vm.AddValidator("0x1111111111111111111111111111111111111111", ChainIDadrenochain, big.NewInt(1000000000000000000), &privateKey.PublicKey)
+	require.NoError(t, err)
+
+	// Create a proper signature for the transaction
+	txData := fmt.Sprintf("%s_%s_%s_%s_%s_%s",
+		transaction.ID,
+		transaction.SourceChain,
+		transaction.DestinationChain,
+		transaction.SourceAddress,
+		transaction.DestinationAddress,
+		transaction.Amount.String(),
+	)
+	hash := sha256.Sum256([]byte(txData))
+	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hash[:])
+	require.NoError(t, err)
+
+	// Encode signature as raw r||s format
+	signature := make([]byte, 64)
+	copy(signature[:32], r.Bytes())
+	copy(signature[32:], s.Bytes())
+
+	err = bridge.ConfirmTransaction(transaction.ID, validator.Address, signature)
 	require.NoError(t, err)
 
 	t.Run("execute confirmed transaction", func(t *testing.T) {

@@ -1,5 +1,4 @@
-//go:build testing
-// +build testing
+// Test file for multi-node PDF functionality
 
 package pdf
 

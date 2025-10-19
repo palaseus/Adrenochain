@@ -14,12 +14,16 @@ import (
 )
 
 // MockChain implements ChainInterface for testing
+// This mock provides a simplified blockchain implementation that stores blocks
+// in memory and supports basic operations like getting block height, retrieving
+// blocks by hash or height, and adding new blocks. It's designed for unit testing
+// the API server without requiring a full blockchain implementation.
 type MockChain struct {
-	height         uint64
-	bestBlock      *block.Block
-	genesisBlock   *block.Block
-	blocks         map[string]*block.Block
-	blocksByHeight map[uint64]*block.Block
+	height         uint64                  // Current blockchain height
+	bestBlock      *block.Block            // The latest block in the chain
+	genesisBlock   *block.Block            // The genesis (first) block
+	blocks         map[string]*block.Block // Blocks indexed by hash (hex string)
+	blocksByHeight map[uint64]*block.Block // Blocks indexed by height
 }
 
 // Ensure MockChain implements ChainInterface
@@ -99,13 +103,73 @@ func (mc *MockChain) CalculateNextDifficulty() uint64 {
 }
 
 // MockWallet implements WalletInterface for testing
+// This mock provides a simplified wallet implementation that maintains accounts
+// and balances in memory. It supports basic wallet operations like creating
+// accounts, checking balances, and managing wallet state. It's designed for
+// testing wallet-related API endpoints without requiring actual cryptographic
+// operations or persistent storage.
 type MockWallet struct {
-	accounts map[string]*wallet.Account
-	balances map[string]uint64
+	accounts map[string]*wallet.Account // Map of account addresses to account objects
+	balances map[string]uint64          // Map of account addresses to balances
 }
 
 // Ensure MockWallet implements WalletInterface
 var _ WalletInterface = (*MockWallet)(nil)
+
+// MockMempool implements the MempoolInterface for testing
+// This mock provides a simplified mempool implementation that stores pending
+// transactions in memory and supports basic operations like adding, removing,
+// and retrieving transactions. It's designed for testing mempool-related
+// API endpoints without requiring a full transaction pool implementation.
+type MockMempool struct {
+	transactions []*block.Transaction // List of pending transactions
+}
+
+func (m *MockMempool) GetPendingTransactions() []*block.Transaction {
+	return m.transactions
+}
+
+func (m *MockMempool) GetPendingTransactionCount() int {
+	return len(m.transactions)
+}
+
+func (m *MockMempool) AddTransaction(tx *block.Transaction) error {
+	m.transactions = append(m.transactions, tx)
+	return nil
+}
+
+func (m *MockMempool) RemoveTransaction(txHash []byte) error {
+	for i, tx := range m.transactions {
+		if string(tx.Hash) == string(txHash) {
+			m.transactions = append(m.transactions[:i], m.transactions[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
+// Ensure MockMempool implements MempoolInterface
+var _ MempoolInterface = (*MockMempool)(nil)
+
+// MockNetwork implements the NetworkInterface for testing
+// This mock provides a simplified network implementation that maintains a list
+// of connected peers and supports basic network status operations. It's used
+// for testing network-related API endpoints without requiring actual network
+// connectivity or peer management.
+type MockNetwork struct {
+	peers []string // List of connected peer addresses
+}
+
+func (m *MockNetwork) GetPeers() []string {
+	return m.peers
+}
+
+func (m *MockNetwork) GetPeerCount() int {
+	return len(m.peers)
+}
+
+// Ensure MockNetwork implements NetworkInterface
+var _ NetworkInterface = (*MockNetwork)(nil)
 
 func NewMockWallet() *MockWallet {
 	account1 := &wallet.Account{
@@ -210,7 +274,7 @@ func TestServer_HealthHandler(t *testing.T) {
 
 func TestServer_GetChainInfoHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/chain/info", nil)
 	if err != nil {
@@ -260,7 +324,7 @@ func TestServer_GetChainInfoHandler_NoBlocks(t *testing.T) {
 		blocksByHeight: make(map[uint64]*block.Block),
 	}
 
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/chain/info", nil)
 	if err != nil {
@@ -276,7 +340,7 @@ func TestServer_GetChainInfoHandler_NoBlocks(t *testing.T) {
 
 func TestServer_GetChainHeightHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/chain/height", nil)
 	if err != nil {
@@ -302,7 +366,7 @@ func TestServer_GetChainHeightHandler(t *testing.T) {
 
 func TestServer_GetChainStatusHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/chain/status", nil)
 	if err != nil {
@@ -348,7 +412,7 @@ func TestServer_GetChainStatusHandler_NoBlocks(t *testing.T) {
 		blocksByHeight: make(map[uint64]*block.Block),
 	}
 
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/chain/status", nil)
 	if err != nil {
@@ -365,7 +429,7 @@ func TestServer_GetChainStatusHandler_NoBlocks(t *testing.T) {
 
 func TestServer_GetBlockHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	// Get a valid block hash
 	block := mockChain.GetBestBlock()
@@ -412,7 +476,7 @@ func TestServer_GetBlockHandler(t *testing.T) {
 
 func TestServer_GetBlockHandler_InvalidHash(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/blocks/invalid-hash", nil)
 	if err != nil {
@@ -432,7 +496,7 @@ func TestServer_GetBlockHandler_InvalidHash(t *testing.T) {
 
 func TestServer_GetBlockHandler_BlockNotFound(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	// Use a valid hex hash that doesn't exist in our mock chain
 	nonExistentHash := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -455,7 +519,7 @@ func TestServer_GetBlockHandler_BlockNotFound(t *testing.T) {
 
 func TestServer_GetBlockByHeightHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/blocks/height/1", nil)
 	if err != nil {
@@ -484,7 +548,7 @@ func TestServer_GetBlockByHeightHandler(t *testing.T) {
 
 func TestServer_GetBlockByHeightHandler_InvalidHeight(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/blocks/height/invalid", nil)
 	if err != nil {
@@ -504,7 +568,7 @@ func TestServer_GetBlockByHeightHandler_InvalidHeight(t *testing.T) {
 
 func TestServer_GetBlockByHeightHandler_BlockNotFound(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/blocks/height/999", nil)
 	if err != nil {
@@ -524,7 +588,7 @@ func TestServer_GetBlockByHeightHandler_BlockNotFound(t *testing.T) {
 
 func TestServer_GetLatestBlockHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/blocks/latest", nil)
 	if err != nil {
@@ -558,7 +622,7 @@ func TestServer_GetLatestBlockHandler_NoBlocks(t *testing.T) {
 		blocksByHeight: make(map[uint64]*block.Block),
 	}
 
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/blocks/latest", nil)
 	if err != nil {
@@ -575,7 +639,8 @@ func TestServer_GetLatestBlockHandler_NoBlocks(t *testing.T) {
 
 func TestServer_GetTransactionHandler(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
+	server.BuildTransactionIndex()
 
 	// Get a valid transaction hash
 	block := mockChain.GetBestBlock()
@@ -617,7 +682,7 @@ func TestServer_GetTransactionHandler(t *testing.T) {
 
 func TestServer_GetTransactionHandler_InvalidHash(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	req, err := http.NewRequest("GET", "/api/v1/transactions/invalid-hash", nil)
 	if err != nil {
@@ -637,7 +702,7 @@ func TestServer_GetTransactionHandler_InvalidHash(t *testing.T) {
 
 func TestServer_GetTransactionHandler_TransactionNotFound(t *testing.T) {
 	mockChain := NewMockChain()
-	server := &Server{chain: mockChain}
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
 
 	// Use a valid hex hash that doesn't exist in our mock chain
 	nonExistentHash := "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -668,6 +733,8 @@ func TestServer_GetTransactionHandler_WithNilBlocks(t *testing.T) {
 		blocksByHeight: make(map[uint64]*block.Block),
 	}
 
+	server := &Server{chain: mockChain, txIndex: make(map[string]*TxIndexEntry)}
+
 	// Add a block at height 1 but leave height 0 as nil
 	block1 := &block.Block{
 		Header: &block.Header{
@@ -692,7 +759,8 @@ func TestServer_GetTransactionHandler_WithNilBlocks(t *testing.T) {
 	mockChain.blocksByHeight[1] = block1
 	// Height 0 intentionally left as nil
 
-	server := &Server{chain: mockChain}
+	// Build transaction index for the test
+	server.BuildTransactionIndex()
 
 	// Test with a transaction hash that exists in block 1
 	txHash := "746573742d74782d68617368" // hex encoding of "test-tx-hash"
@@ -713,7 +781,17 @@ func TestServer_GetTransactionHandler_WithNilBlocks(t *testing.T) {
 }
 
 func TestServer_GetPendingTransactionsHandler(t *testing.T) {
-	server := &Server{}
+	// Create a mock mempool
+	mockMempool := &MockMempool{
+		transactions: []*block.Transaction{
+			{
+				Hash:    []byte("pending-tx-1"),
+				Inputs:  []*block.TxInput{},
+				Outputs: []*block.TxOutput{},
+			},
+		},
+	}
+	server := &Server{txIndex: make(map[string]*TxIndexEntry), mempool: mockMempool}
 
 	req, err := http.NewRequest("GET", "/api/v1/transactions/pending", nil)
 	if err != nil {
@@ -732,8 +810,8 @@ func TestServer_GetPendingTransactionsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if response["count"] != float64(0) {
-		t.Errorf("Expected count 0, got %v", response["count"])
+	if response["count"] != float64(1) {
+		t.Errorf("Expected count 1, got %v", response["count"])
 	}
 
 	if _, exists := response["pending_transactions"]; !exists {
@@ -874,7 +952,11 @@ func TestServer_GetPeersHandler(t *testing.T) {
 }
 
 func TestServer_GetNetworkStatusHandler(t *testing.T) {
-	server := &Server{}
+	mockNetwork := &MockNetwork{
+		peers: []string{},
+	}
+	mockChain := NewMockChain()
+	server := &Server{txIndex: make(map[string]*TxIndexEntry), network: mockNetwork, chain: mockChain}
 
 	req, err := http.NewRequest("GET", "/api/v1/network/status", nil)
 	if err != nil {
@@ -1124,10 +1206,12 @@ func TestServer_GetBalanceHandler_InvalidAddress(t *testing.T) {
 }
 
 func TestServer_GetPendingTransactionsHandler_Empty(t *testing.T) {
+	mockMempool := &MockMempool{transactions: []*block.Transaction{}}
 	config := &ServerConfig{
-		Port:   8080,
-		Chain:  NewMockChain(),
-		Wallet: NewMockWallet(),
+		Port:    8080,
+		Chain:   NewMockChain(),
+		Wallet:  NewMockWallet(),
+		Mempool: mockMempool,
 	}
 
 	server := NewServer(config)
@@ -1208,10 +1292,14 @@ func TestServer_GetPeersHandler_Empty(t *testing.T) {
 }
 
 func TestServer_GetNetworkStatusHandler_Basic(t *testing.T) {
+	mockNetwork := &MockNetwork{
+		peers: []string{"peer1", "peer2"},
+	}
 	config := &ServerConfig{
-		Port:   8080,
-		Chain:  NewMockChain(),
-		Wallet: NewMockWallet(),
+		Port:    8080,
+		Chain:   NewMockChain(),
+		Wallet:  NewMockWallet(),
+		Network: mockNetwork,
 	}
 
 	server := NewServer(config)

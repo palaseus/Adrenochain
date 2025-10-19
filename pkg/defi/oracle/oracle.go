@@ -3,6 +3,7 @@ package oracle
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -745,4 +746,57 @@ func verifySignature(data, signature []byte, signer string) bool {
 
 	// For now, just check that signature is not empty and has reasonable length
 	return len(signature) >= 32 && len(signer) > 0
+}
+
+// verifyOracleProof verifies an oracle proof using the appropriate provider
+func verifyOracleProof(proof *OracleProof, provider OracleProvider) error {
+	if proof == nil {
+		return fmt.Errorf("proof cannot be nil")
+	}
+
+	if provider == nil {
+		return fmt.Errorf("provider cannot be nil")
+	}
+
+	// Use the provider's specific validation method
+	return provider.ValidateProof(context.Background(), proof)
+}
+
+// validateProofData validates the basic structure of oracle proof data
+func validateProofData(proof *OracleProof) error {
+	if proof == nil {
+		return fmt.Errorf("proof cannot be nil")
+	}
+
+	// Validate basic structure
+	if len(proof.Data) == 0 {
+		return fmt.Errorf("proof data cannot be empty")
+	}
+
+	// Validate timestamp
+	if proof.Timestamp.IsZero() {
+		return fmt.Errorf("proof timestamp cannot be zero")
+	}
+
+	// Validate nonce
+	if proof.Nonce == 0 {
+		return fmt.Errorf("proof nonce cannot be zero")
+	}
+
+	// Validate data format
+	var priceData PriceData
+	if err := json.Unmarshal(proof.Data, &priceData); err != nil {
+		return fmt.Errorf("invalid proof data format: %w", err)
+	}
+
+	// Validate price data
+	if priceData.Asset == "" {
+		return fmt.Errorf("proof data missing asset")
+	}
+
+	if priceData.Price == nil || priceData.Price.Cmp(big.NewInt(0)) <= 0 {
+		return fmt.Errorf("proof data contains invalid price")
+	}
+
+	return nil
 }

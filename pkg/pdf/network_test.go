@@ -1,5 +1,4 @@
-//go:build testing
-// +build testing
+// Test file for network simulation functionality
 
 package pdf
 

@@ -1,6 +1,9 @@
 package bridge
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"math/big"
 	"testing"
 	"time"
@@ -16,7 +19,13 @@ func TestValidatorManager(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		stakeAmount := big.NewInt(2000000000000000000) // 2 ETH
 
-		validator, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
+		// Generate a test public key
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			t.Fatalf("Failed to generate test key: %v", err)
+		}
+
+		validator, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, &privateKey.PublicKey)
 		if err != nil {
 			t.Fatalf("Failed to add validator: %v", err)
 		}
@@ -38,7 +47,13 @@ func TestValidatorManager(t *testing.T) {
 		address := "0x2345678901234567890123456789012345678901"
 		stakeAmount := big.NewInt(500000000000000000) // 0.5 ETH (below threshold)
 
-		_, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
+		// Generate a test public key
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			t.Fatalf("Failed to generate test key: %v", err)
+		}
+
+		_, err = vm.AddValidator(address, ChainIDadrenochain, stakeAmount, &privateKey.PublicKey)
 		if err == nil {
 			t.Error("Expected error for insufficient stake")
 		}
@@ -48,7 +63,13 @@ func TestValidatorManager(t *testing.T) {
 		address := "0x1234567890123456789012345678901234567890"
 		stakeAmount := big.NewInt(2000000000000000000) // 2 ETH
 
-		_, err := vm.AddValidator(address, ChainIDadrenochain, stakeAmount, nil)
+		// Generate a test public key
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			t.Fatalf("Failed to generate test key: %v", err)
+		}
+
+		_, err = vm.AddValidator(address, ChainIDadrenochain, stakeAmount, &privateKey.PublicKey)
 		if err == nil {
 			t.Error("Expected error for duplicate validator")
 		}

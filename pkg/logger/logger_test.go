@@ -280,15 +280,28 @@ func TestLogger_WithFields(t *testing.T) {
 	logger := NewLogger(&Config{Level: INFO})
 
 	fields := map[string]interface{}{
-		"key1": "value1",
-		"key2": 42,
+		"user_id":    "12345",
+		"request_id": "req-abc-123",
 	}
 
 	newLogger := logger.WithFields(fields)
 
-	// For now, WithFields just returns the same logger
-	if newLogger != logger {
-		t.Error("WithFields should return the same logger for now")
+	// WithFields should return a new logger instance with fields
+	if newLogger == logger {
+		t.Error("WithFields should return a new logger instance")
+	}
+
+	// Verify fields are properly set
+	if len(newLogger.fields) != 2 {
+		t.Errorf("Expected 2 fields, got %d", len(newLogger.fields))
+	}
+
+	if newLogger.fields["user_id"] != "12345" {
+		t.Error("user_id field not set correctly")
+	}
+
+	if newLogger.fields["request_id"] != "req-abc-123" {
+		t.Error("request_id field not set correctly")
 	}
 }
 

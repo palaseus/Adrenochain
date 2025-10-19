@@ -217,8 +217,16 @@ func (b *Bridge) ConfirmTransaction(txID string, validatorID string, signature [
 		return fmt.Errorf("transaction status is %s, expected pending", transaction.Status)
 	}
 
-	// Validate validator
-	validator, exists := b.validators[validatorID]
+	// Validate validator through validator manager
+	vm := b.GetValidatorManager()
+	if vm == nil {
+		return fmt.Errorf("validator manager not initialized")
+	}
+
+	vm.mutex.RLock()
+	validator, exists := vm.activeValidators[validatorID]
+	vm.mutex.RUnlock()
+
 	if !exists || !validator.IsActive {
 		return ErrValidatorInactive
 	}
@@ -526,17 +534,35 @@ func (b *Bridge) generateTransactionID(sourceChain, destinationChain ChainID, so
 
 // hasEnoughConfirmations checks if a transaction has enough validator confirmations
 func (b *Bridge) hasEnoughConfirmations(txID string) bool {
-	// This is a simplified implementation
-	// In a real bridge, you would track individual validator confirmations
-	// For now, always return false to prevent immediate execution
-	return false
+	if b.validatorManager == nil || b.validatorManager.consensusEngine == nil {
+		return false
+	}
+	
+	return b.validatorManager.consensusEngine.HasEnoughConfirmations(txID)
 }
 
 // verifySignature verifies a validator signature
 func (b *Bridge) verifySignature(transaction *CrossChainTransaction, signature []byte, validatorAddress string) error {
-	// This is a simplified implementation
-	// In a real bridge, you would verify the signature against the transaction data
-	return nil
+	if b.validatorManager == nil {
+		return fmt.Errorf("validator manager not initialized")
+	}
+
+	// Get the validator from the validator manager
+	vm := b.GetValidatorManager()
+	if vm == nil {
+		return fmt.Errorf("validator manager not initialized")
+	}
+
+	vm.mutex.RLock()
+	validator, exists := vm.activeValidators[validatorAddress]
+	vm.mutex.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("validator not found: %s", validatorAddress)
+	}
+
+	// Use the validator manager's signature verification
+	return b.validatorManager.verifyTransactionSignature(transaction, signature, validator)
 }
 
 // emitEvent emits an event to registered handlers

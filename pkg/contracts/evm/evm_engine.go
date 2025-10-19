@@ -653,17 +653,185 @@ func (evm *EVMEngine) executeGAS() error {
 }
 
 func (evm *EVMEngine) executeCREATE(ctx *ExecutionContext) error {
-	// Tests currently expect CREATE to be a no-op stub (no stack changes)
+	// CREATE opcode: CREATE(value, offset, size) -> address
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+
+	// Pop parameters from stack
+	value := evm.stack.Pop()
+	offset := evm.stack.Pop()
+	size := evm.stack.Pop()
+
+	// Validate parameters
+	if offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Check if offset + size exceeds memory bounds
+	if new(big.Int).Add(offset, size).Cmp(big.NewInt(int64(evm.memory.Size()))) > 0 {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Read init code from memory
+	initCode := evm.memory.Get(offset.Uint64(), size.Uint64())
+	if len(initCode) == 0 {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Generate contract address
+	contractAddr := evm.generateContractAddress(ctx.Sender)
+
+	// Deploy contract
+	err := evm.deployContract(contractAddr, initCode, value)
+	if err != nil {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Push contract address on success
+	evm.stack.Push(big.NewInt(0).SetBytes(contractAddr[:]))
 	return nil
 }
 
 func (evm *EVMEngine) executeCALL(ctx *ExecutionContext) error {
-	// Tests currently expect CALL to be a no-op stub (no stack changes)
+	// CALL opcode: CALL(gas, address, value, argsOffset, argsSize, retOffset, retSize) -> success
+	if evm.stack.Size() < 7 {
+		return engine.ErrStackUnderflow
+	}
+
+	// Pop parameters from stack
+	gas := evm.stack.Pop()
+	address := evm.stack.Pop()
+	value := evm.stack.Pop()
+	argsOffset := evm.stack.Pop()
+	argsSize := evm.stack.Pop()
+	retOffset := evm.stack.Pop()
+	retSize := evm.stack.Pop()
+
+	// Validate parameters
+	if gas.Cmp(big.NewInt(0)) < 0 || argsOffset.Cmp(big.NewInt(0)) < 0 ||
+		argsSize.Cmp(big.NewInt(0)) < 0 || retOffset.Cmp(big.NewInt(0)) < 0 ||
+		retSize.Cmp(big.NewInt(0)) < 0 {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Check if args offset + size exceeds memory bounds
+	if new(big.Int).Add(argsOffset, argsSize).Cmp(big.NewInt(int64(evm.memory.Size()))) > 0 {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Read call data from memory
+	callData := evm.memory.Get(argsOffset.Uint64(), argsSize.Uint64())
+
+	// Convert address from big.Int to Address
+	var targetAddr engine.Address
+	addrBytes := address.Bytes()
+	if len(addrBytes) > 20 {
+		addrBytes = addrBytes[len(addrBytes)-20:] // Take last 20 bytes
+	}
+	copy(targetAddr[:], addrBytes)
+
+	// Check if target address exists (has code or is EOA)
+	hasCode, err := evm.hasContractCode(targetAddr)
+	if err != nil {
+		evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+		return nil
+	}
+
+	// Execute call
+	var result []byte
+	if hasCode {
+		// Contract call - execute the contract
+		callCtx := &ExecutionContext{
+			Contract:   &engine.Contract{Address: targetAddr, Code: []byte{}},
+			Input:      callData,
+			Sender:     ctx.Sender,
+			Value:      value,
+			GasPrice:   ctx.GasPrice,
+			BlockNum:   ctx.BlockNum,
+			Timestamp:  ctx.Timestamp,
+			Coinbase:   ctx.Coinbase,
+			Difficulty: ctx.Difficulty,
+			ChainID:    ctx.ChainID,
+		}
+		result, err = evm.executeCall(callCtx)
+		if err != nil {
+			evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+			return nil
+		}
+	} else {
+		// EOA call - just transfer value
+		err = evm.transferBalance(ctx.Sender, targetAddr, value)
+		if err != nil {
+			evm.stack.Push(big.NewInt(0)) // Push 0 on failure
+			return nil
+		}
+		result = []byte{} // EOA calls return empty result
+	}
+
+	// Write return data to memory
+	if len(result) > 0 && retSize.Cmp(big.NewInt(0)) > 0 {
+		// Ensure we don't write beyond memory bounds
+		writeSize := int(retSize.Uint64())
+		if writeSize > len(result) {
+			writeSize = len(result)
+		}
+		evm.memory.Set(retOffset.Uint64(), result[:writeSize])
+	}
+
+	// Push 1 for success
+	evm.stack.Push(big.NewInt(1))
 	return nil
 }
 
 func (evm *EVMEngine) executeSUICIDE(ctx *ExecutionContext) error {
-	// Tests currently expect SUICIDE to be a no-op stub (no stack changes)
+	// SUICIDE opcode: SUICIDE(address) - transfers balance and destroys contract
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+
+	// Pop beneficiary address from stack
+	beneficiary := evm.stack.Pop()
+
+	// Convert address from big.Int to Address
+	var beneficiaryAddr engine.Address
+	addrBytes := beneficiary.Bytes()
+	if len(addrBytes) > 20 {
+		addrBytes = addrBytes[len(addrBytes)-20:] // Take last 20 bytes
+	}
+	copy(beneficiaryAddr[:], addrBytes)
+
+	// Get contract balance
+	var contractBalance *big.Int
+	if ctx.Contract != nil {
+		contractBalance = evm.getContractBalance(ctx.Contract.Address)
+	} else {
+		contractBalance = big.NewInt(0)
+	}
+
+	// Transfer balance to beneficiary if there's any
+	if contractBalance.Cmp(big.NewInt(0)) > 0 && ctx.Contract != nil {
+		err := evm.transferBalance(ctx.Contract.Address, beneficiaryAddr, contractBalance)
+		if err != nil {
+			// Even if transfer fails, we still mark for destruction
+			// This matches EVM behavior
+		}
+	}
+
+	// Mark contract for destruction
+	if ctx.Contract != nil {
+		evm.markContractForDestruction(ctx.Contract.Address)
+		// Clear contract storage
+		evm.clearContractStorage(ctx.Contract.Address)
+	}
+
+	// SUICIDE halts execution (handled by caller)
 	return nil
 }
 
@@ -725,11 +893,25 @@ func (evm *EVMEngine) SetChainID(chainID *big.Int) {
 
 // Helper methods for instruction implementations
 
-// generateContractAddress generates a new contract address
+// generateContractAddress generates a new contract address using proper CREATE address generation
 func (evm *EVMEngine) generateContractAddress(sender engine.Address) engine.Address {
-	// In a real implementation, this would use the sender's address and nonce
-	// For now, we'll generate a simple address
-	hash := sha256.Sum256(append(sender[:], []byte("contract")...))
+	// Get sender nonce from storage
+	nonce, err := evm.getSenderNonce(sender)
+	if err != nil {
+		// If we can't get nonce, use 0
+		nonce = 0
+	}
+
+	// CREATE address = keccak256(rlp([sender, nonce]))
+	// For simplicity, we'll use a deterministic approach based on sender and nonce
+	// In a full implementation, this would use RLP encoding and keccak256
+	data := append(sender[:], make([]byte, 8)...)
+	// Encode nonce as big-endian 8 bytes
+	for i := 0; i < 8; i++ {
+		data[20+i] = byte(nonce >> (8 * (7 - i)))
+	}
+
+	hash := sha256.Sum256(data)
 	addr := engine.Address{}
 	copy(addr[:], hash[:20])
 	return addr
@@ -737,48 +919,154 @@ func (evm *EVMEngine) generateContractAddress(sender engine.Address) engine.Addr
 
 // deployContract deploys a new contract
 func (evm *EVMEngine) deployContract(address engine.Address, code []byte, value *big.Int) error {
-	// For now, just return success
-	// In a real implementation, this would:
-	// - Store contract code in storage
-	// - Initialize contract storage
-	// - Transfer initial value if any
-	_ = address
-	_ = code
-	_ = value
+	// Store contract code in storage using a special key
+	codeKey := engine.Hash{} // Use zero hash for contract code
+	err := evm.storage.Set(address, codeKey, code)
+	if err != nil {
+		return fmt.Errorf("failed to store contract code: %w", err)
+	}
+
+	// Transfer initial value if any
+	if value.Cmp(big.NewInt(0)) > 0 {
+		err = evm.transferBalance(engine.Address{}, address, value)
+		if err != nil {
+			return fmt.Errorf("failed to transfer initial value: %w", err)
+		}
+	}
+
 	return nil
 }
 
 // executeCall executes a contract call
 func (evm *EVMEngine) executeCall(ctx *ExecutionContext) ([]byte, error) {
-	// For now, just return empty result
-	// In a real implementation, this would execute the contract
-	return []byte{}, nil
+	// Get contract code from storage using special key
+	codeKey := engine.Hash{} // Use zero hash for contract code
+	code, err := evm.storage.Get(ctx.Contract.Address, codeKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get contract code: %w", err)
+	}
+
+	if len(code) == 0 {
+		// EOA call - just return empty result
+		return []byte{}, nil
+	}
+
+	// Create new execution context for the call
+	callCtx := &ExecutionContext{
+		Contract:   &engine.Contract{Address: ctx.Contract.Address, Code: code},
+		Input:      ctx.Input,
+		Sender:     ctx.Sender,
+		Value:      ctx.Value,
+		GasPrice:   ctx.GasPrice,
+		BlockNum:   ctx.BlockNum,
+		Timestamp:  ctx.Timestamp,
+		Coinbase:   ctx.Coinbase,
+		Difficulty: ctx.Difficulty,
+		ChainID:    ctx.ChainID,
+	}
+
+	// Execute the contract
+	result, err := evm.executeContract(callCtx)
+	if err != nil {
+		return nil, fmt.Errorf("contract execution failed: %w", err)
+	}
+
+	return result.ReturnData, nil
 }
 
 // getContractBalance gets the balance of a contract
 func (evm *EVMEngine) getContractBalance(address engine.Address) *big.Int {
-	// In a real implementation, this would query the blockchain state
-	// For now, return a placeholder
-	return big.NewInt(0)
+	// Query balance from storage using special key
+	balanceKey := engine.Hash{0x01} // Use special key for balance
+	balanceBytes, err := evm.storage.Get(address, balanceKey)
+	if err != nil {
+		// If we can't get balance, return 0
+		return big.NewInt(0)
+	}
+
+	// Convert bytes to big.Int
+	balance := new(big.Int)
+	balance.SetBytes(balanceBytes)
+	return balance
 }
 
 // transferBalance transfers balance between addresses
 func (evm *EVMEngine) transferBalance(from, to engine.Address, amount *big.Int) error {
-	// In a real implementation, this would update the blockchain state
-	// For now, just return success
+	if amount.Cmp(big.NewInt(0)) <= 0 {
+		return nil // No transfer needed
+	}
+
+	// Get sender balance
+	fromBalance := evm.getContractBalance(from)
+	if fromBalance.Cmp(amount) < 0 {
+		return fmt.Errorf("insufficient balance: have %s, need %s", fromBalance.String(), amount.String())
+	}
+
+	// Get recipient balance
+	toBalance := evm.getContractBalance(to)
+
+	// Update balances
+	newFromBalance := new(big.Int).Sub(fromBalance, amount)
+	newToBalance := new(big.Int).Add(toBalance, amount)
+
+	// Store updated balances using special keys
+	fromBalanceKey := engine.Hash{0x01} // Use special key for balance
+	err := evm.storage.Set(from, fromBalanceKey, newFromBalance.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to update sender balance: %w", err)
+	}
+
+	toBalanceKey := engine.Hash{0x01} // Use special key for balance
+	err = evm.storage.Set(to, toBalanceKey, newToBalance.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to update recipient balance: %w", err)
+	}
+
 	return nil
 }
 
 // markContractForDestruction marks a contract for destruction
 func (evm *EVMEngine) markContractForDestruction(address engine.Address) {
-	// In a real implementation, this would mark the contract in the state
-	// For now, just a placeholder
+	// Mark contract for destruction using special key
+	destructionKey := engine.Hash{0x02} // Use special key for destruction flag
+	evm.storage.Set(address, destructionKey, []byte{0x01})
 }
 
 // clearContractStorage clears the storage of a contract
 func (evm *EVMEngine) clearContractStorage(address engine.Address) {
-	// In a real implementation, this would clear all storage slots
-	// For now, just a placeholder
+	// Clear all storage slots for the contract
+	err := evm.storage.ClearContractStorage(address)
+	if err != nil {
+		// Log error but don't fail - this is best effort
+		// In a real implementation, you'd have proper logging
+	}
+}
+
+// getSenderNonce gets the nonce for a sender address
+func (evm *EVMEngine) getSenderNonce(sender engine.Address) (uint64, error) {
+	// Get nonce from storage using special key
+	nonceKey := engine.Hash{0x03} // Use special key for nonce
+	nonceBytes, err := evm.storage.Get(sender, nonceKey)
+	if err != nil {
+		return 0, err
+	}
+
+	// Convert bytes to uint64
+	nonce := uint64(0)
+	for i, b := range nonceBytes {
+		nonce |= uint64(b) << (8 * (len(nonceBytes) - 1 - i))
+	}
+	return nonce, nil
+}
+
+// hasContractCode checks if an address has contract code
+func (evm *EVMEngine) hasContractCode(address engine.Address) (bool, error) {
+	codeKey := engine.Hash{} // Use zero hash for contract code
+	code, err := evm.storage.Get(address, codeKey)
+	if err != nil {
+		return false, err
+	}
+	return len(code) > 0, nil
 }
 
 // executeContract executes the actual contract code

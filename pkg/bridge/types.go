@@ -76,6 +76,7 @@ type CrossChainTransaction struct {
 type Validator struct {
 	ID             string    `json:"id"`
 	Address        string    `json:"address"`
+	PublicKey      []byte    `json:"public_key"`
 	ChainID        ChainID   `json:"chain_id"`
 	StakeAmount    *big.Int  `json:"stake_amount"`
 	IsActive       bool      `json:"is_active"`

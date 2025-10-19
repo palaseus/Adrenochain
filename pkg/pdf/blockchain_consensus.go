@@ -416,7 +416,7 @@ func (bc *BlockchainConsensus) AddTransaction(tx *Transaction) error {
 // validateTransaction validates a transaction
 func (bc *BlockchainConsensus) validateTransaction(tx *Transaction) error {
 	// Check transaction fee
-	if tx.getFee() < bc.config.MinTransactionFee {
+	if tx.getFee(bc.chain.utxoSet) < bc.config.MinTransactionFee {
 		return fmt.Errorf("insufficient transaction fee")
 	}
 
@@ -573,15 +573,19 @@ func (bc *Blockchain) removeMinedTransactions(minedTxs []*Transaction) {
 }
 
 // Helper methods for Transaction
-func (tx *Transaction) getFee() uint64 {
+func (tx *Transaction) getFee(utxoSet map[string]*UTXO) uint64 {
 	inputSum := uint64(0)
 	outputSum := uint64(0)
 
-	for range tx.Inputs {
-		// This would need access to UTXO set in real implementation
-		inputSum += 1000 // Placeholder
+	// Calculate input sum from UTXO set
+	for _, input := range tx.Inputs {
+		utxoKey := fmt.Sprintf("%s:%d", input.TxID, input.OutIndex)
+		if utxo, exists := utxoSet[utxoKey]; exists {
+			inputSum += utxo.Value
+		}
 	}
 
+	// Calculate output sum
 	for _, output := range tx.Outputs {
 		outputSum += output.Value
 	}

@@ -1,8 +1,12 @@
 package security
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/asn1"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -13,7 +17,9 @@ import (
 
 // EnhancedSecurityValidator provides comprehensive security validation
 type EnhancedSecurityValidator struct {
-	config *SecurityValidationConfig
+	config              *SecurityValidationConfig
+	blockedPatterns     []*regexp.Regexp
+	allowedHashPatterns []*regexp.Regexp
 }
 
 // SecurityValidationConfig holds configuration for security validation
@@ -71,8 +77,26 @@ func NewEnhancedSecurityValidator(config *SecurityValidationConfig) *EnhancedSec
 	if config == nil {
 		config = DefaultSecurityValidationConfig()
 	}
+
+	// Pre-compile regex patterns for better performance
+	blockedPatterns := make([]*regexp.Regexp, 0, len(config.BlockedPatterns))
+	for _, pattern := range config.BlockedPatterns {
+		if regex, err := regexp.Compile(pattern); err == nil {
+			blockedPatterns = append(blockedPatterns, regex)
+		}
+	}
+
+	allowedHashPatterns := make([]*regexp.Regexp, 0, len(config.AllowedHashPatterns))
+	for _, pattern := range config.AllowedHashPatterns {
+		if regex, err := regexp.Compile(pattern); err == nil {
+			allowedHashPatterns = append(allowedHashPatterns, regex)
+		}
+	}
+
 	return &EnhancedSecurityValidator{
-		config: config,
+		config:              config,
+		blockedPatterns:     blockedPatterns,
+		allowedHashPatterns: allowedHashPatterns,
 	}
 }
 
@@ -197,12 +221,9 @@ func (esv *EnhancedSecurityValidator) ValidateAddress(address string) error {
 func (esv *EnhancedSecurityValidator) containsBlockedPatterns(input string) bool {
 	inputLower := strings.ToLower(input)
 
-	for _, pattern := range esv.config.BlockedPatterns {
-		matched, err := regexp.MatchString(pattern, inputLower)
-		if err != nil {
-			continue // Skip invalid patterns
-		}
-		if matched {
+	// Use pre-compiled regex patterns for better performance
+	for _, regex := range esv.blockedPatterns {
+		if regex.MatchString(inputLower) {
 			return true
 		}
 	}
@@ -216,12 +237,9 @@ func (esv *EnhancedSecurityValidator) isValidHex(s string) bool {
 		return false
 	}
 
-	for _, pattern := range esv.config.AllowedHashPatterns {
-		matched, err := regexp.MatchString(pattern, s)
-		if err != nil {
-			continue
-		}
-		if matched {
+	// Use pre-compiled regex patterns for better performance
+	for _, regex := range esv.allowedHashPatterns {
+		if regex.MatchString(s) {
 			return true
 		}
 	}
@@ -253,7 +271,7 @@ func (esv *EnhancedSecurityValidator) HashData(data []byte) []byte {
 	return hash[:]
 }
 
-// ValidateSignature validates cryptographic signature
+// ValidateSignature validates cryptographic signature using ECDSA
 func (esv *EnhancedSecurityValidator) ValidateSignature(signature []byte, message []byte, publicKey []byte) error {
 	if len(signature) == 0 {
 		return fmt.Errorf("signature cannot be empty")
@@ -273,8 +291,27 @@ func (esv *EnhancedSecurityValidator) ValidateSignature(signature []byte, messag
 		return fmt.Errorf("invalid public key length: %d", len(publicKey))
 	}
 
-	// In a real implementation, this would perform actual signature verification
-	// For now, we'll do basic format validation
+	// Perform actual ECDSA signature verification
+	// Parse the public key
+	pubKey, err := esv.parsePublicKey(publicKey)
+	if err != nil {
+		return fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	// Parse the signature (assuming DER format)
+	sig, err := esv.parseSignature(signature)
+	if err != nil {
+		return fmt.Errorf("failed to parse signature: %w", err)
+	}
+
+	// Hash the message
+	hash := sha256.Sum256(message)
+
+	// Verify the signature
+	if !ecdsa.Verify(pubKey, hash[:], sig.R, sig.S) {
+		return fmt.Errorf("signature verification failed")
+	}
+
 	return nil
 }
 
@@ -292,6 +329,62 @@ func (esv *EnhancedSecurityValidator) SanitizeInput(input string) string {
 	}
 
 	return sanitized
+}
+
+// parsePublicKey parses a public key from bytes
+func (esv *EnhancedSecurityValidator) parsePublicKey(publicKeyBytes []byte) (*ecdsa.PublicKey, error) {
+	// Try to parse as DER-encoded public key first
+	pubKey, err := x509.ParsePKIXPublicKey(publicKeyBytes)
+	if err == nil {
+		if ecdsaKey, ok := pubKey.(*ecdsa.PublicKey); ok {
+			return ecdsaKey, nil
+		}
+		return nil, fmt.Errorf("public key is not ECDSA")
+	}
+
+	// If DER parsing fails, try to parse as raw coordinates
+	// Assuming 64 bytes for P-256 (32 bytes for x, 32 bytes for y)
+	if len(publicKeyBytes) == 64 {
+		x := new(big.Int).SetBytes(publicKeyBytes[:32])
+		y := new(big.Int).SetBytes(publicKeyBytes[32:])
+
+		return &ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+			X:     x,
+			Y:     y,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("unsupported public key format")
+}
+
+// ECDSASignature represents an ECDSA signature
+type ECDSASignature struct {
+	R, S *big.Int
+}
+
+// parseSignature parses a signature from bytes
+func (esv *EnhancedSecurityValidator) parseSignature(signatureBytes []byte) (*ECDSASignature, error) {
+	// Try to parse as DER-encoded signature first
+	var sig ECDSASignature
+	_, err := asn1.Unmarshal(signatureBytes, &sig)
+	if err == nil {
+		return &sig, nil
+	}
+
+	// If DER parsing fails, try to parse as raw r||s format
+	// Assuming 64 bytes (32 bytes for r, 32 bytes for s)
+	if len(signatureBytes) == 64 {
+		r := new(big.Int).SetBytes(signatureBytes[:32])
+		s := new(big.Int).SetBytes(signatureBytes[32:])
+
+		return &ECDSASignature{
+			R: r,
+			S: s,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("unsupported signature format")
 }
 
 // SecurityRateLimitTracker tracks rate limiting for security

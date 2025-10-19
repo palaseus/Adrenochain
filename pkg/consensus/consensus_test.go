@@ -13,9 +13,14 @@ import (
 )
 
 // MockChainReader implements ChainReader for testing
+// This mock provides a simplified blockchain reader implementation that stores
+// blocks in memory and supports basic operations like getting block height,
+// retrieving blocks by height, and calculating accumulated difficulty. It's
+// designed for testing consensus mechanisms without requiring a full blockchain
+// implementation.
 type MockChainReader struct {
-	blocks map[uint64]*block.Block
-	height uint64
+	blocks map[uint64]*block.Block // Map of block height to block objects
+	height uint64                  // Current blockchain height
 }
 
 func (m *MockChainReader) GetHeight() uint64 {
@@ -1988,9 +1993,30 @@ func TestUltraOptimizedConsensus(t *testing.T) {
 	})
 
 	t.Run("validateBlockSignaturesUltraOptimized", func(t *testing.T) {
-		// Note: validateBlockSignaturesUltraOptimized method doesn't exist
-		// This test is removed as the method is not implemented
-		t.Skip("validateBlockSignaturesUltraOptimized method not implemented")
+		consensus := NewUltraSlowPathConsensus(0.5, 5*time.Second)
+
+		// Test with valid block
+		block := &Block{
+			Header: &BlockHeader{
+				Height:    1,
+				Timestamp: time.Now(),
+				Signature: []byte("valid_signature"),
+			},
+			Transactions: []Transaction{},
+		}
+
+		result := consensus.validateBlockSignaturesUltraOptimized(block)
+		assert.True(t, result, "Block with valid signature should pass validation")
+
+		// Test with invalid block (nil signature)
+		block.Header.Signature = nil
+		result = consensus.validateBlockSignaturesUltraOptimized(block)
+		assert.False(t, result, "Block with nil signature should fail validation")
+
+		// Test with empty signature
+		block.Header.Signature = []byte{}
+		result = consensus.validateBlockSignaturesUltraOptimized(block)
+		assert.False(t, result, "Block with empty signature should fail validation")
 	})
 
 	t.Run("UltraOptimizedMetrics", func(t *testing.T) {
