@@ -1,3 +1,10 @@
+//go:build testing
+// +build testing
+
+// Package pdf provides test-only multi-node PDF testing functionality.
+// This file contains simulation and testing code for development purposes only.
+// Do not use in production code.
+
 package pdf
 
 import (
@@ -8,8 +15,6 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // MultiNodePDFTest orchestrates a multi-node PDF storage test
@@ -123,8 +128,7 @@ func (mnt *MultiNodePDFTest) initializeNode(nodeID int) error {
 	}
 
 	// Create data directory
-	config := config.DefaultSystemConfig()
-	filePerms := os.FileMode(config.Storage.FilePermissions)
+	filePerms := os.FileMode(0755)
 	if err := os.MkdirAll(node.DataDir, filePerms); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}

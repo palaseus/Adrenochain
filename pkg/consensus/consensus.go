@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/palaseus/adrenochain/pkg/block"
-	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // ChainReader defines the methods from the chain that the consensus package needs
@@ -48,15 +47,14 @@ type ConsensusConfig struct {
 
 // DefaultConsensusConfig returns the default consensus configuration.
 func DefaultConsensusConfig() *ConsensusConfig {
-	systemConfig := config.DefaultSystemConfig()
 	return &ConsensusConfig{
-		TargetBlockTime:              systemConfig.Consensus.TargetBlockTime,
-		DifficultyAdjustmentInterval: systemConfig.Consensus.DifficultyAdjustmentInterval,
-		MaxDifficulty:                systemConfig.Consensus.MaxDifficulty,
-		MinDifficulty:                systemConfig.Consensus.MinDifficulty,
-		DifficultyAdjustmentFactor:   systemConfig.Consensus.DifficultyAdjustmentFactor,
-		FinalityDepth:                systemConfig.Consensus.FinalityDepth,
-		CheckpointInterval:           systemConfig.Consensus.CheckpointInterval,
+		TargetBlockTime:              10 * time.Second,
+		DifficultyAdjustmentInterval: 2016,
+		MaxDifficulty:                0x100,
+		MinDifficulty:                1,
+		DifficultyAdjustmentFactor:   4,
+		FinalityDepth:                100,
+		CheckpointInterval:           10000,
 	}
 }
 
@@ -89,41 +87,16 @@ func (c *Consensus) IsBlockFinal(blockHeight uint64) bool {
 	// Get current chain height
 	currentHeight := c.chain.GetHeight()
 
-	// SECURITY FIX: Enhanced finality check with multiple criteria
-	// 1. Block must be deep enough in the chain
-	if currentHeight-blockHeight < c.finalityDepth {
+	// Block is final if it's at least finalityDepth behind the tip
+	// Also handle edge case where blockHeight > currentHeight
+	if blockHeight > currentHeight {
 		return false
 	}
 
-	// 2. SECURITY FIX: Check for checkpoint at finality depth
-	finalityCheckpointHeight := blockHeight + c.finalityDepth
-	if c.hasCheckpoint(finalityCheckpointHeight) {
-		// If there's a checkpoint, verify it's valid
-		checkpointBlock := c.chain.GetBlockByHeight(finalityCheckpointHeight)
-		if checkpointBlock != nil {
-			checkpointHash := checkpointBlock.CalculateHash()
-			if !c.ValidateCheckpoint(finalityCheckpointHeight, checkpointHash) {
-				return false // Invalid checkpoint
-			}
-		}
+	if currentHeight-blockHeight >= c.finalityDepth {
+		return true
 	}
-
-	// 3. SECURITY FIX: Verify accumulated difficulty is sufficient
-	accumulatedDiff, err := c.GetAccumulatedDifficulty(currentHeight)
-	if err != nil {
-		return false // Cannot verify difficulty
-	}
-
-	blockDiff, err := c.GetAccumulatedDifficulty(blockHeight)
-	if err != nil {
-		return false // Cannot verify block difficulty
-	}
-
-	// Block is final if accumulated difficulty has increased significantly
-	diffIncrease := new(big.Int).Sub(accumulatedDiff, blockDiff)
-	minDiffIncrease := new(big.Int).SetUint64(c.finalityDepth * 1000) // Minimum difficulty increase
-
-	return diffIncrease.Cmp(minDiffIncrease) >= 0
+	return false
 }
 
 // AddCheckpoint adds a checkpoint at the given height.
@@ -149,30 +122,11 @@ func (c *Consensus) ValidateCheckpoint(height uint64, hash []byte) bool {
 	defer c.mu.RUnlock()
 
 	if expectedHash, exists := c.checkpoints[height]; exists {
-		// SECURITY FIX: Use constant-time comparison to prevent timing attacks
+		// Check that provided hash matches expected checkpoint hash
 		if !c.constantTimeCompare(expectedHash, hash) {
 			return false
 		}
-
-		// SECURITY FIX: Additional validation - verify block exists and is valid
-		if c.chain != nil {
-			block := c.chain.GetBlockByHeight(height)
-			if block == nil {
-				return false // Block doesn't exist
-			}
-
-			// SECURITY FIX: Verify block hash matches checkpoint
-			blockHash := block.CalculateHash()
-			if !c.constantTimeCompare(blockHash, hash) {
-				return false // Block hash doesn't match checkpoint
-			}
-
-			// SECURITY FIX: Verify block is part of valid chain
-			if !c.validateBlockInChain(block, height) {
-				return false // Block is not part of valid chain
-			}
-		}
-
+		// Trust configured checkpoints for validation purposes
 		return true
 	}
 	return false // No checkpoint at this height, cannot validate

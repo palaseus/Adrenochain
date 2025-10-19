@@ -1,3 +1,6 @@
+//go:build testing
+// +build testing
+
 package oracle
 
 import (
@@ -7,8 +10,8 @@ import (
 	"time"
 )
 
-// MockOracleProvider is a mock implementation of OracleProvider for testing
-type MockOracleProvider struct {
+// TestOracleProvider is a test implementation of OracleProvider for testing only
+type TestOracleProvider struct {
 	name        string
 	description string
 	url         string
@@ -25,9 +28,9 @@ type MockOracleProvider struct {
 	failures  uint64
 }
 
-// NewMockOracleProvider creates a new mock oracle provider
-func NewMockOracleProvider(name, description, url string, reliability float64) *MockOracleProvider {
-	return &MockOracleProvider{
+// NewTestOracleProvider creates a new test oracle provider
+func NewTestOracleProvider(name, description, url string, reliability float64) *TestOracleProvider {
+	return &TestOracleProvider{
 		name:        name,
 		description: description,
 		url:         url,
@@ -39,7 +42,7 @@ func NewMockOracleProvider(name, description, url string, reliability float64) *
 }
 
 // GetPrice retrieves the current price for a given asset
-func (m *MockOracleProvider) GetPrice(ctx context.Context, asset string) (*PriceData, error) {
+func (m *TestOracleProvider) GetPrice(ctx context.Context, asset string) (*PriceData, error) {
 	m.requests++
 
 	// Simulate network delay
@@ -66,7 +69,7 @@ func (m *MockOracleProvider) GetPrice(ctx context.Context, asset string) (*Price
 }
 
 // ValidateProof validates cryptographic proof for oracle data
-func (m *MockOracleProvider) ValidateProof(ctx context.Context, proof *OracleProof) error {
+func (m *TestOracleProvider) ValidateProof(ctx context.Context, proof *OracleProof) error {
 	if proof == nil {
 		return ErrInvalidProof
 	}
@@ -76,7 +79,7 @@ func (m *MockOracleProvider) ValidateProof(ctx context.Context, proof *OraclePro
 }
 
 // UpdatePrice updates the price for a given asset
-func (m *MockOracleProvider) UpdatePrice(ctx context.Context, asset string, price *big.Int, proof *OracleProof) error {
+func (m *TestOracleProvider) UpdatePrice(ctx context.Context, asset string, price *big.Int, proof *OracleProof) error {
 	if price == nil || price.Sign() <= 0 {
 		return ErrInvalidPrice
 	}
@@ -101,7 +104,7 @@ func (m *MockOracleProvider) UpdatePrice(ctx context.Context, asset string, pric
 }
 
 // GetProviderInfo returns information about the oracle provider
-func (m *MockOracleProvider) GetProviderInfo() *ProviderInfo {
+func (m *TestOracleProvider) GetProviderInfo() *ProviderInfo {
 	return &ProviderInfo{
 		Name:        m.name,
 		Description: m.description,
@@ -114,22 +117,22 @@ func (m *MockOracleProvider) GetProviderInfo() *ProviderInfo {
 }
 
 // SetDelay sets the simulated network delay
-func (m *MockOracleProvider) SetDelay(delay time.Duration) {
+func (m *TestOracleProvider) SetDelay(delay time.Duration) {
 	m.delay = delay
 }
 
 // SetActive sets whether the provider is active
-func (m *MockOracleProvider) SetActive(active bool) {
+func (m *TestOracleProvider) SetActive(active bool) {
 	m.active = active
 }
 
 // GetStats returns provider statistics
-func (m *MockOracleProvider) GetStats() (uint64, uint64, uint64) {
+func (m *TestOracleProvider) GetStats() (uint64, uint64, uint64) {
 	return m.requests, m.successes, m.failures
 }
 
 // shouldFail determines if the provider should fail based on reliability
-func (m *MockOracleProvider) shouldFail() bool {
+func (m *TestOracleProvider) shouldFail() bool {
 	// Generate random number between 0 and 1
 	randomBytes := make([]byte, 8)
 	rand.Read(randomBytes)
@@ -139,7 +142,7 @@ func (m *MockOracleProvider) shouldFail() bool {
 }
 
 // generateMockPrice generates mock price data for an asset
-func (m *MockOracleProvider) generateMockPrice(asset string) *PriceData {
+func (m *TestOracleProvider) generateMockPrice(asset string) *PriceData {
 	// Generate random price between 1 and 100000
 	randomBytes := make([]byte, 8)
 	rand.Read(randomBytes)
@@ -162,7 +165,7 @@ func (m *MockOracleProvider) generateMockPrice(asset string) *PriceData {
 }
 
 // SetMockPrice sets a specific mock price for testing
-func (m *MockOracleProvider) SetMockPrice(asset string, price *big.Int, confidence uint8) {
+func (m *TestOracleProvider) SetMockPrice(asset string, price *big.Int, confidence uint8) {
 	m.prices[asset] = &PriceData{
 		Asset:       asset,
 		Price:       new(big.Int).Set(price),
@@ -175,6 +178,6 @@ func (m *MockOracleProvider) SetMockPrice(asset string, price *big.Int, confiden
 }
 
 // GetMockPrice retrieves a previously set mock price
-func (m *MockOracleProvider) GetMockPrice(asset string) *PriceData {
+func (m *TestOracleProvider) GetMockPrice(asset string) *PriceData {
 	return m.prices[asset]
 }

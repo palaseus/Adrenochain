@@ -14,7 +14,6 @@ import (
 	"github.com/palaseus/adrenochain/pkg/ai/predictive"
 	"github.com/palaseus/adrenochain/pkg/ai/sentiment"
 	"github.com/palaseus/adrenochain/pkg/ai/strategy_gen"
-	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // BenchmarkResult represents the result of a single benchmark test
@@ -1205,8 +1204,7 @@ func (mbo *MainBenchmarkOrchestrator) RunAllBenchmarks() error {
 func (mbo *MainBenchmarkOrchestrator) SaveReportToFile() error {
 	// Create test_results directory if it doesn't exist
 	testResultsDir := "test_results"
-	config := config.DefaultSystemConfig()
-	filePerms := os.FileMode(config.Storage.FilePermissions)
+	filePerms := os.FileMode(0755)
 	if err := os.MkdirAll(testResultsDir, filePerms); err != nil {
 		return fmt.Errorf("failed to create test_results directory: %v", err)
 	}

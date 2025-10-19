@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/palaseus/adrenochain/pkg/block"
-	"github.com/palaseus/adrenochain/pkg/config"
 	"github.com/palaseus/adrenochain/pkg/consensus"
 	"github.com/palaseus/adrenochain/pkg/logger"
 	"github.com/palaseus/adrenochain/pkg/storage"
@@ -46,11 +45,10 @@ type ChainConfig struct {
 
 // DefaultChainConfig returns the default configuration for the blockchain.
 func DefaultChainConfig() *ChainConfig {
-	systemConfig := config.DefaultSystemConfig()
 	return &ChainConfig{
-		GenesisBlockReward: systemConfig.Blockchain.GenesisBlockReward,
-		MaxBlockSize:       systemConfig.Blockchain.MaxBlockSize,
-		MaxReorgDepth:      systemConfig.Blockchain.MaxReorgDepth,
+		GenesisBlockReward: 1000000000,
+		MaxBlockSize:       1000000,
+		MaxReorgDepth:      6,
 	}
 }
 

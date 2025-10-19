@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"time"
 
-	systemconfig "github.com/palaseus/adrenochain/pkg/config"
 )
 
 // Level represents the logging level
@@ -123,8 +122,7 @@ func NewLogger(config *Config) *Logger {
 func (l *Logger) setupFileLogging(config *Config) error {
 	// Ensure directory exists
 	dir := filepath.Dir(config.LogFile)
-	systemConfig := systemconfig.DefaultSystemConfig()
-	filePerms := os.FileMode(systemConfig.Storage.FilePermissions)
+	filePerms := os.FileMode(0755) // Default directory permissions
 	if err := os.MkdirAll(dir, filePerms); err != nil {
 		return fmt.Errorf("failed to create log directory: %w", err)
 	}

@@ -313,9 +313,25 @@ func (hm *HealthMonitor) executeHealthCheck(healthCheck *HealthCheck) (*HealthRe
 		result, err = hm.performHTTPCheck(healthCheck, result)
 	case HealthCheckTypeCustom:
 		if healthCheck.CustomCheck != nil {
-			// Custom check would need the node object
-			result.IsHealthy = false
-			result.Error = fmt.Errorf("custom check not implemented")
+			// Execute custom check function
+			// Create a node object for the custom check
+			node := &Node{
+				ID:      healthCheck.NodeID,
+				Address: healthCheck.Address,
+				Port:    healthCheck.Port,
+			}
+
+			// Execute the custom check
+			customResult := healthCheck.CustomCheck(node)
+			if customResult != nil {
+				result.IsHealthy = customResult.IsHealthy
+				result.Latency = customResult.Latency
+				result.Details = customResult.Details
+				result.Error = customResult.Error
+			} else {
+				result.IsHealthy = false
+				result.Error = fmt.Errorf("custom check returned nil result")
+			}
 		} else {
 			result.IsHealthy = false
 			result.Error = fmt.Errorf("no custom check function provided")

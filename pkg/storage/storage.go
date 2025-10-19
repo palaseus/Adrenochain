@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 
 	"github.com/palaseus/adrenochain/pkg/block"
-	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // Storage implements a file-based storage for blocks and chain state.
@@ -35,8 +34,7 @@ type StorageConfig struct {
 
 // DefaultStorageConfig returns the default storage configuration.
 func DefaultStorageConfig() *StorageConfig {
-	systemConfig := config.DefaultSystemConfig()
-	return &StorageConfig{DataDir: systemConfig.Storage.DataDir}
+	return &StorageConfig{DataDir: "./data"}
 }
 
 // WithDataDir sets the data directory for the storage config.

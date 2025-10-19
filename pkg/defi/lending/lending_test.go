@@ -2,6 +2,7 @@ package lending
 
 import (
 	"math/big"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 func generateRandomAddress() engine.Address {
 	addr := engine.Address{}
 	for i := 0; i < len(addr); i++ {
-		addr[i] = byte(i + 100)
+		addr[i] = byte(i + 100 + rand.Intn(100))
 	}
 	return addr
 }

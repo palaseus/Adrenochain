@@ -1,3 +1,6 @@
+//go:build examples
+// +build examples
+
 package main
 
 import (
@@ -56,12 +59,11 @@ func main() {
 func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	// Simulate normal authentication events
 	for i := 0; i < 5; i++ {
-		event := &security.SecurityEvent{
-			Type:        security.EventTypeAuthentication,
+		event := &security.SecurityMonitorEvent{
+			Category:    "authentication",
 			Severity:    security.SeverityLow,
 			Source:      "api",
 			Description: fmt.Sprintf("User login successful: user_%d", i),
-			IPAddress:   "192.168.1.100",
 			Metadata: map[string]interface{}{
 				"user_id": fmt.Sprintf("user_%d", i),
 				"method":  "password",
@@ -73,12 +75,11 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 
 	// Simulate failed authentication attempts
 	for i := 0; i < 3; i++ {
-		event := &security.SecurityEvent{
-			Type:        security.EventTypeAuthentication,
+		event := &security.SecurityMonitorEvent{
+			Category:    "authentication",
 			Severity:    security.SeverityHigh,
 			Source:      "api",
 			Description: fmt.Sprintf("Failed login attempt: user_%d", i),
-			IPAddress:   "192.168.1.200",
 			Metadata: map[string]interface{}{
 				"user_id": fmt.Sprintf("user_%d", i),
 				"reason":  "invalid_password",
@@ -89,12 +90,11 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	}
 
 	// Simulate suspicious activity
-	event := &security.SecurityEvent{
-		Type:        security.EventTypeSuspiciousActivity,
+	event := &security.SecurityMonitorEvent{
+		Category:    "suspicious_activity",
 		Severity:    security.SeverityMedium,
 		Source:      "network",
 		Description: "Unusual traffic pattern detected from IP 10.0.0.1",
-		IPAddress:   "10.0.0.1",
 		Metadata: map[string]interface{}{
 			"traffic_volume": 1000,
 			"duration":       "5 minutes",
@@ -103,12 +103,11 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate rate limiting
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeRateLimit,
+	event = &security.SecurityMonitorEvent{
+		Category:    "rate_limit",
 		Severity:    security.SeverityMedium,
 		Source:      "api",
 		Description: "Rate limit exceeded for IP 192.168.1.50",
-		IPAddress:   "192.168.1.50",
 		Metadata: map[string]interface{}{
 			"requests_per_minute": 150,
 			"limit":               100,
@@ -117,8 +116,8 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate contract-related event
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeContract,
+	event = &security.SecurityMonitorEvent{
+		Category:    "contract",
 		Severity:    security.SeverityHigh,
 		Source:      "smart_contract",
 		Description: "Suspicious contract interaction detected",
@@ -131,8 +130,8 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate DeFi event
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeDeFi,
+	event = &security.SecurityMonitorEvent{
+		Category:    "defi",
 		Severity:    security.SeverityMedium,
 		Source:      "defi_protocol",
 		Description: "Large liquidity withdrawal detected",
@@ -145,12 +144,11 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate input validation failure
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeInputValidation,
+	event = &security.SecurityMonitorEvent{
+		Category:    "input_validation",
 		Severity:    security.SeverityHigh,
 		Source:      "api",
 		Description: "Malicious input detected in API request",
-		IPAddress:   "192.168.1.75",
 		Metadata: map[string]interface{}{
 			"endpoint": "/api/block",
 			"input":    "<script>alert('xss')</script>",
@@ -160,8 +158,8 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate system error
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeSystemError,
+	event = &security.SecurityMonitorEvent{
+		Category:    "system_error",
 		Severity:    security.SeverityCritical,
 		Source:      "storage",
 		Description: "Critical storage system error",
@@ -173,8 +171,8 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate network event
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeNetwork,
+	event = &security.SecurityMonitorEvent{
+		Category:    "network",
 		Severity:    security.SeverityMedium,
 		Source:      "p2p",
 		Description: "Peer reputation score dropped below threshold",
@@ -187,8 +185,8 @@ func simulateSecurityEvents(monitor *security.SecurityMonitor) {
 	monitor.LogEvent(event)
 
 	// Simulate data access event
-	event = &security.SecurityEvent{
-		Type:        security.EventTypeDataAccess,
+	event = &security.SecurityMonitorEvent{
+		Category:    "data_access",
 		Severity:    security.SeverityLow,
 		Source:      "api",
 		Description: "Sensitive data access logged",

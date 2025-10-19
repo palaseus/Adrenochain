@@ -1,3 +1,10 @@
+//go:build testing
+// +build testing
+
+// Package pdf provides test-only network simulation functionality.
+// This file contains simulation code for testing purposes only.
+// Do not use in production code.
+
 package pdf
 
 import (
@@ -330,20 +337,8 @@ func (ns *NetworkSimulator) simulateBurstLoss(fromNode, toNode string, burstLeng
 	}
 }
 
-// NetworkEvent represents a network event
-type NetworkEvent struct {
-	Type      string
-	NodeID    string
-	Timestamp time.Time
-	Data      map[string]interface{}
-}
-
-// NetworkEventType constants
+// NetworkEventType constants (additional to those in blockchain_consensus.go)
 const (
-	EventNodeJoin     = "node_join"
-	EventNodeLeave    = "node_leave"
-	EventPartition    = "partition"
-	EventRecovery     = "recovery"
 	EventCongestion   = "congestion"
 	EventPacketLoss   = "packet_loss"
 	EventLatencySpike = "latency_spike"

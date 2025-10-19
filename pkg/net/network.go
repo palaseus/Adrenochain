@@ -17,7 +17,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/palaseus/adrenochain/pkg/chain"
-	"github.com/palaseus/adrenochain/pkg/config"
 	"github.com/palaseus/adrenochain/pkg/logger"
 	"github.com/palaseus/adrenochain/pkg/mempool"
 	proto_net "github.com/palaseus/adrenochain/pkg/proto/net"
@@ -343,14 +342,13 @@ type NetworkConfig struct {
 
 // DefaultNetworkConfig returns the default network configuration
 func DefaultNetworkConfig() *NetworkConfig {
-	systemConfig := config.DefaultSystemConfig()
 	return &NetworkConfig{
 		ListenPort:        0, // Random port
 		BootstrapPeers:    []string{},
 		EnableMDNS:        true,
 		EnableRelay:       false,
-		MaxPeers:          systemConfig.Network.MaxPeers,
-		ConnectionTimeout: systemConfig.Network.ConnectionTimeout,
+		MaxPeers:          50,
+		ConnectionTimeout: 30 * time.Second,
 	}
 }
 

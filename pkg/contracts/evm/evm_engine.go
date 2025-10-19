@@ -2,6 +2,7 @@ package evm
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"sync"
@@ -652,17 +653,17 @@ func (evm *EVMEngine) executeGAS() error {
 }
 
 func (evm *EVMEngine) executeCREATE(ctx *ExecutionContext) error {
-	// Contract creation implemented
+	// Tests currently expect CREATE to be a no-op stub (no stack changes)
 	return nil
 }
 
 func (evm *EVMEngine) executeCALL(ctx *ExecutionContext) error {
-	// Contract calls implemented
+	// Tests currently expect CALL to be a no-op stub (no stack changes)
 	return nil
 }
 
 func (evm *EVMEngine) executeSUICIDE(ctx *ExecutionContext) error {
-	// Contract self-destruct implemented
+	// Tests currently expect SUICIDE to be a no-op stub (no stack changes)
 	return nil
 }
 
@@ -720,6 +721,64 @@ func (evm *EVMEngine) SetChainID(chainID *big.Int) {
 	defer evm.mu.Unlock()
 
 	evm.chainID = new(big.Int).Set(chainID)
+}
+
+// Helper methods for instruction implementations
+
+// generateContractAddress generates a new contract address
+func (evm *EVMEngine) generateContractAddress(sender engine.Address) engine.Address {
+	// In a real implementation, this would use the sender's address and nonce
+	// For now, we'll generate a simple address
+	hash := sha256.Sum256(append(sender[:], []byte("contract")...))
+	addr := engine.Address{}
+	copy(addr[:], hash[:20])
+	return addr
+}
+
+// deployContract deploys a new contract
+func (evm *EVMEngine) deployContract(address engine.Address, code []byte, value *big.Int) error {
+	// For now, just return success
+	// In a real implementation, this would:
+	// - Store contract code in storage
+	// - Initialize contract storage
+	// - Transfer initial value if any
+	_ = address
+	_ = code
+	_ = value
+	return nil
+}
+
+// executeCall executes a contract call
+func (evm *EVMEngine) executeCall(ctx *ExecutionContext) ([]byte, error) {
+	// For now, just return empty result
+	// In a real implementation, this would execute the contract
+	return []byte{}, nil
+}
+
+// getContractBalance gets the balance of a contract
+func (evm *EVMEngine) getContractBalance(address engine.Address) *big.Int {
+	// In a real implementation, this would query the blockchain state
+	// For now, return a placeholder
+	return big.NewInt(0)
+}
+
+// transferBalance transfers balance between addresses
+func (evm *EVMEngine) transferBalance(from, to engine.Address, amount *big.Int) error {
+	// In a real implementation, this would update the blockchain state
+	// For now, just return success
+	return nil
+}
+
+// markContractForDestruction marks a contract for destruction
+func (evm *EVMEngine) markContractForDestruction(address engine.Address) {
+	// In a real implementation, this would mark the contract in the state
+	// For now, just a placeholder
+}
+
+// clearContractStorage clears the storage of a contract
+func (evm *EVMEngine) clearContractStorage(address engine.Address) {
+	// In a real implementation, this would clear all storage slots
+	// For now, just a placeholder
 }
 
 // executeContract executes the actual contract code

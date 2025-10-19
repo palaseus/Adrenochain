@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/palaseus/adrenochain/pkg/config"
 )
 
 // SimplePDFStorage provides basic PDF storage functionality
@@ -47,8 +46,7 @@ func NewSimplePDFStorage(baseDir string) (*SimplePDFStorage, error) {
 		if err := validatePath(dir); err != nil {
 			return nil, fmt.Errorf("invalid directory path: %w", err)
 		}
-		config := config.DefaultSystemConfig()
-		filePerms := os.FileMode(config.Storage.FilePermissions)
+		filePerms := os.FileMode(0755)
 		if err := os.MkdirAll(dir, filePerms); err != nil {
 			return nil, fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}

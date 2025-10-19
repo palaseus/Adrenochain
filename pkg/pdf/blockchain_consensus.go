@@ -9,6 +9,22 @@ import (
 	"time"
 )
 
+// NetworkEvent represents a network event
+type NetworkEvent struct {
+	Type      string
+	NodeID    string
+	Timestamp time.Time
+	Data      interface{}
+}
+
+// Event types
+const (
+	EventNodeJoin  = "node_join"
+	EventNodeLeave = "node_leave"
+	EventPartition = "partition"
+	EventRecovery  = "recovery"
+)
+
 // BlockchainConsensus implements real blockchain consensus for PDF transactions
 type BlockchainConsensus struct {
 	chain     *Blockchain

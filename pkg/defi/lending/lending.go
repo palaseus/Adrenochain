@@ -823,12 +823,12 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 		return big.NewInt(0)
 	}
 
-	// SECURITY FIX: Add price validation to prevent manipulation
+	// Calculate effective collateral value using CollateralRatio (basis points)
 	totalCollateralValue := big.NewInt(0)
 	for token, collateral := range userInfo.Collateral {
 		if assetInfo, exists := lp.Assets[token]; exists {
-			// SECURITY FIX: Validate collateral ratio is within bounds
-			if assetInfo.CollateralRatio.Cmp(big.NewInt(0)) <= 0 || assetInfo.CollateralRatio.Cmp(big.NewInt(10000)) > 0 {
+			// SECURITY FIX: Validate collateral ratio is within bounds (0% to 200% = 0 to 20000 basis points)
+			if assetInfo.CollateralRatio.Cmp(big.NewInt(0)) <= 0 || assetInfo.CollateralRatio.Cmp(big.NewInt(20000)) > 0 {
 				continue // Skip invalid collateral ratios
 			}
 
@@ -837,13 +837,14 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 				continue // Skip negative collateral
 			}
 
+			// Collateral value = collateral amount * collateral ratio / 10000
 			collateralValue := new(big.Int).Mul(collateral, assetInfo.CollateralRatio)
 			collateralValue = new(big.Int).Div(collateralValue, big.NewInt(10000))
 			totalCollateralValue = new(big.Int).Add(totalCollateralValue, collateralValue)
 		}
 	}
 
-	// SECURITY FIX: Add borrow validation to prevent manipulation
+	// Calculate effective borrow value using MaxLTV (basis points)
 	totalBorrowValue := big.NewInt(0)
 	for token, borrow := range userInfo.Borrows {
 		if assetInfo, exists := lp.Assets[token]; exists {
@@ -857,6 +858,8 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 				continue // Skip negative borrows
 			}
 
+			// Borrow value = borrow amount * 10000 / MaxLTV
+			// This gives us the effective borrow value adjusted for LTV
 			borrowValue := new(big.Int).Mul(borrow, big.NewInt(10000))
 			borrowValue = new(big.Int).Div(borrowValue, assetInfo.MaxLTV)
 			totalBorrowValue = new(big.Int).Add(totalBorrowValue, borrowValue)
@@ -918,9 +921,14 @@ func (lp *LendingProtocol) validateFlashLoanProtection(user engine.Address, asse
 	// Check for suspicious borrowing patterns (large amounts without sufficient history)
 	userInfo := lp.Users[user]
 	if userInfo != nil {
-		// If user has no borrowing history and is trying to borrow large amount, flag as potential flash loan
-		if userInfo.BorrowCount == 0 && amount.Cmp(big.NewInt(1000000000000000000)) > 0 { // 1 ETH
-			// This could be a flash loan attack, require additional validation
+		// If user has no outstanding borrows and is trying to borrow a large amount, flag as potential flash loan
+		totalBorrow := big.NewInt(0)
+		for _, b := range userInfo.Borrows {
+			if b != nil {
+				totalBorrow.Add(totalBorrow, b)
+			}
+		}
+		if totalBorrow.Sign() == 0 && amount.Cmp(big.NewInt(1000000000000000000)) > 0 { // 1 ETH
 			return fmt.Errorf("large borrow amount without borrowing history requires additional validation")
 		}
 	}

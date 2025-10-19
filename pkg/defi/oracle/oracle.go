@@ -153,6 +153,40 @@ func NewOracleAggregator(config OracleConfig) *OracleAggregator {
 	}
 }
 
+// NewProductionOracleAggregator creates a new oracle aggregator with production providers
+func NewProductionOracleAggregator(config OracleConfig) *OracleAggregator {
+	aggregator := NewOracleAggregator(config)
+
+	// Add Chainlink provider
+	chainlinkProvider := NewChainlinkOracleProvider(
+		"Chainlink",
+		"Chainlink decentralized oracle network",
+		"https://api.chain.link",
+		"", // API key would be set via environment variable
+	)
+	aggregator.AddProvider("chainlink", chainlinkProvider, 0.4) // 40% weight
+
+	// Add Band Protocol provider
+	bandProvider := NewBandProtocolOracleProvider(
+		"Band Protocol",
+		"Band Protocol decentralized oracle network",
+		"https://api.bandprotocol.com",
+		"", // API key would be set via environment variable
+	)
+	aggregator.AddProvider("band_protocol", bandProvider, 0.3) // 30% weight
+
+	// Add HTTP provider as fallback
+	httpProvider := NewHTTPOracleProvider(
+		"HTTP API",
+		"Generic HTTP API oracle provider",
+		"https://api.coingecko.com/api/v3",
+		"", // API key would be set via environment variable
+	)
+	aggregator.AddProvider("http_api", httpProvider, 0.3) // 30% weight
+
+	return aggregator
+}
+
 // AddProvider adds an oracle provider to the aggregator
 func (oa *OracleAggregator) AddProvider(name string, provider OracleProvider, weight float64) error {
 	oa.mu.Lock()
