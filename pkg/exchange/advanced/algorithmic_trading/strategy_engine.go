@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/palaseus/adrenochain/pkg/exchange/data"
 	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
@@ -36,7 +37,7 @@ type StrategyExecutor struct {
 	Strategy     TradingStrategy
 	Config       ExecutorConfig
 	State        ExecutorState
-	MarketData   MarketDataProvider
+	MarketData   data.MarketDataProvider
 	OrderManager OrderManager
 	Logger       *logger.Logger
 	mu           sync.RWMutex
@@ -67,13 +68,6 @@ type ExecutorState struct {
 	OpenOrders      int       `json:"open_orders"`
 }
 
-// MarketDataProvider defines the interface for market data
-type MarketDataProvider interface {
-	GetMarketData(symbol string) (MarketData, error)
-	GetHistoricalData(symbol string, start, end time.Time, interval time.Duration) ([]MarketData, error)
-	SubscribeToUpdates(symbol string, callback func(MarketData)) error
-	Unsubscribe(symbol string) error
-}
 
 // OrderManager defines the interface for order management
 type OrderManager interface {
@@ -366,8 +360,23 @@ func (executor *StrategyExecutor) processSignal(signal TradingSignal) error {
 
 // getMarketData retrieves market data for the strategy
 func (executor *StrategyExecutor) getMarketData() (MarketData, error) {
-	// This is a placeholder - in real implementation, this would use MarketDataProvider
-	// For now, return mock data
+	// Use the market data provider if available
+	if executor.MarketData != nil {
+		providerData := executor.MarketData.GetMarketData("BTC/USDT")
+		return MarketData{
+			Symbol:     providerData.Symbol,
+			Price:      providerData.MidPrice,
+			Volume:     providerData.Volume,
+			Timestamp:  providerData.Timestamp,
+			Bid:        providerData.Bid,
+			Ask:        providerData.Ask,
+			Spread:     providerData.Spread,
+			Volatility: providerData.Volatility,
+			Trend:      providerData.Trend,
+		}, nil
+	}
+
+	// Fallback to mock data
 	return MarketData{
 		Symbol:     "BTC/USDT",
 		Price:      50000.0,
@@ -407,7 +416,7 @@ func (executor *StrategyExecutor) UpdateConfig(config ExecutorConfig) error {
 }
 
 // SetMarketDataProvider sets the market data provider for the executor
-func (executor *StrategyExecutor) SetMarketDataProvider(provider MarketDataProvider) {
+func (executor *StrategyExecutor) SetMarketDataProvider(provider data.MarketDataProvider) {
 	executor.mu.Lock()
 	defer executor.mu.Unlock()
 	executor.MarketData = provider

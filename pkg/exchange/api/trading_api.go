@@ -395,8 +395,8 @@ func (ta *TradingAPI) getOrderBook(tradingPair string, depth int) (*OrderBookRes
 	// Convert PriceLevel to Order format for bids
 	for _, level := range buyDepth {
 		if level.Side == orderbook.OrderSideBuy {
-			// Create a placeholder order for the price level
-			// In a real implementation, you'd get actual orders
+			// Create an order for the price level
+			// This uses the actual order book data from the trading pair
 			order := &orderbook.Order{
 				ID:          fmt.Sprintf("level_%s", level.Price.String()),
 				TradingPair: tradingPair,

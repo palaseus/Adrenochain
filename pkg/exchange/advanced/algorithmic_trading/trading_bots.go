@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/palaseus/adrenochain/pkg/exchange/data"
 	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
@@ -33,6 +34,8 @@ type TradingBot struct {
 	mu          sync.RWMutex
 	ctx         context.Context
 	cancel      context.CancelFunc
+	// Market data provider for real-time data
+	DataProvider data.MarketDataProvider
 }
 
 // BotConfig contains configuration for a trading bot
@@ -136,19 +139,42 @@ func NewTradingBot(id, name string, strategy TradingStrategy, config BotConfig) 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &TradingBot{
-		ID:          id,
-		Name:        name,
-		Strategy:    strategy,
-		Config:      config,
-		State:       BotState{},
-		RiskManager: NewDefaultRiskManager(),
+		ID:           id,
+		Name:         name,
+		Strategy:     strategy,
+		Config:       config,
+		State:        BotState{},
+		RiskManager:  NewDefaultRiskManager(),
 		Logger: logger.NewLogger(&logger.Config{
 			Level:   logger.INFO,
 			Prefix:  fmt.Sprintf("trading_bot_%s", id),
 			UseJSON: false,
 		}),
-		ctx:    ctx,
-		cancel: cancel,
+		ctx:          ctx,
+		cancel:       cancel,
+		DataProvider: data.NewConfigurableMarketDataProvider(),
+	}
+}
+
+// NewTradingBotWithProvider creates a new trading bot with a custom data provider
+func NewTradingBotWithProvider(id, name string, strategy TradingStrategy, config BotConfig, provider data.MarketDataProvider) *TradingBot {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &TradingBot{
+		ID:           id,
+		Name:         name,
+		Strategy:     strategy,
+		Config:       config,
+		State:        BotState{},
+		RiskManager:  NewDefaultRiskManager(),
+		Logger: logger.NewLogger(&logger.Config{
+			Level:   logger.INFO,
+			Prefix:  fmt.Sprintf("trading_bot_%s", id),
+			UseJSON: false,
+		}),
+		ctx:          ctx,
+		cancel:       cancel,
+		DataProvider: provider,
 	}
 }
 
@@ -327,19 +353,37 @@ func (bot *TradingBot) rebalance() error {
 	return nil
 }
 
-// getMarketData retrieves current market data
+// getMarketData retrieves current market data from the data provider
 func (bot *TradingBot) getMarketData() MarketData {
-	// This is a placeholder - in real implementation, this would fetch from exchange
+	if bot.DataProvider == nil {
+		// Fallback to default data if no provider is set
+		return MarketData{
+			Symbol:     "BTC/USDT",
+			Price:      50000.0,
+			Volume:     1000000.0,
+			Timestamp:  time.Now(),
+			Bid:        49999.0,
+			Ask:        50001.0,
+			Spread:     2.0,
+			Volatility: 0.02,
+			Trend:      0.01,
+		}
+	}
+
+	// Get real-time market data from provider
+	providerData := bot.DataProvider.GetMarketData("BTC/USDT")
+	
+	// Convert to internal MarketData format
 	return MarketData{
-		Symbol:     "BTC/USDT",
-		Price:      50000.0,
-		Volume:     1000000.0,
-		Timestamp:  time.Now(),
-		Bid:        49999.0,
-		Ask:        50001.0,
-		Spread:     2.0,
-		Volatility: 0.02,
-		Trend:      0.01,
+		Symbol:     providerData.Symbol,
+		Price:      providerData.MidPrice,
+		Volume:     providerData.Volume,
+		Timestamp:  providerData.Timestamp,
+		Bid:        providerData.Bid,
+		Ask:        providerData.Ask,
+		Spread:     providerData.Spread,
+		Volatility: providerData.Volatility,
+		Trend:      providerData.Trend,
 	}
 }
 

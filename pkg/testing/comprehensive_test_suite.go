@@ -2,7 +2,14 @@ package testing
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"time"
+
+	"github.com/palaseus/adrenochain/pkg/contracts/engine"
+	"github.com/palaseus/adrenochain/pkg/contracts/evm"
+	"github.com/palaseus/adrenochain/pkg/contracts/wasm"
 )
 
 // ComprehensiveTestSuite provides a complete test suite for adrenochain
@@ -534,14 +541,86 @@ func (cts *ComprehensiveTestSuite) createSecurityTests() []*TestCase {
 
 // Test Function Implementations (Placeholders)
 func (cts *ComprehensiveTestSuite) testEVMBasicExecution(t interface{}) error {
-	// In a real implementation, this would test EVM basic execution
-	time.Sleep(10 * time.Millisecond) // Simulate test execution
+	// Test EVM basic execution with a simple contract
+	// Create mock storage and registry
+	mockStorage := &MockContractStorage{}
+	mockRegistry := &MockContractRegistry{}
+	
+	// Create EVM engine
+	evmEngine := evm.NewEVMEngine(mockStorage, mockRegistry)
+	if evmEngine == nil {
+		return fmt.Errorf("failed to create EVM engine")
+	}
+	
+	// Create a simple contract with basic opcodes
+	contract := &engine.Contract{
+		Address: generateRandomAddress(),
+		Code:    []byte{0x00, 0x01, 0x02, 0x03}, // STOP, ADD, MUL, SUB
+		Creator: generateRandomAddress(),
+	}
+	
+	// Gas meter is initialized internally by the EVM engine
+	
+	// Execute the contract
+	result, err := evmEngine.Execute(contract, nil, 50000, generateRandomAddress(), big.NewInt(0))
+	if err != nil {
+		return fmt.Errorf("EVM execution failed: %v", err)
+	}
+	
+	if !result.Success {
+		return fmt.Errorf("EVM execution was not successful")
+	}
+	
+	// Verify gas consumption is reasonable
+	if result.GasUsed > 50000 {
+		return fmt.Errorf("gas consumption too high: %d", result.GasUsed)
+	}
+	
 	return nil
 }
 
 func (cts *ComprehensiveTestSuite) testEVMGasMetering(t interface{}) error {
 	// Test gas metering accuracy
-	time.Sleep(15 * time.Millisecond)
+	mockStorage := &MockContractStorage{}
+	mockRegistry := &MockContractRegistry{}
+	
+	evm := evm.NewEVMEngine(mockStorage, mockRegistry)
+	if evm == nil {
+		return fmt.Errorf("failed to create EVM engine")
+	}
+	
+	// Test with different gas limits
+	testCases := []struct {
+		gasLimit    uint64
+		expectedMin uint64
+		expectedMax uint64
+	}{
+		{1000, 0, 1000},
+		{10000, 0, 10000},
+		{100000, 0, 100000},
+	}
+	
+	for _, tc := range testCases {
+		contract := &engine.Contract{
+			Address: generateRandomAddress(),
+			Code:    []byte{0x00}, // STOP instruction
+			Creator: generateRandomAddress(),
+		}
+		
+		result, err := evm.Execute(contract, nil, tc.gasLimit, generateRandomAddress(), big.NewInt(0))
+		if err != nil {
+			return fmt.Errorf("EVM execution failed with gas limit %d: %v", tc.gasLimit, err)
+		}
+		
+		if result.GasUsed < tc.expectedMin || result.GasUsed > tc.expectedMax {
+			return fmt.Errorf("gas usage %d not in expected range [%d, %d]", result.GasUsed, tc.expectedMin, tc.expectedMax)
+		}
+		
+		if result.GasRemaining != tc.gasLimit-result.GasUsed {
+			return fmt.Errorf("gas remaining calculation incorrect: expected %d, got %d", tc.gasLimit-result.GasUsed, result.GasRemaining)
+		}
+	}
+	
 	return nil
 }
 
@@ -565,7 +644,42 @@ func (cts *ComprehensiveTestSuite) testEVMOpcodeExecution(t interface{}) error {
 
 func (cts *ComprehensiveTestSuite) testWASMBasicExecution(t interface{}) error {
 	// Test WASM basic execution
-	time.Sleep(18 * time.Millisecond)
+	mockStorage := &MockContractStorage{}
+	mockRegistry := &MockContractRegistry{}
+	
+	wasmEngine := wasm.NewWASMEngine(mockStorage, mockRegistry)
+	if wasmEngine == nil {
+		return fmt.Errorf("failed to create WASM engine")
+	}
+	
+	// Create a simple WASM contract (minimal valid WASM module)
+	wasmCode := []byte{
+		0x00, 0x61, 0x73, 0x6D, // WASM magic number
+		0x01, 0x00, 0x00, 0x00, // Version 1
+		0x00, // Empty module (just magic number and version)
+	}
+	
+	contract := &engine.Contract{
+		Address: generateRandomAddress(),
+		Code:    wasmCode,
+		Creator: generateRandomAddress(),
+	}
+	
+	// Execute the WASM contract
+	result, err := wasmEngine.Execute(contract, nil, 50000, generateRandomAddress(), big.NewInt(0))
+	if err != nil {
+		return fmt.Errorf("WASM execution failed: %v", err)
+	}
+	
+	if !result.Success {
+		return fmt.Errorf("WASM execution was not successful")
+	}
+	
+	// Verify gas consumption is reasonable
+	if result.GasUsed > 50000 {
+		return fmt.Errorf("WASM gas consumption too high: %d", result.GasUsed)
+	}
+	
 	return nil
 }
 
@@ -594,8 +708,44 @@ func (cts *ComprehensiveTestSuite) testCrossEngineSharedState(t interface{}) err
 }
 
 func (cts *ComprehensiveTestSuite) testPerformanceThroughput(t interface{}) error {
-	// Test throughput
-	time.Sleep(40 * time.Millisecond)
+	// Test system performance under load
+	mockStorage := &MockContractStorage{}
+	mockRegistry := &MockContractRegistry{}
+	
+	evm := evm.NewEVMEngine(mockStorage, mockRegistry)
+	if evm == nil {
+		return fmt.Errorf("failed to create EVM engine")
+	}
+	
+	// Measure throughput by executing multiple contracts
+	numContracts := 100
+	startTime := time.Now()
+	
+	for i := 0; i < numContracts; i++ {
+		contract := &engine.Contract{
+			Address: generateRandomAddress(),
+			Code:    []byte{0x00}, // STOP instruction
+			Creator: generateRandomAddress(),
+		}
+		
+		result, err := evm.Execute(contract, nil, 1000, generateRandomAddress(), big.NewInt(0))
+		if err != nil {
+			return fmt.Errorf("contract execution %d failed: %v", i, err)
+		}
+		
+		if !result.Success {
+			return fmt.Errorf("contract execution %d was not successful", i)
+		}
+	}
+	
+	duration := time.Since(startTime)
+	throughput := float64(numContracts) / duration.Seconds()
+	
+	// Verify throughput is reasonable (at least 100 contracts per second)
+	if throughput < 100 {
+		return fmt.Errorf("throughput too low: %.2f contracts/sec", throughput)
+	}
+	
 	return nil
 }
 
@@ -1366,5 +1516,162 @@ func (cts *ComprehensiveTestSuite) testPerfIntegrationLoad(t interface{}) error 
 func (cts *ComprehensiveTestSuite) testPerfIntegrationScalability(t interface{}) error {
 	// Test system scalability
 	time.Sleep(55 * time.Millisecond)
+	return nil
+}
+
+// Helper functions for testing
+
+// generateRandomAddress generates a random address for testing
+func generateRandomAddress() engine.Address {
+	bytes := make([]byte, 20)
+	rand.Read(bytes)
+	return engine.Address(bytes)
+}
+
+// MockContractStorage implements ContractStorage interface for testing
+type MockContractStorage struct{}
+
+func (m *MockContractStorage) Get(address engine.Address, key engine.Hash) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (m *MockContractStorage) Set(address engine.Address, key engine.Hash, value []byte) error {
+	return nil
+}
+
+func (m *MockContractStorage) Delete(address engine.Address, key engine.Hash) error {
+	return nil
+}
+
+func (m *MockContractStorage) GetStorageRoot(address engine.Address) (engine.Hash, error) {
+	return engine.Hash{}, nil
+}
+
+func (m *MockContractStorage) Commit() error {
+	return nil
+}
+
+func (m *MockContractStorage) Rollback() error {
+	return nil
+}
+
+func (m *MockContractStorage) HasKey(address engine.Address, key engine.Hash) bool {
+	return false
+}
+
+func (m *MockContractStorage) GetContractStorage(address engine.Address) (map[engine.Hash][]byte, error) {
+	return make(map[engine.Hash][]byte), nil
+}
+
+func (m *MockContractStorage) GetStorageSize(address engine.Address) (int, error) {
+	return 0, nil
+}
+
+func (m *MockContractStorage) ClearContractStorage(address engine.Address) error {
+	return nil
+}
+
+func (m *MockContractStorage) GetStorageProof(address engine.Address, key engine.Hash) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (m *MockContractStorage) VerifyStorageProof(root engine.Hash, key engine.Hash, value []byte, proof []byte) bool {
+	return true
+}
+
+// MockContractRegistry implements ContractRegistry interface for testing
+type MockContractRegistry struct{}
+
+func (m *MockContractRegistry) RegisterContract(address engine.Address, contract *engine.Contract) error {
+	return nil
+}
+
+func (m *MockContractRegistry) GetContract(address engine.Address) (*engine.Contract, error) {
+	return &engine.Contract{
+		Address: address,
+		Code:    []byte{0x00}, // STOP instruction
+		Creator: generateRandomAddress(),
+	}, nil
+}
+
+func (m *MockContractRegistry) HasContract(address engine.Address) bool {
+	return true
+}
+
+func (m *MockContractRegistry) RemoveContract(address engine.Address) error {
+	return nil
+}
+
+func (m *MockContractRegistry) GetAllContracts() ([]*engine.Contract, error) {
+	return []*engine.Contract{}, nil
+}
+
+func (m *MockContractRegistry) Clear() {
+}
+
+func (m *MockContractRegistry) Exists(address engine.Address) bool {
+	return true
+}
+
+func (m *MockContractRegistry) GenerateAddress() engine.Address {
+	return generateRandomAddress()
+}
+
+func (m *MockContractRegistry) Get(address engine.Address) (*engine.Contract, error) {
+	return &engine.Contract{
+		Address: address,
+		Code:    []byte{0x00}, // STOP instruction
+		Creator: generateRandomAddress(),
+	}, nil
+}
+
+func (m *MockContractRegistry) GetContractAddresses() []engine.Address {
+	return []engine.Address{}
+}
+
+func (m *MockContractRegistry) GetContractByCodeHash(codeHash engine.Hash) []*engine.Contract {
+	return []*engine.Contract{
+		{
+			Address: generateRandomAddress(),
+			Code:    []byte{0x00}, // STOP instruction
+			Creator: generateRandomAddress(),
+		},
+	}
+}
+
+func (m *MockContractRegistry) GetContractCount() int {
+	return 0
+}
+
+func (m *MockContractRegistry) GetContractStats() engine.ContractStats {
+	return engine.ContractStats{
+		TotalContracts:     0,
+		TotalCodeSize:      0,
+		UniqueCreators:     make(map[string]bool),
+		UniqueCreatorCount: 0,
+	}
+}
+
+func (m *MockContractRegistry) GetContractsByCreator(creator engine.Address) []*engine.Contract {
+	return []*engine.Contract{}
+}
+
+func (m *MockContractRegistry) HasContracts() bool {
+	return false
+}
+
+func (m *MockContractRegistry) List() []*engine.Contract {
+	return []*engine.Contract{}
+}
+
+func (m *MockContractRegistry) Register(contract *engine.Contract) error {
+	return nil
+}
+
+func (m *MockContractRegistry) Remove(address engine.Address) error {
+	return nil
+}
+
+func (m *MockContractRegistry) UpdateContract(contract *engine.Contract) error {
 	return nil
 }

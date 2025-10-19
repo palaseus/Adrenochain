@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/palaseus/adrenochain/pkg/exchange/data"
 	"github.com/palaseus/adrenochain/pkg/logger"
 )
 
@@ -93,6 +94,8 @@ type MarketMaker struct {
 	mu       sync.RWMutex
 	ctx      context.Context
 	cancel   context.CancelFunc
+	// Market data provider for real-time data
+	DataProvider data.MarketDataProvider
 }
 
 // MarketMakerConfig contains configuration for market making
@@ -114,14 +117,32 @@ func NewMarketMaker(id string, strategy MarketMakerStrategy, config MarketMakerC
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &MarketMaker{
-		ID:       id,
-		Strategy: strategy,
-		Config:   config,
-		Position: Position{},
-		Quotes:   make(map[string]QuotePair),
-		Logger:   logger.NewLogger(&logger.Config{Level: logger.INFO, Prefix: fmt.Sprintf("market_maker_%s", id)}),
-		ctx:      ctx,
-		cancel:   cancel,
+		ID:           id,
+		Strategy:     strategy,
+		Config:       config,
+		Position:     Position{},
+		Quotes:       make(map[string]QuotePair),
+		Logger:       logger.NewLogger(&logger.Config{Level: logger.INFO, Prefix: fmt.Sprintf("market_maker_%s", id)}),
+		ctx:          ctx,
+		cancel:       cancel,
+		DataProvider: data.NewConfigurableMarketDataProvider(),
+	}
+}
+
+// NewMarketMakerWithProvider creates a new market maker with a custom data provider
+func NewMarketMakerWithProvider(id string, strategy MarketMakerStrategy, config MarketMakerConfig, provider data.MarketDataProvider) *MarketMaker {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &MarketMaker{
+		ID:           id,
+		Strategy:     strategy,
+		Config:       config,
+		Position:     Position{},
+		Quotes:       make(map[string]QuotePair),
+		Logger:       logger.NewLogger(&logger.Config{Level: logger.INFO, Prefix: fmt.Sprintf("market_maker_%s", id)}),
+		ctx:          ctx,
+		cancel:       cancel,
+		DataProvider: provider,
 	}
 }
 
@@ -180,23 +201,56 @@ func (mm *MarketMaker) refreshQuotes() {
 	mm.Logger.Debug("Quotes refreshed - symbol: %s, bid: %.2f, ask: %.2f", marketData.Symbol, quotes.Bid.Price, quotes.Ask.Price)
 }
 
-// getMarketData retrieves current market data
+// getMarketData retrieves current market data from the data provider
 func (mm *MarketMaker) getMarketData() MarketData {
-	// This is a placeholder - in real implementation, this would fetch from exchange
+	if mm.DataProvider == nil {
+		// Fallback to default data if no provider is set
+		return MarketData{
+			Symbol:     "BTC/USDT",
+			Bid:        49999.0,
+			Ask:        50001.0,
+			MidPrice:   50000.0,
+			Spread:     2.0,
+			Volume:     1000000.0,
+			Volatility: 0.02,
+			Timestamp:  time.Now(),
+			OrderBook: OrderBook{
+				Bids: []OrderBookLevel{{Price: 49999.0, Quantity: 1.0}},
+				Asks: []OrderBookLevel{{Price: 50001.0, Quantity: 1.0}},
+			},
+		}
+	}
+
+	// Get real-time market data from provider
+	providerData := mm.DataProvider.GetMarketData("BTC/USDT")
+	
+	// Convert to internal MarketData format
 	return MarketData{
-		Symbol:     "BTC/USDT",
-		Bid:        49999.0,
-		Ask:        50001.0,
-		MidPrice:   50000.0,
-		Spread:     2.0,
-		Volume:     1000000.0,
-		Volatility: 0.02,
-		Timestamp:  time.Now(),
+		Symbol:     providerData.Symbol,
+		Bid:        providerData.Bid,
+		Ask:        providerData.Ask,
+		MidPrice:   providerData.MidPrice,
+		Spread:     providerData.Spread,
+		Volume:     providerData.Volume,
+		Volatility: providerData.Volatility,
+		Timestamp:  providerData.Timestamp,
 		OrderBook: OrderBook{
-			Bids: []OrderBookLevel{{Price: 49999.0, Quantity: 1.0}},
-			Asks: []OrderBookLevel{{Price: 50001.0, Quantity: 1.0}},
+			Bids: convertOrderBookLevels(providerData.OrderBook.Bids),
+			Asks: convertOrderBookLevels(providerData.OrderBook.Asks),
 		},
 	}
+}
+
+// convertOrderBookLevels converts data.OrderBookLevel to internal OrderBookLevel
+func convertOrderBookLevels(levels []data.OrderBookLevel) []OrderBookLevel {
+	result := make([]OrderBookLevel, len(levels))
+	for i, level := range levels {
+		result[i] = OrderBookLevel{
+			Price:    level.Price,
+			Quantity: level.Quantity,
+		}
+	}
+	return result
 }
 
 // UpdatePosition updates the market maker's position
