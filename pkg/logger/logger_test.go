@@ -179,7 +179,9 @@ func TestNewLogger_WithFileLoggingFailure(t *testing.T) {
 	os.Stderr = oldStderr
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Errorf("Failed to copy output: %v", err)
+	}
 
 	if logger.output != os.Stdout {
 		t.Error("Logger should fall back to stdout when file logging fails")
@@ -541,8 +543,12 @@ func TestLogger_RotateFile(t *testing.T) {
 	backup2 := logFile + ".2"
 
 	// Create backup files with some content
-	os.WriteFile(backup1, []byte("backup1"), 0644)
-	os.WriteFile(backup2, []byte("backup2"), 0644)
+	if err := os.WriteFile(backup1, []byte("backup1"), 0644); err != nil {
+		t.Fatalf("Failed to create backup1: %v", err)
+	}
+	if err := os.WriteFile(backup2, []byte("backup2"), 0644); err != nil {
+		t.Fatalf("Failed to create backup2: %v", err)
+	}
 
 	config := &Config{
 		MaxBackups: 3,
@@ -645,7 +651,9 @@ func TestLogger_RotateLogFile(t *testing.T) {
 
 	// Write enough content to trigger rotation
 	largeContent := strings.Repeat("x", 1024*1024) // 1MB
-	file.WriteString(largeContent)
+	if _, err := file.WriteString(largeContent); err != nil {
+		t.Fatalf("Failed to write large content: %v", err)
+	}
 	file.Close()
 
 	config := &Config{

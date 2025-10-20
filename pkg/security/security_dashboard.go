@@ -299,7 +299,10 @@ func (sd *SecurityDashboard) metricsHandler(w http.ResponseWriter, r *http.Reque
 		"last_updated":       metrics.LastUpdated,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // anomaliesHandler returns recent anomalies as JSON
@@ -307,7 +310,10 @@ func (sd *SecurityDashboard) anomaliesHandler(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 
 	anomalies := sd.monitor.GetAnomalies(20) // Get last 20 anomalies
-	json.NewEncoder(w).Encode(anomalies)
+	if err := json.NewEncoder(w).Encode(anomalies); err != nil {
+		http.Error(w, "Failed to encode anomalies", http.StatusInternalServerError)
+		return
+	}
 }
 
 // eventsHandler returns recent security events as JSON
@@ -316,7 +322,10 @@ func (sd *SecurityDashboard) eventsHandler(w http.ResponseWriter, r *http.Reques
 
 	// Get recent anomalies from the security monitor
 	anomalies := sd.monitor.GetAnomalies(10) // Get last 10 anomalies
-	json.NewEncoder(w).Encode(anomalies)
+	if err := json.NewEncoder(w).Encode(anomalies); err != nil {
+		http.Error(w, "Failed to encode anomalies", http.StatusInternalServerError)
+		return
+	}
 }
 
 // statusHandler returns the current security status
@@ -343,7 +352,10 @@ func (sd *SecurityDashboard) statusHandler(w http.ResponseWriter, r *http.Reques
 		"anomalies": len(anomalies),
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetRouter returns the HTTP router for the dashboard

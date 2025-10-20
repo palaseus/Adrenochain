@@ -783,7 +783,11 @@ func TestConcurrency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start DelegatedGovernance: %v", err)
 	}
-	defer dg.Stop()
+	defer func() {
+		if err := dg.Stop(); err != nil {
+			t.Errorf("Failed to stop delegated governance: %v", err)
+		}
+	}()
 
 	// Test concurrent delegator registration
 	const numGoroutines = 5
@@ -897,7 +901,11 @@ func TestCleanupOldData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start DelegatedGovernance: %v", err)
 	}
-	defer dg.Stop()
+	defer func() {
+		if err := dg.Stop(); err != nil {
+			t.Errorf("Failed to stop delegated governance: %v", err)
+		}
+	}()
 
 	// Register delegator and delegate
 	delegator, err := dg.RegisterDelegator("alice", big.NewInt(1000), nil)

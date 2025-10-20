@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-// Helper function to create big.Float from string to avoid overflow issues
-func bigFloatFromString(s string) *big.Float {
-	v, _ := new(big.Float).SetString(s)
-	return v
-}
-
 // Helper function to compare big.Float values with tolerance
 func compareBigFloat(t *testing.T, expected, actual *big.Float, tolerance float64, message string) {
 	expectedVal, _ := expected.Float64()
@@ -375,7 +369,9 @@ func TestPerpetualContractCalculateFundingPayment(t *testing.T) {
 
 	// Set funding rate
 	fundingRate := big.NewFloat(0.0001) // 0.01%
-	contract.UpdateFundingRate(fundingRate)
+	if err := contract.UpdateFundingRate(fundingRate); err != nil {
+		t.Errorf("Failed to update funding rate: %v", err)
+	}
 
 	// Create long position
 	longPosition, err := NewPerpetualPosition("user1", contract, Long, big.NewFloat(10), big.NewFloat(50000), big.NewFloat(10))
@@ -400,7 +396,9 @@ func TestPerpetualContractCalculateFundingPayment(t *testing.T) {
 	compareBigFloat(t, expectedPayment, fundingPayment, 0.01, "Short position funding payment")
 
 	// Test with zero funding rate
-	contract.UpdateFundingRate(big.NewFloat(0))
+	if err := contract.UpdateFundingRate(big.NewFloat(0)); err != nil {
+		t.Errorf("Failed to update funding rate to zero: %v", err)
+	}
 	fundingPayment = contract.CalculateFundingPayment(longPosition)
 	if fundingPayment.Sign() != 0 {
 		t.Error("Funding payment should be zero when funding rate is zero")
@@ -576,7 +574,9 @@ func TestPerpetualPositionGetTotalPnL(t *testing.T) {
 	}
 
 	// Update position to have unrealized PnL
-	position.UpdatePosition(big.NewFloat(51000))
+	if err := position.UpdatePosition(big.NewFloat(51000)); err != nil {
+		t.Errorf("Failed to update position: %v", err)
+	}
 
 	// Close position to have realized PnL
 	position.ClosePosition(big.NewFloat(51000))
@@ -606,7 +606,9 @@ func TestPerpetualPositionGetROI(t *testing.T) {
 	position.CalculateMargin()
 
 	// Update position to have unrealized PnL
-	position.UpdatePosition(big.NewFloat(51000))
+	if err := position.UpdatePosition(big.NewFloat(51000)); err != nil {
+		t.Errorf("Failed to update position: %v", err)
+	}
 
 	// Get ROI
 	roi := position.GetROI()

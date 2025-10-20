@@ -223,7 +223,7 @@ func (mm *MarketMaker) getMarketData() MarketData {
 
 	// Get real-time market data from provider
 	providerData := mm.DataProvider.GetMarketData("BTC/USDT")
-	
+
 	// Convert to internal MarketData format
 	return MarketData{
 		Symbol:     providerData.Symbol,

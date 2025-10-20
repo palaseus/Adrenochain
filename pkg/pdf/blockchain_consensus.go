@@ -172,7 +172,10 @@ func NewBlockchain(difficulty uint64) *Blockchain {
 
 	// Create genesis block
 	genesisBlock := createGenesisBlock(difficulty)
-	chain.AddBlock(genesisBlock)
+	if err := chain.AddBlock(genesisBlock); err != nil {
+		// Log error but continue with consensus
+		fmt.Printf("Failed to add genesis block: %v\n", err)
+	}
 
 	return chain
 }
@@ -289,7 +292,10 @@ func (bc *BlockchainConsensus) createNewBlock() {
 	// Block mined successfully
 
 	// Add block to chain
-	bc.chain.AddBlock(newBlock)
+	if err := bc.chain.AddBlock(newBlock); err != nil {
+		// Log error but continue with consensus
+		fmt.Printf("Failed to add new block: %v\n", err)
+	}
 
 	// Broadcast to network
 	bc.broadcastBlock(newBlock)

@@ -680,7 +680,11 @@ func TestCleanupOldData(t *testing.T) {
 	// Start the system
 	err := pp.Start()
 	require.NoError(t, err)
-	defer pp.Stop()
+	defer func() {
+		if err := pp.Stop(); err != nil {
+			t.Errorf("Failed to stop privacy pools: %v", err)
+		}
+	}()
 
 	// Create a pool and start mixing round
 	pool, err := pp.CreatePrivacyPool(
@@ -792,7 +796,11 @@ func TestPrivacyPools_BackgroundProcessing(t *testing.T) {
 	// Start the system
 	err := pp.Start()
 	require.NoError(t, err)
-	defer pp.Stop()
+	defer func() {
+		if err := pp.Stop(); err != nil {
+			t.Errorf("Failed to stop privacy pools: %v", err)
+		}
+	}()
 
 	// Create a pool
 	pool, err := pp.CreatePrivacyPool(

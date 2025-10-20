@@ -277,11 +277,14 @@ func (s *Server) Start() error {
 // healthHandler provides a simple health check endpoint
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"service":   "adrenochain-api",
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode health response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getChainInfoHandler returns general blockchain information
@@ -315,15 +318,21 @@ func (s *Server) getChainInfoHandler(w http.ResponseWriter, r *http.Request) {
 		info["genesis_block_hash"] = ""
 	}
 
-	json.NewEncoder(w).Encode(info)
+	if err := json.NewEncoder(w).Encode(info); err != nil {
+		http.Error(w, "Failed to encode chain info", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getChainHeightHandler returns the current blockchain height
 func (s *Server) getChainHeightHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"height": s.chain.GetHeight(),
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode height response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getChainStatusHandler returns detailed chain status
@@ -358,7 +367,10 @@ func (s *Server) getChainStatusHandler(w http.ResponseWriter, r *http.Request) {
 		status["genesis_block_hash"] = ""
 	}
 
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		http.Error(w, "Failed to encode status response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getBlockHandler returns a specific block by hash
@@ -411,7 +423,10 @@ func (s *Server) getBlockHandler(w http.ResponseWriter, r *http.Request) {
 		blockInfo["transactions"] = append(blockInfo["transactions"].([]map[string]interface{}), txInfo)
 	}
 
-	json.NewEncoder(w).Encode(blockInfo)
+	if err := json.NewEncoder(w).Encode(blockInfo); err != nil {
+		http.Error(w, "Failed to encode block info", http.StatusInternalServerError)
+		return
+	}
 }
 
 // SECURITY FIX: validateHashInput performs comprehensive hash input validation
@@ -503,7 +518,10 @@ func (s *Server) getBlockByHeightHandler(w http.ResponseWriter, r *http.Request)
 		blockInfo["transactions"] = append(blockInfo["transactions"].([]map[string]interface{}), txInfo)
 	}
 
-	json.NewEncoder(w).Encode(blockInfo)
+	if err := json.NewEncoder(w).Encode(blockInfo); err != nil {
+		http.Error(w, "Failed to encode block info", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getLatestBlockHandler returns the latest block
@@ -539,7 +557,10 @@ func (s *Server) getLatestBlockHandler(w http.ResponseWriter, r *http.Request) {
 		blockInfo["transactions"] = append(blockInfo["transactions"].([]map[string]interface{}), txInfo)
 	}
 
-	json.NewEncoder(w).Encode(blockInfo)
+	if err := json.NewEncoder(w).Encode(blockInfo); err != nil {
+		http.Error(w, "Failed to encode block info", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getTransactionHandler returns a specific transaction by hash
@@ -582,7 +603,10 @@ func (s *Server) getTransactionHandler(w http.ResponseWriter, r *http.Request) {
 		"timestamp": time.Now().UTC().Format(time.RFC3339), // This would be the block timestamp in a real implementation
 	}
 
-	json.NewEncoder(w).Encode(txInfo)
+	if err := json.NewEncoder(w).Encode(txInfo); err != nil {
+		http.Error(w, "Failed to encode transaction info", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getPendingTransactionsHandler returns pending transactions from mempool
@@ -597,10 +621,13 @@ func (s *Server) getPendingTransactionsHandler(w http.ResponseWriter, r *http.Re
 	pendingTxs := s.mempool.GetPendingTransactions()
 	count := s.mempool.GetPendingTransactionCount()
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"pending_transactions": pendingTxs,
 		"count":                count,
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode pending transactions", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getBalanceHandler returns the balance for a specific address
@@ -617,10 +644,13 @@ func (s *Server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	balance := s.wallet.GetBalance(address)
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"address": address,
 		"balance": balance,
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode balance response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getAccountsHandler returns all wallet accounts
@@ -643,10 +673,13 @@ func (s *Server) getAccountsHandler(w http.ResponseWriter, r *http.Request) {
 		accountList = append(accountList, accountInfo)
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"accounts": accountList,
 		"count":    len(accountList),
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode accounts response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getPeersHandler returns connected peers
@@ -655,10 +688,13 @@ func (s *Server) getPeersHandler(w http.ResponseWriter, r *http.Request) {
 
 	if s.network == nil {
 		// Fallback if network is not available
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"peers": []interface{}{},
 			"count": 0,
-		})
+		}); err != nil {
+			http.Error(w, "Failed to encode fallback peers response", http.StatusInternalServerError)
+			return
+		}
 		return
 	}
 
@@ -666,10 +702,13 @@ func (s *Server) getPeersHandler(w http.ResponseWriter, r *http.Request) {
 	peers := s.network.GetPeers()
 	peerCount := s.network.GetPeerCount()
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"peers": peers,
 		"count": peerCount,
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode peers response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getNetworkStatusHandler returns network status information
@@ -695,7 +734,7 @@ func (s *Server) getNetworkStatusHandler(w http.ResponseWriter, r *http.Request)
 		networkHealth = "degraded"
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":         "active",
 		"peer_count":     peerCount,
 		"peers":          peers,
@@ -703,7 +742,10 @@ func (s *Server) getNetworkStatusHandler(w http.ResponseWriter, r *http.Request)
 		"chain_height":   chainHeight,
 		"network_health": networkHealth,
 		"timestamp":      time.Now().UTC().Format(time.RFC3339),
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode network status response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // metricsHandler provides basic metrics in JSON format
@@ -738,7 +780,10 @@ func (s *Server) metricsHandler(w http.ResponseWriter, r *http.Request) {
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	}
 
-	json.NewEncoder(w).Encode(metrics)
+	if err := json.NewEncoder(w).Encode(metrics); err != nil {
+		http.Error(w, "Failed to encode metrics", http.StatusInternalServerError)
+		return
+	}
 }
 
 // prometheusHandler provides metrics in Prometheus format
@@ -791,5 +836,8 @@ adrenochain_uptime_seconds %d
 		int64(time.Since(time.Now().Add(-time.Hour)).Seconds()), // Mock uptime
 	)
 
-	w.Write([]byte(prometheusMetrics))
+	if _, err := w.Write([]byte(prometheusMetrics)); err != nil {
+		http.Error(w, "Failed to write metrics", http.StatusInternalServerError)
+		return
+	}
 }

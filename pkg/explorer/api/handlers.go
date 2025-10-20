@@ -205,7 +205,10 @@ func (h *ExplorerHandler) writeJSONResponse(w http.ResponseWriter, data interfac
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	if _, err := w.Write(jsonData); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // parsePaginationParams parses limit and offset from query parameters
@@ -272,5 +275,8 @@ func (h *ExplorerHandler) writeErrorResponse(w http.ResponseWriter, statusCode i
 	}
 
 	w.WriteHeader(statusCode)
-	w.Write(jsonData)
+	if _, err := w.Write(jsonData); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }

@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"sync"
 	"time"
-
 )
 
 // UltraOptimizedConsensus represents the FINAL optimized consensus

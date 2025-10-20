@@ -6,30 +6,6 @@ import (
 	"time"
 )
 
-// Helper function to create big.Float from string to avoid overflow issues
-func bigFloatFromString(s string) *big.Float {
-	v, _ := new(big.Float).SetString(s)
-	return v
-}
-
-// Helper function to compare big.Float values with tolerance
-func compareBigFloat(t *testing.T, expected, actual *big.Float, tolerance float64, message string) {
-	expectedVal, _ := expected.Float64()
-	actualVal, _ := actual.Float64()
-
-	if abs(expectedVal-actualVal) > tolerance {
-		t.Errorf("%s: expected %.6f, got %.6f", message, expectedVal, actualVal)
-	}
-}
-
-// Helper function for absolute value
-func abs(x float64) float64 {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
 func TestNewTradingEngine(t *testing.T) {
 	engine := NewTradingEngine()
 
@@ -381,7 +357,9 @@ func TestTradingEngineAddStrategy(t *testing.T) {
 func TestTradingEngineRemoveStrategy(t *testing.T) {
 	engine := NewTradingEngine()
 	strategy, _ := NewStrategy("test_id", "Test", "Description", MarketMaking, nil)
-	engine.AddStrategy(strategy)
+	if err := engine.AddStrategy(strategy); err != nil {
+		t.Errorf("Failed to add strategy: %v", err)
+	}
 
 	err := engine.RemoveStrategy("test_id")
 	if err != nil {
@@ -408,7 +386,9 @@ func TestTradingEngineRemoveStrategy(t *testing.T) {
 func TestTradingEngineStartStopStrategy(t *testing.T) {
 	engine := NewTradingEngine()
 	strategy, _ := NewStrategy("test_id", "Test", "Description", MarketMaking, nil)
-	engine.AddStrategy(strategy)
+	if err := engine.AddStrategy(strategy); err != nil {
+		t.Errorf("Failed to add strategy: %v", err)
+	}
 
 	// Test starting strategy
 	err := engine.StartStrategy("test_id")
@@ -440,8 +420,12 @@ func TestTradingEngineStartStopStrategy(t *testing.T) {
 func TestTradingEnginePlaceOrder(t *testing.T) {
 	engine := NewTradingEngine()
 	strategy, _ := NewStrategy("test_id", "Test", "Description", MarketMaking, nil)
-	engine.AddStrategy(strategy)
-	engine.StartStrategy("test_id")
+	if err := engine.AddStrategy(strategy); err != nil {
+		t.Errorf("Failed to add strategy: %v", err)
+	}
+	if err := engine.StartStrategy("test_id"); err != nil {
+		t.Errorf("Failed to start strategy: %v", err)
+	}
 
 	order, _ := NewOrder("order_id", "test_id", "asset_id", Buy, big.NewFloat(10), big.NewFloat(100), Limit)
 
@@ -468,7 +452,9 @@ func TestTradingEnginePlaceOrder(t *testing.T) {
 	}
 
 	// Test placing order with inactive strategy
-	engine.StopStrategy("test_id")
+	if err := engine.StopStrategy("test_id"); err != nil {
+		t.Errorf("Failed to stop strategy: %v", err)
+	}
 	order3, _ := NewOrder("order_id3", "test_id", "asset_id", Buy, big.NewFloat(10), big.NewFloat(100), Limit)
 	err = engine.PlaceOrder(order3)
 	if err == nil {
@@ -485,11 +471,17 @@ func TestTradingEnginePlaceOrder(t *testing.T) {
 func TestTradingEngineCancelOrder(t *testing.T) {
 	engine := NewTradingEngine()
 	strategy, _ := NewStrategy("test_id", "Test", "Description", MarketMaking, nil)
-	engine.AddStrategy(strategy)
-	engine.StartStrategy("test_id")
+	if err := engine.AddStrategy(strategy); err != nil {
+		t.Errorf("Failed to add strategy: %v", err)
+	}
+	if err := engine.StartStrategy("test_id"); err != nil {
+		t.Errorf("Failed to start strategy: %v", err)
+	}
 
 	order, _ := NewOrder("order_id", "test_id", "asset_id", Buy, big.NewFloat(10), big.NewFloat(100), Limit)
-	engine.PlaceOrder(order)
+	if err := engine.PlaceOrder(order); err != nil {
+		t.Errorf("Failed to place order: %v", err)
+	}
 
 	err := engine.CancelOrder("order_id")
 	if err != nil {
@@ -696,7 +688,9 @@ func TestArbitrageStrategyExecuteArbitrage(t *testing.T) {
 func TestTradingEngineGetters(t *testing.T) {
 	engine := NewTradingEngine()
 	strategy, _ := NewStrategy("test_id", "Test", "Description", MarketMaking, nil)
-	engine.AddStrategy(strategy)
+	if err := engine.AddStrategy(strategy); err != nil {
+		t.Errorf("Failed to add strategy: %v", err)
+	}
 
 	// Test GetStrategy
 	retrievedStrategy, err := engine.GetStrategy("test_id")
@@ -720,7 +714,9 @@ func TestTradingEngineGetters(t *testing.T) {
 	}
 
 	// Test GetActiveStrategies
-	engine.StartStrategy("test_id")
+	if err := engine.StartStrategy("test_id"); err != nil {
+		t.Errorf("Failed to start strategy: %v", err)
+	}
 	activeStrategies := engine.GetActiveStrategies()
 	if len(activeStrategies) != 1 {
 		t.Errorf("Expected 1 active strategy, got %d", len(activeStrategies))
@@ -737,7 +733,9 @@ func TestTradingEngineGetters(t *testing.T) {
 		BidSize:   big.NewFloat(50),
 		AskSize:   big.NewFloat(50),
 	}
-	engine.UpdateMarketData(marketData)
+	if err := engine.UpdateMarketData(marketData); err != nil {
+		t.Errorf("Failed to update market data: %v", err)
+	}
 
 	retrievedMarketData, err := engine.GetMarketData("asset_id")
 	if err != nil {
@@ -833,18 +831,4 @@ func BenchmarkArbitrageStrategyDetectArbitrage(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, _ = as.DetectArbitrage(marketData1, marketData2)
 	}
-}
-
-// Helper function to check if string contains substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsSubstring(s, substr))))
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

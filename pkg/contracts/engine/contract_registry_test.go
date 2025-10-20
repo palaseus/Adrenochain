@@ -2,7 +2,9 @@ package engine
 
 import (
 	"crypto/rand"
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestNewContractRegistry(t *testing.T) {
@@ -653,13 +655,21 @@ func TestContractRegistryString(t *testing.T) {
 // Helper function to generate random addresses for testing
 func generateRandomAddress() Address {
 	var address Address
-	rand.Read(address[:])
+	if _, err := rand.Read(address[:]); err != nil {
+		// Fallback to timestamp-based address if random generation fails
+		address = [20]byte{}
+		copy(address[:], []byte(fmt.Sprintf("addr_%d", time.Now().UnixNano())))
+	}
 	return address
 }
 
 // Helper function to generate random hashes for testing
 func generateRandomHash() Hash {
 	var hash Hash
-	rand.Read(hash[:])
+	if _, err := rand.Read(hash[:]); err != nil {
+		// Fallback to timestamp-based hash if random generation fails
+		hash = [32]byte{}
+		copy(hash[:], []byte(fmt.Sprintf("hash_%d", time.Now().UnixNano())))
+	}
 	return hash
 }

@@ -8,9 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"math/big"
+
 	"github.com/gorilla/websocket"
 	"github.com/palaseus/adrenochain/pkg/exchange/orderbook"
-	"math/big"
 )
 
 // MarketDataWebSocket handles WebSocket connections for real-time market data
@@ -114,9 +115,15 @@ func (c *Client) readPump() {
 	}()
 
 	c.conn.SetReadLimit(512)
-	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	if err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+		// Log error but continue
+		fmt.Printf("Failed to set read deadline: %v\n", err)
+	}
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		if err := c.conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+			// Log error but continue
+			fmt.Printf("Failed to set read deadline: %v\n", err)
+		}
 		return nil
 	})
 
@@ -145,9 +152,15 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+				// Log error but continue
+				fmt.Printf("Failed to set write deadline: %v\n", err)
+			}
 			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+					// Log error but continue
+					fmt.Printf("Failed to write close message: %v\n", err)
+				}
 				return
 			}
 
@@ -155,14 +168,20 @@ func (c *Client) writePump() {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			if _, err := w.Write(message); err != nil {
+				// Log error but continue
+				fmt.Printf("Failed to write message: %v\n", err)
+			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+				// Log error but continue
+				fmt.Printf("Failed to set write deadline: %v\n", err)
+			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

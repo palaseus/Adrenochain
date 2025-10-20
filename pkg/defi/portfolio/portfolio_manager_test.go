@@ -281,7 +281,9 @@ func TestPortfolioManagerAddPortfolio(t *testing.T) {
 func TestPortfolioManagerRemovePortfolio(t *testing.T) {
 	pm := NewPortfolioManager()
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
-	pm.AddPortfolio(portfolio)
+	if err := pm.AddPortfolio(portfolio); err != nil {
+		t.Errorf("Failed to add portfolio: %v", err)
+	}
 
 	err := pm.RemovePortfolio("test_id")
 	if err != nil {
@@ -334,7 +336,9 @@ func TestPortfolioManagerAddAsset(t *testing.T) {
 func TestPortfolioManagerUpdateAssetPrice(t *testing.T) {
 	pm := NewPortfolioManager()
 	asset, _ := NewAsset("btc", "BTC", "Bitcoin", Cryptocurrency, big.NewFloat(50000), big.NewFloat(1000000000), big.NewFloat(50000000), big.NewFloat(0.7))
-	pm.AddAsset(asset)
+	if err := pm.AddAsset(asset); err != nil {
+		t.Errorf("Failed to add asset: %v", err)
+	}
 
 	// Test successful price update
 	newPrice := big.NewFloat(55000)
@@ -350,8 +354,12 @@ func TestPortfolioManagerUpdateAssetPrice(t *testing.T) {
 	// Test with portfolio that has a position in this asset
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
-	pm.AddPortfolio(portfolio)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
+	if err := pm.AddPortfolio(portfolio); err != nil {
+		t.Errorf("Failed to add portfolio: %v", err)
+	}
 
 	// Update asset price again to trigger portfolio position update
 	anotherPrice := big.NewFloat(60000)
@@ -428,7 +436,9 @@ func TestPortfolioAddPosition(t *testing.T) {
 func TestPortfolioUpdatePosition(t *testing.T) {
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
 
 	// Update position
 	newQuantity := big.NewFloat(2)
@@ -476,7 +486,9 @@ func TestPortfolioUpdatePosition(t *testing.T) {
 func TestPortfolioRemovePosition(t *testing.T) {
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
 
 	err := portfolio.RemovePosition("btc")
 	if err != nil {
@@ -508,7 +520,9 @@ func TestPortfolioRemovePosition(t *testing.T) {
 func TestPortfolioCalculatePnL(t *testing.T) {
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
 
 	// Update asset price to simulate price change
 	portfolio.updatePositionPrice("btc", big.NewFloat(55000))
@@ -533,8 +547,12 @@ func TestPortfolioUpdatePositionWeights(t *testing.T) {
 	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
 	ethPosition, _ := NewPosition("eth", big.NewFloat(10), big.NewFloat(3000))
 
-	portfolio.AddPosition(btcPosition)
-	portfolio.AddPosition(ethPosition)
+	if err := portfolio.AddPosition(btcPosition); err != nil {
+		t.Errorf("Failed to add BTC position: %v", err)
+	}
+	if err := portfolio.AddPosition(ethPosition); err != nil {
+		t.Errorf("Failed to add ETH position: %v", err)
+	}
 
 	// Update weights
 	portfolio.updatePositionWeights()
@@ -562,8 +580,12 @@ func TestPortfolioRebalancePortfolio(t *testing.T) {
 	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
 	ethPosition, _ := NewPosition("eth", big.NewFloat(10), big.NewFloat(3000))
 
-	portfolio.AddPosition(btcPosition)
-	portfolio.AddPosition(ethPosition)
+	if err := portfolio.AddPosition(btcPosition); err != nil {
+		t.Errorf("Failed to add BTC position: %v", err)
+	}
+	if err := portfolio.AddPosition(ethPosition); err != nil {
+		t.Errorf("Failed to add ETH position: %v", err)
+	}
 
 	// Set target weights (60% BTC, 40% ETH)
 	targetWeights := map[string]*big.Float{
@@ -635,7 +657,9 @@ func TestPortfolioGetters(t *testing.T) {
 
 	// Add a position and test again
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
 
 	value = portfolio.GetPortfolioValue()
 	if value.Cmp(big.NewFloat(50000)) != 0 {
@@ -668,7 +692,9 @@ func TestPortfolioManagerGetters(t *testing.T) {
 
 	// Test GetPortfolio
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
-	pm.AddPortfolio(portfolio)
+	if err := pm.AddPortfolio(portfolio); err != nil {
+		t.Errorf("Failed to add portfolio: %v", err)
+	}
 
 	retrievedPortfolio, err := pm.GetPortfolio("test_id")
 	if err != nil {
@@ -692,7 +718,9 @@ func TestPortfolioManagerGetters(t *testing.T) {
 
 	// Test GetAsset
 	asset, _ := NewAsset("btc", "BTC", "Bitcoin", Cryptocurrency, big.NewFloat(50000), big.NewFloat(1000000000), big.NewFloat(50000000), big.NewFloat(0.7))
-	pm.AddAsset(asset)
+	if err := pm.AddAsset(asset); err != nil {
+		t.Errorf("Failed to add asset: %v", err)
+	}
 
 	retrievedAsset, err := pm.GetAsset("btc")
 	if err != nil {
@@ -849,7 +877,9 @@ func TestPortfolioGetTotalPnLPercentZeroValue(t *testing.T) {
 
 	// Add a position with negative PnL to test the calculation
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
 
 	// Manually set negative PnL
 	position.Pnl = big.NewFloat(-1000)
@@ -871,7 +901,9 @@ func TestPortfolioRebalancePortfolioEdgeCases(t *testing.T) {
 
 	// Add a position
 	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(btcPosition)
+	if err := portfolio.AddPosition(btcPosition); err != nil {
+		t.Errorf("Failed to add BTC position: %v", err)
+	}
 
 	// Test with target weights that don't include existing assets
 	targetWeights := map[string]*big.Float{
@@ -922,7 +954,9 @@ func TestPortfolioRebalancePortfolioWithZeroTargetValue(t *testing.T) {
 
 	// Add a position
 	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(btcPosition)
+	if err := portfolio.AddPosition(btcPosition); err != nil {
+		t.Errorf("Failed to add BTC position: %v", err)
+	}
 
 	// Test with target weights that include zero values
 	targetWeights := map[string]*big.Float{
@@ -957,19 +991,27 @@ func BenchmarkPortfolioAddPosition(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		portfolio.AddPosition(position)
-		portfolio.RemovePosition("btc")
+		if err := portfolio.AddPosition(position); err != nil {
+			b.Errorf("Failed to add position: %v", err)
+		}
+		if err := portfolio.RemovePosition("btc"); err != nil {
+			b.Errorf("Failed to remove position: %v", err)
+		}
 	}
 }
 
 func BenchmarkPortfolioUpdatePosition(b *testing.B) {
 	portfolio, _ := NewPortfolio("test_id", "Test", "Description", "owner", Moderate, BuyAndHold)
 	position, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		b.Errorf("Failed to add position: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		portfolio.UpdatePosition("btc", big.NewFloat(1), big.NewFloat(50000+float64(i)))
+		if err := portfolio.UpdatePosition("btc", big.NewFloat(1), big.NewFloat(50000+float64(i))); err != nil {
+			b.Errorf("Failed to update position: %v", err)
+		}
 	}
 }
 
@@ -979,8 +1021,12 @@ func BenchmarkPortfolioRebalance(b *testing.B) {
 	// Add multiple positions
 	btcPosition, _ := NewPosition("btc", big.NewFloat(1), big.NewFloat(50000))
 	ethPosition, _ := NewPosition("eth", big.NewFloat(10), big.NewFloat(3000))
-	portfolio.AddPosition(btcPosition)
-	portfolio.AddPosition(ethPosition)
+	if err := portfolio.AddPosition(btcPosition); err != nil {
+		b.Errorf("Failed to add BTC position: %v", err)
+	}
+	if err := portfolio.AddPosition(ethPosition); err != nil {
+		b.Errorf("Failed to add ETH position: %v", err)
+	}
 
 	targetWeights := map[string]*big.Float{
 		"btc": big.NewFloat(60),
@@ -989,7 +1035,9 @@ func BenchmarkPortfolioRebalance(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		portfolio.RebalancePortfolio(targetWeights)
+		if err := portfolio.RebalancePortfolio(targetWeights); err != nil {
+			b.Errorf("Failed to rebalance portfolio: %v", err)
+		}
 		portfolio.ClearRebalancingTrades()
 	}
 }

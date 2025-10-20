@@ -206,7 +206,10 @@ func (sp *SyncProtocol) recordError(peerID peer.ID, err error) {
 			// Schedule retry
 			go func() {
 				time.Sleep(retryDelay)
-				sp.StartSync(peerID)
+				if err := sp.StartSync(peerID); err != nil {
+					// Log error but continue with sync
+					fmt.Printf("Failed to start sync with peer %s: %v\n", peerID, err)
+				}
 			}()
 		} else {
 
@@ -517,7 +520,7 @@ func (sp *SyncProtocol) getLocalStateRoot() ([]byte, error) {
 	if sp.storage == nil {
 		return nil, fmt.Errorf("storage not available")
 	}
-	
+
 	// Try to get the latest state root from storage
 	stateRootKey := []byte("state_root")
 	stateRoot, err := sp.storage.Read(stateRootKey)
@@ -526,7 +529,7 @@ func (sp *SyncProtocol) getLocalStateRoot() ([]byte, error) {
 		// In a real implementation, this would be the actual state trie root
 		stateRoot = []byte("default_state_root")
 	}
-	
+
 	return stateRoot, nil
 }
 
@@ -537,11 +540,11 @@ func (sp *SyncProtocol) getLocalStateNode(nodeHash []byte) ([]byte, error) {
 	if len(nodeHash) == 0 {
 		return nil, fmt.Errorf("empty node hash")
 	}
-	
+
 	if sp.storage == nil {
 		return nil, fmt.Errorf("storage not available")
 	}
-	
+
 	// Try to get the state node from storage
 	nodeKey := append([]byte("state_node_"), nodeHash...)
 	nodeData, err := sp.storage.Read(nodeKey)
@@ -549,7 +552,7 @@ func (sp *SyncProtocol) getLocalStateNode(nodeHash []byte) ([]byte, error) {
 		// If node not found, return error
 		return nil, fmt.Errorf("state node not found: %w", err)
 	}
-	
+
 	return nodeData, nil
 }
 

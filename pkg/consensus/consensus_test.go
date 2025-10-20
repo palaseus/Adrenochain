@@ -682,7 +682,9 @@ func TestConsensus_BlockValidationComprehensive(t *testing.T) {
 				b.Header.MerkleRoot = b.CalculateMerkleRoot()
 
 				// Mine the block to get valid proof of work
-				consensus.MineBlock(b, make(chan struct{}))
+				if err := consensus.MineBlock(b, make(chan struct{})); err != nil {
+					t.Errorf("Failed to mine block: %v", err)
+				}
 
 				return b
 			}(),
@@ -1364,10 +1366,17 @@ func TestMineBlock(t *testing.T) {
 
 	// Test that mining sets the nonce (even if it doesn't complete successfully)
 	stopChan := make(chan struct{})
+	doneChan := make(chan struct{})
 
 	// Start mining in a goroutine
 	go func() {
-		consensus.MineBlock(testBlock, stopChan)
+		defer close(doneChan)
+		if err := consensus.MineBlock(testBlock, stopChan); err != nil {
+			// "mining stopped" is expected when we close the stopChan
+			if !strings.Contains(err.Error(), "mining stopped") {
+				t.Errorf("Failed to mine test block: %v", err)
+			}
+		}
 	}()
 
 	// Let it run for a short time to see if it sets the nonce
@@ -1375,6 +1384,9 @@ func TestMineBlock(t *testing.T) {
 
 	// Stop mining
 	close(stopChan)
+
+	// Wait for mining to complete
+	<-doneChan
 
 	// Verify that the nonce was set (even if mining didn't complete)
 	assert.True(t, testBlock.Header.Nonce >= 0, "Nonce should be set during mining")

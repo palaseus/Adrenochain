@@ -883,22 +883,38 @@ func BenchmarkAddTransaction(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		tx := createValidTransaction(fmt.Sprintf("tx%d", i))
-		rollup.AddTransaction(tx)
+		if err := rollup.AddTransaction(tx); err != nil {
+			// Only log first few errors to avoid spam
+			if i < 5 {
+				b.Errorf("Failed to add transaction: %v", err)
+			}
+		}
 	}
 }
 
 func BenchmarkProcessBatch(b *testing.B) {
 	rollup := NewZKRollup(ZKRollupConfig{MaxBatchSize: 1000})
 
-	// Pre-populate with transactions
-	for i := 0; i < 1000; i++ {
-		tx := createValidTransaction(fmt.Sprintf("tx%d", i))
-		rollup.AddTransaction(tx)
-	}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		rollup.ProcessBatch()
+		// Add transactions for this iteration
+		for j := 0; j < 100; j++ {
+			tx := createValidTransaction(fmt.Sprintf("tx_%d_%d", i, j))
+			if err := rollup.AddTransaction(tx); err != nil {
+				// Only log first few errors to avoid spam
+				if i < 5 && j < 5 {
+					b.Errorf("Failed to add transaction: %v", err)
+				}
+			}
+		}
+
+		// Process the batch
+		if _, err := rollup.ProcessBatch(); err != nil {
+			// Only log first few errors to avoid spam
+			if i < 5 {
+				b.Errorf("Failed to process batch: %v", err)
+			}
+		}
 	}
 }
 

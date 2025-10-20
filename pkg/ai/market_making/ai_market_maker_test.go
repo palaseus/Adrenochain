@@ -666,17 +666,20 @@ func TestSharpeRatioCalculation(t *testing.T) {
 
 // Benchmark tests for performance
 func BenchmarkCreatePosition(b *testing.B) {
-	mm := NewAIMarketMaker(MarketMakerConfig{
-		MaxPositions: 1000,
-		MinLiquidity: big.NewInt(1000000000000000000),
-	})
-
 	amountA := big.NewInt(1000000000000000000)
 	amountB := big.NewInt(2000000000)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		mm.CreatePosition("ETH", "USDC", amountA, amountB)
+		// Create a fresh instance for each iteration to avoid position limits
+		mm := NewAIMarketMaker(MarketMakerConfig{
+			MaxPositions: 1000,
+			MinLiquidity: big.NewInt(1000000000000000000),
+		})
+
+		if _, err := mm.CreatePosition("ETH", "USDC", amountA, amountB); err != nil {
+			b.Fatalf("Failed to create position: %v", err)
+		}
 	}
 }
 
@@ -696,7 +699,9 @@ func BenchmarkUpdatePosition(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		mm.UpdatePosition(position.ID, newAmountA, newAmountB)
+		if err := mm.UpdatePosition(position.ID, newAmountA, newAmountB); err != nil {
+			b.Errorf("Failed to update position: %v", err)
+		}
 	}
 }
 
@@ -721,6 +726,8 @@ func BenchmarkOptimizeLiquidity(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		mm.OptimizeLiquidity()
+		if err := mm.OptimizeLiquidity(); err != nil {
+			b.Errorf("Failed to optimize liquidity: %v", err)
+		}
 	}
 }

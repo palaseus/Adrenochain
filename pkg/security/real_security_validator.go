@@ -461,7 +461,10 @@ func (rsv *RealSecurityValidator) generateMalformedInput(iteration int) string {
 	case 9:
 		// Random bytes
 		randomBytes := make([]byte, 100)
-		rand.Read(randomBytes)
+		if _, err := rand.Read(randomBytes); err != nil {
+			// Log error but continue with fallback
+			fmt.Printf("Failed to read random bytes: %v\n", err)
+		}
 		return string(randomBytes)
 	default:
 		return "normal_input"
@@ -540,7 +543,10 @@ func (rsv *RealSecurityValidator) randomChance(probability float64) bool {
 	// Simple random number generation for testing
 	// Use crypto/rand for better randomness
 	randomBytes := make([]byte, 8)
-	rand.Read(randomBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		// Fallback to timestamp-based bytes if random generation fails
+		copy(randomBytes, []byte(fmt.Sprintf("random_%d", time.Now().UnixNano())))
+	}
 	// Convert to float64 between 0 and 1
 	randomValue := float64(randomBytes[0]) / 255.0
 	return randomValue < probability

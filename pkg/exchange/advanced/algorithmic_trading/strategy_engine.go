@@ -68,7 +68,6 @@ type ExecutorState struct {
 	OpenOrders      int       `json:"open_orders"`
 }
 
-
 // OrderManager defines the interface for order management
 type OrderManager interface {
 	PlaceOrder(order TradingSignal) (string, error)
@@ -135,7 +134,10 @@ func (engine *StrategyEngine) UnregisterStrategy(id string) error {
 
 	// Stop executor if running
 	if executor, exists := engine.executors[id]; exists {
-		executor.Stop()
+		if err := executor.Stop(); err != nil {
+			// Log error but continue cleanup
+			fmt.Printf("Failed to stop executor: %v\n", err)
+		}
 		delete(engine.executors, id)
 	}
 

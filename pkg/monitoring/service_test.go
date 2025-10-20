@@ -330,7 +330,11 @@ func TestMetricsCollection(t *testing.T) {
 	// Start service to trigger metrics collection
 	err = service.Start()
 	require.NoError(t, err)
-	defer service.Stop()
+	defer func() {
+		if err := service.Stop(); err != nil {
+			t.Errorf("Failed to stop service: %v", err)
+		}
+	}()
 
 	// Manually trigger metrics update to ensure they are collected
 	service.UpdateMetrics()
@@ -582,7 +586,11 @@ func TestMetricsReset(t *testing.T) {
 	// Start service
 	err = service.Start()
 	require.NoError(t, err)
-	defer service.Stop()
+	defer func() {
+		if err := service.Stop(); err != nil {
+			t.Errorf("Failed to stop service: %v", err)
+		}
+	}()
 
 	// Manually trigger metrics update to ensure they are collected
 	service.UpdateMetrics()

@@ -72,7 +72,19 @@ type HealthCallback func(nodeID NodeID, result *HealthResult)
 
 // NewHealthMonitor creates a new health monitor
 func NewHealthMonitor(checkInterval time.Duration) *HealthMonitor {
+	return NewHealthMonitorWithTestMode(checkInterval, false)
+}
+
+// NewHealthMonitorWithTestMode creates a new health monitor with test mode support
+func NewHealthMonitorWithTestMode(checkInterval time.Duration, testMode bool) *HealthMonitor {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	var logger *Logger
+	if testMode {
+		logger = NewTestLogger("health-monitor")
+	} else {
+		logger = NewLogger("health-monitor")
+	}
 
 	monitor := &HealthMonitor{
 		checkInterval: checkInterval,
@@ -82,11 +94,13 @@ func NewHealthMonitor(checkInterval time.Duration) *HealthMonitor {
 		callbacks:     make([]HealthCallback, 0),
 		ctx:           ctx,
 		cancel:        cancel,
-		logger:        NewLogger("health-monitor"),
+		logger:        logger,
 	}
 
-	// Start monitoring loop
-	go monitor.startMonitoring()
+	// Start monitoring loop only if not in test mode
+	if !testMode {
+		go monitor.startMonitoring()
+	}
 
 	return monitor
 }

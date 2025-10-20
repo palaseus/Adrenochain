@@ -379,7 +379,10 @@ func (ith *IntegrationTestHelpers) SimulateGovernanceActivity(env *GovernanceTes
 						Timestamp:   time.Now(),
 					}
 
-					env.VotingSystem.CastVote(proposal.ID, vote.Voter, vote.VoteChoice, vote.VotingPower.String())
+					if err := env.VotingSystem.CastVote(proposal.ID, vote.Voter, vote.VoteChoice, vote.VotingPower.String()); err != nil {
+						// Log error but continue
+						fmt.Printf("Failed to cast vote: %v\n", err)
+					}
 					voteCount++
 				}
 			}

@@ -833,7 +833,10 @@ func (cpg *CrossProtocolGovernance) getAlignmentKey(protocol1ID, protocol2ID Pro
 // generateTransactionHash generates a mock transaction hash
 func (cpg *CrossProtocolGovernance) generateTransactionHash() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to timestamp-based hash if random generation fails
+		return fmt.Sprintf("0x%x", sha256.Sum256([]byte(fmt.Sprintf("%d", time.Now().UnixNano()))))
+	}
 	hash := sha256.Sum256(b)
 	return fmt.Sprintf("0x%x", hash)
 }
@@ -856,6 +859,9 @@ func (cpg *CrossProtocolGovernance) Close() error {
 // GetRandomID generates a random ID for testing
 func (cpg *CrossProtocolGovernance) GetRandomID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
 	return fmt.Sprintf("%x", b)
 }

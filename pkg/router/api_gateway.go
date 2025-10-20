@@ -137,7 +137,10 @@ func (ag *APIGateway) healthHandler(w http.ResponseWriter, r *http.Request) {
 		"version":   "1.0.0",
 	}
 
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // metricsHandler provides metrics endpoint
@@ -150,7 +153,10 @@ func (ag *APIGateway) metricsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(metrics)
+	if err := json.NewEncoder(w).Encode(metrics); err != nil {
+		http.Error(w, "Failed to encode metrics", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getClustersHandler returns all clusters
@@ -158,7 +164,10 @@ func (ag *APIGateway) getClustersHandler(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 
 	clusters := ag.router.GetClusterStatus()
-	json.NewEncoder(w).Encode(clusters)
+	if err := json.NewEncoder(w).Encode(clusters); err != nil {
+		http.Error(w, "Failed to encode clusters", http.StatusInternalServerError)
+		return
+	}
 }
 
 // createClusterHandler creates a new cluster
@@ -177,7 +186,10 @@ func (ag *APIGateway) createClusterHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(cluster)
+	if err := json.NewEncoder(w).Encode(cluster); err != nil {
+		http.Error(w, "Failed to encode cluster", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getClusterHandler returns a specific cluster
@@ -194,7 +206,10 @@ func (ag *APIGateway) getClusterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	json.NewEncoder(w).Encode(cluster)
+	if err := json.NewEncoder(w).Encode(cluster); err != nil {
+		http.Error(w, "Failed to encode cluster", http.StatusInternalServerError)
+		return
+	}
 }
 
 // updateClusterHandler updates a cluster
@@ -219,7 +234,10 @@ func (ag *APIGateway) updateClusterHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	json.NewEncoder(w).Encode(cluster)
+	if err := json.NewEncoder(w).Encode(cluster); err != nil {
+		http.Error(w, "Failed to encode cluster", http.StatusInternalServerError)
+		return
+	}
 }
 
 // deleteClusterHandler deletes a cluster
@@ -236,7 +254,10 @@ func (ag *APIGateway) deleteClusterHandler(w http.ResponseWriter, r *http.Reques
 		"message": fmt.Sprintf("Cluster %s deleted", clusterID),
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getNodesHandler returns all nodes
@@ -244,7 +265,10 @@ func (ag *APIGateway) getNodesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	nodes := ag.router.GetNodeStatus()
-	json.NewEncoder(w).Encode(nodes)
+	if err := json.NewEncoder(w).Encode(nodes); err != nil {
+		http.Error(w, "Failed to encode nodes", http.StatusInternalServerError)
+		return
+	}
 }
 
 // createNodeHandler creates a new node
@@ -263,7 +287,10 @@ func (ag *APIGateway) createNodeHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(node)
+	if err := json.NewEncoder(w).Encode(node); err != nil {
+		http.Error(w, "Failed to encode node", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getNodeHandler returns a specific node
@@ -280,7 +307,10 @@ func (ag *APIGateway) getNodeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(node)
+	if err := json.NewEncoder(w).Encode(node); err != nil {
+		http.Error(w, "Failed to encode node", http.StatusInternalServerError)
+		return
+	}
 }
 
 // updateNodeHandler updates a node
@@ -305,7 +335,10 @@ func (ag *APIGateway) updateNodeHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	json.NewEncoder(w).Encode(node)
+	if err := json.NewEncoder(w).Encode(node); err != nil {
+		http.Error(w, "Failed to encode node", http.StatusInternalServerError)
+		return
+	}
 }
 
 // deleteNodeHandler deletes a node
@@ -322,7 +355,10 @@ func (ag *APIGateway) deleteNodeHandler(w http.ResponseWriter, r *http.Request) 
 		"message": fmt.Sprintf("Node %s deleted", nodeID),
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // routeRequestHandler routes a request
@@ -341,7 +377,10 @@ func (ag *APIGateway) routeRequestHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getRoutingStatusHandler returns routing status
@@ -354,7 +393,10 @@ func (ag *APIGateway) getRoutingStatusHandler(w http.ResponseWriter, r *http.Req
 		"metrics":  ag.router.GetMetrics(),
 	}
 
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getDiscoveredClustersHandler returns discovered clusters
@@ -364,7 +406,10 @@ func (ag *APIGateway) getDiscoveredClustersHandler(w http.ResponseWriter, r *htt
 	// This would integrate with the cluster discovery system
 	// For now, return empty result
 	clusters := make(map[ClusterID]*DiscoveredCluster)
-	json.NewEncoder(w).Encode(clusters)
+	if err := json.NewEncoder(w).Encode(clusters); err != nil {
+		http.Error(w, "Failed to encode clusters", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getDiscoveredNodesHandler returns discovered nodes
@@ -374,7 +419,10 @@ func (ag *APIGateway) getDiscoveredNodesHandler(w http.ResponseWriter, r *http.R
 	// This would integrate with the cluster discovery system
 	// For now, return empty result
 	nodes := make(map[NodeID]*DiscoveredNode)
-	json.NewEncoder(w).Encode(nodes)
+	if err := json.NewEncoder(w).Encode(nodes); err != nil {
+		http.Error(w, "Failed to encode nodes", http.StatusInternalServerError)
+		return
+	}
 }
 
 // refreshDiscoveryHandler triggers discovery refresh
@@ -388,7 +436,10 @@ func (ag *APIGateway) refreshDiscoveryHandler(w http.ResponseWriter, r *http.Req
 		"message": "Discovery refresh triggered",
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getClusterHealthHandler returns cluster health status
@@ -402,7 +453,10 @@ func (ag *APIGateway) getClusterHealthHandler(w http.ResponseWriter, r *http.Req
 		"clusters": ag.router.GetClusterStatus(),
 	}
 
-	json.NewEncoder(w).Encode(health)
+	if err := json.NewEncoder(w).Encode(health); err != nil {
+		http.Error(w, "Failed to encode health", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getNodeHealthHandler returns node health status
@@ -416,7 +470,10 @@ func (ag *APIGateway) getNodeHealthHandler(w http.ResponseWriter, r *http.Reques
 		"nodes":  ag.router.GetNodeStatus(),
 	}
 
-	json.NewEncoder(w).Encode(health)
+	if err := json.NewEncoder(w).Encode(health); err != nil {
+		http.Error(w, "Failed to encode health", http.StatusInternalServerError)
+		return
+	}
 }
 
 // checkNodeHealthHandler performs health check on a specific node
@@ -434,7 +491,10 @@ func (ag *APIGateway) checkNodeHealthHandler(w http.ResponseWriter, r *http.Requ
 		"status":  "healthy",
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getLoadBalancerStrategyHandler returns current load balancer strategy
@@ -473,7 +533,10 @@ func (ag *APIGateway) setLoadBalancerStrategyHandler(w http.ResponseWriter, r *h
 		"strategy": strategy,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getLoadBalancerStatsHandler returns load balancer statistics

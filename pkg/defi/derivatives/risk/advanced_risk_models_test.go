@@ -334,7 +334,9 @@ func TestAdvancedRiskManagerVaRMethodologies(t *testing.T) {
 		big.NewFloat(0.01),  // 1% return
 	}
 
-	portfolio.AddPosition(position1)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
 
 	timeHorizon := big.NewFloat(1.0) // 1 day
 
@@ -434,7 +436,9 @@ func TestAdvancedRiskManagerMonteCarloSimulation(t *testing.T) {
 		big.NewFloat(0.01),  // 1% return
 	}
 
-	portfolio.AddPosition(position1)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
 
 	// Create Monte Carlo simulation
 	simulation, err := NewMonteCarloSimulation("test_mc", 1000, big.NewFloat(1.0), big.NewFloat(0.95))
@@ -530,7 +534,9 @@ func TestAdvancedRiskManagerStressTesting(t *testing.T) {
 		big.NewFloat(0.01),  // 1% return
 	}
 
-	portfolio.AddPosition(position1)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
 
 	// Create stress test scenario
 	scenario, err := NewStressTestScenario(

@@ -388,9 +388,15 @@ func TestChallengeBatch(t *testing.T) {
 	tx1 := createValidTransaction("tx1")
 	tx2 := createValidTransaction("tx2")
 
-	rollup.AddTransaction(tx1)
-	rollup.AddTransaction(tx2)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx1); err != nil {
+		t.Errorf("Failed to add transaction 1: %v", err)
+	}
+	if err := rollup.AddTransaction(tx2); err != nil {
+		t.Errorf("Failed to add transaction 2: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		t.Errorf("Failed to process batch: %v", err)
+	}
 
 	// Test valid challenge
 	challenger := [20]byte{1, 2, 3, 4, 5}
@@ -440,8 +446,12 @@ func TestResolveChallenge(t *testing.T) {
 
 	// Add transactions and process batch
 	tx1 := createValidTransaction("tx1")
-	rollup.AddTransaction(tx1)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx1); err != nil {
+		t.Errorf("Failed to add transaction: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		t.Errorf("Failed to process batch: %v", err)
+	}
 
 	// Create challenge
 	challenger := [20]byte{1, 2, 3, 4, 5}
@@ -490,8 +500,12 @@ func TestFinalizeBatch(t *testing.T) {
 
 	// Add transactions and process batch
 	tx1 := createValidTransaction("tx1")
-	rollup.AddTransaction(tx1)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx1); err != nil {
+		t.Errorf("Failed to add transaction: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		t.Errorf("Failed to process batch: %v", err)
+	}
 
 	// Try to finalize before challenge period expires
 	err := rollup.FinalizeBatch(0)
@@ -601,8 +615,12 @@ func TestGetBatch(t *testing.T) {
 
 	// Add transactions and process batch
 	tx := createValidTransaction("tx1")
-	rollup.AddTransaction(tx)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx); err != nil {
+		t.Errorf("Failed to add transaction: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		t.Errorf("Failed to process batch: %v", err)
+	}
 
 	// Test getting existing batch
 	batch, err := rollup.GetBatch(0)
@@ -633,8 +651,12 @@ func TestGetChallenge(t *testing.T) {
 
 	// Add transactions, process batch, and create challenge
 	tx := createValidTransaction("tx1")
-	rollup.AddTransaction(tx)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx); err != nil {
+		t.Errorf("Failed to add transaction: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		t.Errorf("Failed to process batch: %v", err)
+	}
 
 	challenger := [20]byte{1, 2, 3, 4, 5}
 	evidence := []byte("fraud evidence")
@@ -729,8 +751,12 @@ func TestRollbackBatch(t *testing.T) {
 
 	// Add transactions and process batch
 	tx := createValidTransaction("tx1")
-	rollup.AddTransaction(tx)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx); err != nil {
+		t.Errorf("Failed to add transaction: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		t.Errorf("Failed to process batch: %v", err)
+	}
 
 	// Rollback batch
 	err := rollup.rollbackBatch(0)
@@ -1065,22 +1091,38 @@ func BenchmarkAddTransaction(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		tx := createValidTransaction(fmt.Sprintf("tx%d", i))
-		rollup.AddTransaction(tx)
+		if err := rollup.AddTransaction(tx); err != nil {
+			// Only log first few errors to avoid spam
+			if i < 5 {
+				b.Errorf("Failed to add transaction: %v", err)
+			}
+		}
 	}
 }
 
 func BenchmarkProcessBatch(b *testing.B) {
 	rollup := NewOptimisticRollup(OptimisticRollupConfig{MaxBatchSize: 1000})
 
-	// Pre-populate with transactions
-	for i := 0; i < 1000; i++ {
-		tx := createValidTransaction(fmt.Sprintf("tx%d", i))
-		rollup.AddTransaction(tx)
-	}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		rollup.ProcessBatch()
+		// Add transactions for this iteration
+		for j := 0; j < 100; j++ {
+			tx := createValidTransaction(fmt.Sprintf("tx_%d_%d", i, j))
+			if err := rollup.AddTransaction(tx); err != nil {
+				// Only log first few errors to avoid spam
+				if i < 5 && j < 5 {
+					b.Errorf("Failed to add transaction: %v", err)
+				}
+			}
+		}
+
+		// Process the batch
+		if _, err := rollup.ProcessBatch(); err != nil {
+			// Only log first few errors to avoid spam
+			if i < 5 {
+				b.Errorf("Failed to process batch: %v", err)
+			}
+		}
 	}
 }
 
@@ -1091,8 +1133,12 @@ func BenchmarkChallengeBatch(b *testing.B) {
 
 	// Pre-populate with a batch
 	tx := createValidTransaction("benchmark_tx")
-	rollup.AddTransaction(tx)
-	rollup.ProcessBatch()
+	if err := rollup.AddTransaction(tx); err != nil {
+		b.Errorf("Failed to add transaction: %v", err)
+	}
+	if _, err := rollup.ProcessBatch(); err != nil {
+		b.Errorf("Failed to process batch: %v", err)
+	}
 
 	challenger := [20]byte{1, 2, 3, 4, 5}
 	evidence := []byte("benchmark evidence")
@@ -1100,7 +1146,9 @@ func BenchmarkChallengeBatch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		rollup.ChallengeBatch(0, challenger, evidence, stake)
+		if _, err := rollup.ChallengeBatch(0, challenger, evidence, stake); err != nil {
+			b.Errorf("Failed to challenge batch: %v", err)
+		}
 	}
 }
 

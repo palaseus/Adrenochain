@@ -524,7 +524,7 @@ func (pm *PruningManager) validateRestoredBlock(block *block.Block) error {
 	if len(block.Hash) == 0 {
 		return fmt.Errorf("block hash is empty")
 	}
-	
+
 	// Verify that the stored hash matches the calculated hash
 	calculatedHash := block.CalculateHash()
 	if !bytes.Equal(block.Hash, calculatedHash) {

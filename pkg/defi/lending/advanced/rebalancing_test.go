@@ -210,7 +210,9 @@ func TestCheckRebalancingNeeded(t *testing.T) {
 			},
 		},
 	}
-	pr.RegisterRebalancingStrategy(strategy)
+	if err := pr.RegisterRebalancingStrategy(strategy); err != nil {
+		t.Errorf("Failed to register rebalancing strategy: %v", err)
+	}
 
 	// Create a new portfolio with drift and register it
 	portfolioWithDrift := &Portfolio{
@@ -270,7 +272,9 @@ func TestCheckThresholdTrigger(t *testing.T) {
 			},
 		},
 	}
-	pr.RegisterRebalancingStrategy(strategy)
+	if err := pr.RegisterRebalancingStrategy(strategy); err != nil {
+		t.Errorf("Failed to register rebalancing strategy: %v", err)
+	}
 
 	// Test threshold trigger with drift (10% drift > 5% threshold)
 	needsRebalancing, triggers, err := pr.CheckRebalancingNeeded(context.Background(), "user1")
@@ -311,7 +315,9 @@ func TestCheckTimeTrigger(t *testing.T) {
 			},
 		},
 	}
-	pr.RegisterRebalancingStrategy(strategy)
+	if err := pr.RegisterRebalancingStrategy(strategy); err != nil {
+		t.Errorf("Failed to register rebalancing strategy: %v", err)
+	}
 
 	// Test time trigger not ready (portfolio was just registered, so LastRebalance is now)
 	needsRebalancing, triggers, err := pr.CheckRebalancingNeeded(context.Background(), "user1")
@@ -366,7 +372,9 @@ func TestExecuteRebalancing(t *testing.T) {
 		Type:   RebalancingTypeEqualWeight,
 		Status: RebalancingStatusActive,
 	}
-	pr.RegisterRebalancingStrategy(strategy)
+	if err := pr.RegisterRebalancingStrategy(strategy); err != nil {
+		t.Errorf("Failed to register rebalancing strategy: %v", err)
+	}
 
 	// Execute rebalancing
 	result, err := pr.ExecuteRebalancing(context.Background(), "user1", "equal-weight")
@@ -395,7 +403,9 @@ func TestExecuteRebalancingErrors(t *testing.T) {
 
 	// Test non-existent strategy
 	portfolio := &Portfolio{UserID: "user1"}
-	pr.RegisterPortfolio(portfolio)
+	if err := pr.RegisterPortfolio(portfolio); err != nil {
+		t.Errorf("Failed to register portfolio: %v", err)
+	}
 
 	_, err = pr.ExecuteRebalancing(context.Background(), "user1", "non-existent")
 	assert.Error(t, err)
@@ -406,7 +416,9 @@ func TestExecuteRebalancingErrors(t *testing.T) {
 		ID:     "inactive",
 		Status: RebalancingStatusPaused,
 	}
-	pr.RegisterRebalancingStrategy(inactiveStrategy)
+	if err := pr.RegisterRebalancingStrategy(inactiveStrategy); err != nil {
+		t.Errorf("Failed to register rebalancing strategy: %v", err)
+	}
 
 	_, err = pr.ExecuteRebalancing(context.Background(), "user1", "inactive")
 	assert.Error(t, err)
@@ -771,8 +783,12 @@ func TestGetPortfolioPerformance(t *testing.T) {
 		ID:  "strategy2",
 		APY: big.NewFloat(0.1), // 10% APY
 	}
-	ysm.RegisterStrategy(strategy1)
-	ysm.RegisterStrategy(strategy2)
+	if err := ysm.RegisterStrategy(strategy1); err != nil {
+		t.Errorf("Failed to register strategy 1: %v", err)
+	}
+	if err := ysm.RegisterStrategy(strategy2); err != nil {
+		t.Errorf("Failed to register strategy 2: %v", err)
+	}
 
 	// Register portfolio
 	portfolio := &Portfolio{
@@ -808,7 +824,9 @@ func TestConcurrentAccessRebalancing(t *testing.T) {
 			portfolio := &Portfolio{
 				UserID: fmt.Sprintf("user-%d", id),
 			}
-			pr.RegisterPortfolio(portfolio)
+			if err := pr.RegisterPortfolio(portfolio); err != nil {
+				t.Errorf("Failed to register portfolio: %v", err)
+			}
 		}(i)
 	}
 
@@ -850,7 +868,9 @@ func TestEdgeCasesRebalancing(t *testing.T) {
 		Type:   RebalancingTypeEqualWeight,
 		Status: RebalancingStatusActive,
 	}
-	pr.RegisterRebalancingStrategy(strategy)
+	if err := pr.RegisterRebalancingStrategy(strategy); err != nil {
+		t.Errorf("Failed to register rebalancing strategy: %v", err)
+	}
 
 	result, err := pr.ExecuteRebalancing(context.Background(), "nil-test", "edge-test")
 	assert.NoError(t, err)
@@ -954,7 +974,9 @@ func TestErrorHandlingRebalancing(t *testing.T) {
 			name: "Execute rebalancing on non-existent strategy",
 			operation: func() error {
 				portfolio := &Portfolio{UserID: "user1"}
-				pr.RegisterPortfolio(portfolio)
+				if err := pr.RegisterPortfolio(portfolio); err != nil {
+					t.Errorf("Failed to register portfolio: %v", err)
+				}
 				_, err := pr.ExecuteRebalancing(context.Background(), "user1", "non-existent")
 				return err
 			},

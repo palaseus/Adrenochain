@@ -14,7 +14,9 @@ func TestEnhancedSecurityMiddleware_SecurityMiddleware(t *testing.T) {
 	// Create test handler
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("success"))
+		if _, err := w.Write([]byte("success")); err != nil {
+			t.Errorf("Failed to write response: %v", err)
+		}
 	})
 
 	// Wrap with security middleware
@@ -73,7 +75,9 @@ func TestEnhancedSecurityMiddleware_HashValidationMiddleware(t *testing.T) {
 	// Create test handler
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("success"))
+		if _, err := w.Write([]byte("success")); err != nil {
+			t.Errorf("Failed to write response: %v", err)
+		}
 	})
 
 	// Wrap with hash validation middleware

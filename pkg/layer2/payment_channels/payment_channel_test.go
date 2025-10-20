@@ -806,16 +806,21 @@ func BenchmarkNewPaymentChannel(b *testing.B) {
 }
 
 func BenchmarkMakePayment(b *testing.B) {
-	channel := createTestChannel()
-
-	amount := big.NewInt(500000000000000000)
+	amount := big.NewInt(50000000000000000) // Reduced to 0.05 ETH to stay within MaxPaymentSize limit
 	direction := PaymentDirectionAToB
 	signatureA := []byte("signature_a")
 	signatureB := []byte("signature_b")
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		channel.MakePayment(amount, direction, nil, signatureA, signatureB)
+		// Create a fresh channel for each iteration to avoid balance issues
+		channel := createTestChannel()
+		if err := channel.MakePayment(amount, direction, nil, signatureA, signatureB); err != nil {
+			// Only log first few errors to avoid spam
+			if i < 5 {
+				b.Errorf("Failed to make payment: %v", err)
+			}
+		}
 	}
 }
 
@@ -826,7 +831,9 @@ func BenchmarkCreateDispute(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		channel.CreateDispute(disputer, evidence)
+		if _, err := channel.CreateDispute(disputer, evidence); err != nil {
+			b.Errorf("Failed to create dispute: %v", err)
+		}
 	}
 }
 

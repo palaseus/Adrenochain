@@ -541,9 +541,16 @@ func TestEVMInstructionExecution(t *testing.T) {
 	mockRegistry := &MockContractRegistry{}
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
-	// Create execution context
+	// Create execution context with valid jump destinations
+	contract := &engine.Contract{
+		Code: make([]byte, 400), // Make sure we have enough space
+	}
+	// Set JUMPDEST at positions 100, 200, 300
+	contract.Code[100] = 0x5B // JUMPDEST
+	contract.Code[200] = 0x5B // JUMPDEST  
+	contract.Code[300] = 0x5B // JUMPDEST
 	ctx := &ExecutionContext{
-		Contract:   &engine.Contract{},
+		Contract:   contract,
 		Input:      []byte{},
 		Sender:     engine.Address{},
 		Value:      big.NewInt(0),
@@ -584,7 +591,9 @@ func TestEVMInstructionExecution(t *testing.T) {
 	// Test ADD instruction
 	evm.stack.Push(big.NewInt(5))
 	evm.stack.Push(big.NewInt(3))
-	evm.executeADD()
+	if err := evm.executeADD(); err != nil {
+		t.Errorf("Failed to execute ADD: %v", err)
+	}
 	result := evm.stack.Peek()
 	if result.Cmp(big.NewInt(8)) != 0 {
 		t.Errorf("ADD: expected 8, got %v", result)
@@ -593,7 +602,9 @@ func TestEVMInstructionExecution(t *testing.T) {
 	// Test MUL instruction
 	evm.stack.Push(big.NewInt(4))
 	evm.stack.Push(big.NewInt(6))
-	evm.executeMUL()
+	if err := evm.executeMUL(); err != nil {
+		t.Errorf("Failed to execute MUL: %v", err)
+	}
 	result = evm.stack.Peek()
 	if result.Cmp(big.NewInt(24)) != 0 {
 		t.Errorf("MUL: expected 24, got %v", result)
@@ -602,7 +613,9 @@ func TestEVMInstructionExecution(t *testing.T) {
 	// Test SUB instruction
 	evm.stack.Push(big.NewInt(10))
 	evm.stack.Push(big.NewInt(3))
-	evm.executeSUB()
+	if err := evm.executeSUB(); err != nil {
+		t.Errorf("Failed to execute SUB: %v", err)
+	}
 	result = evm.stack.Peek()
 	if result.Cmp(big.NewInt(-7)) != 0 {
 		t.Errorf("SUB: expected -7, got %v", result)
@@ -611,28 +624,38 @@ func TestEVMInstructionExecution(t *testing.T) {
 	// Test DIV instruction
 	evm.stack.Push(big.NewInt(15))
 	evm.stack.Push(big.NewInt(3))
-	evm.executeDIV()
+	if err := evm.executeDIV(); err != nil {
+		t.Errorf("Failed to execute DIV: %v", err)
+	}
 	result = evm.stack.Peek()
 	if result.Cmp(big.NewInt(0)) != 0 {
 		t.Errorf("DIV: expected 0, got %v", result)
 	}
 
 	// Test POP instruction
-	evm.executePOP()
+	if err := evm.executePOP(); err != nil {
+		t.Errorf("Failed to execute POP: %v", err)
+	}
 	// POP consumes 1 value
 
 	// Test PC instruction
-	evm.executePC()
+	if err := evm.executePC(); err != nil {
+		t.Errorf("Failed to execute PC: %v", err)
+	}
 	// PC pushes 1 value
 
 	// Test MSIZE instruction
-	evm.executeMSIZE()
+	if err := evm.executeMSIZE(); err != nil {
+		t.Errorf("Failed to execute MSIZE: %v", err)
+	}
 	// MSIZE pushes 1 value
 
 	// Test MLOAD instruction
 	evm.stack.Push(big.NewInt(0)) // offset
 	stackSizeBeforeMLOAD := evm.stack.Size()
-	evm.executeMLOAD()
+	if err := evm.executeMLOAD(); err != nil {
+		t.Errorf("Failed to execute MLOAD: %v", err)
+	}
 	stackSizeAfterMLOAD := evm.stack.Size()
 	if stackSizeAfterMLOAD != stackSizeBeforeMLOAD {
 		t.Error("MLOAD should consume 1 value and push 1 value, keeping stack size the same")
@@ -642,7 +665,9 @@ func TestEVMInstructionExecution(t *testing.T) {
 	evm.stack.Push(big.NewInt(0))  // offset
 	evm.stack.Push(big.NewInt(42)) // value
 	stackSizeBeforeMSTORE := evm.stack.Size()
-	evm.executeMSTORE()
+	if err := evm.executeMSTORE(); err != nil {
+		t.Errorf("Failed to execute MSTORE: %v", err)
+	}
 	stackSizeAfterMSTORE := evm.stack.Size()
 	if stackSizeAfterMSTORE != stackSizeBeforeMSTORE-2 {
 		t.Error("MSTORE should consume two values from stack")
@@ -650,7 +675,9 @@ func TestEVMInstructionExecution(t *testing.T) {
 
 	// Test GAS instruction
 	evm.gasMeter = engine.NewGasMeter(1000)
-	evm.executeGAS()
+	if err := evm.executeGAS(); err != nil {
+		t.Errorf("Failed to execute GAS: %v", err)
+	}
 	gasValue := evm.stack.Peek()
 	if gasValue.Cmp(big.NewInt(1000)) != 0 {
 		t.Errorf("GAS: expected 1000, got %v", gasValue)
@@ -659,19 +686,25 @@ func TestEVMInstructionExecution(t *testing.T) {
 	// Test JUMP operations with proper validation
 	// Test JUMP with valid destination
 	evm.stack.Push(big.NewInt(100))
-	evm.executeJUMP(ctx)
+	if err := evm.executeJUMP(ctx); err != nil {
+		t.Errorf("Failed to execute JUMP: %v", err)
+	}
 	// JUMP should consume the destination value
 
 	// Test JUMPI with true condition
 	evm.stack.Push(big.NewInt(200))
 	evm.stack.Push(big.NewInt(1))
-	evm.executeJUMPI(ctx)
+	if err := evm.executeJUMPI(ctx); err != nil {
+		t.Errorf("Failed to execute JUMPI: %v", err)
+	}
 	// JUMPI should consume both values
 
 	// Test JUMPI with false condition
 	evm.stack.Push(big.NewInt(300))
 	evm.stack.Push(big.NewInt(0))
-	evm.executeJUMPI(ctx)
+	if err := evm.executeJUMPI(ctx); err != nil {
+		t.Errorf("Failed to execute JUMPI: %v", err)
+	}
 	// JUMPI should consume both values but not jump
 }
 
@@ -680,9 +713,16 @@ func TestEVMBasicInstructions(t *testing.T) {
 	mockRegistry := &MockContractRegistry{}
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
-	// Create execution context
+	// Create execution context with valid jump destinations
+	contract := &engine.Contract{
+		Code: make([]byte, 400), // Make sure we have enough space
+	}
+	// Set JUMPDEST at positions 100, 200, 300
+	contract.Code[100] = 0x5B // JUMPDEST
+	contract.Code[200] = 0x5B // JUMPDEST  
+	contract.Code[300] = 0x5B // JUMPDEST
 	ctx := &ExecutionContext{
-		Contract:   &engine.Contract{},
+		Contract:   contract,
 		Input:      []byte{},
 		Sender:     engine.Address{},
 		Value:      big.NewInt(0),
@@ -793,9 +833,16 @@ func TestEVMExecuteInstruction(t *testing.T) {
 	// Initialize gas meter to prevent panic
 	evm.gasMeter = engine.NewGasMeter(10000)
 
-	// Create execution context for JUMP operations
+	// Create execution context for JUMP operations with valid jump destinations
+	contract := &engine.Contract{
+		Code: make([]byte, 400), // Make sure we have enough space
+	}
+	// Set JUMPDEST at positions 100, 200, 300
+	contract.Code[100] = 0x5B // JUMPDEST
+	contract.Code[200] = 0x5B // JUMPDEST  
+	contract.Code[300] = 0x5B // JUMPDEST
 	ctx := &ExecutionContext{
-		Contract:   &engine.Contract{},
+		Contract:   contract,
 		Input:      []byte{},
 		Sender:     engine.Address{},
 		Value:      big.NewInt(0),
@@ -969,9 +1016,18 @@ func TestEVMExecuteInstruction(t *testing.T) {
 
 			// Execute the instruction
 			if tc.instruction.Opcode == 0x56 || tc.instruction.Opcode == 0x57 || tc.instruction.Opcode == 0xFF {
-				evm.executeInstruction(tc.instruction, ctx)
+				if _, err := evm.executeInstruction(tc.instruction, ctx); err != nil {
+					t.Errorf("Failed to execute instruction: %v", err)
+				}
+			} else if tc.instruction.Opcode == 0xFD { // REVERT instruction
+				// REVERT is expected to return an error
+				if _, err := evm.executeInstruction(tc.instruction, ctx); err == nil {
+					t.Error("REVERT instruction should return an error")
+				}
 			} else {
-				evm.executeInstruction(tc.instruction, nil)
+				if _, err := evm.executeInstruction(tc.instruction, nil); err != nil {
+					t.Errorf("Failed to execute instruction: %v", err)
+				}
 			}
 
 			// Validate results

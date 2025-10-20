@@ -52,7 +52,10 @@ func (t *Templates) Render(w http.ResponseWriter, name string, data interface{})
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // loadTemplates loads all HTML templates

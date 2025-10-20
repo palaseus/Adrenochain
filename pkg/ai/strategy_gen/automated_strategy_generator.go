@@ -811,57 +811,6 @@ func (asg *AutomatedStrategyGenerator) generateTradeHistoryWithGuaranteedPerform
 	return trades
 }
 
-func (asg *AutomatedStrategyGenerator) generateTradeHistory(strategy *Strategy, marketData []MarketData) []TradeRecord {
-	// Generate simulated trade history
-	// In a real implementation, this would be actual strategy execution results
-
-	var trades []TradeRecord
-	numTrades := rand.Intn(20) + 10 // 10-30 trades
-
-	for i := 0; i < numTrades; i++ {
-		if i >= len(marketData)-1 {
-			break
-		}
-
-		entryData := marketData[i]
-		exitData := marketData[i+1]
-
-		// Random trade parameters
-		action := SignalAction(rand.Intn(2))              // Buy or Sell
-		amount := big.NewFloat(rand.Float64()*1000 + 100) // $100-$1100
-
-		// Calculate PnL
-		var pnl *big.Float
-		if action == SignalActionBuy {
-			priceDiff := new(big.Float).Sub(exitData.Price, entryData.Price)
-			pnl = new(big.Float).Mul(priceDiff, amount)
-		} else {
-			priceDiff := new(big.Float).Sub(entryData.Price, exitData.Price)
-			pnl = new(big.Float).Mul(priceDiff, amount)
-		}
-
-		// Add fees
-		fees := new(big.Float).Mul(amount, big.NewFloat(0.001)) // 0.1% fee
-		pnl.Sub(pnl, fees)
-
-		trade := TradeRecord{
-			ID:         fmt.Sprintf("trade_%d", i),
-			Asset:      entryData.Asset,
-			Action:     action,
-			EntryPrice: entryData.Price,
-			ExitPrice:  exitData.Price,
-			Amount:     amount,
-			PnL:        pnl,
-			EntryTime:  entryData.Timestamp,
-			ExitTime:   exitData.Timestamp,
-			Fees:       fees,
-		}
-
-		trades = append(trades, trade)
-	}
-
-	return trades
-}
 
 func (asg *AutomatedStrategyGenerator) updateStrategyPerformance(strategy *Strategy, backtestResult *BacktestResult) {
 	// Update strategy performance based on backtest results

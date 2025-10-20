@@ -147,8 +147,12 @@ func TestOracleAggregatorInsufficientProviders(t *testing.T) {
 	provider1 := NewTestOracleProvider("provider1", "Test Provider 1", "http://test1.com", 1.0)
 	provider2 := NewTestOracleProvider("provider2", "Test Provider 2", "http://test2.com", 1.0)
 
-	aggregator.AddProvider("provider1", provider1, 1.0)
-	aggregator.AddProvider("provider2", provider2, 1.0)
+	if err := aggregator.AddProvider("provider1", provider1, 1.0); err != nil {
+		t.Errorf("Failed to add provider1: %v", err)
+	}
+	if err := aggregator.AddProvider("provider2", provider2, 1.0); err != nil {
+		t.Errorf("Failed to add provider2: %v", err)
+	}
 
 	// Test getting price with insufficient providers
 	ctx := context.Background()
@@ -166,7 +170,9 @@ func TestOracleAggregatorPriceValidation(t *testing.T) {
 
 	// Add provider with low confidence
 	provider := NewTestOracleProvider("low_confidence", "Low Confidence Provider", "http://test.com", 0.5)
-	aggregator.AddProvider("low_confidence", provider, 1.0)
+	if err := aggregator.AddProvider("low_confidence", provider, 1.0); err != nil {
+		t.Errorf("Failed to add low confidence provider: %v", err)
+	}
 
 	// Test getting price with low confidence
 	ctx := context.Background()
@@ -188,10 +194,18 @@ func TestOracleAggregatorOutlierRemoval(t *testing.T) {
 	provider3 := NewTestOracleProvider("provider3", "Provider 3", "http://test3.com", 1.0)
 	provider4 := NewTestOracleProvider("provider4", "Provider 4", "http://test4.com", 1.0)
 
-	aggregator.AddProvider("provider1", provider1, 1.0)
-	aggregator.AddProvider("provider2", provider2, 1.0)
-	aggregator.AddProvider("provider3", provider3, 1.0)
-	aggregator.AddProvider("provider4", provider4, 1.0)
+	if err := aggregator.AddProvider("provider1", provider1, 1.0); err != nil {
+		t.Errorf("Failed to add provider1: %v", err)
+	}
+	if err := aggregator.AddProvider("provider2", provider2, 1.0); err != nil {
+		t.Errorf("Failed to add provider2: %v", err)
+	}
+	if err := aggregator.AddProvider("provider3", provider3, 1.0); err != nil {
+		t.Errorf("Failed to add provider3: %v", err)
+	}
+	if err := aggregator.AddProvider("provider4", provider4, 1.0); err != nil {
+		t.Errorf("Failed to add provider4: %v", err)
+	}
 
 	// Set specific prices to test outlier removal
 	provider1.SetMockPrice("BTC", big.NewInt(100), 95)
@@ -226,8 +240,12 @@ func TestOracleAggregatorWeightedAverage(t *testing.T) {
 	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
 	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
-	aggregator.AddProvider("provider1", provider1, 2.0) // Higher weight
-	aggregator.AddProvider("provider2", provider2, 1.0) // Lower weight
+	if err := aggregator.AddProvider("provider1", provider1, 2.0); err != nil {
+		t.Errorf("Failed to add provider1 with higher weight: %v", err)
+	}
+	if err := aggregator.AddProvider("provider2", provider2, 1.0); err != nil {
+		t.Errorf("Failed to add provider2: %v", err)
+	} // Lower weight
 
 	// Set specific prices
 	provider1.SetMockPrice("BTC", big.NewInt(100), 95)
@@ -259,8 +277,12 @@ func TestOracleAggregatorStatistics(t *testing.T) {
 	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
 	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
-	aggregator.AddProvider("provider1", provider1, 1.0)
-	aggregator.AddProvider("provider2", provider2, 1.0)
+	if err := aggregator.AddProvider("provider1", provider1, 1.0); err != nil {
+		t.Errorf("Failed to add provider1: %v", err)
+	}
+	if err := aggregator.AddProvider("provider2", provider2, 1.0); err != nil {
+		t.Errorf("Failed to add provider2: %v", err)
+	}
 
 	// Get prices multiple times
 	ctx := context.Background()
@@ -306,8 +328,12 @@ func TestOracleAggregatorEvents(t *testing.T) {
 	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
 	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
-	aggregator.AddProvider("provider1", provider1, 1.0)
-	aggregator.AddProvider("provider2", provider2, 1.0)
+	if err := aggregator.AddProvider("provider1", provider1, 1.0); err != nil {
+		t.Errorf("Failed to add provider1: %v", err)
+	}
+	if err := aggregator.AddProvider("provider2", provider2, 1.0); err != nil {
+		t.Errorf("Failed to add provider2: %v", err)
+	}
 
 	// Get price to trigger events
 	ctx := context.Background()
@@ -346,8 +372,12 @@ func TestOracleAggregatorConcurrency(t *testing.T) {
 	provider1 := NewTestOracleProvider("provider1", "Provider 1", "http://test1.com", 1.0)
 	provider2 := NewTestOracleProvider("provider2", "Provider 2", "http://test2.com", 1.0)
 
-	aggregator.AddProvider("provider1", provider1, 1.0)
-	aggregator.AddProvider("provider2", provider2, 1.0)
+	if err := aggregator.AddProvider("provider1", provider1, 1.0); err != nil {
+		t.Errorf("Failed to add provider1: %v", err)
+	}
+	if err := aggregator.AddProvider("provider2", provider2, 1.0); err != nil {
+		t.Errorf("Failed to add provider2: %v", err)
+	}
 
 	// Test concurrent price requests
 	ctx := context.Background()

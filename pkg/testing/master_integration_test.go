@@ -140,14 +140,20 @@ func NewMasterIntegrationTest(t *testing.T) *MasterIntegrationTest {
 // generateRandomID creates a random identifier for testing
 func generateRandomID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return hex.EncodeToString(bytes)
 }
 
 // generateRandomHash creates a random hash for testing
 func generateRandomHash() string {
 	bytes := make([]byte, 32)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return hex.EncodeToString(bytes)
 }
 

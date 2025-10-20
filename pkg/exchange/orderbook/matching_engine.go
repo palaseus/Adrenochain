@@ -2,6 +2,7 @@ package orderbook
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -176,18 +177,28 @@ func (me *MatchingEngine) matchLimitBuyOrder(buyOrder *Order) (*TradeExecution, 
 
 		// Update the buy order in the order book
 		updatedBuyOrder := buyOrder.Clone()
-		updatedBuyOrder.Fill(tradeQuantity, bestAsk.Price)
-		me.orderBook.UpdateOrder(updatedBuyOrder)
+		if err := updatedBuyOrder.Fill(tradeQuantity, bestAsk.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill buy order: %v", err)
+		}
+		if err := me.orderBook.UpdateOrder(updatedBuyOrder); err != nil {
+			return nil, fmt.Errorf("failed to update buy order: %v", err)
+		}
 
 		// Update the sell order in the order book
 		updatedSellOrder := bestAsk.Clone()
-		updatedSellOrder.Fill(tradeQuantity, bestAsk.Price)
+		if err := updatedSellOrder.Fill(tradeQuantity, bestAsk.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill sell order: %v", err)
+		}
 
 		// If the sell order is completely filled, remove it
 		if updatedSellOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
-			me.orderBook.RemoveOrder(bestAsk.ID)
+			if err := me.orderBook.RemoveOrder(bestAsk.ID); err != nil {
+				return nil, fmt.Errorf("failed to remove sell order: %v", err)
+			}
 		} else {
-			me.orderBook.UpdateOrder(updatedSellOrder)
+			if err := me.orderBook.UpdateOrder(updatedSellOrder); err != nil {
+				return nil, fmt.Errorf("failed to update sell order: %v", err)
+			}
 		}
 
 		// Check if the buy order is completely filled
@@ -250,18 +261,28 @@ func (me *MatchingEngine) matchLimitSellOrder(sellOrder *Order) (*TradeExecution
 
 		// Update the sell order in the order book
 		updatedSellOrder := sellOrder.Clone()
-		updatedSellOrder.Fill(tradeQuantity, sellOrder.Price)
-		me.orderBook.UpdateOrder(updatedSellOrder)
+		if err := updatedSellOrder.Fill(tradeQuantity, sellOrder.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill sell order: %v", err)
+		}
+		if err := me.orderBook.UpdateOrder(updatedSellOrder); err != nil {
+			return nil, fmt.Errorf("failed to update sell order: %v", err)
+		}
 
 		// Update the buy order in the order book
 		updatedBuyOrder := bestBid.Clone()
-		updatedBuyOrder.Fill(tradeQuantity, sellOrder.Price)
+		if err := updatedBuyOrder.Fill(tradeQuantity, sellOrder.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill buy order: %v", err)
+		}
 
 		// If the buy order is completely filled, remove it
 		if updatedBuyOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
-			me.orderBook.RemoveOrder(bestBid.ID)
+			if err := me.orderBook.RemoveOrder(bestBid.ID); err != nil {
+				return nil, fmt.Errorf("failed to remove buy order: %v", err)
+			}
 		} else {
-			me.orderBook.UpdateOrder(updatedBuyOrder)
+			if err := me.orderBook.UpdateOrder(updatedBuyOrder); err != nil {
+				return nil, fmt.Errorf("failed to update buy order: %v", err)
+			}
 		}
 
 		// Check if the sell order is completely filled
@@ -308,18 +329,28 @@ func (me *MatchingEngine) matchMarketBuyOrder(buyOrder *Order) (*TradeExecution,
 
 		// Update the buy order in the order book
 		updatedBuyOrder := buyOrder.Clone()
-		updatedBuyOrder.Fill(tradeQuantity, bestAsk.Price)
-		me.orderBook.UpdateOrder(updatedBuyOrder)
+		if err := updatedBuyOrder.Fill(tradeQuantity, bestAsk.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill buy order: %v", err)
+		}
+		if err := me.orderBook.UpdateOrder(updatedBuyOrder); err != nil {
+			return nil, fmt.Errorf("failed to update buy order: %v", err)
+		}
 
 		// Update the sell order in the order book
 		updatedSellOrder := bestAsk.Clone()
-		updatedSellOrder.Fill(tradeQuantity, bestAsk.Price)
+		if err := updatedSellOrder.Fill(tradeQuantity, bestAsk.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill sell order: %v", err)
+		}
 
 		// If the sell order is completely filled, remove it
 		if updatedSellOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
-			me.orderBook.RemoveOrder(bestAsk.ID)
+			if err := me.orderBook.RemoveOrder(bestAsk.ID); err != nil {
+				return nil, fmt.Errorf("failed to remove sell order: %v", err)
+			}
 		} else {
-			me.orderBook.UpdateOrder(updatedSellOrder)
+			if err := me.orderBook.UpdateOrder(updatedSellOrder); err != nil {
+				return nil, fmt.Errorf("failed to update sell order: %v", err)
+			}
 		}
 
 		// Check if the buy order is completely filled
@@ -366,18 +397,28 @@ func (me *MatchingEngine) matchMarketSellOrder(sellOrder *Order) (*TradeExecutio
 
 		// Update the sell order in the order book
 		updatedSellOrder := sellOrder.Clone()
-		updatedSellOrder.Fill(tradeQuantity, bestBid.Price)
-		me.orderBook.UpdateOrder(updatedSellOrder)
+		if err := updatedSellOrder.Fill(tradeQuantity, bestBid.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill sell order: %v", err)
+		}
+		if err := me.orderBook.UpdateOrder(updatedSellOrder); err != nil {
+			return nil, fmt.Errorf("failed to update sell order: %v", err)
+		}
 
 		// Update the buy order in the order book
 		updatedBuyOrder := bestBid.Clone()
-		updatedBuyOrder.Fill(tradeQuantity, bestBid.Price)
+		if err := updatedBuyOrder.Fill(tradeQuantity, bestBid.Price); err != nil {
+			return nil, fmt.Errorf("failed to fill buy order: %v", err)
+		}
 
 		// If the buy order is completely filled, remove it
 		if updatedBuyOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {
-			me.orderBook.RemoveOrder(bestBid.ID)
+			if err := me.orderBook.RemoveOrder(bestBid.ID); err != nil {
+				return nil, fmt.Errorf("failed to remove buy order: %v", err)
+			}
 		} else {
-			me.orderBook.UpdateOrder(updatedBuyOrder)
+			if err := me.orderBook.UpdateOrder(updatedBuyOrder); err != nil {
+				return nil, fmt.Errorf("failed to update buy order: %v", err)
+			}
 		}
 
 		// Check if the sell order is completely filled

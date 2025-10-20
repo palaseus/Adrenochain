@@ -457,8 +457,12 @@ func TestOptionsEnginePositionTracking(t *testing.T) {
 		UserID:   "seller",
 	}
 
-	engine.PlaceOrder(buyOrder)
-	engine.PlaceOrder(sellOrder)
+	if err := engine.PlaceOrder(buyOrder); err != nil {
+		t.Errorf("Failed to place buy order: %v", err)
+	}
+	if err := engine.PlaceOrder(sellOrder); err != nil {
+		t.Errorf("Failed to place sell order: %v", err)
+	}
 
 	// Wait for matching
 	time.Sleep(100 * time.Millisecond)
@@ -653,7 +657,9 @@ func BenchmarkOptionsEngineOrderMatching(b *testing.B) {
 			UserID:   "buyer",
 		}
 
-		engine.PlaceOrder(buyOrder)
+		if err := engine.PlaceOrder(buyOrder); err != nil {
+			b.Errorf("Failed to place buy order: %v", err)
+		}
 
 		// Place matching sell order
 		sellOrder := &OptionsOrder{
@@ -665,7 +671,9 @@ func BenchmarkOptionsEngineOrderMatching(b *testing.B) {
 			UserID:   "seller",
 		}
 
-		engine.PlaceOrder(sellOrder)
+		if err := engine.PlaceOrder(sellOrder); err != nil {
+			b.Errorf("Failed to place sell order: %v", err)
+		}
 	}
 }
 

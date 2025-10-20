@@ -97,7 +97,9 @@ func TestMatchingEngineProcessOrder(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		// Process a market buy order
 		buyOrder, err := NewOrder(
@@ -166,7 +168,9 @@ func TestMatchingEngineErrorHandling(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		// Process a buy order with price too low
 		buyOrder, err := NewOrder(
@@ -410,7 +414,9 @@ func TestMatchingEngineMarketOrders(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		// Process a market buy order with larger quantity
 		buyOrder, err := NewOrder(
@@ -421,7 +427,7 @@ func TestMatchingEngineMarketOrders(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		execution, err := me.matchMarketBuyOrder(buyOrder)
+		execution, err := me.ProcessOrder(buyOrder)
 		assert.NoError(t, err)
 		assert.NotNil(t, execution)
 		assert.Len(t, execution.PartialFills, 1)
@@ -444,7 +450,9 @@ func TestMatchingEngineMatchLimitOrders(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		// Process a buy order that should match
 		buyOrder, err := NewOrder(
@@ -554,13 +562,16 @@ func TestMatchingEngineMatchMarketOrders(t *testing.T) {
 		trades := me.GetTrades()
 		assert.Len(t, trades, 2)
 
-		// First trade should be at 1100 (best price)
-		assert.Equal(t, big.NewInt(30), trades[0].Quantity)
-		assert.Equal(t, big.NewInt(1100), trades[0].Price)
+		// Check bounds before accessing trades
+		if len(trades) >= 2 {
+			// First trade should be at 1100 (best price)
+			assert.Equal(t, big.NewInt(30), trades[0].Quantity)
+			assert.Equal(t, big.NewInt(1100), trades[0].Price)
 
-		// Second trade should be at 1150 (next best price)
-		assert.Equal(t, big.NewInt(20), trades[1].Quantity) // 50 - 30 = 20
-		assert.Equal(t, big.NewInt(1150), trades[1].Price)
+			// Second trade should be at 1150 (next best price)
+			assert.Equal(t, big.NewInt(20), trades[1].Quantity) // 50 - 30 = 20
+			assert.Equal(t, big.NewInt(1150), trades[1].Price)
+		}
 	})
 
 	t.Run("match market sell order with buy orders", func(t *testing.T) {
@@ -605,13 +616,16 @@ func TestMatchingEngineMatchMarketOrders(t *testing.T) {
 		trades := me.GetTrades()
 		assert.Len(t, trades, 2)
 
-		// First trade should be at 1250 (best price)
-		assert.Equal(t, big.NewInt(35), trades[0].Quantity)
-		assert.Equal(t, big.NewInt(1250), trades[0].Price)
+		// Check bounds before accessing trades
+		if len(trades) >= 2 {
+			// First trade should be at 1250 (best price)
+			assert.Equal(t, big.NewInt(35), trades[0].Quantity)
+			assert.Equal(t, big.NewInt(1250), trades[0].Price)
 
-		// Second trade should be at 1200 (next best price)
-		assert.Equal(t, big.NewInt(15), trades[1].Quantity) // 50 - 35 = 15
-		assert.Equal(t, big.NewInt(1200), trades[1].Price)
+			// Second trade should be at 1200 (next best price)
+			assert.Equal(t, big.NewInt(15), trades[1].Quantity) // 50 - 35 = 15
+			assert.Equal(t, big.NewInt(1200), trades[1].Price)
+		}
 	})
 }
 
@@ -630,7 +644,9 @@ func TestMatchingEnginePartialFills(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		// Process a buy order with larger quantity
 		buyOrder, err := NewOrder(
@@ -709,7 +725,9 @@ func TestMatchingEngineNoMatches(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		// Process a buy order below the ask price
 		buyOrder, err := NewOrder(
@@ -782,7 +800,9 @@ func TestMatchingEngineTradeManagement(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		buyOrder, err := NewOrder(
 			"buy1", "user1", "BTC/USDT",
@@ -851,7 +871,9 @@ func TestMatchingEngineTradeManagement(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		buyOrder, err := NewOrder(
 			"buy1", "user1", "BTC/USDT",
@@ -891,7 +913,9 @@ func TestMatchingEngineTradeManagement(t *testing.T) {
 			TimeInForceGTC, nil, nil,
 		)
 		require.NoError(t, err)
-		ob.AddOrder(sellOrder)
+		if err := ob.AddOrder(sellOrder); err != nil {
+			t.Errorf("Failed to add sell order: %v", err)
+		}
 
 		buyOrder, err := NewOrder(
 			"buy1", "user1", "BTC/USDT",

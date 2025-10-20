@@ -407,7 +407,10 @@ func (tdg *TestDataGenerators) randomInt(max int) int {
 // generateRandomAddress generates a random Ethereum-style address
 func (tdg *TestDataGenerators) generateRandomAddress() string {
 	bytes := make([]byte, 20)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback to timestamp-based address if random generation fails
+		return fmt.Sprintf("0x%x", []byte(fmt.Sprintf("addr_%d", time.Now().UnixNano())))
+	}
 	return fmt.Sprintf("0x%x", bytes)
 }
 

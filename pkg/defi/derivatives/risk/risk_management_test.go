@@ -319,7 +319,9 @@ func TestPortfolioRemovePosition(t *testing.T) {
 	}
 
 	// Add position first
-	portfolio.AddPosition(position)
+	if err := portfolio.AddPosition(position); err != nil {
+		t.Errorf("Failed to add position: %v", err)
+	}
 
 	// Test removing position
 	err = portfolio.RemovePosition(position.ID)
@@ -355,8 +357,12 @@ func TestPortfolioGetTotalValue(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Calculate expected total value
 	expectedValue := big.NewFloat(0)
@@ -382,8 +388,12 @@ func TestRiskManagerCalculateVaR(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Calculate VaR
 	timeHorizon := big.NewFloat(1.0) // 1 day
@@ -430,8 +440,12 @@ func TestRiskManagerCalculateCVaR(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Calculate CVaR
 	timeHorizon := big.NewFloat(1.0)
@@ -466,8 +480,12 @@ func TestRiskManagerCalculateVolatility(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Calculate volatility
 	volatility, err := rm.CalculateVolatility(portfolio)
@@ -501,8 +519,12 @@ func TestRiskManagerCalculateSharpeRatio(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Calculate Sharpe ratio
 	_, err = rm.CalculateSharpeRatio(portfolio)
@@ -531,8 +553,12 @@ func TestRiskManagerCalculateMaxDrawdown(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Calculate max drawdown
 	maxDrawdown, err := rm.CalculateMaxDrawdown(portfolio)
@@ -566,8 +592,12 @@ func TestRiskManagerCalculateBeta(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Create benchmark returns
 	benchmarkReturns := []*big.Float{
@@ -611,8 +641,12 @@ func TestRiskManagerStressTest(t *testing.T) {
 	position1, _ := NewPosition("POS_1", "BTC", big.NewFloat(10), big.NewFloat(50000))
 	position2, _ := NewPosition("POS_2", "ETH", big.NewFloat(100), big.NewFloat(3000))
 
-	portfolio.AddPosition(position1)
-	portfolio.AddPosition(position2)
+	if err := portfolio.AddPosition(position1); err != nil {
+		t.Errorf("Failed to add position 1: %v", err)
+	}
+	if err := portfolio.AddPosition(position2); err != nil {
+		t.Errorf("Failed to add position 2: %v", err)
+	}
 
 	// Create stress scenarios
 	scenarios := []StressScenario{
@@ -756,14 +790,18 @@ func BenchmarkRiskManagerCalculateVaR(b *testing.B) {
 			big.NewFloat(float64(i+1)*1000),
 			big.NewFloat(float64(i+1)*100),
 		)
-		portfolio.AddPosition(position)
+		if err := portfolio.AddPosition(position); err != nil {
+			b.Errorf("Failed to add position: %v", err)
+		}
 	}
 
 	timeHorizon := big.NewFloat(1.0)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		rm.CalculateVaR(portfolio, timeHorizon)
+		if _, err := rm.CalculateVaR(portfolio, timeHorizon); err != nil {
+			b.Errorf("Failed to calculate VaR: %v", err)
+		}
 	}
 }
 
@@ -786,12 +824,16 @@ func BenchmarkRiskManagerCalculateVolatility(b *testing.B) {
 			big.NewFloat(float64(i+1)*1000),
 			big.NewFloat(float64(i+1)*100),
 		)
-		portfolio.AddPosition(position)
+		if err := portfolio.AddPosition(position); err != nil {
+			b.Errorf("Failed to add position: %v", err)
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		rm.CalculateVolatility(portfolio)
+		if _, err := rm.CalculateVolatility(portfolio); err != nil {
+			b.Errorf("Failed to calculate volatility: %v", err)
+		}
 	}
 }
 

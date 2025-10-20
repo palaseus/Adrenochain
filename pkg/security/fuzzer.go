@@ -470,7 +470,10 @@ func (f *Fuzzer) mutateInput(input []byte, rng io.Reader) []byte {
 
 	// Apply random mutations
 	randBytes := make([]byte, 4)
-	rand.Read(randBytes)
+	if _, err := rand.Read(randBytes); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	mutationType := int(randBytes[0]) % 5
 	switch mutationType {
 	case 0:

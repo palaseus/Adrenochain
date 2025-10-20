@@ -586,7 +586,10 @@ func (network *ValidatorNetwork) GetNetworkMetrics() NetworkMetrics {
 // generateValidatorID generates a unique validator ID
 func generateValidatorID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based random if random generation fails
+		copy(random, []byte(fmt.Sprintf("random_%d", time.Now().UnixNano())))
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("validator_%x", hash[:8])
 }
@@ -594,7 +597,10 @@ func generateValidatorID() string {
 // generateNetworkID generates a unique network ID
 func generateNetworkID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based random if random generation fails
+		copy(random, []byte(fmt.Sprintf("random_%d", time.Now().UnixNano())))
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("network_%x", hash[:8])
 }

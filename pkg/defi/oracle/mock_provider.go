@@ -7,6 +7,7 @@ package oracle
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"time"
 )
@@ -136,7 +137,10 @@ func (m *TestOracleProvider) GetStats() (uint64, uint64, uint64) {
 func (m *TestOracleProvider) shouldFail() bool {
 	// Generate random number between 0 and 1
 	randomBytes := make([]byte, 8)
-	rand.Read(randomBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	randomValue := float64(randomBytes[0]) / 255.0
 
 	return randomValue > m.reliability
@@ -146,7 +150,10 @@ func (m *TestOracleProvider) shouldFail() bool {
 func (m *TestOracleProvider) generateMockPrice(asset string) *PriceData {
 	// Generate random price between 1 and 100000
 	randomBytes := make([]byte, 8)
-	rand.Read(randomBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	priceValue := new(big.Int).SetBytes(randomBytes[:4])
 	priceValue.Mod(priceValue, big.NewInt(100000))
 	priceValue.Add(priceValue, big.NewInt(1))

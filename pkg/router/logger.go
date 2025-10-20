@@ -8,21 +8,39 @@ import (
 
 // Logger provides a simple logging interface for the router package
 type Logger struct {
-	prefix string
-	logger *log.Logger
+	prefix   string
+	logger   *log.Logger
+	testMode bool
 }
 
 // NewLogger creates a new logger instance
 func NewLogger(prefix string) *Logger {
 	return &Logger{
-		prefix: prefix,
-		logger: log.New(os.Stdout, fmt.Sprintf("[%s] ", prefix), log.LstdFlags),
+		prefix:   prefix,
+		logger:   log.New(os.Stdout, fmt.Sprintf("[%s] ", prefix), log.LstdFlags),
+		testMode: false,
 	}
 }
 
-// Info logs an info message
+// NewTestLogger creates a new logger instance for testing that suppresses Info logs
+func NewTestLogger(prefix string) *Logger {
+	return &Logger{
+		prefix:   prefix,
+		logger:   log.New(os.Stdout, fmt.Sprintf("[%s] ", prefix), log.LstdFlags),
+		testMode: true,
+	}
+}
+
+// SetTestMode sets the test mode for the logger
+func (l *Logger) SetTestMode(testMode bool) {
+	l.testMode = testMode
+}
+
+// Info logs an info message (suppressed in test mode)
 func (l *Logger) Info(format string, args ...interface{}) {
-	l.logger.Printf("INFO: "+format, args...)
+	if !l.testMode {
+		l.logger.Printf("INFO: "+format, args...)
+	}
 }
 
 // Debug logs a debug message

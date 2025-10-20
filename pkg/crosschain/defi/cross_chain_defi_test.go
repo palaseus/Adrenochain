@@ -121,8 +121,12 @@ func TestAddNetworkValidation(t *testing.T) {
 	network1 := NewBlockchainNetwork("Ethereum", 1, "ETH", NetworkConfig{})
 	network2 := NewBlockchainNetwork("Polygon", 137, "MATIC", NetworkConfig{})
 
-	defi.AddNetwork(network1)
-	defi.AddNetwork(network2)
+	if err := defi.AddNetwork(network1); err != nil {
+		t.Errorf("Failed to add network 1: %v", err)
+	}
+	if err := defi.AddNetwork(network2); err != nil {
+		t.Errorf("Failed to add network 2: %v", err)
+	}
 
 	// Try to add a third network
 	network3 := NewBlockchainNetwork("BSC", 56, "BNB", NetworkConfig{})
@@ -146,7 +150,9 @@ func TestCreateLendingPool(t *testing.T) {
 
 	// Add a network first
 	network := NewBlockchainNetwork("Ethereum", 1, "ETH", NetworkConfig{})
-	defi.AddNetwork(network)
+	if err := defi.AddNetwork(network); err != nil {
+		t.Errorf("Failed to add network: %v", err)
+	}
 
 	// Create lending pool config
 	config := LendingPoolConfig{
@@ -199,7 +205,9 @@ func TestCreateYieldFarm(t *testing.T) {
 
 	// Add a network first
 	network := NewBlockchainNetwork("Ethereum", 1, "ETH", NetworkConfig{})
-	defi.AddNetwork(network)
+	if err := defi.AddNetwork(network); err != nil {
+		t.Errorf("Failed to add network: %v", err)
+	}
 
 	// Create yield farm config
 	config := YieldFarmConfig{
@@ -250,7 +258,9 @@ func TestCreateLiquidityPool(t *testing.T) {
 
 	// Add a network first
 	network := NewBlockchainNetwork("Ethereum", 1, "ETH", NetworkConfig{})
-	defi.AddNetwork(network)
+	if err := defi.AddNetwork(network); err != nil {
+		t.Errorf("Failed to add network: %v", err)
+	}
 
 	// Create liquidity pool config
 	config := LiquidityPoolConfig{
@@ -354,7 +364,9 @@ func TestLendingPoolBorrow(t *testing.T) {
 
 	// Deposit first
 	depositAmount := big.NewInt(1000000000) // 1000 USDC
-	pool.Deposit(depositAmount)
+	if err := pool.Deposit(depositAmount); err != nil {
+		t.Errorf("Failed to deposit: %v", err)
+	}
 
 	// Test successful borrow
 	borrowAmount := big.NewInt(500000000) // 500 USDC
@@ -476,7 +488,9 @@ func TestLiquidityPoolSwap(t *testing.T) {
 	// Add initial liquidity
 	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))   // 1 ETH
 	amountB := new(big.Int).Mul(big.NewInt(2000), new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)) // 2000 USDC
-	pool.AddLiquidity(amountA, amountB)
+	if _, err := pool.AddLiquidity(amountA, amountB); err != nil {
+		t.Errorf("Failed to add liquidity: %v", err)
+	}
 
 	// Test swapping ETH for USDC
 	swapAmount := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(17), nil)) // 0.1 ETH
@@ -535,10 +549,14 @@ func TestUtilizationRateUpdate(t *testing.T) {
 
 	// Deposit and borrow to test utilization calculation
 	depositAmount := big.NewInt(1000000000) // 1000 USDC
-	pool.Deposit(depositAmount)
+	if err := pool.Deposit(depositAmount); err != nil {
+		t.Errorf("Failed to deposit: %v", err)
+	}
 
 	borrowAmount := big.NewInt(600000000) // 600 USDC
-	pool.Borrow(borrowAmount)
+	if err := pool.Borrow(borrowAmount); err != nil {
+		t.Errorf("Failed to borrow: %v", err)
+	}
 
 	// Utilization should be 0.6 (600/1000)
 	if pool.UtilizationRate != 0.6 {
@@ -570,10 +588,14 @@ func TestAPYUpdate(t *testing.T) {
 
 	// Deposit and borrow to test APY calculation
 	depositAmount := big.NewInt(1000000000) // 1000 USDC
-	pool.Deposit(depositAmount)
+	if err := pool.Deposit(depositAmount); err != nil {
+		t.Errorf("Failed to deposit: %v", err)
+	}
 
 	borrowAmount := big.NewInt(600000000) // 600 USDC
-	pool.Borrow(borrowAmount)
+	if err := pool.Borrow(borrowAmount); err != nil {
+		t.Errorf("Failed to borrow: %v", err)
+	}
 
 	// APY should be baseRate + (multiplier * utilizationRate)
 	expectedAPY := 0.02 + (0.1 * 0.6) // 0.02 + 0.06 = 0.08
@@ -614,7 +636,9 @@ func TestMetricsCollection(t *testing.T) {
 
 	// Add a network
 	network := NewBlockchainNetwork("Ethereum", 1, "ETH", NetworkConfig{})
-	defi.AddNetwork(network)
+	if err := defi.AddNetwork(network); err != nil {
+		t.Errorf("Failed to add network: %v", err)
+	}
 
 	// Create a lending pool
 	lendingConfig := LendingPoolConfig{
@@ -627,7 +651,9 @@ func TestMetricsCollection(t *testing.T) {
 		},
 		SecurityLevel: SecurityLevelHigh,
 	}
-	defi.CreateLendingPool(network.ID, "USDC", lendingConfig)
+	if _, err := defi.CreateLendingPool(network.ID, "USDC", lendingConfig); err != nil {
+		t.Errorf("Failed to create lending pool: %v", err)
+	}
 
 	// Create a yield farm
 	farmConfig := YieldFarmConfig{
@@ -635,14 +661,18 @@ func TestMetricsCollection(t *testing.T) {
 		MaxStakeAmount: new(big.Int).Mul(big.NewInt(100), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)),
 		SecurityLevel:  SecurityLevelHigh,
 	}
-	defi.CreateYieldFarm(network.ID, "ETH", "REWARD", farmConfig)
+	if _, err := defi.CreateYieldFarm(network.ID, "ETH", "REWARD", farmConfig); err != nil {
+		t.Errorf("Failed to create yield farm: %v", err)
+	}
 
 	// Create a liquidity pool
 	poolConfig := LiquidityPoolConfig{
 		MinLiquidity:  new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)),
 		SecurityLevel: SecurityLevelHigh,
 	}
-	defi.CreateLiquidityPool(network.ID, "ETH", "USDC", poolConfig)
+	if _, err := defi.CreateLiquidityPool(network.ID, "ETH", "USDC", poolConfig); err != nil {
+		t.Errorf("Failed to create liquidity pool: %v", err)
+	}
 
 	// Check metrics
 	metrics := defi.GetMetrics()
@@ -726,7 +756,9 @@ func BenchmarkLendingPoolDeposit(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pool.Deposit(amount)
+		if err := pool.Deposit(amount); err != nil {
+			b.Errorf("Failed to deposit: %v", err)
+		}
 	}
 }
 
@@ -741,12 +773,16 @@ func BenchmarkLiquidityPoolSwap(b *testing.B) {
 	// Add initial liquidity
 	amountA := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))   // 1 ETH
 	amountB := new(big.Int).Mul(big.NewInt(2000), new(big.Int).Exp(big.NewInt(10), big.NewInt(6), nil)) // 2000 USDC
-	pool.AddLiquidity(amountA, amountB)
+	if _, err := pool.AddLiquidity(amountA, amountB); err != nil {
+		b.Errorf("Failed to add liquidity: %v", err)
+	}
 
 	swapAmount := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(16), nil)) // 0.01 ETH
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pool.Swap("ETH", swapAmount)
+		if _, err := pool.Swap("ETH", swapAmount); err != nil {
+			b.Errorf("Failed to swap: %v", err)
+		}
 	}
 }

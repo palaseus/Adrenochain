@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
 )
 
 // SimplePDFStorage provides basic PDF storage functionality

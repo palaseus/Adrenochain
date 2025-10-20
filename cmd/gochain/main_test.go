@@ -136,7 +136,11 @@ func TestCreateWalletCmd(t *testing.T) {
 	// Change to temp directory for test
 	originalDir, err := os.Getwd()
 	assert.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Errorf("Failed to change back to original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tempDir)
 	assert.NoError(t, err)
@@ -391,7 +395,11 @@ func TestCreateTransactionCmdExecution(t *testing.T) {
 	// Change to temp directory for test
 	originalDir, err := os.Getwd()
 	assert.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Errorf("Failed to change back to original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tempDir)
 	assert.NoError(t, err)
@@ -410,10 +418,18 @@ func TestCreateTransactionCmdExecution(t *testing.T) {
 
 	// Set required flags - use the actual wallet address that was created
 	// We'll use a dummy address for the "to" field since we can't easily get the actual address
-	cmd.Flags().Set("from", "15RNVZWiKJt5Nhm2z15BURPNsEye4krDVW") // Use a valid format address
-	cmd.Flags().Set("to", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
-	cmd.Flags().Set("amount", "1000")
-	cmd.Flags().Set("fee", "100")
+	if err := cmd.Flags().Set("from", "15RNVZWiKJt5Nhm2z15BURPNsEye4krDVW"); err != nil {
+		t.Errorf("Failed to set 'from' flag: %v", err)
+	}
+	if err := cmd.Flags().Set("to", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"); err != nil {
+		t.Errorf("Failed to set 'to' flag: %v", err)
+	}
+	if err := cmd.Flags().Set("amount", "1000"); err != nil {
+		t.Errorf("Failed to set 'amount' flag: %v", err)
+	}
+	if err := cmd.Flags().Set("fee", "100"); err != nil {
+		t.Errorf("Failed to set fee flag: %v", err)
+	}
 
 	// Execute the command - this will likely fail due to missing wallet setup
 	// but we're testing that the command structure is correct
@@ -433,7 +449,11 @@ func TestGetBalanceCmdExecution(t *testing.T) {
 	// Change to temp directory for test
 	originalDir, err := os.Getwd()
 	assert.NoError(t, err)
-	defer os.Chdir(originalDir)
+	defer func() {
+		if err := os.Chdir(originalDir); err != nil {
+			t.Errorf("Failed to change back to original directory: %v", err)
+		}
+	}()
 
 	err = os.Chdir(tempDir)
 	assert.NoError(t, err)
@@ -451,7 +471,9 @@ func TestGetBalanceCmdExecution(t *testing.T) {
 	cmd := getBalanceCmd()
 
 	// Set required flag
-	cmd.Flags().Set("address", "15RNVZPhR4veJ5Won1XaFhJGCLZwWgNQ1D")
+	if err := cmd.Flags().Set("address", "15RNVZPhR4veJ5Won1XaFhJGCLZwWgNQ1D"); err != nil {
+		t.Errorf("Failed to set address flag: %v", err)
+	}
 
 	// Execute the command
 	err = cmd.RunE(cmd, []string{})
@@ -659,7 +681,9 @@ func TestMainFunctionExecution(t *testing.T) {
 
 	// Read the captured output
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Errorf("Failed to copy output: %v", err)
+	}
 	output := buf.String()
 
 	// Verify that help output contains expected content
@@ -693,7 +717,9 @@ func TestMainFunctionWithHelp(t *testing.T) {
 	os.Stdout = oldStdout
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Errorf("Failed to copy output: %v", err)
+	}
 	output := buf.String()
 
 	// Help output should contain the command name and description
@@ -818,16 +844,16 @@ func TestRunNodeWithValidStorageButNetworkFailure(t *testing.T) {
 	// This test is complex to implement due to the need to mock multiple dependencies
 	// and the fact that runNode runs indefinitely. Instead, we'll test the configuration
 	// validation that happens before the main loop.
-	
+
 	// Set up test configuration
 	viper.Set("storage.db_type", "file")
 	viper.Set("storage.data_dir", "./test_data")
 	viper.Set("monitoring.enabled", false)
 	viper.Set("api.enabled", false)
-	
+
 	// Test that the function exists and can be called with basic validation
 	// We won't actually run it to completion since it's designed to run indefinitely
-	
+
 	// Test that the function signature is correct and doesn't panic immediately
 	// This is a basic smoke test rather than a full integration test
 	defer func() {
@@ -835,14 +861,14 @@ func TestRunNodeWithValidStorageButNetworkFailure(t *testing.T) {
 			t.Errorf("runNode panicked: %v", r)
 		}
 	}()
-	
+
 	// We can't actually call runNode in a unit test because it runs indefinitely
 	// Instead, we'll test that the configuration loading works
 	err := loadConfig()
 	if err != nil {
 		t.Errorf("loadConfig failed: %v", err)
 	}
-	
+
 	// Test that the configuration values are set correctly
 	if viper.GetString("storage.db_type") != "file" {
 		t.Error("storage.db_type not set correctly")
@@ -854,16 +880,16 @@ func TestRunNodeWithValidStorageButChainFailure(t *testing.T) {
 	// This test is complex to implement due to the need to mock multiple dependencies
 	// and the fact that runNode runs indefinitely. Instead, we'll test the configuration
 	// validation that happens before the main loop.
-	
+
 	// Set up test configuration with invalid storage type
 	viper.Set("storage.db_type", "invalid_type") // Invalid storage type
 	viper.Set("storage.data_dir", "./test_data")
 	viper.Set("monitoring.enabled", false)
 	viper.Set("api.enabled", false)
-	
+
 	// Test that the function exists and can be called with basic validation
 	// We won't actually run it to completion since it's designed to run indefinitely
-	
+
 	// Test that the function signature is correct and doesn't panic immediately
 	// This is a basic smoke test rather than a full integration test
 	defer func() {
@@ -871,14 +897,14 @@ func TestRunNodeWithValidStorageButChainFailure(t *testing.T) {
 			t.Errorf("runNode panicked: %v", r)
 		}
 	}()
-	
+
 	// We can't actually call runNode in a unit test because it runs indefinitely
 	// Instead, we'll test that the configuration loading works
 	err := loadConfig()
 	if err != nil {
 		t.Errorf("loadConfig failed: %v", err)
 	}
-	
+
 	// Test that the configuration values are set correctly
 	if viper.GetString("storage.db_type") != "invalid_type" {
 		t.Error("storage.db_type not set correctly")

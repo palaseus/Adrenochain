@@ -468,7 +468,10 @@ func (n *Network) startPeerDiscovery() error {
 
 	// Setup a routing discovery service and attach it to the DHT
 	discovery := routing.NewRoutingDiscovery(n.dht)
-	discovery.Advertise(n.ctx, "adrenochain-discovery")
+	if _, err := discovery.Advertise(n.ctx, "adrenochain-discovery"); err != nil {
+		// Log error but continue with network operation
+		fmt.Printf("Failed to advertise discovery: %v\n", err)
+	}
 
 	return nil
 }

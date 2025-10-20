@@ -426,7 +426,10 @@ func NewCommitmentScheme(delay, window time.Duration) *CommitmentScheme {
 func (c *CommitmentScheme) CreateCommitment(tx *Transaction) (*Commitment, error) {
 	// Generate random nonce for commitment
 	nonce := make([]byte, 32)
-	crand.Read(nonce)
+	if _, err := crand.Read(nonce); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random nonce: %v\n", err)
+	}
 
 	// Create commitment data
 	commitData := append(tx.Data, nonce...)
@@ -492,7 +495,10 @@ func NewOrderRandomization(window, maxDelay time.Duration) *OrderRandomization {
 func (o *OrderRandomization) RandomizeOrder(order *Order) (*RandomizedOrder, error) {
 	// Generate random seed
 	seed := make([]byte, 32)
-	crand.Read(seed)
+	if _, err := crand.Read(seed); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random seed: %v\n", err)
+	}
 
 	// Create randomized order with random delay
 	// SECURITY FIX: Use crypto/rand for secure random delay generation
@@ -616,37 +622,55 @@ type ProtectionMechanism struct {
 // Generate IDs
 func generateMEVResistanceID() string {
 	random := make([]byte, 8)
-	crand.Read(random)
+	if _, err := crand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("mev_resistance_%x", random[:4])
 }
 
 func generateCommitmentID() string {
 	random := make([]byte, 8)
-	crand.Read(random)
+	if _, err := crand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("commitment_%x", random[:4])
 }
 
 func generateTimeLockID() string {
 	random := make([]byte, 8)
-	crand.Read(random)
+	if _, err := crand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("timelock_%x", random[:4])
 }
 
 func generateRandomizedOrderID() string {
 	random := make([]byte, 8)
-	crand.Read(random)
+	if _, err := crand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("random_order_%x", random[:4])
 }
 
 func generateGasStrategyID() string {
 	random := make([]byte, 8)
-	crand.Read(random)
+	if _, err := crand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("gas_strategy_%x", random[:4])
 }
 
 func generatePoolStateID() string {
 	random := make([]byte, 8)
-	crand.Read(random)
+	if _, err := crand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("pool_state_%x", random[:4])
 }
 

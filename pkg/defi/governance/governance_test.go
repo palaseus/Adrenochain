@@ -536,10 +536,14 @@ func TestGovernance_CastVote_Errors(t *testing.T) {
 	assert.Equal(t, ErrProposalNotFound, err)
 
 	// Test voting on paused governance
-	gov.Pause()
+	if err := gov.Pause(); err != nil {
+		t.Errorf("Failed to pause governance: %v", err)
+	}
 	err = gov.CastVote(generateRandomAddress(), 0, VoteSupportFor, "test", 100, generateRandomHash())
 	assert.Equal(t, ErrGovernancePaused, err)
-	gov.Unpause()
+	if err := gov.Unpause(); err != nil {
+		t.Errorf("Failed to unpause governance: %v", err)
+	}
 
 	// Create a proposal
 	proposer := generateRandomAddress()
@@ -703,10 +707,14 @@ func TestGovernance_ExecuteProposal_Errors(t *testing.T) {
 	assert.Equal(t, ErrProposalNotFound, err)
 
 	// Test executing on paused governance
-	gov.Pause()
+	if err := gov.Pause(); err != nil {
+		t.Errorf("Failed to pause governance: %v", err)
+	}
 	err = gov.ExecuteProposal(0, owner, 100, generateRandomHash())
 	assert.Equal(t, ErrGovernancePaused, err)
-	gov.Unpause()
+	if err := gov.Unpause(); err != nil {
+		t.Errorf("Failed to unpause governance: %v", err)
+	}
 
 	// Create a proposal
 	proposer := generateRandomAddress()
@@ -890,9 +898,15 @@ func TestGovernance_CancelProposal_Errors(t *testing.T) {
 	proposal.State = ProposalStateActive
 
 	// Vote for the proposal
-	gov.CastVote(voter1, proposalID, VoteSupportFor, "Support", 1, generateRandomHash())
-	gov.CastVote(voter2, proposalID, VoteSupportFor, "Support", 1, generateRandomHash())
-	gov.CastVote(voter3, proposalID, VoteSupportFor, "Support", 1, generateRandomHash())
+	if err := gov.CastVote(voter1, proposalID, VoteSupportFor, "Support", 1, generateRandomHash()); err != nil {
+		t.Errorf("Failed to cast vote 1: %v", err)
+	}
+	if err := gov.CastVote(voter2, proposalID, VoteSupportFor, "Support", 1, generateRandomHash()); err != nil {
+		t.Errorf("Failed to cast vote 2: %v", err)
+	}
+	if err := gov.CastVote(voter3, proposalID, VoteSupportFor, "Support", 1, generateRandomHash()); err != nil {
+		t.Errorf("Failed to cast vote 3: %v", err)
+	}
 
 	// Wait for voting period to end and check if proposal succeeded
 	// For testing, we'll manually set the proposal state

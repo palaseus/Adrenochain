@@ -669,7 +669,9 @@ func BenchmarkUpdateState(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		channel.UpdateState(newBalanceA, newBalanceB, nil, signatureA, signatureB)
+		if err := channel.UpdateState(newBalanceA, newBalanceB, nil, signatureA, signatureB); err != nil {
+			b.Errorf("Failed to update state: %v", err)
+		}
 	}
 }
 
@@ -680,7 +682,9 @@ func BenchmarkCreateDispute(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		channel.CreateDispute(disputer, evidence)
+		if _, err := channel.CreateDispute(disputer, evidence); err != nil {
+			b.Errorf("Failed to create dispute: %v", err)
+		}
 	}
 }
 

@@ -105,7 +105,9 @@ func TestChannelCreation(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channelConfig := ChannelConfig{
 		MaxPacketSize:     1024 * 1024,
@@ -143,7 +145,9 @@ func TestChannelOpening(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
 
@@ -167,10 +171,14 @@ func TestPacketSending(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	testData := []byte("Hello IBC World!")
 	packet, err := channel.SendPacket(testData, "transfer", "channel-2", 1000, time.Now().Add(time.Hour))
@@ -201,10 +209,14 @@ func TestPacketLifecycle(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "transfer", "channel-2", 1000, time.Now().Add(time.Hour))
 
@@ -245,15 +257,21 @@ func TestPacketTimeout(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Create packet with past timeout
 	packet, _ := channel.SendPacket([]byte("test data"), "transfer", "channel-2", 1000, time.Now().Add(-time.Hour))
 
-	packet.SendPacketNow()
+	if err := packet.SendPacketNow(); err != nil {
+		t.Errorf("Failed to send packet: %v", err)
+	}
 
 	// Try to receive expired packet
 	err := packet.ReceivePacket()
@@ -281,7 +299,9 @@ func TestInvalidOperations(t *testing.T) {
 	// Test opening connection that's already open
 	clientB.Status = ClientStatusActive
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	err = connection.OpenConnection()
 	if err == nil {
@@ -302,17 +322,27 @@ func TestMetricsTracking(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Send multiple packets
 	for i := 0; i < 5; i++ {
 		packet, _ := channel.SendPacket([]byte("test data"), "transfer", "channel-2", 1000, time.Now().Add(time.Hour))
-		packet.SendPacketNow()
-		packet.ReceivePacket()
-		packet.AcknowledgePacket()
+		if err := packet.SendPacketNow(); err != nil {
+			t.Errorf("Failed to send packet: %v", err)
+		}
+		if err := packet.ReceivePacket(); err != nil {
+			t.Errorf("Failed to receive packet: %v", err)
+		}
+		if err := packet.AcknowledgePacket(); err != nil {
+			t.Errorf("Failed to acknowledge packet: %v", err)
+		}
 	}
 
 	// Check channel metrics
@@ -358,7 +388,9 @@ func TestConfigurationDefaults(t *testing.T) {
 	}
 
 	// Test channel config defaults
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
 
 	if channel.config.MaxPacketSize == 0 {
@@ -376,19 +408,29 @@ func TestConcurrentOperations(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Test concurrent packet sending
 	done := make(chan bool, 10)
 	for i := 0; i < 10; i++ {
 		go func(index int) {
 			packet, _ := channel.SendPacket([]byte("test data"), "transfer", "channel-2", 1000, time.Now().Add(time.Hour))
-			packet.SendPacketNow()
-			packet.ReceivePacket()
-			packet.AcknowledgePacket()
+			if err := packet.SendPacketNow(); err != nil {
+				t.Errorf("Failed to send packet: %v", err)
+			}
+			if err := packet.ReceivePacket(); err != nil {
+				t.Errorf("Failed to receive packet: %v", err)
+			}
+			if err := packet.AcknowledgePacket(); err != nil {
+				t.Errorf("Failed to acknowledge packet: %v", err)
+			}
 			done <- true
 		}(i)
 	}
@@ -440,17 +482,27 @@ func BenchmarkPacketSending(b *testing.B) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		b.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		b.Errorf("Failed to open channel: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		packet, _ := channel.SendPacket([]byte("benchmark data"), "transfer", "channel-2", 1000, time.Now().Add(time.Hour))
-		packet.SendPacketNow()
-		packet.ReceivePacket()
-		packet.AcknowledgePacket()
+		if err := packet.SendPacketNow(); err != nil {
+			b.Errorf("Failed to send packet: %v", err)
+		}
+		if err := packet.ReceivePacket(); err != nil {
+			b.Errorf("Failed to receive packet: %v", err)
+		}
+		if err := packet.AcknowledgePacket(); err != nil {
+			b.Errorf("Failed to acknowledge packet: %v", err)
+		}
 	}
 }
 
@@ -467,14 +519,20 @@ func TestErrorConditions(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Create packet with very short timeout
 	packet, _ := channel.SendPacket([]byte("test data"), "transfer", "channel-2", 1000, time.Now().Add(time.Millisecond))
-	packet.SendPacketNow()
+	if err := packet.SendPacketNow(); err != nil {
+		t.Errorf("Failed to send packet: %v", err)
+	}
 
 	// Wait for timeout
 	time.Sleep(time.Millisecond * 2)
@@ -556,7 +614,9 @@ func TestChannelStates(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
 
@@ -590,10 +650,14 @@ func TestPacketStates(t *testing.T) {
 	clientB := NewIBCClient("chain-b", ClientTypeTendermint, ClientConfig{})
 
 	connection, _ := clientA.CreateConnection(clientB, ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("transfer", "channel-1", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "transfer", "channel-2", 1000, time.Now().Add(time.Hour))
 
@@ -603,19 +667,25 @@ func TestPacketStates(t *testing.T) {
 	}
 
 	// Test sent state
-	packet.SendPacketNow()
+	if err := packet.SendPacketNow(); err != nil {
+		t.Errorf("Failed to send packet: %v", err)
+	}
 	if packet.Status != PacketStatusSent {
 		t.Errorf("Expected sent status %d, got %d", PacketStatusSent, packet.Status)
 	}
 
 	// Test received state
-	packet.ReceivePacket()
+	if err := packet.ReceivePacket(); err != nil {
+		t.Errorf("Failed to receive packet: %v", err)
+	}
 	if packet.Status != PacketStatusReceived {
 		t.Errorf("Expected received status %d, got %d", PacketStatusReceived, packet.Status)
 	}
 
 	// Test acknowledged state
-	packet.AcknowledgePacket()
+	if err := packet.AcknowledgePacket(); err != nil {
+		t.Errorf("Failed to acknowledge packet: %v", err)
+	}
 	if packet.Status != PacketStatusAcknowledged {
 		t.Errorf("Expected acknowledged status %d, got %d", PacketStatusAcknowledged, packet.Status)
 	}
@@ -708,9 +778,13 @@ func TestConfigConversion(t *testing.T) {
 func TestPacketRetryMechanism(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))
 
@@ -735,9 +809,13 @@ func TestPacketRetryMechanism(t *testing.T) {
 func TestPacketCompression(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{EnableCompression: true})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))
 
@@ -787,7 +865,9 @@ func TestConnectionAutoRetry(t *testing.T) {
 func TestChannelAutoClose(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{AutoClose: true})
 
 	if !channel.config.AutoClose {
@@ -799,9 +879,13 @@ func TestChannelAutoClose(t *testing.T) {
 func TestPacketAutoRetry(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))
 	packet.config.AutoRetry = true
@@ -868,7 +952,9 @@ func TestConnectionStatusTransitions(t *testing.T) {
 func TestChannelStateTransitions(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
 
 	// Test initial state
@@ -897,9 +983,13 @@ func TestChannelStateTransitions(t *testing.T) {
 func TestPacketStatusTransitions(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))
 
@@ -996,7 +1086,9 @@ func TestClientTypesEnhanced(t *testing.T) {
 func TestChannelOrdering(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	// Test unordered channel
 	unorderedChannel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingUnordered, ChannelConfig{})
@@ -1052,7 +1144,9 @@ func TestConnectionMetricsUpdate(t *testing.T) {
 	}
 
 	// Open connection to update metrics
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	// Test updated metrics
 	metrics = connection.GetMetrics()
@@ -1069,7 +1163,9 @@ func TestConnectionMetricsUpdate(t *testing.T) {
 func TestChannelMetricsUpdate(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
 
 	// Test initial metrics
@@ -1079,7 +1175,9 @@ func TestChannelMetricsUpdate(t *testing.T) {
 	}
 
 	// Open the channel before sending packets
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Send packet to update metrics
 	packet, err := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))
@@ -1107,9 +1205,13 @@ func TestChannelMetricsUpdate(t *testing.T) {
 func TestPacketMetricsUpdate(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	packet, _ := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))
 
@@ -1120,7 +1222,9 @@ func TestPacketMetricsUpdate(t *testing.T) {
 	}
 
 	// Send packet to update metrics
-	packet.SendPacketNow()
+	if err := packet.SendPacketNow(); err != nil {
+		t.Errorf("Failed to send packet: %v", err)
+	}
 
 	// Test updated metrics
 	metrics = packet.GetMetrics()
@@ -1133,9 +1237,13 @@ func TestPacketMetricsUpdate(t *testing.T) {
 func TestPacketExpiration(t *testing.T) {
 	client := NewIBCClient("test-chain", ClientTypeTendermint, ClientConfig{})
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Create packet with past timeout
 	packet, _ := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(-time.Hour))
@@ -1384,7 +1492,9 @@ func TestEdgeCases(t *testing.T) {
 		MaxPacketTimeout: 0,
 	}
 
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, channelConfig)
 
 	// Should use default values
@@ -1420,10 +1530,14 @@ func TestPerformanceMetrics(t *testing.T) {
 
 	// Create connection and channel to update metrics
 	connection, _ := client.CreateConnection(NewIBCClient("counter-chain", ClientTypeTendermint, ClientConfig{}), ConnectionConfig{})
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{})
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Test updated performance metrics
 	metrics = client.GetMetrics()
@@ -1458,7 +1572,9 @@ func TestSecurityValidation(t *testing.T) {
 	}
 
 	// Test channel security levels
-	connection.OpenConnection()
+	if err := connection.OpenConnection(); err != nil {
+		t.Errorf("Failed to open connection: %v", err)
+	}
 	channel, _ := connection.CreateChannel("test-port", "test-channel", ChannelOrderingOrdered, ChannelConfig{SecurityLevel: SecurityLevelHigh})
 
 	if channel.config.SecurityLevel != SecurityLevelHigh {
@@ -1466,7 +1582,9 @@ func TestSecurityValidation(t *testing.T) {
 	}
 
 	// Open the channel before sending packets
-	channel.OpenChannel()
+	if err := channel.OpenChannel(); err != nil {
+		t.Errorf("Failed to open channel: %v", err)
+	}
 
 	// Test packet security levels
 	packet, err := channel.SendPacket([]byte("test data"), "dest-port", "dest-channel", 1000, time.Now().Add(time.Hour))

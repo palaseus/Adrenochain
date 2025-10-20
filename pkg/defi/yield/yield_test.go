@@ -619,7 +619,9 @@ func TestYieldFarm_GetFarmStats(t *testing.T) {
 	stakingToken := generateRandomAddress()
 	pid, _ := yf.AddPool(stakingToken, big.NewInt(100))
 	user := generateRandomAddress()
-	yf.Deposit(user, pid, big.NewInt(1000), 1, engine.Hash{})
+	if err := yf.Deposit(user, pid, big.NewInt(1000), 1, engine.Hash{}); err != nil {
+		t.Errorf("Failed to deposit: %v", err)
+	}
 
 	// Get updated stats
 	poolCount, userCount, totalStaked, totalRewards = yf.GetFarmStats()

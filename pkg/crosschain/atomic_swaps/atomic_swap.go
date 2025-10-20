@@ -403,14 +403,20 @@ func (as *AtomicSwap) updateMetrics() {
 // generateSecret generates a random secret for the swap
 func generateSecret() []byte {
 	secret := make([]byte, 32)
-	rand.Read(secret)
+	if _, err := rand.Read(secret); err != nil {
+		// Fallback to timestamp-based secret if random generation fails
+		return []byte(fmt.Sprintf("secret_%d", time.Now().UnixNano()))
+	}
 	return secret
 }
 
 // generateSwapID generates a unique swap ID
 func generateSwapID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("atomic_swap_%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("atomic_swap_%x", hash[:8])
 }

@@ -418,8 +418,12 @@ func TestMempoolStats(t *testing.T) {
 	tx1 := createBasicValidTransaction("tx1", 100)
 	tx2 := createBasicValidTransaction("tx2", 200)
 
-	mp.AddTransaction(tx1)
-	mp.AddTransaction(tx2)
+	if err := mp.AddTransaction(tx1); err != nil {
+		t.Errorf("Failed to add transaction 1: %v", err)
+	}
+	if err := mp.AddTransaction(tx2); err != nil {
+		t.Errorf("Failed to add transaction 2: %v", err)
+	}
 
 	stats := mp.GetTransactionStats()
 
@@ -439,7 +443,9 @@ func TestConcurrentAccess(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			tx := createBasicValidTransaction(fmt.Sprintf("concurrent_%d", id), 100)
-			mp.AddTransaction(tx)
+			if err := mp.AddTransaction(tx); err != nil {
+				t.Errorf("Failed to add transaction: %v", err)
+			}
 			done <- true
 		}(i)
 	}
@@ -649,7 +655,9 @@ func TestDynamicFeeRateValidation(t *testing.T) {
 	for i := 0; i < 50; i++ {
 		// Transaction size is ~211 bytes, so fee needs to be >= 2110 to meet min fee rate of 10
 		tx := createBasicValidTransaction(fmt.Sprintf("fill_%d", i), 2500)
-		mp.AddTransaction(tx)
+		if err := mp.AddTransaction(tx); err != nil {
+			t.Errorf("Failed to add transaction: %v", err)
+		}
 	}
 
 	// Test that high utilization allows higher fee rates
@@ -821,6 +829,7 @@ func TestGetTransactionsForBlock(t *testing.T) {
 // TestString tests the String method
 func TestString(t *testing.T) {
 	mempool := NewMempool(DefaultMempoolConfig())
+	mempool.SetTestMode(true) // Enable test mode to skip UTXO validation
 
 	// Test empty mempool
 	str := mempool.String()
@@ -829,7 +838,9 @@ func TestString(t *testing.T) {
 
 	// Add transaction and test again
 	tx := createBasicValidTransaction("tx1", 1000)
-	mempool.AddTransaction(tx)
+	if err := mempool.AddTransaction(tx); err != nil {
+		t.Errorf("Failed to add transaction: %v", err)
+	}
 
 	str = mempool.String()
 	assert.Contains(t, str, "1")
@@ -843,8 +854,12 @@ func TestPopMethods(t *testing.T) {
 	tx1 := createBasicValidTransaction("tx1", 1000)
 	tx2 := createBasicValidTransaction("tx2", 2000)
 
-	mempool.AddTransaction(tx1)
-	mempool.AddTransaction(tx2)
+	if err := mempool.AddTransaction(tx1); err != nil {
+		t.Errorf("Failed to add transaction 1: %v", err)
+	}
+	if err := mempool.AddTransaction(tx2); err != nil {
+		t.Errorf("Failed to add transaction 2: %v", err)
+	}
 
 	// Test that transactions were added correctly
 	assert.Equal(t, 2, mempool.GetTransactionCount())
@@ -855,7 +870,9 @@ func TestPopMethods(t *testing.T) {
 
 	// Test time-based priority queue by adding a transaction and checking it exists
 	tx3 := createBasicValidTransaction("tx3", 3000)
-	mempool.AddTransaction(tx3)
+	if err := mempool.AddTransaction(tx3); err != nil {
+		t.Errorf("Failed to add transaction 3: %v", err)
+	}
 	assert.Equal(t, 3, mempool.GetTransactionCount())
 }
 

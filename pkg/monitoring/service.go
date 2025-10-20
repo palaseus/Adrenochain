@@ -386,7 +386,10 @@ func (s *Service) prometheusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 
 	prometheusMetrics := s.metrics.GetPrometheusMetrics()
-	w.Write([]byte(prometheusMetrics))
+	if _, err := w.Write([]byte(prometheusMetrics)); err != nil {
+		http.Error(w, "Failed to write metrics", http.StatusInternalServerError)
+		return
+	}
 }
 
 // healthHandler handles health check requests

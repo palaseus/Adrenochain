@@ -2111,7 +2111,9 @@ func TestMarketDataWebSocket_ReadPumpAndWritePump(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Test that the client can receive messages
-	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if err := conn.SetReadDeadline(time.Now().Add(1 * time.Second)); err != nil {
+		t.Errorf("Failed to set read deadline: %v", err)
+	}
 	_, message, err := conn.ReadMessage()
 	if err != nil {
 		// This is expected in some cases due to WebSocket timing

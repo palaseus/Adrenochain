@@ -167,8 +167,12 @@ func TestListStrategies(t *testing.T) {
 	strategy1 := &YieldStrategy{ID: "strategy1"}
 	strategy2 := &YieldStrategy{ID: "strategy2"}
 
-	ysm.RegisterStrategy(strategy1)
-	ysm.RegisterStrategy(strategy2)
+	if err := ysm.RegisterStrategy(strategy1); err != nil {
+		t.Errorf("Failed to register strategy 1: %v", err)
+	}
+	if err := ysm.RegisterStrategy(strategy2); err != nil {
+		t.Errorf("Failed to register strategy 2: %v", err)
+	}
 
 	strategies = ysm.ListStrategies()
 	assert.Equal(t, 2, len(strategies))
@@ -237,7 +241,9 @@ func TestExecuteStrategy(t *testing.T) {
 		ID:     "executable",
 		Status: StrategyStatusActive,
 	}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Register provider
 	ysm.RegisterProvider("test", provider)
@@ -276,7 +282,9 @@ func TestGetStrategyAPY(t *testing.T) {
 		ID:  "apy-test",
 		APY: big.NewFloat(0.12),
 	}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Test getting APY from provider
 	provider.SetAPY("apy-test", big.NewFloat(0.15))
@@ -307,7 +315,9 @@ func TestGetStrategyTVL(t *testing.T) {
 		ID:  "tvl-test",
 		TVL: big.NewInt(1000000),
 	}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Test getting TVL from provider
 	provider.SetTVL("tvl-test", big.NewInt(1500000))
@@ -336,8 +346,12 @@ func TestGetUserRewards(t *testing.T) {
 	// Register strategies
 	strategy1 := &YieldStrategy{ID: "strategy1"}
 	strategy2 := &YieldStrategy{ID: "strategy2"}
-	ysm.RegisterStrategy(strategy1)
-	ysm.RegisterStrategy(strategy2)
+	if err := ysm.RegisterStrategy(strategy1); err != nil {
+		t.Errorf("Failed to register strategy 1: %v", err)
+	}
+	if err := ysm.RegisterStrategy(strategy2); err != nil {
+		t.Errorf("Failed to register strategy 2: %v", err)
+	}
 
 	// Register provider
 	ysm.RegisterProvider("test", provider)
@@ -445,7 +459,9 @@ func TestUpdateAnalytics(t *testing.T) {
 
 	// Register strategy
 	strategy := &YieldStrategy{ID: "analytics-test"}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Update analytics
 	apy := big.NewFloat(0.15)
@@ -478,7 +494,9 @@ func TestRiskMetricsCalculation(t *testing.T) {
 
 	// Register strategy
 	strategy := &YieldStrategy{ID: "risk-test"}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Add historical data with known pattern
 	apyValues := []float64{0.10, 0.12, 0.08, 0.15, 0.11, 0.13}
@@ -509,7 +527,9 @@ func TestGetHistoricalAPY(t *testing.T) {
 
 	// Register strategy
 	strategy := &YieldStrategy{ID: "history-test"}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Add historical data
 	for i := 0; i < 20; i++ {
@@ -543,7 +563,9 @@ func TestConcurrentAccess(t *testing.T) {
 
 	// Register strategy
 	strategy := &YieldStrategy{ID: "concurrent-test"}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Test concurrent reads
 	done := make(chan bool, 10)
@@ -571,7 +593,9 @@ func TestConcurrentAccess(t *testing.T) {
 				updates := map[string]interface{}{
 					"name": fmt.Sprintf("Updated %d-%d", id, j),
 				}
-				ysm.UpdateStrategy("concurrent-test", updates)
+				if err := ysm.UpdateStrategy("concurrent-test", updates); err != nil {
+					t.Errorf("Failed to update strategy: %v", err)
+				}
 			}
 		}(i)
 	}
@@ -658,7 +682,9 @@ func TestMathematicalAccuracy(t *testing.T) {
 
 	// Test APY calculations with known values
 	strategy := &YieldStrategy{ID: "math-test"}
-	ysm.RegisterStrategy(strategy)
+	if err := ysm.RegisterStrategy(strategy); err != nil {
+		t.Errorf("Failed to register strategy: %v", err)
+	}
 
 	// Add data with known mathematical properties
 	testData := []struct {

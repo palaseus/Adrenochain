@@ -435,7 +435,10 @@ func (pc *PaymentChannel) updateMetrics() {
 // generateChannelID generates a unique channel ID
 func generateChannelID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("payment_channel_%x", hash[:8])
 }

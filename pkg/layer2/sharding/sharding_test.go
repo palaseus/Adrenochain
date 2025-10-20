@@ -901,7 +901,9 @@ func TestMemorySafety(t *testing.T) {
 					Sender:          fmt.Sprintf("sender_%d", i),
 					Recipient:       fmt.Sprintf("recipient_%d", i),
 				}
-				sm.CreateCrossShardTransaction(tx)
+				if err := sm.CreateCrossShardTransaction(tx); err != nil {
+					t.Errorf("Failed to create cross-shard transaction: %v", err)
+				}
 			}
 		}
 	}
@@ -1203,7 +1205,9 @@ func TestPerformance(t *testing.T) {
 				Sender:          fmt.Sprintf("sender_%d", i),
 				Recipient:       fmt.Sprintf("recipient_%d", i),
 			}
-			sm.CreateCrossShardTransaction(tx)
+			if err := sm.CreateCrossShardTransaction(tx); err != nil {
+				t.Errorf("Failed to create cross-shard transaction: %v", err)
+			}
 			transactionCount++
 		}
 	}

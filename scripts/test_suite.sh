@@ -739,8 +739,8 @@ generate_test_summary() {
             for file in "$TEST_RESULTS_DIR"/*_tests.log; do
                 if [[ -f "$file" ]]; then
                     local filename=$(basename "$file")
-                    local panic_count=$(grep -c "panic:" "$file" 2>/dev/null || echo "0")
-                    local fail_count=$(grep -c "FAIL" "$file" 2>/dev/null || echo "0")
+                    local panic_count=$(grep -c "panic:" "$file" 2>/dev/null | head -1 || echo "0")
+                    local fail_count=$(grep -c "FAIL" "$file" 2>/dev/null | head -1 || echo "0")
                     
                     if [[ "${panic_count:-0}" -gt 0 ]] || [[ "${fail_count:-0}" -gt 0 ]]; then
                         echo "#### $filename"

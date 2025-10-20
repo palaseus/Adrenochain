@@ -516,22 +516,30 @@ func TestLendingPoolConcurrency(t *testing.T) {
 
 				for j := 0; j < numOperations; j++ {
 					// Supply
-					pool.Supply(userID, big.NewInt(1000000))
+					if err := pool.Supply(userID, big.NewInt(1000000)); err != nil {
+						t.Errorf("Failed to supply: %v", err)
+					}
 
 					// Set collateral
 					account, _ := pool.GetAccount(userID)
 					if account != nil {
-						account.CollateralValue = big.NewInt(2000000)
+						account.CollateralValue = big.NewInt(10000000) // Increased collateral
 					}
 
 					// Borrow
-					pool.Borrow(userID, big.NewInt(500000))
+					if err := pool.Borrow(userID, big.NewInt(100000)); err != nil {
+						t.Errorf("Failed to borrow: %v", err)
+					}
 
 					// Repay
-					pool.Repay(userID, big.NewInt(200000))
+					if err := pool.Repay(userID, big.NewInt(50000)); err != nil {
+						t.Errorf("Failed to repay: %v", err)
+					}
 
 					// Withdraw
-					pool.Withdraw(userID, big.NewInt(300000))
+					if err := pool.Withdraw(userID, big.NewInt(100000)); err != nil {
+						t.Errorf("Failed to withdraw: %v", err)
+					}
 				}
 			}(i)
 		}
@@ -569,7 +577,9 @@ func BenchmarkLendingPoolSupply(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pool.Supply(userID, big.NewInt(1000000))
+		if err := pool.Supply(userID, big.NewInt(1000000)); err != nil {
+			b.Errorf("Failed to supply: %v", err)
+		}
 	}
 }
 
@@ -578,13 +588,22 @@ func BenchmarkLendingPoolBorrow(b *testing.B) {
 	userID := "benchmark_user"
 
 	// Setup: supply and set collateral
-	pool.Supply(userID, big.NewInt(10000000))
+	if err := pool.Supply(userID, big.NewInt(10000000)); err != nil {
+		b.Errorf("Failed to supply: %v", err)
+	}
 	account, _ := pool.GetAccount(userID)
 	account.CollateralValue = big.NewInt(15000000)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pool.Borrow(userID, big.NewInt(1000000))
+		// Borrow smaller amounts to avoid liquidity issues
+		borrowAmount := big.NewInt(100000) // Reduced from 1000000
+		if err := pool.Borrow(userID, borrowAmount); err != nil {
+			// Only log first few errors to avoid spam
+			if i < 5 {
+				b.Errorf("Failed to borrow: %v", err)
+			}
+		}
 	}
 }
 

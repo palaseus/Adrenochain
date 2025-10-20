@@ -853,7 +853,11 @@ func TestConcurrency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start PrivateDeFi: %v", err)
 	}
-	defer pdf.Stop()
+	defer func() {
+		if err := pdf.Stop(); err != nil {
+			t.Errorf("Failed to stop private DeFi: %v", err)
+		}
+	}()
 
 	// Test concurrent transaction creation
 	const numGoroutines = 10
@@ -1076,7 +1080,11 @@ func TestCleanupOldData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start PrivateDeFi: %v", err)
 	}
-	defer pdf.Stop()
+	defer func() {
+		if err := pdf.Stop(); err != nil {
+			t.Errorf("Failed to stop private DeFi: %v", err)
+		}
+	}()
 
 	// Create a transaction
 	amount := big.NewInt(1000)

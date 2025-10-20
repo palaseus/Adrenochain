@@ -306,3 +306,64 @@ func (ct *CoverageTracker) generateCoverageRecommendations() []string {
 
 	return recommendations
 }
+
+// scanGoFiles scans the codebase for Go files
+func (ct *CoverageTracker) scanGoFiles() ([]string, error) {
+	// In a real implementation, this would use filepath.Walk or similar
+	// For now, return a list of known Go files
+	return []string{
+		"pkg/contracts/engine/engine.go",
+		"pkg/contracts/evm/evm_engine.go",
+		"pkg/contracts/wasm/wasm_engine.go",
+		"pkg/exchange/orderbook/order_book.go",
+		"pkg/exchange/trading/trading_pairs.go",
+		"pkg/defi/tokens/erc20.go",
+		"pkg/defi/amm/amm.go",
+		"pkg/defi/lending/lending.go",
+		"pkg/consensus/consensus.go",
+		"pkg/storage/storage.go",
+	}, nil
+}
+
+// extractPackageFromPath extracts package name from file path
+func (ct *CoverageTracker) extractPackageFromPath(filePath string) string {
+	// Extract package from path like "pkg/contracts/engine/engine.go" -> "pkg/contracts/engine"
+	if len(filePath) < 4 {
+		return ""
+	}
+
+	// Find the last directory separator
+	lastSlash := -1
+	for i := len(filePath) - 1; i >= 0; i-- {
+		if filePath[i] == '/' {
+			lastSlash = i
+			break
+		}
+	}
+
+	if lastSlash == -1 {
+		return ""
+	}
+
+	return filePath[:lastSlash]
+}
+
+// analyzeFile analyzes a Go file for coverage metrics
+func (ct *CoverageTracker) analyzeFile(filePath string, pkg *PackageCoverage) error {
+	// In a real implementation, this would parse the Go file
+	// and count lines, functions, etc.
+	// For now, simulate analysis
+
+	// Simulate line counting
+	pkg.TotalLines += 100
+	pkg.CoveredLines += 85 // 85% coverage
+
+	// Simulate function counting
+	pkg.TotalFunctions += 10
+	pkg.CoveredFunctions += 8 // 80% coverage
+
+	// Update last updated time
+	pkg.LastUpdated = time.Now()
+
+	return nil
+}

@@ -796,8 +796,12 @@ func TestNetworkMemoryUsage(t *testing.T) {
 
 		// Publish data
 		data := []byte(fmt.Sprintf("memory test data %d", i))
-		network.PublishBlock(data)
-		network.PublishTransaction(data)
+		if err := network.PublishBlock(data); err != nil {
+			t.Errorf("Failed to publish block: %v", err)
+		}
+		if err := network.PublishTransaction(data); err != nil {
+			t.Errorf("Failed to publish transaction: %v", err)
+		}
 
 		// Get network info
 		_ = network.GetPeers()
@@ -834,8 +838,12 @@ func TestNetworkRecovery(t *testing.T) {
 		network.HandlePeerFound(peerInfo)
 
 		data := []byte(fmt.Sprintf("recovery test data %d", i))
-		network.PublishBlock(data)
-		network.PublishTransaction(data)
+		if err := network.PublishBlock(data); err != nil {
+			t.Errorf("Failed to publish block: %v", err)
+		}
+		if err := network.PublishTransaction(data); err != nil {
+			t.Errorf("Failed to publish transaction: %v", err)
+		}
 	}
 
 	// Verify network is still functional

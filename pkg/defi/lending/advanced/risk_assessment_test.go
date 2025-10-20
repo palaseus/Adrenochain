@@ -562,11 +562,15 @@ func BenchmarkRiskAssessment(b *testing.B) {
 	assessor := NewRiskAssessor(lendingPool, 1*time.Hour, 75)
 
 	// Setup: supply assets
-	lendingPool.Supply("benchmark_user", big.NewInt(10000000))
+	if err := lendingPool.Supply("benchmark_user", big.NewInt(10000000)); err != nil {
+		b.Errorf("Failed to supply: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		assessor.AssessRisk("benchmark_user")
+		if _, err := assessor.AssessRisk("benchmark_user"); err != nil {
+			b.Errorf("Failed to assess risk: %v", err)
+		}
 	}
 }
 

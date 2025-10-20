@@ -375,7 +375,9 @@ func TestGasMeterClone(t *testing.T) {
 	}
 
 	// Modify original and ensure clone is unaffected
-	gm.ConsumeGas(100, "modify")
+	if err := gm.ConsumeGas(100, "modify"); err != nil {
+		t.Errorf("Failed to consume gas: %v", err)
+	}
 
 	if clone.GasConsumed() == gm.GasConsumed() {
 		t.Error("clone should be independent of original")

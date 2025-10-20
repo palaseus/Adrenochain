@@ -631,7 +631,11 @@ func TestConcurrency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start QuadraticVoting: %v", err)
 	}
-	defer qv.Stop()
+	defer func() {
+		if err := qv.Stop(); err != nil {
+			t.Errorf("Failed to stop quadratic voting: %v", err)
+		}
+	}()
 
 	// Test concurrent proposal creation
 	const numGoroutines = 5
@@ -753,7 +757,11 @@ func TestCleanupOldData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start QuadraticVoting: %v", err)
 	}
-	defer qv.Stop()
+	defer func() {
+		if err := qv.Stop(); err != nil {
+			t.Errorf("Failed to stop quadratic voting: %v", err)
+		}
+	}()
 
 	// Create a proposal
 	proposal, err := qv.CreateProposal(

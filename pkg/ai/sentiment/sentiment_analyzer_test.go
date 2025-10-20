@@ -301,8 +301,12 @@ func TestAnalyzeSentiment(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(data1)
-	sa.AddData(data2)
+	if err := sa.AddData(data1); err != nil {
+		t.Errorf("Failed to add data 1: %v", err)
+	}
+	if err := sa.AddData(data2); err != nil {
+		t.Errorf("Failed to add data 2: %v", err)
+	}
 
 	// Test sentiment analysis
 	analysis, err := sa.AnalyzeSentiment("BTC", SentimentTypeSocial, time.Hour)
@@ -360,7 +364,9 @@ func TestGetSentimentAnalysis(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(data)
+	if err := sa.AddData(data); err != nil {
+		t.Errorf("Failed to add data: %v", err)
+	}
 	analysis, _ := sa.AnalyzeSentiment("BTC", SentimentTypeSocial, time.Hour)
 
 	// Test retrieving analysis
@@ -402,8 +408,12 @@ func TestGetSentimentAnalyses(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(data1)
-	sa.AddData(data2)
+	if err := sa.AddData(data1); err != nil {
+		t.Errorf("Failed to add data 1: %v", err)
+	}
+	if err := sa.AddData(data2); err != nil {
+		t.Errorf("Failed to add data 2: %v", err)
+	}
 
 	_, _ = sa.AnalyzeSentiment("BTC", SentimentTypeSocial, time.Hour)
 	_, _ = sa.AnalyzeSentiment("ETH", SentimentTypeNews, time.Hour)
@@ -473,8 +483,12 @@ func TestGetMetrics(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(data)
-	sa.AnalyzeSentiment("BTC", SentimentTypeSocial, time.Hour)
+	if err := sa.AddData(data); err != nil {
+		t.Errorf("Failed to add data: %v", err)
+	}
+	if _, err := sa.AnalyzeSentiment("BTC", SentimentTypeSocial, time.Hour); err != nil {
+		t.Errorf("Failed to analyze sentiment: %v", err)
+	}
 
 	// Check updated metrics
 	metrics = sa.GetMetrics()
@@ -568,7 +582,9 @@ func TestSentimentAnalysisEdgeCases(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(shortData)
+	if err := sa.AddData(shortData); err != nil {
+		t.Errorf("Failed to add short data: %v", err)
+	}
 
 	if shortData.Sentiment == nil {
 		t.Error("Expected sentiment to be analyzed for short content")
@@ -587,7 +603,9 @@ func TestSentimentAnalysisEdgeCases(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(longData)
+	if err := sa.AddData(longData); err != nil {
+		t.Errorf("Failed to add long data: %v", err)
+	}
 
 	if longData.Sentiment == nil {
 		t.Error("Expected sentiment to be analyzed for long content")
@@ -601,7 +619,9 @@ func TestSentimentAnalysisEdgeCases(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(unsupportedData)
+	if err := sa.AddData(unsupportedData); err != nil {
+		t.Errorf("Failed to add unsupported data: %v", err)
+	}
 
 	if unsupportedData.Sentiment == nil {
 		t.Error("Expected sentiment to be analyzed for unsupported language")
@@ -638,7 +658,9 @@ func TestPolarityClassification(t *testing.T) {
 				Timestamp: time.Now(),
 			}
 
-			sa.AddData(data)
+			if err := sa.AddData(data); err != nil {
+				t.Errorf("Failed to add data: %v", err)
+			}
 
 			// Verify sentiment was analyzed
 			if data.Sentiment == nil {
@@ -739,7 +761,11 @@ func TestConcurrency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start analyzer: %v", err)
 	}
-	defer sa.Stop()
+	defer func() {
+		if err := sa.Stop(); err != nil {
+			t.Errorf("Failed to stop sentiment analyzer: %v", err)
+		}
+	}()
 
 	// Test concurrent data addition
 	const numGoroutines = 10
@@ -758,7 +784,9 @@ func TestConcurrency(t *testing.T) {
 					Language:  "en",
 					Timestamp: time.Now(),
 				}
-				sa.AddData(data)
+				if err := sa.AddData(data); err != nil {
+					t.Errorf("Failed to add data: %v", err)
+				}
 			}
 		}(i)
 	}
@@ -804,7 +832,9 @@ func TestMemorySafety(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(data)
+	if err := sa.AddData(data); err != nil {
+		t.Errorf("Failed to add data: %v", err)
+	}
 
 	// Modify the original data
 	originalContent := data.Content
@@ -839,7 +869,9 @@ func TestEdgeCases(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(emptyData)
+	if err := sa.AddData(emptyData); err != nil {
+		t.Errorf("Failed to add empty data: %v", err)
+	}
 
 	if emptyData.Sentiment == nil {
 		t.Error("Expected sentiment to be analyzed for empty content")
@@ -858,7 +890,9 @@ func TestEdgeCases(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(longData)
+	if err := sa.AddData(longData); err != nil {
+		t.Errorf("Failed to add long data: %v", err)
+	}
 
 	if longData.Sentiment == nil {
 		t.Error("Expected sentiment to be analyzed for very long content")
@@ -879,7 +913,9 @@ func TestEdgeCases(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	sa.AddData(extremeData)
+	if err := sa.AddData(extremeData); err != nil {
+		t.Errorf("Failed to add extreme data: %v", err)
+	}
 
 	if extremeData.Sentiment.Score < -1.0 || extremeData.Sentiment.Score > 1.0 {
 		t.Errorf("Expected score to be within [-1, 1] bounds, got %f", extremeData.Sentiment.Score)

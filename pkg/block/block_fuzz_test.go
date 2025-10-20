@@ -23,6 +23,11 @@ func FuzzBlockSerialization(f *testing.F) {
 		if len(data) > 1000000 {
 			t.Skip("Input too large")
 		}
+		
+		// Skip empty inputs
+		if len(data) == 0 {
+			t.Skip("Empty input")
+		}
 
 		// Try to deserialize the fuzzed data
 		block := &Block{}

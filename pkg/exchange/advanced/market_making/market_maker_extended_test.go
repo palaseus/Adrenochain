@@ -23,7 +23,9 @@ func TestMarketMaker_GetQuotes(t *testing.T) {
 	}
 
 	// Start the market maker to generate quotes
-	mm.Start()
+	if err := mm.Start(); err != nil {
+		t.Errorf("Failed to start market maker: %v", err)
+	}
 	time.Sleep(500 * time.Millisecond) // Wait longer for quotes to be generated
 
 	// Test getting quotes after they're generated
@@ -54,7 +56,9 @@ func TestMarketMaker_GetQuotes(t *testing.T) {
 		t.Error("Expected no quotes for non-existent symbol")
 	}
 
-	mm.Stop()
+	if err := mm.Stop(); err != nil {
+		t.Errorf("Failed to stop market maker: %v", err)
+	}
 }
 
 func TestMarketMaker_GetPosition(t *testing.T) {

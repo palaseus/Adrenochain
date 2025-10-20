@@ -116,7 +116,10 @@ func (ta *TradingAPI) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetOrder handles GET /api/v1/orders/{orderID}
@@ -139,7 +142,10 @@ func (ta *TradingAPI) GetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(order)
+	if err := json.NewEncoder(w).Encode(order); err != nil {
+		http.Error(w, "Failed to encode order", http.StatusInternalServerError)
+		return
+	}
 }
 
 // CancelOrder handles DELETE /api/v1/orders/{orderID}
@@ -167,7 +173,10 @@ func (ta *TradingAPI) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetOrderBook handles GET /api/v1/orderbook/{tradingPair}
@@ -195,7 +204,10 @@ func (ta *TradingAPI) GetOrderBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(orderBook)
+	if err := json.NewEncoder(w).Encode(orderBook); err != nil {
+		http.Error(w, "Failed to encode order book", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetTrades handles GET /api/v1/trades/{tradingPair}
@@ -223,7 +235,10 @@ func (ta *TradingAPI) GetTrades(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(trades)
+	if err := json.NewEncoder(w).Encode(trades); err != nil {
+		http.Error(w, "Failed to encode trades", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetTradingPairs handles GET /api/v1/trading-pairs
@@ -236,7 +251,10 @@ func (ta *TradingAPI) GetTradingPairs(w http.ResponseWriter, r *http.Request) {
 	pairs := ta.getAllTradingPairs()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pairs)
+	if err := json.NewEncoder(w).Encode(pairs); err != nil {
+		http.Error(w, "Failed to encode pairs", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetMarketData handles GET /api/v1/market-data/{tradingPair}
@@ -259,7 +277,10 @@ func (ta *TradingAPI) GetMarketData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(marketData)
+	if err := json.NewEncoder(w).Encode(marketData); err != nil {
+		http.Error(w, "Failed to encode market data", http.StatusInternalServerError)
+		return
+	}
 }
 
 // Business Logic Methods

@@ -291,7 +291,9 @@ func TestDoubleSpendPrevention(t *testing.T) {
 	assert.NoError(t, err1, "First transaction should be valid")
 
 	// Process first transaction
-	us.processTransaction(tx1, 1)
+	if err := us.processTransaction(tx1, 1); err != nil {
+		t.Errorf("Failed to process transaction: %v", err)
+	}
 
 	// Second transaction should fail (double spend)
 	err2 := us.ValidateTransaction(tx2)

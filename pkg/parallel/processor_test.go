@@ -132,7 +132,9 @@ func TestParallelProcessor_GetStats(t *testing.T) {
 		Result:   make(chan *WorkResult, 1),
 	}
 
-	processor.Submit(item)
+	if err := processor.Submit(item); err != nil {
+		t.Errorf("Failed to submit item: %v", err)
+	}
 
 	// Wait a bit for processing
 	time.Sleep(100 * time.Millisecond)
@@ -194,7 +196,9 @@ func TestParallelProcessor_ConcurrentAccess(t *testing.T) {
 					Result:   make(chan *WorkResult, 1),
 				}
 
-				processor.Submit(item)
+				if err := processor.Submit(item); err != nil {
+					t.Errorf("Failed to submit item: %v", err)
+				}
 			}
 			done <- true
 		}(i)
@@ -224,7 +228,9 @@ func TestParallelProcessor_WorkerStats(t *testing.T) {
 		Result:   make(chan *WorkResult, 1),
 	}
 
-	processor.Submit(item)
+	if err := processor.Submit(item); err != nil {
+		t.Errorf("Failed to submit item: %v", err)
+	}
 
 	// Wait for processing
 	time.Sleep(100 * time.Millisecond)
@@ -286,7 +292,9 @@ func BenchmarkParallelProcessor_Submit(b *testing.B) {
 				Created:  time.Now(),
 				Result:   make(chan *WorkResult, 1),
 			}
-			processor.Submit(item)
+			if err := processor.Submit(item); err != nil {
+				b.Errorf("Failed to submit item: %v", err)
+			}
 			i++
 		}
 	})
@@ -305,7 +313,9 @@ func BenchmarkParallelProcessor_ProcessTransaction(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		processor.ProcessTransaction(tx)
+		if _, err := processor.ProcessTransaction(tx); err != nil {
+			b.Errorf("Failed to process transaction: %v", err)
+		}
 	}
 }
 

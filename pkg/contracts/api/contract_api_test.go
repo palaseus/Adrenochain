@@ -1003,7 +1003,9 @@ func TestCallContractEdgeCases(t *testing.T) {
 
 	// Test with valid contract address (first register the contract)
 	contractAddr := engine.Address{0x01}
-	api.registerContract(ContractTypeERC20, contractAddr, []interface{}{})
+	if err := api.registerContract(ContractTypeERC20, contractAddr, []interface{}{}); err != nil {
+		t.Errorf("Failed to register contract: %v", err)
+	}
 
 	method := "transfer"
 	args := []interface{}{engine.Address{0x02}, big.NewInt(100)}

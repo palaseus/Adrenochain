@@ -180,13 +180,19 @@ func (l *Logger) rotateFile(config *Config) {
 		newName := fmt.Sprintf("%s.%d", l.filePath, i+1)
 
 		if _, err := os.Stat(oldName); err == nil {
-			os.Rename(oldName, newName)
+			if err := os.Rename(oldName, newName); err != nil {
+				// Log rotation error but continue
+				fmt.Fprintf(os.Stderr, "Failed to rotate log file %s: %v\n", oldName, err)
+			}
 		}
 	}
 
 	// Rename current file to .1
 	backupName := fmt.Sprintf("%s.1", l.filePath)
-	os.Rename(l.filePath, backupName)
+	if err := os.Rename(l.filePath, backupName); err != nil {
+		// Log rotation error but continue
+		fmt.Fprintf(os.Stderr, "Failed to rename current log file %s: %v\n", l.filePath, err)
+	}
 
 	// Open new log file
 	file, err := os.OpenFile(l.filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)

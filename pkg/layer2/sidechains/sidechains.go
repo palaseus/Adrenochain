@@ -716,6 +716,9 @@ func (sm *SidechainManager) Close() error {
 // GetRandomID generates a random ID for testing
 func (sm *SidechainManager) GetRandomID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
 	return fmt.Sprintf("%x", b)
 }

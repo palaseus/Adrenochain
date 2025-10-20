@@ -1165,7 +1165,9 @@ func TestMemorySafety(t *testing.T) {
 			FeePercentage:  0.1,
 			SecurityLevel:  SecurityMedium,
 		}
-		sm.CreateBridge(bridge)
+		if err := sm.CreateBridge(bridge); err != nil {
+			t.Errorf("Failed to create bridge: %v", err)
+		}
 	}
 
 	// Create many cross-chain transactions
@@ -1180,7 +1182,9 @@ func TestMemorySafety(t *testing.T) {
 				Sender:    fmt.Sprintf("sender_%d", i),
 				Recipient: fmt.Sprintf("recipient_%d", i),
 			}
-			sm.CreateCrossChainTransaction(tx)
+			if err := sm.CreateCrossChainTransaction(tx); err != nil {
+				t.Errorf("Failed to create cross-chain transaction: %v", err)
+			}
 		}
 	}
 
@@ -1567,7 +1571,9 @@ func TestPerformance(t *testing.T) {
 			FeePercentage:  0.1,
 			SecurityLevel:  SecurityMedium,
 		}
-		sm.CreateBridge(bridge)
+		if err := sm.CreateBridge(bridge); err != nil {
+			t.Errorf("Failed to create bridge: %v", err)
+		}
 	}
 
 	// Create many transactions quickly
@@ -1581,7 +1587,9 @@ func TestPerformance(t *testing.T) {
 			Sender:    fmt.Sprintf("sender_%d", i),
 			Recipient: fmt.Sprintf("recipient_%d", i),
 		}
-		sm.CreateCrossChainTransaction(tx)
+		if err := sm.CreateCrossChainTransaction(tx); err != nil {
+			t.Errorf("Failed to create cross-chain transaction: %v", err)
+		}
 	}
 
 	duration := time.Since(start)

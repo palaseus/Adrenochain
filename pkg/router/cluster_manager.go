@@ -583,7 +583,12 @@ func (cm *ClusterManager) checkRecoveryConditions() {
 			timeSinceLastUpdate := time.Since(managedCluster.UpdatedAt)
 			if timeSinceLastUpdate > policy.RecoveryTimeout {
 				// Attempt recovery
-				go cm.attemptRecovery(managedCluster)
+				go func() {
+					if err := cm.attemptRecovery(managedCluster); err != nil {
+						// Log error but continue with recovery
+						fmt.Printf("Failed to attempt recovery: %v\n", err)
+					}
+				}()
 			}
 		}
 	}

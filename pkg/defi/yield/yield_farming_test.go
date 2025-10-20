@@ -1,6 +1,7 @@
 package yield
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -266,7 +267,9 @@ func TestYieldManagerAddFarm(t *testing.T) {
 func TestYieldManagerRemoveFarm(t *testing.T) {
 	ym := NewYieldManager()
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		t.Errorf("Failed to add farm: %v", err)
+	}
 
 	err := ym.RemoveFarm("farm1")
 	if err != nil {
@@ -293,7 +296,9 @@ func TestYieldManagerRemoveFarm(t *testing.T) {
 func TestYieldManagerStartFarming(t *testing.T) {
 	ym := NewYieldManager()
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		t.Errorf("Failed to add farm: %v", err)
+	}
 
 	position, _ := NewPosition("pos1", "farm1", "user1", big.NewFloat(1000))
 
@@ -346,10 +351,14 @@ func TestYieldManagerStartFarming(t *testing.T) {
 func TestYieldManagerStopFarming(t *testing.T) {
 	ym := NewYieldManager()
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		t.Errorf("Failed to add farm: %v", err)
+	}
 
 	position, _ := NewPosition("pos1", "farm1", "user1", big.NewFloat(1000))
-	ym.StartFarming(position)
+	if err := ym.StartFarming(position); err != nil {
+		t.Errorf("Failed to start farming: %v", err)
+	}
 
 	err := ym.StopFarming("pos1")
 	if err != nil {
@@ -382,10 +391,14 @@ func TestYieldManagerStopFarming(t *testing.T) {
 func TestYieldManagerClaimRewards(t *testing.T) {
 	ym := NewYieldManager()
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		t.Errorf("Failed to add farm: %v", err)
+	}
 
 	position, _ := NewPosition("pos1", "farm1", "user1", big.NewFloat(1000))
-	ym.StartFarming(position)
+	if err := ym.StartFarming(position); err != nil {
+		t.Errorf("Failed to start farming: %v", err)
+	}
 
 	// Wait a bit to simulate time passing
 	time.Sleep(10 * time.Millisecond)
@@ -406,7 +419,9 @@ func TestYieldManagerClaimRewards(t *testing.T) {
 	}
 
 	// Test claiming from inactive position
-	ym.StopFarming("pos1")
+	if err := ym.StopFarming("pos1"); err != nil {
+		t.Errorf("Failed to stop farming: %v", err)
+	}
 	_, err = ym.ClaimRewards("pos1")
 	if err == nil {
 		t.Error("Expected error for inactive position")
@@ -448,7 +463,9 @@ func TestYieldManagerGetters(t *testing.T) {
 
 	// Test GetFarm
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		t.Errorf("Failed to add farm: %v", err)
+	}
 
 	retrievedFarm, err := ym.GetFarm("farm1")
 	if err != nil {
@@ -472,7 +489,9 @@ func TestYieldManagerGetters(t *testing.T) {
 
 	// Test GetPosition
 	position, _ := NewPosition("pos1", "farm1", "user1", big.NewFloat(1000))
-	ym.StartFarming(position)
+	if err := ym.StartFarming(position); err != nil {
+		t.Errorf("Failed to start farming: %v", err)
+	}
 
 	retrievedPosition, err := ym.GetPosition("pos1")
 	if err != nil {
@@ -516,7 +535,9 @@ func TestYieldManagerGetters(t *testing.T) {
 func TestYieldManagerUpdateFarmMetrics(t *testing.T) {
 	ym := NewYieldManager()
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		t.Errorf("Failed to add farm: %v", err)
+	}
 
 	// Test UpdateFarmAPY
 	newAPY := big.NewFloat(0.20)
@@ -571,15 +592,23 @@ func TestYieldManagerAggregateMetrics(t *testing.T) {
 	farm1, _ := NewFarm("farm1", "Test1", "Description1", "Protocol1", "Chain1", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
 	farm2, _ := NewFarm("farm2", "Test2", "Description2", "Protocol2", "Chain2", Staking, High, big.NewFloat(0.25), big.NewFloat(0.24), big.NewFloat(2000000), big.NewFloat(200), big.NewFloat(20000), 60*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
 
-	ym.AddFarm(farm1)
-	ym.AddFarm(farm2)
+	if err := ym.AddFarm(farm1); err != nil {
+		t.Errorf("Failed to add farm1: %v", err)
+	}
+	if err := ym.AddFarm(farm2); err != nil {
+		t.Errorf("Failed to add farm2: %v", err)
+	}
 
 	// Add positions
 	position1, _ := NewPosition("pos1", "farm1", "user1", big.NewFloat(1000))
 	position2, _ := NewPosition("pos2", "farm2", "user2", big.NewFloat(2000))
 
-	ym.StartFarming(position1)
-	ym.StartFarming(position2)
+	if err := ym.StartFarming(position1); err != nil {
+		t.Errorf("Failed to start farming position1: %v", err)
+	}
+	if err := ym.StartFarming(position2); err != nil {
+		t.Errorf("Failed to start farming position2: %v", err)
+	}
 
 	// Test GetTotalStaked
 	totalStaked := ym.GetTotalStaked()
@@ -634,12 +663,16 @@ func TestYieldManagerAggregateMetrics(t *testing.T) {
 func BenchmarkYieldManagerStartFarming(b *testing.B) {
 	ym := NewYieldManager()
 	farm, _ := NewFarm("farm1", "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, big.NewFloat(0.15), big.NewFloat(0.14), big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-	ym.AddFarm(farm)
+	if err := ym.AddFarm(farm); err != nil {
+		b.Errorf("Failed to add farm: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		position, _ := NewPosition("pos"+string(rune(i)), "farm1", "user1", big.NewFloat(1000))
-		ym.StartFarming(position)
+		position, _ := NewPosition(fmt.Sprintf("pos-%d", i), "farm1", "user1", big.NewFloat(1000))
+		if err := ym.StartFarming(position); err != nil {
+			b.Errorf("Failed to start farming: %v", err)
+		}
 	}
 }
 
@@ -663,8 +696,10 @@ func BenchmarkYieldManagerGetTopPerformingFarms(b *testing.B) {
 	for i := 0; i < 100; i++ {
 		apy := big.NewFloat(0.10 + float64(i)*0.01)
 		apr := big.NewFloat(0.09 + float64(i)*0.01)
-		farm, _ := NewFarm("farm"+string(rune(i)), "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, apy, apr, big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
-		ym.AddFarm(farm)
+		farm, _ := NewFarm(fmt.Sprintf("farm-%d", i), "Test", "Description", "Protocol", "Chain", LiquidityProviding, Medium, apy, apr, big.NewFloat(1000000), big.NewFloat(100), big.NewFloat(10000), 30*24*time.Hour, []string{"TOKEN"}, []string{"TOKEN"})
+		if err := ym.AddFarm(farm); err != nil {
+			b.Errorf("Failed to add farm: %v", err)
+		}
 	}
 
 	b.ResetTimer()

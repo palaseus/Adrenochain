@@ -1586,7 +1586,9 @@ func TestExecuteTransactionErrorScenarios(t *testing.T) {
 			return errors.New("state validation failed")
 		},
 	}
-	stm.AddStateValidator("failing-validator", failingValidator, 1)
+	if err := stm.AddStateValidator("failing-validator", failingValidator, 1); err != nil {
+		t.Errorf("Failed to add failing validator: %v", err)
+	}
 
 	err = stm.ExecuteTransaction(tx, 1)
 	if err == nil {
@@ -1731,7 +1733,9 @@ func TestValidateStateTransitionEdgeCases(t *testing.T) {
 			return errors.New("validation failed")
 		},
 	}
-	stm.AddStateValidator("disabled-validator", disabledValidator, 1)
+	if err := stm.AddStateValidator("disabled-validator", disabledValidator, 1); err != nil {
+		t.Errorf("Failed to add disabled validator: %v", err)
+	}
 	stm.validationRules[0].Enabled = false
 
 	err = stm.validateStateTransition(tx)

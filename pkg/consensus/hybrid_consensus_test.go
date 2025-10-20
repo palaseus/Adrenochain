@@ -271,9 +271,15 @@ func TestHybridConsensus_SelectValidator(t *testing.T) {
 	validator2 := []byte("validator-2")
 	validator3 := []byte("validator-3")
 
-	consensus.AddValidator(validator1, 1000, []byte("key1"))
-	consensus.AddValidator(validator2, 2000, []byte("key2"))
-	consensus.AddValidator(validator3, 3000, []byte("key3"))
+	if err := consensus.AddValidator(validator1, 1000, []byte("key1")); err != nil {
+		t.Errorf("Failed to add validator 1: %v", err)
+	}
+	if err := consensus.AddValidator(validator2, 2000, []byte("key2")); err != nil {
+		t.Errorf("Failed to add validator 2: %v", err)
+	}
+	if err := consensus.AddValidator(validator3, 3000, []byte("key3")); err != nil {
+		t.Errorf("Failed to add validator 3: %v", err)
+	}
 
 	// Test validator selection
 	selected, err := consensus.SelectValidator()
@@ -334,8 +340,12 @@ func TestHybridConsensus_GetConsensusStats(t *testing.T) {
 	consensus := NewHybridConsensus(config, chain, storage)
 
 	// Add some validators
-	consensus.AddValidator([]byte("val1"), 1000, []byte("key1"))
-	consensus.AddValidator([]byte("val2"), 2000, []byte("key2"))
+	if err := consensus.AddValidator([]byte("val1"), 1000, []byte("key1")); err != nil {
+		t.Errorf("Failed to add validator 1: %v", err)
+	}
+	if err := consensus.AddValidator([]byte("val2"), 2000, []byte("key2")); err != nil {
+		t.Errorf("Failed to add validator 2: %v", err)
+	}
 
 	// Get stats
 	stats := consensus.GetConsensusStats()
@@ -410,7 +420,14 @@ func BenchmarkHybridConsensus_ValidateBlock(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		consensus.ValidateBlock(testBlock, chain.GetBlockByHeight(1000))
+		// Use a valid block height that exists in the chain
+		prevBlock := chain.GetBlockByHeight(0) // Use genesis block
+		if prevBlock == nil {
+			b.Skip("No previous block available for validation")
+		}
+		if err := consensus.ValidateBlock(testBlock, prevBlock); err != nil {
+			b.Errorf("Failed to validate block: %v", err)
+		}
 	}
 }
 

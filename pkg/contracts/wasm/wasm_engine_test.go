@@ -423,7 +423,9 @@ func TestWASMEngineClone(t *testing.T) {
 	wasmEngine.SetChainID(big.NewInt(3))
 
 	// Add some data to memory and stack
-	wasmEngine.memory.Write(0, []byte{0xAA, 0xBB, 0xCC, 0xDD})
+	if err := wasmEngine.memory.Write(0, []byte{0xAA, 0xBB, 0xCC, 0xDD}); err != nil {
+		t.Errorf("Failed to write to memory: %v", err)
+	}
 	wasmEngine.stack.Push(NewI32(42))
 
 	// Clone the engine
@@ -459,7 +461,9 @@ func TestWASMEngineClone(t *testing.T) {
 	}
 
 	// Modify cloned memory and verify original is unaffected
-	clonedMemory.Write(0, []byte{0xFF, 0xFF, 0xFF, 0xFF})
+	if err := clonedMemory.Write(0, []byte{0xFF, 0xFF, 0xFF, 0xFF}); err != nil {
+		t.Errorf("Failed to write to cloned memory: %v", err)
+	}
 
 	originalData, _ := originalMemory.Read(0, 4)
 	clonedData, _ := clonedMemory.Read(0, 4)

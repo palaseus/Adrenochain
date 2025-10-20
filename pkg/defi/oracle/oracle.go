@@ -165,7 +165,10 @@ func NewProductionOracleAggregator(config OracleConfig) *OracleAggregator {
 		"https://api.chain.link",
 		"", // API key would be set via environment variable
 	)
-	aggregator.AddProvider("chainlink", chainlinkProvider, 0.4) // 40% weight
+	if err := aggregator.AddProvider("chainlink", chainlinkProvider, 0.4); err != nil {
+		// Log error but continue initialization
+		fmt.Printf("Failed to add chainlink provider: %v\n", err)
+	}
 
 	// Add Band Protocol provider
 	bandProvider := NewBandProtocolOracleProvider(
@@ -174,7 +177,10 @@ func NewProductionOracleAggregator(config OracleConfig) *OracleAggregator {
 		"https://api.bandprotocol.com",
 		"", // API key would be set via environment variable
 	)
-	aggregator.AddProvider("band_protocol", bandProvider, 0.3) // 30% weight
+	if err := aggregator.AddProvider("band_protocol", bandProvider, 0.3); err != nil {
+		// Log error but continue initialization
+		fmt.Printf("Failed to add band protocol provider: %v\n", err)
+	}
 
 	// Add HTTP provider as fallback
 	httpProvider := NewHTTPOracleProvider(
@@ -183,7 +189,10 @@ func NewProductionOracleAggregator(config OracleConfig) *OracleAggregator {
 		"https://api.coingecko.com/api/v3",
 		"", // API key would be set via environment variable
 	)
-	aggregator.AddProvider("http_api", httpProvider, 0.3) // 30% weight
+	if err := aggregator.AddProvider("http_api", httpProvider, 0.3); err != nil {
+		// Log error but continue initialization
+		fmt.Printf("Failed to add http api provider: %v\n", err)
+	}
 
 	return aggregator
 }

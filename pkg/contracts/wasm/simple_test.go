@@ -283,7 +283,9 @@ func TestWASMGlobal(t *testing.T) {
 
 	// Test setting global value
 	newValue := NewI32(200)
-	i32Global.Set(newValue)
+	if err := i32Global.Set(newValue); err != nil {
+		t.Errorf("Failed to set i32 global: %v", err)
+	}
 
 	currentValue := i32Global.Get()
 	if currentValue != newValue {

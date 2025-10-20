@@ -288,7 +288,9 @@ func TestBlockchainProvider_GetBlockByHeight(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("Serialized block data length: %d", len(blockData))
 
-	mockStorage.Write([]byte("height_1"), blockData)
+	if err := mockStorage.Write([]byte("height_1"), blockData); err != nil {
+		t.Errorf("Failed to write block data: %v", err)
+	}
 
 	// Verify the block was stored
 	storedData, err := mockStorage.Read([]byte("height_1"))
@@ -340,7 +342,9 @@ func TestBlockchainProvider_GetTransaction(t *testing.T) {
 	}
 
 	// Store block
-	mockStorage.StoreBlock(testBlock)
+	if err := mockStorage.StoreBlock(testBlock); err != nil {
+		t.Errorf("Failed to store block: %v", err)
+	}
 
 	provider := NewBlockchainProvider(nil, mockStorage, mockUTXO)
 
@@ -382,7 +386,9 @@ func TestBlockchainProvider_GetTransactionsByBlock(t *testing.T) {
 	}
 
 	// Store block
-	mockStorage.StoreBlock(testBlock)
+	if err := mockStorage.StoreBlock(testBlock); err != nil {
+		t.Errorf("Failed to store block: %v", err)
+	}
 
 	provider := NewBlockchainProvider(nil, mockStorage, mockUTXO)
 
@@ -469,8 +475,12 @@ func TestBlockchainProvider_GetBlockchainStats(t *testing.T) {
 	}
 
 	// Store blocks
-	mockStorage.StoreBlock(block1)
-	mockStorage.StoreBlock(block2)
+	if err := mockStorage.StoreBlock(block1); err != nil {
+		t.Errorf("Failed to store block1: %v", err)
+	}
+	if err := mockStorage.StoreBlock(block2); err != nil {
+		t.Errorf("Failed to store block2: %v", err)
+	}
 
 	// Set the latest block for GetLatestBlock to work
 	block2Data, err := block2.Serialize()
@@ -522,8 +532,12 @@ func TestBlockchainProvider_GetNetworkInfo(t *testing.T) {
 	}
 
 	// Store blocks
-	mockStorage.StoreBlock(block1)
-	mockStorage.StoreBlock(block2)
+	if err := mockStorage.StoreBlock(block1); err != nil {
+		t.Errorf("Failed to store block1: %v", err)
+	}
+	if err := mockStorage.StoreBlock(block2); err != nil {
+		t.Errorf("Failed to store block2: %v", err)
+	}
 
 	provider := NewBlockchainProvider(nil, mockStorage, mockUTXO)
 
@@ -760,7 +774,9 @@ func TestBlockchainProvider_SimpleEdgeCases(t *testing.T) {
 		// Set up a simple blockchain height
 		heightData := make([]byte, 8)
 		heightData[7] = 5 // height = 5
-		storage.Write([]byte("blockchain_height"), heightData)
+		if err := storage.Write([]byte("blockchain_height"), heightData); err != nil {
+			t.Errorf("Failed to write height data: %v", err)
+		}
 
 		// Test with limit <= startHeight (covers line 266 in GetAddressTransactions)
 		transactions, err := provider.GetAddressTransactions("test_address", 5, 0)

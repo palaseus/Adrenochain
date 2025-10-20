@@ -640,6 +640,9 @@ func (pm *ProposalMarkets) Close() error {
 // GetRandomID generates a random ID for testing
 func (pm *ProposalMarkets) GetRandomID() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Log error but continue with fallback
+		fmt.Printf("Failed to read random bytes: %v\n", err)
+	}
 	return fmt.Sprintf("%x", b)
 }

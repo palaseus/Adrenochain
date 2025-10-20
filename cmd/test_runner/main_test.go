@@ -111,7 +111,9 @@ func TestMain(t *testing.T) {
 
 			// Read captured output
 			var buf bytes.Buffer
-			buf.ReadFrom(r)
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Errorf("Failed to read from response: %v", err)
+			}
 			output := buf.String()
 
 			// Check if expected output is present
@@ -138,7 +140,9 @@ func TestRunBasicTests(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Check expected output
@@ -169,7 +173,9 @@ func TestRunCrossCollateralDemoFunc(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Check expected output
@@ -220,7 +226,9 @@ func TestShowPortfolioState(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Check expected output
@@ -263,7 +271,9 @@ func TestShowHelp(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Check expected output
@@ -296,7 +306,9 @@ func TestFlagParsing(t *testing.T) {
 
 	// Test flag parsing
 	testArgs := []string{"-all", "-help"}
-	flag.CommandLine.Parse(testArgs)
+	if err := flag.CommandLine.Parse(testArgs); err != nil {
+		t.Errorf("Failed to parse test args: %v", err)
+	}
 
 	// Check that flags are properly set
 	if !*runAllTests {
@@ -594,7 +606,9 @@ func TestShowPortfolioStateErrorHandling(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Should not crash, should handle error gracefully
@@ -693,7 +707,9 @@ func TestCrossCollateralDemoCompleteFlow(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Check that all expected output is present
@@ -764,7 +780,9 @@ func TestShowPortfolioStateWithData(t *testing.T) {
 
 	// Read captured output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Errorf("Failed to read from response: %v", err)
+	}
 	output := buf.String()
 
 	// Check expected output

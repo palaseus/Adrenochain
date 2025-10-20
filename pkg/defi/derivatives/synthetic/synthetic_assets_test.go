@@ -480,8 +480,12 @@ func TestBasketGetBasketValue(t *testing.T) {
 	uni, _ := NewAsset("UNI", "UNI", Token, big.NewFloat(20), 18)
 	aave, _ := NewAsset("AAVE", "AAVE", Token, big.NewFloat(300), 18)
 
-	basket.AddAsset(uni, big.NewFloat(0.6))
-	basket.AddAsset(aave, big.NewFloat(0.4))
+	if err := basket.AddAsset(uni, big.NewFloat(0.6)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(0.4)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	// Calculate expected value: (20 * 0.6) + (300 * 0.4) = 12 + 120 = 132
 	expectedValue := big.NewFloat(132)
@@ -500,8 +504,12 @@ func TestBasketGetAssetAllocation(t *testing.T) {
 	uni, _ := NewAsset("UNI", "UNI", Token, big.NewFloat(20), 18)
 	aave, _ := NewAsset("AAVE", "AAVE", Token, big.NewFloat(300), 18)
 
-	basket.AddAsset(uni, big.NewFloat(0.6))
-	basket.AddAsset(aave, big.NewFloat(0.4))
+	if err := basket.AddAsset(uni, big.NewFloat(0.6)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(0.4)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	allocation := basket.GetAssetAllocation()
 
@@ -526,8 +534,12 @@ func TestBasketCheckRebalanceNeeded(t *testing.T) {
 
 	// Use weights that will result in roughly equal allocations
 	// UNI: 20 * 15 = 300, AAVE: 300 * 1 = 300
-	basket.AddAsset(uni, big.NewFloat(15))
-	basket.AddAsset(aave, big.NewFloat(1))
+	if err := basket.AddAsset(uni, big.NewFloat(15)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(1)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	// Initially, rebalancing should be needed due to price differences
 	if !basket.CheckRebalanceNeeded() {
@@ -535,7 +547,9 @@ func TestBasketCheckRebalanceNeeded(t *testing.T) {
 	}
 
 	// Change UNI price significantly to trigger rebalancing
-	basket.UpdateAssetPrice("UNI", big.NewFloat(40)) // Double the price
+	if err := basket.UpdateAssetPrice("UNI", big.NewFloat(40)); err != nil { // Double the price
+		t.Errorf("Failed to update UNI price: %v", err)
+	}
 
 	// Now rebalancing should be needed
 	if !basket.CheckRebalanceNeeded() {
@@ -555,11 +569,17 @@ func TestBasketRebalance(t *testing.T) {
 
 	// Use weights that will result in roughly equal allocations
 	// UNI: 20 * 15 = 300, AAVE: 300 * 1 = 300
-	basket.AddAsset(uni, big.NewFloat(15))
-	basket.AddAsset(aave, big.NewFloat(1))
+	if err := basket.AddAsset(uni, big.NewFloat(15)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(1)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	// Change UNI price to trigger rebalancing
-	basket.UpdateAssetPrice("UNI", big.NewFloat(40))
+	if err := basket.UpdateAssetPrice("UNI", big.NewFloat(40)); err != nil {
+		t.Errorf("Failed to update UNI price: %v", err)
+	}
 
 	// Perform rebalancing
 	event, err := basket.Rebalance()
@@ -591,8 +611,12 @@ func TestSyntheticTokenMint(t *testing.T) {
 	uni, _ := NewAsset("UNI", "UNI", Token, big.NewFloat(20), 18)
 	aave, _ := NewAsset("AAVE", "AAVE", Token, big.NewFloat(300), 18)
 
-	basket.AddAsset(uni, big.NewFloat(0.6))
-	basket.AddAsset(aave, big.NewFloat(0.4))
+	if err := basket.AddAsset(uni, big.NewFloat(0.6)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(0.4)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	token, err := NewSyntheticToken("SYNTH_DEFI", "sDEFI", basket, big.NewFloat(0.001), big.NewFloat(0.001))
 	if err != nil {
@@ -631,8 +655,12 @@ func TestSyntheticTokenRedeem(t *testing.T) {
 	uni, _ := NewAsset("UNI", "UNI", Token, big.NewFloat(20), 18)
 	aave, _ := NewAsset("AAVE", "AAVE", Token, big.NewFloat(300), 18)
 
-	basket.AddAsset(uni, big.NewFloat(0.6))
-	basket.AddAsset(aave, big.NewFloat(0.4))
+	if err := basket.AddAsset(uni, big.NewFloat(0.6)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(0.4)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	token, err := NewSyntheticToken("SYNTH_DEFI", "sDEFI", basket, big.NewFloat(0.001), big.NewFloat(0.001))
 	if err != nil {
@@ -641,7 +669,9 @@ func TestSyntheticTokenRedeem(t *testing.T) {
 
 	// Mint tokens first
 	amount := big.NewFloat(100)
-	token.Mint(amount, "user1")
+	if _, err := token.Mint(amount, "user1"); err != nil {
+		t.Errorf("Failed to mint token: %v", err)
+	}
 
 	// Redeem tokens
 	redeemAmount := big.NewFloat(50)
@@ -671,8 +701,12 @@ func TestSyntheticTokenGetTokenPrice(t *testing.T) {
 	uni, _ := NewAsset("UNI", "UNI", Token, big.NewFloat(20), 18)
 	aave, _ := NewAsset("AAVE", "AAVE", Token, big.NewFloat(300), 18)
 
-	basket.AddAsset(uni, big.NewFloat(0.6))
-	basket.AddAsset(aave, big.NewFloat(0.4))
+	if err := basket.AddAsset(uni, big.NewFloat(0.6)); err != nil {
+		t.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(0.4)); err != nil {
+		t.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	token, err := NewSyntheticToken("SYNTH_DEFI", "sDEFI", basket, big.NewFloat(0.001), big.NewFloat(0.001))
 	if err != nil {
@@ -687,7 +721,9 @@ func TestSyntheticTokenGetTokenPrice(t *testing.T) {
 
 	// Mint tokens
 	amount := big.NewFloat(100)
-	token.Mint(amount, "user1")
+	if _, err := token.Mint(amount, "user1"); err != nil {
+		t.Errorf("Failed to mint token: %v", err)
+	}
 
 	// Now token price should equal basket value per token
 	basketValue := basket.GetBasketValue()
@@ -725,8 +761,12 @@ func BenchmarkSyntheticTokenMint(b *testing.B) {
 	uni, _ := NewAsset("UNI", "UNI", Token, big.NewFloat(20), 18)
 	aave, _ := NewAsset("AAVE", "AAVE", Token, big.NewFloat(300), 18)
 
-	basket.AddAsset(uni, big.NewFloat(0.6))
-	basket.AddAsset(aave, big.NewFloat(0.4))
+	if err := basket.AddAsset(uni, big.NewFloat(0.6)); err != nil {
+		b.Errorf("Failed to add UNI asset: %v", err)
+	}
+	if err := basket.AddAsset(aave, big.NewFloat(0.4)); err != nil {
+		b.Errorf("Failed to add AAVE asset: %v", err)
+	}
 
 	token, err := NewSyntheticToken("SYNTH_DEFI", "sDEFI", basket, big.NewFloat(0.001), big.NewFloat(0.001))
 	if err != nil {
@@ -737,7 +777,9 @@ func BenchmarkSyntheticTokenMint(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		token.Mint(amount, "user1")
+		if _, err := token.Mint(amount, "user1"); err != nil {
+			b.Errorf("Failed to mint token: %v", err)
+		}
 	}
 }
 

@@ -321,7 +321,7 @@ func (vm *ValidatorManager) parsePublicKey(publicKeyBytes []byte) (*ecdsa.Public
 	if len(publicKeyBytes) == 64 {
 		x := new(big.Int).SetBytes(publicKeyBytes[:32])
 		y := new(big.Int).SetBytes(publicKeyBytes[32:])
-		
+
 		return &ecdsa.PublicKey{
 			Curve: elliptic.P256(),
 			X:     x,
@@ -608,4 +608,3 @@ func (ce *ConsensusEngine) HasPendingConfirmations(validatorID string) bool {
 
 	return false
 }
-

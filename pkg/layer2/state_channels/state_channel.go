@@ -402,7 +402,10 @@ func (sc *StateChannel) updateMetrics() {
 // generateChannelID generates a unique channel ID
 func generateChannelID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("channel_%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("channel_%x", hash[:8])
 }

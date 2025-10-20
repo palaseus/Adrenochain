@@ -254,7 +254,10 @@ func (evm *EVMEngine) Deploy(code []byte, constructor []byte, gas uint64, sender
 		result, err = evm.executeContractInternal(constructorContract, nil, gas, sender, value)
 		if err != nil {
 			// Rollback contract registration on failure
-			evm.registry.Remove(address)
+			if err := evm.registry.Remove(address); err != nil {
+				// Log error but continue with cleanup
+				fmt.Printf("Failed to remove contract from registry: %v\n", err)
+			}
 			return nil, nil, fmt.Errorf("constructor execution failed: %w", err)
 		}
 
@@ -612,7 +615,12 @@ func (evm *EVMEngine) executeJUMP(ctx *ExecutionContext) error {
 
 	dest := evm.stack.Pop()
 	if dest.Cmp(big.NewInt(0)) < 0 || dest.Uint64() >= uint64(len(ctx.Contract.Code)) {
-		return engine.ErrInvalidJump
+		return fmt.Errorf("invalid jump destination: destination %d is out of bounds (code length: %d)", dest.Uint64(), len(ctx.Contract.Code))
+	}
+
+	// Check if destination is a valid JUMPDEST
+	if ctx.Contract.Code[dest.Uint64()] != 0x5B {
+		return fmt.Errorf("invalid jump destination: expected JUMPDEST at position %d, got 0x%02x", dest.Uint64(), ctx.Contract.Code[dest.Uint64()])
 	}
 
 	evm.pc = dest.Uint64()
@@ -624,13 +632,19 @@ func (evm *EVMEngine) executeJUMPI(ctx *ExecutionContext) error {
 		return engine.ErrStackUnderflow
 	}
 
-	dest := evm.stack.Pop()
 	condition := evm.stack.Pop()
+	dest := evm.stack.Pop()
 
 	if condition.Sign() != 0 { // Non-zero condition
 		if dest.Cmp(big.NewInt(0)) < 0 || dest.Uint64() >= uint64(len(ctx.Contract.Code)) {
-			return engine.ErrInvalidJump
+			return fmt.Errorf("invalid jump destination: destination %d is out of bounds (code length: %d)", dest.Uint64(), len(ctx.Contract.Code))
 		}
+
+		// Check if destination is a valid JUMPDEST
+		if ctx.Contract.Code[dest.Uint64()] != 0x5B {
+			return fmt.Errorf("invalid jump destination: expected JUMPDEST at position %d, got 0x%02x", dest.Uint64(), ctx.Contract.Code[dest.Uint64()])
+		}
+
 		evm.pc = dest.Uint64()
 	}
 
@@ -1029,7 +1043,10 @@ func (evm *EVMEngine) transferBalance(from, to engine.Address, amount *big.Int) 
 func (evm *EVMEngine) markContractForDestruction(address engine.Address) {
 	// Mark contract for destruction using special key
 	destructionKey := engine.Hash{0x02} // Use special key for destruction flag
-	evm.storage.Set(address, destructionKey, []byte{0x01})
+	if err := evm.storage.Set(address, destructionKey, []byte{0x01}); err != nil {
+		// Log error but continue with destruction
+		fmt.Printf("Failed to mark contract as destroyed: %v\n", err)
+	}
 }
 
 // clearContractStorage clears the storage of a contract

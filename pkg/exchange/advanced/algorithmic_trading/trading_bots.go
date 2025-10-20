@@ -139,12 +139,12 @@ func NewTradingBot(id, name string, strategy TradingStrategy, config BotConfig) 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &TradingBot{
-		ID:           id,
-		Name:         name,
-		Strategy:     strategy,
-		Config:       config,
-		State:        BotState{},
-		RiskManager:  NewDefaultRiskManager(),
+		ID:          id,
+		Name:        name,
+		Strategy:    strategy,
+		Config:      config,
+		State:       BotState{},
+		RiskManager: NewDefaultRiskManager(),
 		Logger: logger.NewLogger(&logger.Config{
 			Level:   logger.INFO,
 			Prefix:  fmt.Sprintf("trading_bot_%s", id),
@@ -161,12 +161,12 @@ func NewTradingBotWithProvider(id, name string, strategy TradingStrategy, config
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &TradingBot{
-		ID:           id,
-		Name:         name,
-		Strategy:     strategy,
-		Config:       config,
-		State:        BotState{},
-		RiskManager:  NewDefaultRiskManager(),
+		ID:          id,
+		Name:        name,
+		Strategy:    strategy,
+		Config:      config,
+		State:       BotState{},
+		RiskManager: NewDefaultRiskManager(),
 		Logger: logger.NewLogger(&logger.Config{
 			Level:   logger.INFO,
 			Prefix:  fmt.Sprintf("trading_bot_%s", id),
@@ -372,7 +372,7 @@ func (bot *TradingBot) getMarketData() MarketData {
 
 	// Get real-time market data from provider
 	providerData := bot.DataProvider.GetMarketData("BTC/USDT")
-	
+
 	// Convert to internal MarketData format
 	return MarketData{
 		Symbol:     providerData.Symbol,

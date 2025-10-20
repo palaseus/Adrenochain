@@ -94,6 +94,13 @@ func (mp *Mempool) SetUTXOSet(utxoSet *utxo.UTXOSet) {
 	mp.utxoSet = utxoSet
 }
 
+// SetTestMode sets the test mode flag for the mempool
+func (mp *Mempool) SetTestMode(testMode bool) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+	mp.testMode = testMode
+}
+
 // AddTransaction adds a transaction to the mempool.
 // It validates the transaction, calculates its fee rate, and adds it to the internal data structures.
 // If the mempool is full, it attempts to evict lower-fee transactions.
@@ -585,13 +592,16 @@ func (mp *Mempool) IsTransactionValid(tx *block.Transaction) error {
 	}
 
 	// Enhanced fee rate validation (do this AFTER security validation)
-	feeRate := mp.calculateFeeRate(tx, size)
-	if feeRate < mp.minFeeRate {
-		return fmt.Errorf("fee rate %d below minimum %d", feeRate, mp.minFeeRate)
-	}
+	// Skip fee rate validation for coinbase transactions
+	if !tx.IsCoinbase() {
+		feeRate := mp.calculateFeeRate(tx, size)
+		if feeRate < mp.minFeeRate {
+			return fmt.Errorf("fee rate %d below minimum %d", feeRate, mp.minFeeRate)
+		}
 
-	if err := mp.validateFeeRate(tx, feeRate); err != nil {
-		return fmt.Errorf("fee rate validation failed: %w", err)
+		if err := mp.validateFeeRate(tx, feeRate); err != nil {
+			return fmt.Errorf("fee rate validation failed: %w", err)
+		}
 	}
 
 	return nil

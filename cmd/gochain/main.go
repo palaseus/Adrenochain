@@ -680,9 +680,15 @@ func createTransactionCmd() *cobra.Command {
 	cmd.Flags().Uint64Var(&amount, "amount", 0, "amount to send")
 	cmd.Flags().Uint64Var(&fee, "fee", 0, "transaction fee")
 
-	cmd.MarkFlagRequired("from")
-	cmd.MarkFlagRequired("to")
-	cmd.MarkFlagRequired("amount")
+	if err := cmd.MarkFlagRequired("from"); err != nil {
+		fmt.Printf("Failed to mark 'from' flag as required: %v\n", err)
+	}
+	if err := cmd.MarkFlagRequired("to"); err != nil {
+		fmt.Printf("Failed to mark 'to' flag as required: %v\n", err)
+	}
+	if err := cmd.MarkFlagRequired("amount"); err != nil {
+		fmt.Printf("Failed to mark 'amount' flag as required: %v\n", err)
+	}
 
 	return cmd
 }
@@ -720,7 +726,9 @@ func getBalanceCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&address, "address", "", "account address")
-	cmd.MarkFlagRequired("address")
+	if err := cmd.MarkFlagRequired("address"); err != nil {
+		fmt.Printf("Failed to mark address flag as required: %v\n", err)
+	}
 
 	return cmd
 }

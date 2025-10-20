@@ -796,7 +796,9 @@ func BenchmarkTradingPairValidate(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pair.Validate()
+		if err := pair.Validate(); err != nil {
+			b.Errorf("Failed to validate pair: %v", err)
+		}
 	}
 }
 
@@ -816,7 +818,9 @@ func BenchmarkTradingPairValidatePrice(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pair.ValidatePrice(price)
+		if err := pair.ValidatePrice(price); err != nil {
+			b.Errorf("Failed to validate price: %v", err)
+		}
 	}
 }
 
@@ -836,7 +840,9 @@ func BenchmarkTradingPairValidateQuantity(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pair.ValidateQuantity(quantity)
+		if err := pair.ValidateQuantity(quantity); err != nil {
+			b.Errorf("Failed to validate quantity: %v", err)
+		}
 	}
 }
 
@@ -855,7 +861,9 @@ func BenchmarkTradingPairCalculateFee(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		pair.CalculateFee(quantity, price, true)
+		if _, err := pair.CalculateFee(quantity, price, true); err != nil {
+			b.Errorf("Failed to calculate fee: %v", err)
+		}
 	}
 }
 

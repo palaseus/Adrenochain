@@ -511,7 +511,9 @@ func TestCompressContractStorage(t *testing.T) {
 
 	// Test compressing contract storage
 	originalSize := contractStorage.Size
-	si.compressContractStorage(contractStorage)
+	if err := si.compressContractStorage(contractStorage); err != nil {
+		t.Errorf("Failed to compress contract storage: %v", err)
+	}
 
 	// Verify compression was applied
 	assert.True(t, contractStorage.Compressed)

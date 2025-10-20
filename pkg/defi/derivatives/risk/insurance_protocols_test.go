@@ -926,10 +926,18 @@ func TestInsuranceManagerUserQueries(t *testing.T) {
 	policy2, _ := NewInsurancePolicy("policy2", "pool1", "user1", big.NewFloat(30000), PortfolioInsurance, time.Now().Add(time.Hour), time.Now().Add(365*24*time.Hour))
 	policy3, _ := NewInsurancePolicy("policy3", "pool1", "user2", big.NewFloat(40000), PortfolioInsurance, time.Now().Add(time.Hour), time.Now().Add(365*24*time.Hour))
 
-	manager.AddInsurancePool(pool)
-	manager.AddInsurancePolicy(policy1)
-	manager.AddInsurancePolicy(policy2)
-	manager.AddInsurancePolicy(policy3)
+	if err := manager.AddInsurancePool(pool); err != nil {
+		t.Errorf("Failed to add insurance pool: %v", err)
+	}
+	if err := manager.AddInsurancePolicy(policy1); err != nil {
+		t.Errorf("Failed to add insurance policy 1: %v", err)
+	}
+	if err := manager.AddInsurancePolicy(policy2); err != nil {
+		t.Errorf("Failed to add insurance policy 2: %v", err)
+	}
+	if err := manager.AddInsurancePolicy(policy3); err != nil {
+		t.Errorf("Failed to add insurance policy 3: %v", err)
+	}
 
 	// Test GetPoolUtilization
 	t.Run("GetPoolUtilization", func(t *testing.T) {
@@ -995,9 +1003,15 @@ func TestInsuranceManagerUserQueries(t *testing.T) {
 		claim2, _ := NewInsuranceClaim("claim2", "policy2", "user1", big.NewFloat(15000), "Property loss", []string{"photo2.jpg"})
 		claim3, _ := NewInsuranceClaim("claim3", "policy3", "user2", big.NewFloat(20000), "Liability", []string{"witness_statement.pdf"})
 
-		manager.AddInsuranceClaim(claim1)
-		manager.AddInsuranceClaim(claim2)
-		manager.AddInsuranceClaim(claim3)
+		if err := manager.AddInsuranceClaim(claim1); err != nil {
+			t.Errorf("Failed to add insurance claim 1: %v", err)
+		}
+		if err := manager.AddInsuranceClaim(claim2); err != nil {
+			t.Errorf("Failed to add insurance claim 2: %v", err)
+		}
+		if err := manager.AddInsuranceClaim(claim3); err != nil {
+			t.Errorf("Failed to add insurance claim 3: %v", err)
+		}
 
 		// Test with user who has claims
 		claims, err := manager.GetUserClaims("user1")

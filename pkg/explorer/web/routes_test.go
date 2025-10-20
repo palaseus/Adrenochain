@@ -35,7 +35,9 @@ func TestWebLoggingMiddleware(t *testing.T) {
 	// Create a test handler that sets a custom status
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
-		w.Write([]byte("test response"))
+		if _, err := w.Write([]byte("test response")); err != nil {
+			t.Errorf("Failed to write response: %v", err)
+		}
 	})
 
 	// Apply the middleware
@@ -55,7 +57,9 @@ func TestWebLoggingMiddleware(t *testing.T) {
 func TestSecurityMiddleware(t *testing.T) {
 	// Create a test handler
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("test response"))
+		if _, err := w.Write([]byte("test response")); err != nil {
+			t.Errorf("Failed to write response: %v", err)
+		}
 	})
 
 	// Apply the middleware

@@ -562,7 +562,10 @@ func (bs *BenchmarkSuite) benchmarkModelTraining() *BenchmarkResult {
 		}
 
 		// Train the model
-		pa.TrainModel(model.ID, features)
+		if err := pa.TrainModel(model.ID, features); err != nil {
+			// Log error but continue benchmark
+			fmt.Printf("Failed to train model: %v\n", err)
+		}
 	}
 
 	duration := time.Since(startTime)
@@ -623,8 +626,12 @@ func (bs *BenchmarkSuite) benchmarkPredictionPerformance() *BenchmarkResult {
 		}
 
 		// Train and deploy model
-		pa.TrainModel(model.ID, features)
-		pa.DeployModel(model.ID)
+		if err := pa.TrainModel(model.ID, features); err != nil {
+			fmt.Printf("Failed to train model: %v\n", err)
+		}
+		if err := pa.DeployModel(model.ID); err != nil {
+			fmt.Printf("Failed to deploy model: %v\n", err)
+		}
 
 		// Benchmark predictions
 		const numPredictions = 1000
@@ -633,7 +640,9 @@ func (bs *BenchmarkSuite) benchmarkPredictionPerformance() *BenchmarkResult {
 				"price":  rand.Float64() * 50000,
 				"volume": rand.Float64() * 1000000,
 			}
-			pa.MakePrediction(model.ID, features, time.Hour)
+			if _, err := pa.MakePrediction(model.ID, features, time.Hour); err != nil {
+				fmt.Printf("Failed to make prediction: %v\n", err)
+			}
 		}
 	}
 
@@ -675,7 +684,9 @@ func (bs *BenchmarkSuite) benchmarkRiskAssessment() *BenchmarkResult {
 			"market_cap":   rand.Float64() * 1000000000,
 		}
 
-		pa.AssessRisk("BTC", features)
+		if _, err := pa.AssessRisk("BTC", features); err != nil {
+			fmt.Printf("Failed to assess risk: %v\n", err)
+		}
 	}
 
 	duration := time.Since(startTime)
@@ -740,7 +751,10 @@ func (bs *BenchmarkSuite) benchmarkConcurrentModelOperations() *BenchmarkResult 
 							Feature:   "volume",
 							Source:    "benchmark",
 						}
-						pa.AddFeature(feature)
+						if err := pa.AddFeature(feature); err != nil {
+							// Log error but continue with benchmark
+							fmt.Printf("Failed to add feature: %v\n", err)
+						}
 					}
 				}
 			}
@@ -800,7 +814,10 @@ func (bs *BenchmarkSuite) benchmarkSentimentAnalysisPerformance() *BenchmarkResu
 			Timestamp: time.Now(),
 		}
 
-		sa.AddData(data)
+		if err := sa.AddData(data); err != nil {
+			// Log error but continue with benchmark
+			fmt.Printf("Failed to add data: %v\n", err)
+		}
 	}
 
 	duration := time.Since(startTime)
@@ -845,7 +862,10 @@ func (bs *BenchmarkSuite) benchmarkDataProcessingPerformance() *BenchmarkResult 
 			URL:         fmt.Sprintf("https://benchmark%d.com", i),
 			Credibility: rand.Float64(),
 		}
-		sa.AddSource(source)
+		if err := sa.AddSource(source); err != nil {
+			// Log error but continue with benchmark
+			fmt.Printf("Failed to add source: %v\n", err)
+		}
 	}
 
 	// Process large amounts of data
@@ -865,7 +885,10 @@ func (bs *BenchmarkSuite) benchmarkDataProcessingPerformance() *BenchmarkResult 
 			Timestamp: time.Now().Add(time.Duration(i) * time.Minute),
 		}
 
-		sa.AddData(data)
+		if err := sa.AddData(data); err != nil {
+			// Log error but continue with benchmark
+			fmt.Printf("Failed to add data: %v\n", err)
+		}
 	}
 
 	duration := time.Since(startTime)
@@ -924,11 +947,17 @@ func (bs *BenchmarkSuite) benchmarkConcurrentAnalysisPerformance() *BenchmarkRes
 					Timestamp: time.Now(),
 				}
 
-				sa.AddData(data)
+				if err := sa.AddData(data); err != nil {
+					// Log error but continue with benchmark
+					fmt.Printf("Failed to add data: %v\n", err)
+				}
 
 				// Perform analysis
 				if j%10 == 0 { // Analyze every 10th operation
-					sa.AnalyzeSentiment("BTC", sentiment.SentimentTypeSocial, time.Hour)
+					if _, err := sa.AnalyzeSentiment("BTC", sentiment.SentimentTypeSocial, time.Hour); err != nil {
+						// Log error but continue with benchmark
+						fmt.Printf("Failed to analyze sentiment: %v\n", err)
+					}
 				}
 			}
 		}(i)
@@ -984,7 +1013,10 @@ func (bs *BenchmarkSuite) benchmarkSentimentMemoryUsage() *BenchmarkResult {
 			URL:         fmt.Sprintf("https://memorytest%d.com", i),
 			Credibility: rand.Float64(),
 		}
-		sa.AddSource(source)
+		if err := sa.AddSource(source); err != nil {
+			// Log error but continue with benchmark
+			fmt.Printf("Failed to add source: %v\n", err)
+		}
 	}
 
 	// Add data points
@@ -999,7 +1031,10 @@ func (bs *BenchmarkSuite) benchmarkSentimentMemoryUsage() *BenchmarkResult {
 			Timestamp: time.Now().Add(time.Duration(i) * time.Minute),
 		}
 
-		sa.AddData(data)
+		if err := sa.AddData(data); err != nil {
+			// Log error but continue with benchmark
+			fmt.Printf("Failed to add data: %v\n", err)
+		}
 	}
 
 	// Force garbage collection to get accurate memory measurement
@@ -1057,7 +1092,10 @@ func (bs *BenchmarkSuite) benchmarkLanguageProcessingPerformance() *BenchmarkRes
 				Timestamp: time.Now().Add(time.Duration(i) * time.Minute),
 			}
 
-			sa.AddData(data)
+			if err := sa.AddData(data); err != nil {
+				// Log error but continue with benchmark
+				fmt.Printf("Failed to add data: %v\n", err)
+			}
 		}
 	}
 
@@ -1204,7 +1242,7 @@ func (mbo *MainBenchmarkOrchestrator) RunAllBenchmarks() error {
 func (mbo *MainBenchmarkOrchestrator) SaveReportToFile() error {
 	// Create test_results directory if it doesn't exist
 	testResultsDir := "test_results"
-	filePerms := os.FileMode(0755)
+	filePerms := os.FileMode(0755) // Default directory permissions
 	if err := os.MkdirAll(testResultsDir, filePerms); err != nil {
 		return fmt.Errorf("failed to create test_results directory: %v", err)
 	}

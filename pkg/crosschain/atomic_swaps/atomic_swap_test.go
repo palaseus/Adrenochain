@@ -523,10 +523,18 @@ func TestGetMetrics(t *testing.T) {
 	}
 
 	// Perform some operations to update metrics
-	swap.InitiateSwap()
-	swap.FundSwapA()
-	swap.FundSwapB()
-	swap.CompleteSwap(swap.GetSecret())
+	if err := swap.InitiateSwap(); err != nil {
+		t.Errorf("Failed to initiate swap: %v", err)
+	}
+	if err := swap.FundSwapA(); err != nil {
+		t.Errorf("Failed to fund swap A: %v", err)
+	}
+	if err := swap.FundSwapB(); err != nil {
+		t.Errorf("Failed to fund swap B: %v", err)
+	}
+	if err := swap.CompleteSwap(swap.GetSecret()); err != nil {
+		t.Errorf("Failed to complete swap: %v", err)
+	}
 
 	metrics = swap.GetMetrics()
 	if metrics.TotalSwaps != 4 { // Initiate, FundA, FundB, Complete
@@ -718,15 +726,23 @@ func BenchmarkCompleteSwap(b *testing.B) {
 	swap := createTestSwap()
 
 	// Setup the swap
-	swap.InitiateSwap()
-	swap.FundSwapA()
-	swap.FundSwapB()
+	if err := swap.InitiateSwap(); err != nil {
+		b.Errorf("Failed to initiate swap: %v", err)
+	}
+	if err := swap.FundSwapA(); err != nil {
+		b.Errorf("Failed to fund swap A: %v", err)
+	}
+	if err := swap.FundSwapB(); err != nil {
+		b.Errorf("Failed to fund swap B: %v", err)
+	}
 
 	secret := swap.GetSecret()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		swap.CompleteSwap(secret)
+		if err := swap.CompleteSwap(secret); err != nil {
+			b.Errorf("Failed to complete swap: %v", err)
+		}
 		// Reset for next iteration
 		swap.Status = SwapStatusFundedB
 	}

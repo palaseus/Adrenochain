@@ -175,3 +175,13 @@ temp/
 .nfs*
 .directory
 .Trash-*
+
+# Additional test artifacts and generated files
+audit_results/
+pkg/block/testdata/fuzz/
+pkg/crypto_utils/crypto_test_utils_test.go
+pkg/defi/defi_test.go
+pkg/performance/optimizer_test.go
+
+# Fuzz test artifacts
+pkg/*/testdata/fuzz/

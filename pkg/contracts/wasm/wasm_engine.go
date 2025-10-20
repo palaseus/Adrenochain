@@ -129,7 +129,10 @@ func (w *WASMEngine) Deploy(code []byte, constructor []byte, gas uint64, sender 
 		result, err = w.executeWASMContractInternal(constructorContract, nil, gas, sender, value)
 		if err != nil {
 			// Rollback contract registration on failure
-			w.registry.Remove(address)
+			if err := w.registry.Remove(address); err != nil {
+				// Log error but continue with cleanup
+				fmt.Printf("Failed to remove contract from registry: %v\n", err)
+			}
 			return nil, nil, fmt.Errorf("constructor execution failed: %w", err)
 		}
 

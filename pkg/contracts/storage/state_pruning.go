@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -282,7 +283,10 @@ func (spm *StatePruningManager) UpdatePruningConfig(config PruningConfig) error 
 	// Restart auto-pruning if needed
 	if spm.isRunning && spm.config.EnableAutoPruning {
 		spm.StopAutoPruning()
-		spm.StartAutoPruning()
+		if err := spm.StartAutoPruning(); err != nil {
+			// Log error but continue with other operations
+			fmt.Printf("Failed to start auto pruning: %v\n", err)
+		}
 	}
 
 	return nil

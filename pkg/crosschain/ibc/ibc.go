@@ -756,7 +756,10 @@ func (p *Packet) IsExpired() bool {
 // generateClientID generates a unique client ID
 func generateClientID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("ibc_client_%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("ibc_client_%x", hash[:8])
 }
@@ -764,7 +767,10 @@ func generateClientID() string {
 // generateConnectionID generates a unique connection ID
 func generateConnectionID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("ibc_connection_%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("ibc_connection_%x", hash[:8])
 }
@@ -772,7 +778,10 @@ func generateConnectionID() string {
 // generateChannelID generates a unique channel ID
 func generateChannelID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("ibc_channel_%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("ibc_channel_%x", hash[:8])
 }
@@ -780,7 +789,10 @@ func generateChannelID() string {
 // generatePacketID generates a unique packet ID
 func generatePacketID() string {
 	random := make([]byte, 16)
-	rand.Read(random)
+	if _, err := rand.Read(random); err != nil {
+		// Fallback to timestamp-based ID if random generation fails
+		return fmt.Sprintf("ibc_packet_%d", time.Now().UnixNano())
+	}
 	hash := sha256.Sum256(random)
 	return fmt.Sprintf("ibc_packet_%x", hash[:8])
 }

@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -634,7 +635,13 @@ func TestSyncManagerConcurrencyAdvanced(t *testing.T) {
 		for i := 0; i < numGoroutines; i++ {
 			go func() {
 				defer wg.Done()
-				syncManager.StartSync()
+				if err := syncManager.StartSync(); err != nil {
+					// It's expected that some sync operations will fail with "sync already in progress"
+					// Only log unexpected errors
+					if !strings.Contains(err.Error(), "sync already in progress") {
+						t.Errorf("Failed to start sync: %v", err)
+					}
+				}
 				time.Sleep(10 * time.Millisecond)
 				syncManager.StopSync()
 			}()

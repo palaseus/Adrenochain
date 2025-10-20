@@ -586,7 +586,9 @@ func TestFlashLoanManagerConcurrency(t *testing.T) {
 func BenchmarkFlashLoanExecution(b *testing.B) {
 	lendingPool := createTestPool()
 	// Supply some assets to the pool
-	lendingPool.Supply("benchmark_user", big.NewInt(10000000)) // 10 USDC
+	if err := lendingPool.Supply("benchmark_user", big.NewInt(10000000)); err != nil {
+		b.Errorf("Failed to supply: %v", err)
+	}
 
 	manager := NewFlashLoanManager(
 		lendingPool,
@@ -602,13 +604,15 @@ func BenchmarkFlashLoanExecution(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.ExecuteFlashLoan(
+		if _, err := manager.ExecuteFlashLoan(
 			"benchmark_user",
 			"USDC",
 			big.NewInt(1000000), // 1 USDC
 			callback,
 			nil,
-		)
+		); err != nil {
+			b.Errorf("Failed to execute flash loan: %v", err)
+		}
 	}
 }
 
@@ -640,6 +644,8 @@ func BenchmarkFlashLoanValidation(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.validateFlashLoanRequest("user1", "USDC", big.NewInt(5000000))
+		if err := manager.validateFlashLoanRequest("user1", "USDC", big.NewInt(5000000)); err != nil {
+			b.Errorf("Failed to validate flash loan request: %v", err)
+		}
 	}
 }

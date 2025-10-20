@@ -367,7 +367,9 @@ func BenchmarkValidateHash(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		validator.ValidateHash(hashHex)
+		if _, err := validator.ValidateHash(hashHex); err != nil {
+			b.Errorf("Failed to validate hash: %v", err)
+		}
 	}
 }
 
@@ -377,6 +379,8 @@ func BenchmarkValidateInput(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		validator.ValidateInput(input)
+		if err := validator.ValidateInput(input); err != nil {
+			b.Errorf("Failed to validate input: %v", err)
+		}
 	}
 }

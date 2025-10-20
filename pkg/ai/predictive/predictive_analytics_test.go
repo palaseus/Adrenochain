@@ -2112,7 +2112,9 @@ func TestBackgroundFunctions(t *testing.T) {
 		Feature:   "price",
 		Source:    "test",
 	}
-	pa.AddFeature(feature)
+	if err := pa.AddFeature(feature); err != nil {
+		t.Errorf("Failed to add feature: %v", err)
+	}
 
 	// Test auto functions directly
 	pa.autoTrainModels()

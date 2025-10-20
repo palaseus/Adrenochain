@@ -136,6 +136,7 @@ type ClusterRouterConfig struct {
 	EnableMetrics       bool            `json:"enable_metrics"`
 	MaxRetries          int             `json:"max_retries"`
 	Timeout             time.Duration   `json:"timeout"`
+	TestMode            bool            `json:"test_mode"` // Disable background processes for testing
 }
 
 // DefaultClusterRouterConfig returns the default configuration
@@ -163,12 +164,17 @@ func NewClusterRouter(config *ClusterRouterConfig) (*ClusterRouter, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Initialize logger
-	routerLogger := NewLogger("cluster-router")
+	var routerLogger *Logger
+	if config.TestMode {
+		routerLogger = NewTestLogger("cluster-router")
+	} else {
+		routerLogger = NewLogger("cluster-router")
+	}
 
 	// Initialize components
 	routingTable := NewRoutingTable()
 	loadBalancer := NewLoadBalancer(config.RoutingStrategy)
-	healthMonitor := NewHealthMonitor(config.HealthCheckInterval)
+	healthMonitor := NewHealthMonitorWithTestMode(config.HealthCheckInterval, config.TestMode)
 	metricsCollector := NewMetricsCollector()
 
 	router := &ClusterRouter{
@@ -184,10 +190,12 @@ func NewClusterRouter(config *ClusterRouterConfig) (*ClusterRouter, error) {
 		cancel:           cancel,
 	}
 
-	// Start background processes
-	go router.startHealthMonitoring()
-	go router.startLoadBalancing()
-	go router.startMetricsCollection()
+	// Start background processes only if not in test mode
+	if !config.TestMode {
+		go router.startHealthMonitoring()
+		go router.startLoadBalancing()
+		go router.startMetricsCollection()
+	}
 
 	return router, nil
 }
@@ -401,7 +409,10 @@ func (cr *ClusterRouter) executeRequest(node *Node, req *Request) (*Response, er
 	defer conn.Close()
 
 	// Set timeout
-	conn.SetDeadline(time.Now().Add(cr.config.Timeout))
+	if err := conn.SetDeadline(time.Now().Add(cr.config.Timeout)); err != nil {
+		// Log error but continue with connection
+		fmt.Printf("Failed to set deadline: %v\n", err)
+	}
 
 	// Send request
 	reqData, err := json.Marshal(req)
@@ -668,6 +679,12 @@ func (cr *ClusterRouter) GetMetrics() *ClusterMetrics {
 // Close shuts down the cluster router
 func (cr *ClusterRouter) Close() error {
 	cr.cancel()
+
+	// Close health monitor
+	if cr.healthMonitor != nil {
+		cr.healthMonitor.Close()
+	}
+
 	cr.logger.Info("Cluster router shut down")
 	return nil
 }

@@ -18,7 +18,11 @@ func TestTestRunner_GetActiveTests(t *testing.T) {
 
 	// Start some tests to populate active tests
 	// Note: We'll need to use the Start method and let it run briefly
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it a moment to start
 	time.Sleep(10 * time.Millisecond)
@@ -39,7 +43,11 @@ func TestTestRunner_GetCompletedTests(t *testing.T) {
 	assert.Len(t, completedTests, 0)
 
 	// Start and let some tests complete
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it time to complete some tests
 	time.Sleep(100 * time.Millisecond)
@@ -58,7 +66,11 @@ func TestTestRunner_GetTestResult(t *testing.T) {
 	assert.Nil(t, result) // Should return nil for non-existent test
 
 	// Start some tests
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it time to run
 	time.Sleep(50 * time.Millisecond)
@@ -83,7 +95,11 @@ func TestTestRunner_GetPerformanceMetrics(t *testing.T) {
 	})
 
 	// Start tests to generate metrics
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it time to generate metrics
 	time.Sleep(50 * time.Millisecond)
@@ -105,7 +121,11 @@ func TestTestRunner_GetMemoryMetrics(t *testing.T) {
 	})
 
 	// Start tests to generate metrics
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it time to generate metrics
 	time.Sleep(50 * time.Millisecond)
@@ -127,7 +147,11 @@ func TestTestRunner_GetCPUMetrics(t *testing.T) {
 	})
 
 	// Start tests to generate metrics
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it time to generate metrics
 	time.Sleep(50 * time.Millisecond)
@@ -142,7 +166,11 @@ func TestTestRunner_GettersConcurrentAccess(t *testing.T) {
 	tr := NewTestRunner()
 
 	// Start test runner
-	go tr.Start()
+	go func() {
+		if err := tr.Start(); err != nil {
+			t.Errorf("Failed to start test runner: %v", err)
+		}
+	}()
 
 	// Give it time to initialize
 	time.Sleep(25 * time.Millisecond)

@@ -537,7 +537,7 @@ func (b *Bridge) hasEnoughConfirmations(txID string) bool {
 	if b.validatorManager == nil || b.validatorManager.consensusEngine == nil {
 		return false
 	}
-	
+
 	return b.validatorManager.consensusEngine.HasEnoughConfirmations(txID)
 }
 
@@ -567,7 +567,29 @@ func (b *Bridge) verifySignature(transaction *CrossChainTransaction, signature [
 
 // emitEvent emits an event to registered handlers
 func (b *Bridge) emitEvent(eventType string, data interface{}) {
-	if handlers, exists := b.eventHandlers[eventType]; exists {
+	// If we're already holding a lock (from InitiateTransfer), access directly
+	// Otherwise, acquire a read lock
+	var handlers []func(interface{})
+	var exists bool
+
+	// Try to acquire read lock with timeout to detect if we already hold a lock
+	done := make(chan struct{})
+	go func() {
+		b.mutex.RLock()
+		handlers, exists = b.eventHandlers[eventType]
+		b.mutex.RUnlock()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Successfully acquired read lock
+	case <-time.After(1 * time.Millisecond):
+		// Timeout - we likely already hold a write lock, access directly
+		handlers, exists = b.eventHandlers[eventType]
+	}
+
+	if exists {
 		for _, handler := range handlers {
 			go handler(data)
 		}

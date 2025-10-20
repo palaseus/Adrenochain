@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"sync"
+	"time"
 )
 
 // ContractRegistryImpl implements the ContractRegistry interface
@@ -197,7 +198,11 @@ func (cr *ContractRegistryImpl) GenerateAddress() Address {
 	var address Address
 	for {
 		// Generate random bytes for address
-		rand.Read(address[:])
+		if _, err := rand.Read(address[:]); err != nil {
+			// Fallback to timestamp-based address if random generation fails
+			address = [20]byte{}
+			copy(address[:], []byte(fmt.Sprintf("addr_%d", time.Now().UnixNano())))
+		}
 
 		// Check if address is already used
 		addressStr := address.String()

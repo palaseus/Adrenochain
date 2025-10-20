@@ -167,7 +167,9 @@ func TestCoverageTracker_EdgeCases(t *testing.T) {
 	// Test with nil coverage tracker
 	var nilCT *CoverageTracker
 	assert.Panics(t, func() {
-		nilCT.Initialize()
+		if err := nilCT.Initialize(); err != nil {
+			t.Errorf("Failed to initialize coverage tracker: %v", err)
+		}
 	})
 
 	// Test with empty package name

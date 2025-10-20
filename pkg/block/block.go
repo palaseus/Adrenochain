@@ -490,6 +490,11 @@ func (b *Block) Deserialize(data []byte) error {
 	}
 	txCount := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
+	
+	// Prevent excessive transaction counts that could cause infinite loops
+	if txCount > 10000 {
+		return fmt.Errorf("transaction count too large: %d", txCount)
+	}
 
 	// Deserialize transactions
 	b.Transactions = make([]*Transaction, 0, txCount)
@@ -725,6 +730,11 @@ func (tx *Transaction) Deserialize(data []byte) error {
 	// Input count
 	inputCount := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
+	
+	// Prevent excessive input counts that could cause infinite loops
+	if inputCount > 10000 {
+		return fmt.Errorf("input count too large: %d", inputCount)
+	}
 
 	// Deserialize inputs
 	tx.Inputs = make([]*TxInput, 0, inputCount)
@@ -754,6 +764,11 @@ func (tx *Transaction) Deserialize(data []byte) error {
 	}
 	outputCount := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
+	
+	// Prevent excessive output counts that could cause infinite loops
+	if outputCount > 10000 {
+		return fmt.Errorf("output count too large: %d", outputCount)
+	}
 
 	// Deserialize outputs
 	tx.Outputs = make([]*TxOutput, 0, outputCount)

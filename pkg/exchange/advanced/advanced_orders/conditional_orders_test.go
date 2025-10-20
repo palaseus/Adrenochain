@@ -430,7 +430,9 @@ func TestOrderManager(t *testing.T) {
 		order2 := manager.CreateOrder(OrderTypeConditional, "ETH/USDT", OrderSideSell, 1.0, 3000.0)
 
 		// Cancel one order
-		manager.CancelOrder(order1.ID)
+		if err := manager.CancelOrder(order1.ID); err != nil {
+			t.Errorf("Failed to cancel order: %v", err)
+		}
 
 		// Get active orders
 		activeOrders := manager.GetActiveOrders()

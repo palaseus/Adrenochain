@@ -2,13 +2,13 @@ package advanced
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 	"sync"
 	"time"
-	"crypto/rand"
-	"encoding/hex"
 
 	"github.com/palaseus/adrenochain/pkg/logger"
 )
@@ -69,9 +69,9 @@ type CrossCollateralPortfolio struct {
 	CreatedAt            time.Time                           `json:"created_at"`
 	UpdatedAt            time.Time                           `json:"updated_at"`
 	// Dirty state flags to prevent redundant recalculations
-	MetricsDirty         bool                                `json:"-"`
-	RiskMetricsDirty     bool                                `json:"-"`
-	LastMetricsUpdate    time.Time                           `json:"-"`
+	MetricsDirty      bool      `json:"-"`
+	RiskMetricsDirty  bool      `json:"-"`
+	LastMetricsUpdate time.Time `json:"-"`
 }
 
 // CrossCollateralRiskMetrics represents risk metrics for a portfolio
@@ -93,7 +93,10 @@ type CrossCollateralManager struct {
 // generateContextID generates a unique context ID for tracing
 func generateContextID() string {
 	bytes := make([]byte, 4)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback to timestamp-based bytes if random generation fails
+		copy(bytes, []byte(fmt.Sprintf("random_%d", time.Now().UnixNano())))
+	}
 	return hex.EncodeToString(bytes)
 }
 

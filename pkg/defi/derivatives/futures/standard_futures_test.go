@@ -365,7 +365,9 @@ func TestStandardFuturesContractValues(t *testing.T) {
 	}
 
 	// Set mark price
-	contract.UpdateMarkPrice(big.NewFloat(55000))
+	if err := contract.UpdateMarkPrice(big.NewFloat(55000)); err != nil {
+		t.Errorf("Failed to update mark price: %v", err)
+	}
 
 	t.Run("Contract Value", func(t *testing.T) {
 		expectedValue := big.NewFloat(55000) // 1 * 55000
