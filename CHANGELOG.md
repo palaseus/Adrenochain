@@ -1,7 +1,39 @@
 # AdrenaChain Changelog
 [Unreleased]
 
-## Latest Changes (2026-11-08)
+## Latest Changes (2026-11-08) — Privacy & Blockchain Standards
+### Post-quantum cryptography (NIST PQC: FIPS 203/204/205)
+- **pkg/crypto/pqc (new)**: Hybrid post-quantum cryptography aligned with NIST PQC
+  (FIPS 203 ML-KEM, FIPS 204 ML-DSA, FIPS 205 SLH-DSA; NIST IR 8547, Oct 2026).
+  Hybrid KEM (X25519 + Ring-LWE-style), hybrid signatures (secp256k1 ECDSA +
+  WOTS+), and hybrid encrypt/decrypt. Defaults ML-KEM-768 / ML-DSA-65 per NIST.
+- **pkg/crypto/pqc/pqc_test.go**: Round-trip tests for KEM, signatures, and
+  hybrid encrypt/decrypt.
+
+### Privacy (ERC-5564 stealth addresses)
+- **pkg/crypto/stealth (new)**: ERC-5564 (final) stealth addresses and ERC-6538
+  meta-addresses. Sender generates a one-time stealth address + announcement;
+  recipient scans with the viewing key and recovers spend authority with the
+  spending key. Uses dcrd/secp256k1 (btcec v2) for EC math.
+- **pkg/crypto/stealth/stealth_test.go**: Round-trip, view-key scan,
+  spend-key recovery, wrong-recipient rejection, and nil-handling tests.
+
+### Account abstraction (ERC-4337 / EIP-7702)
+- **pkg/account/abstraction (new)**: UserOperation struct, EntryPoint-style
+  validation, Account/Paymaster interfaces, SponsoredPaymaster, EIP-7702
+  Authorization, and gas-estimation helpers.
+- **pkg/account/abstraction/abstraction_test.go**: Validation, paymaster,
+  authorization, and fee-estimation tests.
+
+### Compliance (FATF Travel Rule / IVMS 101 / MiCA TFR)
+- **pkg/compliance/travelrule (new)**: FATF Rec 16 Travel Rule validation
+  aligned with IVMS 101 and the EU TFR (no minimum threshold post-MiCA
+  transitional period, ended 1 July 2026). Jurisdiction thresholds
+  (EU/US/UK/SG/UAE/FATF), sanctions screening, unhosted-wallet EDD flagging.
+- **pkg/compliance/travelrule/travelrule_test.go**: Threshold, complete,
+  missing-identity, sanctioned, unhosted, and transfer-ID tests.
+
+## Latest Changes (2026-11-08) — Build & Test Fixes (tune-up)
 ### Build & Test Fixes
 - **pkg/consensus/consensus.go**: Fixed `IsBlockFinal` to read accumulated difficulty from `ChainReader` instead of calling the local (non-mockable) method; fixed `validateBlockInChain` to look up the previous block by height instead of by hash
 - **pkg/consensus/consensus_test.go**: Added missing `blocks[999]` fixture to `TestConsensus_Integration` so chain-link validation can resolve the previous block
