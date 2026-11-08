@@ -1,7 +1,7 @@
 # AdrenaChain Changelog
 [Unreleased]
 
-## Latest Changes (2026-11-08) — Intent Framework, RWA Tokenization & Confidential Transfers
+## Latest Changes (2026-11-08) — Standards Expansion: Intents, RWA, ZK, MEV, Oracle, EIP-7930
 ### Cross-chain intents (ERC-7683 aligned)
 - **pkg/xintent (new)**: Intent-based cross-chain architecture — users sign
   declarative outcomes instead of execution steps; competitive solvers race to
@@ -32,6 +32,29 @@
   - ConfidentialBalance: encrypted balance + commitment + range proof + view key
   - ConfidentialTransfer: visible sender/recipient, encrypted amount, ZK proofs
   - ViewKeyDerivation: per-asset view key for selective disclosure
+
+### EIP-7930 interoperable addresses
+- **pkg/eip7930 (new)**: ERC-7930 interoperable address format
+  `eip7930:<chainId>:<address>`:
+  - Parse/serialize eip7930 addresses with CAIP-2 chain IDs
+  - EVM chain ID extraction (eip155:N → numeric chain ID)
+  - Common chain ID constants (Ethereum, Arbitrum, Optimism, Base, Polygon,
+    BSC, Avalanche C-Chain, Solana)
+
+### Oracle price feeds (Pyth/Switchboard style)
+- **pkg/oracle (new)**: Price oracle aggregation for RWA NAV and DeFi pricing:
+  - Price: signed price with confidence interval and scaling exponent
+  - PriceFeed: interface for single oracle feed
+  - Oracle: aggregator with median-aggregation across fresh feeds
+  - PythPriceAccount: Pyth Network price account model
+
+### MEV protection & private mempool
+- **pkg/mev (new)**: MEV protection and private mempool infrastructure:
+  - Transaction: signed transaction with hash computation
+  - PrivateTx: encrypted transaction wrapper for private submission
+  - PrivateMempool: private transaction pool with commitment validation
+  - MEVProtector: ordering strategies (FIFO, FairBatch, CommitReveal)
+  - Bundle: atomic transaction bundle (all-or-nothing)
 
 ## Latest Changes (2026-11-08) — Solana Integration & Multi-Chain
 ### Solana blockchain (deep integration)

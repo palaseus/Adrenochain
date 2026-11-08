@@ -10,6 +10,11 @@
 // Use this for long-term confidentiality and signatures that must remain
 // verifiable after a cryptanalytically relevant quantum computer exists.
 //
+// SECURITY NOTE: The lattice operations here are structural placeholders.
+// Production use must replace them with audited implementations
+// (e.g. github.com/cloudflare/circl for ML-KEM/ML-DSA) and undergo formal
+// cryptographic review before handling real funds.
+//
 // See pkg/crypto/pqc/README.md for security properties and migration guidance.
 
 package pqc
@@ -18,6 +23,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/sha512"
 	"errors"
 	"fmt"
 )
@@ -46,15 +52,39 @@ const (
 	SigHash
 )
 
-// Default parameters, aligned with NIST recommendations (ML-KEM-768 default,
+// Parameter sets aligned with NIST recommendations (ML-KEM-768 default,
 // ML-DSA-65 default) as of NIST IR 8547 (Oct 2026).
 const (
-	// Lattice security parameter: dimension n and modulus q for the Ring-LWE KEM.
-	LatticeN   = 768
-	LatticeQ   = 3329
-	LatticeEta = 2
+	// ML-KEM parameter sizes (public key / secret key / ciphertext / shared secret).
+	MLKEM512_PKBytes = 800
+	MLKEM512_SKBytes = 1632
+	MLKEM512_CTBytes = 768
+	MLKEM512_SSBytes = 32
 
-	// WOTS+ parameters.
+	MLKEM768_PKBytes = 1184
+	MLKEM768_SKBytes = 2400
+	MLKEM768_CTBytes = 1088
+	MLKEM768_SSBytes = 32
+
+	MLKEM1024_PKBytes = 1568
+	MLKEM1024_SKBytes = 3168
+	MLKEM1024_CTBytes = 1568
+	MLKEM1024_SSBytes = 32
+
+	// ML-DSA parameter sizes (public key / secret key / signature).
+	MLDSA44_PKBytes  = 1312
+	MLDSA44_SKBytes  = 2560
+	MLDSA44_SigBytes = 2420
+
+	MLDSA65_PKBytes  = 1952
+	MLDSA65_SKBytes  = 4032
+	MLDSA65_SigBytes = 3309
+
+	MLDSA87_PKBytes  = 2592
+	MLDSA87_SKBytes  = 4896
+	MLDSA87_SigBytes = 4627
+
+	// WOTS+ parameters (hash-based signature fallback).
 	WOTSLen1  = 64 // n-byte message digest chunks
 	WOTSLen2  = 8  // checksum chunks
 	WOTSLen   = WOTSLen1 + WOTSLen2
@@ -66,10 +96,11 @@ const (
 // KEM (key encapsulation)
 // ---------------------------------------------------------------------------
 
-// KEMKeyPair is a hybrid KEM key pair.
+// KEMKeyPair is a hybrid KEM key pair (classical X25519 + post-quantum lattice).
 type KEMKeyPair struct {
 	Classical []byte // X25519 public key (32 bytes)
 	PQ        []byte // Lattice public key
+	Algorithm KEMAlgorithm
 }
 
 // KEMCiphertext is a hybrid KEM ciphertext.
@@ -79,17 +110,56 @@ type KEMCiphertext struct {
 	SharedKey []byte // derived 32-byte shared key (output of Encapsulate)
 }
 
+// KEMParameterSet describes the sizes for a ML-KEM parameter set.
+type KEMParameterSet struct {
+	PKBytes int
+	SKBytes int
+	CTBytes int
+	SSBytes int
+}
+
+// KEMParams returns the parameter set for a given ML-KEM variant.
+func KEMParams(alg KEMAlgorithm) *KEMParameterSet {
+	switch alg {
+	case KEMLattice:
+		return &KEMParameterSet{
+			PKBytes: MLKEM768_PKBytes,
+			SKBytes: MLKEM768_SKBytes,
+			CTBytes: MLKEM768_CTBytes,
+			SSBytes: MLKEM768_SSBytes,
+		}
+	default:
+		return &KEMParameterSet{
+			PKBytes: 32,
+			SKBytes: 64,
+			CTBytes: 32,
+			SSBytes: 32,
+		}
+	}
+}
+
 // GenerateKEMKeyPair generates a hybrid KEM key pair.
 func GenerateKEMKeyPair() (*KEMKeyPair, error) {
+	return GenerateKEMKeyPairWithAlg(KEMLattice)
+}
+
+// GenerateKEMKeyPairWithAlg generates a hybrid KEM key pair with the given algorithm.
+func GenerateKEMKeyPairWithAlg(alg KEMAlgorithm) (*KEMKeyPair, error) {
+	params := KEMParams(alg)
+
 	classical := make([]byte, 32)
 	if _, err := rand.Read(classical); err != nil {
 		return nil, fmt.Errorf("x25519 keygen: %w", err)
 	}
-	pq := make([]byte, 1184) // ML-KEM-768 public key size
+	pq := make([]byte, params.PKBytes)
 	if _, err := rand.Read(pq); err != nil {
 		return nil, fmt.Errorf("lattice keygen: %w", err)
 	}
-	return &KEMKeyPair{Classical: classical, PQ: pq}, nil
+	return &KEMKeyPair{
+		Classical: classical,
+		PQ:        pq,
+		Algorithm: alg,
+	}, nil
 }
 
 // Encapsulate derives a shared key for the given public key.
@@ -97,11 +167,13 @@ func (kp *KEMKeyPair) Encapsulate() (*KEMCiphertext, []byte, error) {
 	if kp == nil {
 		return nil, nil, errors.New("nil keypair")
 	}
+	params := KEMParams(kp.Algorithm)
+
 	ephemeral := make([]byte, 32)
 	if _, err := rand.Read(ephemeral); err != nil {
 		return nil, nil, fmt.Errorf("ephemeral: %w", err)
 	}
-	pqct := make([]byte, 1088) // ML-KEM-768 ciphertext size
+	pqct := make([]byte, params.CTBytes)
 	if _, err := rand.Read(pqct); err != nil {
 		return nil, nil, fmt.Errorf("lattice encaps: %w", err)
 	}
@@ -137,27 +209,60 @@ func deriveSharedKey(kp *KEMKeyPair, classical, pq []byte) []byte {
 // SigKeyPair is a hybrid signature key pair.
 type SigKeyPair struct {
 	Classical []byte // secp256k1 public key (33 bytes compressed)
-	PQ        []byte // WOTS+ public key
+	PQ        []byte // Lattice/hash public key
+	Algorithm SigAlgorithm
 }
 
 // SigSignature is a hybrid signature.
 type SigSignature struct {
-	Classical []byte // ECDSA signature (DER)
-	PQ        []byte // WOTS+ signature
+	Classical []byte // ECDSA signature
+	PQ        []byte // Lattice/hash signature
 }
 
 // GenerateSigKeyPair generates a hybrid signature key pair.
 func GenerateSigKeyPair() (*SigKeyPair, error) {
+	return GenerateSigKeyPairWithAlg(SigHash)
+}
+
+// GenerateSigKeyPairWithAlg generates a hybrid signature key pair with the given algorithm.
+func GenerateSigKeyPairWithAlg(alg SigAlgorithm) (*SigKeyPair, error) {
 	classical := make([]byte, 33)
 	if _, err := rand.Read(classical); err != nil {
 		return nil, fmt.Errorf("ecdsa keygen: %w", err)
 	}
 	classical[0] = 0x02 | byte(classical[0]&1) // compressed point prefix
-	pq := make([]byte, WOTSLen*WOTSBytes)
+
+	pqKeySize := WOTSLen * WOTSBytes
+	pq := make([]byte, pqKeySize)
 	if _, err := rand.Read(pq); err != nil {
-		return nil, fmt.Errorf("wots keygen: %w", err)
+		return nil, fmt.Errorf("pq keygen: %w", err)
 	}
-	return &SigKeyPair{Classical: classical, PQ: pq}, nil
+	return &SigKeyPair{Classical: classical, PQ: pq, Algorithm: alg}, nil
+}
+
+// SigParams describes the sizes for a ML-DSA parameter set.
+type SigParams struct {
+	PKBytes  int
+	SKBytes  int
+	SigBytes int
+}
+
+// SigParameterConfig returns the parameter set for a given ML-DSA variant.
+func SigParameterConfig(alg SigAlgorithm) *SigParams {
+	switch alg {
+	case SigHash:
+		return &SigParams{
+			PKBytes:  MLDSA65_PKBytes,
+			SKBytes:  MLDSA65_SKBytes,
+			SigBytes: MLDSA65_SigBytes,
+		}
+	default:
+		return &SigParams{
+			PKBytes:  33,
+			SKBytes:  64,
+			SigBytes: 64,
+		}
+	}
 }
 
 // Sign produces a hybrid signature over msg using sk.
@@ -224,4 +329,43 @@ func (kp *KEMKeyPair) HybridDecrypt(ct *KEMCiphertext) ([]byte, error) {
 		return nil, errors.New("ciphertext too short")
 	}
 	return ct.SharedKey[32:], nil
+}
+
+// HybridSign signs msg using sk and returns a hybrid signature.
+func HybridSign(sk *SigKeyPair, msg []byte) (*SigSignature, error) {
+	return sk.Sign(msg)
+}
+
+// HybridVerify verifies sig over msg using pk.
+func HybridVerify(pk *SigKeyPair, msg, sigClassical, sigPQ []byte) bool {
+	return pk.Verify(msg, sigClassical, sigPQ)
+}
+
+// DeriveSharedKey derives a shared key from classical + PQ components.
+func DeriveSharedKey(classical, pq []byte) []byte {
+	h := sha256.New()
+	h.Write(classical)
+	h.Write(pq)
+	h.Write([]byte("adrenochain-hybrid-kem-v1"))
+	return h.Sum(nil)
+}
+
+// KeyDerivationFunction derives keying material from a shared secret using
+// HKDF-style expansion with SHA-512 (placeholder for NIST SP 800-108 KDF).
+func KeyDerivationFunction(sharedSecret, salt, info []byte, length int) ([]byte, error) {
+	if length <= 0 {
+		return nil, errors.New("length must be positive")
+	}
+	var out []byte
+	var counter byte
+	h := sha512.New
+	for len(out) < length {
+		h := h()
+		h.Write(salt)
+		h.Write([]byte{counter})
+		h.Write(info)
+		out = append(out, h.Sum(nil)...)
+		counter++
+	}
+	return out[:length], nil
 }
