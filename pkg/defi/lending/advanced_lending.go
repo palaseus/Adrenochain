@@ -188,7 +188,11 @@ func (ls *LendingService) SupplyAsset(poolID, assetSymbol, userID string, amount
 
 	// Update pool totals
 	pool.TotalLiquidity += amount
-	pool.UtilizationRate = pool.TotalBorrowed / pool.TotalLiquidity
+	if pool.TotalLiquidity > 0 {
+		pool.UtilizationRate = pool.TotalBorrowed / pool.TotalLiquidity
+	} else {
+		pool.UtilizationRate = 0
+	}
 	pool.UpdatedAt = time.Now()
 
 	// Update user
@@ -259,7 +263,11 @@ func (ls *LendingService) BorrowAsset(poolID, assetSymbol, userID string, amount
 
 	// Update pool totals
 	pool.TotalBorrowed += amount
-	pool.UtilizationRate = pool.TotalBorrowed / pool.TotalLiquidity
+	if pool.TotalLiquidity > 0 {
+		pool.UtilizationRate = pool.TotalBorrowed / pool.TotalLiquidity
+	} else {
+		pool.UtilizationRate = 0
+	}
 	pool.UpdatedAt = time.Now()
 
 	// Update user
@@ -328,7 +336,11 @@ func (ls *LendingService) RepayLoan(loanID string, amount float64) error {
 		asset.LastUpdate = time.Now()
 
 		pool.TotalBorrowed -= amount
+		if pool.TotalLiquidity > 0 {
 		pool.UtilizationRate = pool.TotalBorrowed / pool.TotalLiquidity
+	} else {
+		pool.UtilizationRate = 0
+	}
 		pool.UpdatedAt = time.Now()
 
 		ls.updatePoolAPY(pool)
@@ -382,7 +394,11 @@ func (ls *LendingService) LiquidateLoan(loanID string) error {
 		asset.LastUpdate = time.Now()
 
 		pool.TotalBorrowed -= loan.BorrowedAmount
+		if pool.TotalLiquidity > 0 {
 		pool.UtilizationRate = pool.TotalBorrowed / pool.TotalLiquidity
+	} else {
+		pool.UtilizationRate = 0
+	}
 		pool.UpdatedAt = time.Now()
 
 		ls.updatePoolAPY(pool)
