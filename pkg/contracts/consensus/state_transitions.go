@@ -161,6 +161,10 @@ func (stm *StateTransitionManager) AddStateValidator(
 	stm.mu.Lock()
 	defer stm.mu.Unlock()
 
+	if validator == nil {
+		return ErrValidatorNil
+	}
+
 	if _, exists := stm.stateValidators[id]; exists {
 		return ErrValidatorAlreadyExists
 	}
@@ -388,6 +392,10 @@ func (stm *StateTransitionManager) validateStateTransition(tx *ConsensusTransact
 	for _, rule := range stm.validationRules {
 		if !rule.Enabled {
 			continue
+		}
+
+		if rule.Validator == nil {
+			return ErrValidatorNil
 		}
 
 		if err := rule.Validator.ValidateStateTransition(tx.Contract, tx.StateChanges, context); err != nil {

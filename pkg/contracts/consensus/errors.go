@@ -5,6 +5,7 @@ import "errors"
 // Consensus-specific errors
 var (
 	ErrValidatorAlreadyExists      = errors.New("validator already exists")
+	ErrValidatorNil                = errors.New("validator is nil")
 	ErrRollbackNotEnabled          = errors.New("rollback not enabled")
 	ErrInvalidContractAddress      = errors.New("invalid contract address")
 	ErrInvalidSender               = errors.New("invalid sender")

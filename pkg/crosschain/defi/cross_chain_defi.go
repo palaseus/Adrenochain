@@ -932,7 +932,7 @@ func (pool *LendingPool) GetLendingPoolMetrics() LendingPoolMetrics {
 // GetYieldFarmMetrics returns yield farm metrics
 func (farm *YieldFarm) GetYieldFarmMetrics() YieldFarmMetrics {
 	farm.mu.RLock()
-	defer farm.mu.Unlock()
+	defer farm.mu.RUnlock()
 	return farm.metrics
 }
 

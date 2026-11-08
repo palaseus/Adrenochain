@@ -488,8 +488,12 @@ func (c *Consensus) bytesEqual(a, b []byte) bool {
 // ValidateProofOfWork validates the proof of work for a block.
 // It checks if the block's hash is less than or equal to the target derived from the current difficulty.
 func (c *Consensus) ValidateProofOfWork(block *block.Block) bool {
+	c.mu.RLock()
+	difficulty := c.difficulty
+	c.mu.RUnlock()
+
 	hash := block.CalculateHash()
-	target := c.calculateTarget(c.difficulty)
+	target := c.calculateTarget(difficulty)
 
 	return c.hashLessThan(hash, target)
 }
