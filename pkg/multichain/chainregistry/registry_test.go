@@ -4,44 +4,45 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/palaseus/adrenochain/pkg/multichain/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestChainTypeStringAndFamily(t *testing.T) {
-	assert.Equal(t, "Ethereum Mainnet", ChainTypeEthereumMainnet.String())
-	assert.Equal(t, ChainFamilyEVM, ChainTypeEthereumMainnet.Family())
-	assert.Equal(t, ChainFamilyBitcoin, ChainTypeBitcoinMainnet.Family())
-	assert.Equal(t, ChainFamilySolana, ChainTypeSolanaMainnetBeta.Family())
-	assert.Equal(t, ChainFamilyCosmos, ChainTypeCosmosHubMainnet.Family())
-	assert.Equal(t, ChainFamilyAdrenochain, ChainTypeAdrenochainMainnet.Family())
-	assert.Equal(t, "Unknown", ChainTypeUnknown.String())
+	assert.Equal(t, "Ethereum Mainnet", types.ChainTypeEthereumMainnet.String())
+	assert.Equal(t, types.ChainFamilyEVM, types.ChainTypeEthereumMainnet.Family())
+	assert.Equal(t, types.ChainFamilyBitcoin, types.ChainTypeBitcoinMainnet.Family())
+	assert.Equal(t, types.ChainFamilySolana, types.ChainTypeSolanaMainnetBeta.Family())
+	assert.Equal(t, types.ChainFamilyCosmos, types.ChainTypeCosmosHubMainnet.Family())
+	assert.Equal(t, types.ChainFamilyAdrenochain, types.ChainTypeAdrenochainMainnet.Family())
+	assert.Equal(t, "Unknown", types.ChainTypeUnknown.String())
 }
 
 func TestDefaultRegistry(t *testing.T) {
 	r := DefaultRegistry()
 	assert.NotNil(t, r)
 
-	eth := r.GetChain(ChainTypeEthereumMainnet)
+	eth := r.GetChain(types.ChainTypeEthereumMainnet)
 	assert.NotNil(t, eth)
 	assert.Equal(t, big.NewInt(1), eth.ChainID)
 	assert.Equal(t, "ETH", eth.NativeAsset.Symbol)
 	assert.Equal(t, "EU", eth.Region)
 	assert.True(t, eth.SupportsSmartContracts)
 
-	btc := r.GetChain(ChainTypeBitcoinMainnet)
+	btc := r.GetChain(types.ChainTypeBitcoinMainnet)
 	assert.NotNil(t, btc)
 	assert.False(t, btc.SupportsSmartContracts)
 	assert.Equal(t, uint64(6), btc.ConfirmationBlocks)
 
 	// Testnet detection.
-	assert.True(t, r.GetChain(ChainTypeEthereumSepolia).IsTestnet)
-	assert.False(t, r.GetChain(ChainTypeEthereumMainnet).IsTestnet)
+	assert.True(t, r.GetChain(types.ChainTypeEthereumSepolia).IsTestnet)
+	assert.False(t, r.GetChain(types.ChainTypeEthereumMainnet).IsTestnet)
 
 	// Region filtering.
 	euChains := r.ChainsByRegion("EU")
-	assert.Contains(t, euChains, r.GetChain(ChainTypeEthereumMainnet))
-	assert.Contains(t, euChains, r.GetChain(ChainTypeAdrenochainMainnet))
-	assert.NotContains(t, euChains, r.GetChain(ChainTypePolygonPOS))
+	assert.Contains(t, euChains, r.GetChain(types.ChainTypeEthereumMainnet))
+	assert.Contains(t, euChains, r.GetChain(types.ChainTypeAdrenochainMainnet))
+	assert.NotContains(t, euChains, r.GetChain(types.ChainTypePolygonPOS))
 
 	// List all.
 	all := r.ListChains()
@@ -50,22 +51,22 @@ func TestDefaultRegistry(t *testing.T) {
 
 func TestRegisterConnector(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterChain(&ChainSpec{Type: ChainTypeEthereumMainnet, ChainID: big.NewInt(1)})
-	assert.Nil(t, r.GetConnector(ChainTypeEthereumMainnet))
+	_ = r.RegisterChain(&types.ChainSpec{Type: types.ChainTypeEthereumMainnet, ChainID: big.NewInt(1)})
+	assert.Nil(t, r.GetConnector(types.ChainTypeEthereumMainnet))
 
-	err := r.RegisterConnector(ChainTypeEthereumMainnet, fakeConn{chainType: ChainTypeEthereumMainnet})
+	err := r.RegisterConnector(types.ChainTypeEthereumMainnet, fakeConn{chainType: types.ChainTypeEthereumMainnet})
 	assert.NoError(t, err)
-	assert.NotNil(t, r.GetConnector(ChainTypeEthereumMainnet))
-	assert.Equal(t, ChainTypeEthereumMainnet, r.GetConnector(ChainTypeEthereumMainnet).ChainType())
+	assert.NotNil(t, r.GetConnector(types.ChainTypeEthereumMainnet))
+	assert.Equal(t, types.ChainTypeEthereumMainnet, r.GetConnector(types.ChainTypeEthereumMainnet).ChainType())
 }
 
 // fakeConn is a test double implementing the Connector interface.
 type fakeConn struct {
-	chainType ChainType
+	chainType types.ChainType
 }
 
-func (f fakeConn) ChainType() ChainType                                      { return f.chainType }
-func (f fakeConn) HealthCheck(ChainContext) error                            { return nil }
-func (f fakeConn) GetBlockHeight(ChainContext) (uint64, error)               { return 0, nil }
-func (f fakeConn) SubmitTransaction(ChainContext, []byte) (string, error)    { return "", nil }
-func (f fakeConn) GetTransactionStatus(ChainContext, string) (string, error) { return "", nil }
+func (f fakeConn) ChainType() types.ChainType                                      { return f.chainType }
+func (f fakeConn) HealthCheck(types.ChainContext) error                            { return nil }
+func (f fakeConn) GetBlockHeight(types.ChainContext) (uint64, error)               { return 0, nil }
+func (f fakeConn) SubmitTransaction(types.ChainContext, []byte) (string, error)    { return "", nil }
+func (f fakeConn) GetTransactionStatus(types.ChainContext, string) (string, error) { return "", nil }

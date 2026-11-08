@@ -1,6 +1,31 @@
 # AdrenaChain Changelog
 [Unreleased]
 
+## Latest Changes (2026-11-08) — Solana Integration & Multi-Chain
+### Solana blockchain (deep integration)
+- **pkg/multichain/solana (new)**: Native Solana integration using only the Go
+  standard library (ed25519, SHA-256) — no external Solana SDK required:
+  - Keypair generation/signing, PublicKey, V0 Transaction/Message construction
+  - Program Derived Addresses (PDAs) with proper ed25519 off-curve verification
+  - SPL Token + Token-2022 instructions (Transfer, MintTo, Burn)
+  - Associated Token Account (ATA) PDA derivation
+  - Connector abstraction (connect, getSlot, getBlockhash, getBalance, sendTransaction)
+- **pkg/multichain/solana/wormhole.go**: Wormhole Verified Action Approvals (VAAs)
+  for cross-chain messaging — serialization, hash verification, guardian
+  threshold checks (2/3+). Solana is Wormhole chain ID 1.
+- **pkg/multichain/solana/solana_test.go**: Keypair/signing, transactions, PDA
+  derivation (deterministic, off-curve), SPL token, ATA, VAA round-trip +
+  tamper detection, connector tests — all verified against independent Python
+  `hmac`/`hashlib` computations.
+- **pkg/multichain/solana/README.md**: design and usage guide
+
+### Multi-chain registry & types
+- **pkg/multichain/types (new)**: Shared chain types (ChainType, ChainSpec,
+  NativeAsset, Connector interface) used by both the registry and chain
+  connectors without circular dependencies
+- **pkg/multichain/chainregistry**: Solana Mainnet Beta/Testnet/Devnet registered
+  as chain specs; Solana connectors wrapped with circuit breakers
+
 ## Latest Changes (2026-11-08) — Operations Hardening & Multi-Chain
 ### Resilience
 - **pkg/resilience/circuitbreaker (new)**: Circuit breaker (closed/open/half-open) for chain connectors and external calls; prevents cascading failures. Defaults: trip after 5 failures, 30s cooldown, 3 half-open trials, close after 2 successes.
