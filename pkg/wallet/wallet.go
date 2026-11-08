@@ -51,6 +51,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/block"
 	"github.com/palaseus/adrenochain/pkg/storage"
 	"github.com/palaseus/adrenochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/wallet/hd"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -65,6 +66,12 @@ type Wallet struct {
 	walletFilePath string           // Added walletFilePath field
 	passphrase     string           // Added passphrase field
 	salt           []byte           // Persistent salt for key derivation
+
+	// HD Wallet support (BIP-32/39/44)
+	hdKey      *hd.ExtendedKey
+	mnemonic   []string
+	hdPath     string
+	isHDWallet bool
 }
 
 // Account represents a wallet account
@@ -146,7 +153,179 @@ func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wal
 	return wallet, nil
 }
 
-// Save encrypts and saves the wallet to storage
+// NewHDWallet creates a new HD wallet with a random mnemonic (BIP-39)
+// and derives a master key (BIP-32). The default account is derived
+// using BIP-44 path: m/44'/0'/0'/0/0
+func NewHDWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
+	if config == nil {
+		config = DefaultWalletConfig()
+	}
+
+	// Generate a new mnemonic (128 bits = 12 words)
+	mnemonic, err := hd.NewMnemonic(128)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate mnemonic: %w", err)
+	}
+
+	// Derive seed from mnemonic
+	seed, err := hd.NewSeedFromMnemonic(mnemonic, config.Passphrase)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive seed: %w", err)
+	}
+
+	// Create master key from seed
+	masterKey, err := hd.NewMasterFromSeed(seed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create master key: %w", err)
+	}
+
+	// Derive default account: m/44'/0'/0'/0/0
+	defaultPath := hd.AccountPath(hd.CoinBitcoin, 0, 0, 0)
+	acctKey, err := masterKey.DerivePath(defaultPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive account key: %w", err)
+	}
+
+	wallet := &Wallet{
+		accounts:       make(map[string]*Account),
+		defaultKey:     nil, // HD wallet uses hdKey instead
+		keyType:        config.KeyType,
+		utxoSet:        us,
+		storage:        s,
+		walletFilePath: config.WalletFile,
+		passphrase:     config.Passphrase,
+		salt:           nil,
+		hdKey:          masterKey,
+		mnemonic:       mnemonic,
+		hdPath:         defaultPath,
+		isHDWallet:     true,
+	}
+
+	// Derive the default account address from the HD key
+	addr := acctKey.PublicKey
+	// Use last 20 bytes of SHA256 of public key as address (Ethereum-style)
+	hash := sha256.Sum256(addr[1:]) // Strip 0x02/0x03 prefix
+	addressBytes := hash[len(hash)-20:]
+
+	addressStr := wallet.encodeAddressWithChecksum(addressBytes)
+
+	account := &Account{
+		Address:    addressStr,
+		PublicKey:  addr,
+		PrivateKey: acctKey.PrivateKey[1:], // Skip 0x00 prefix
+		Balance:    0,
+		Nonce:      0,
+	}
+
+	wallet.accounts[addressStr] = account
+
+	return wallet, nil
+}
+
+// NewHDWalletFromMnemonic creates an HD wallet from an existing mnemonic phrase
+func NewHDWalletFromMnemonic(mnemonic []string, config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
+	if config == nil {
+		config = DefaultWalletConfig()
+	}
+
+	// Validate mnemonic
+	if err := hd.ValidateMnemonic(mnemonic); err != nil {
+		return nil, fmt.Errorf("invalid mnemonic: %w", err)
+	}
+
+	// Derive seed from mnemonic
+	seed, err := hd.NewSeedFromMnemonic(mnemonic, config.Passphrase)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive seed: %w", err)
+	}
+
+	// Create master key from seed
+	masterKey, err := hd.NewMasterFromSeed(seed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create master key: %w", err)
+	}
+
+	// Derive default account: m/44'/0'/0'/0/0
+	defaultPath := hd.AccountPath(hd.CoinBitcoin, 0, 0, 0)
+	acctKey, err := masterKey.DerivePath(defaultPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive account key: %w", err)
+	}
+
+	wallet := &Wallet{
+		accounts:       make(map[string]*Account),
+		defaultKey:     nil,
+		keyType:        config.KeyType,
+		utxoSet:        us,
+		storage:        s,
+		walletFilePath: config.WalletFile,
+		passphrase:     config.Passphrase,
+		salt:           nil,
+		hdKey:          masterKey,
+		mnemonic:       mnemonic,
+		hdPath:         defaultPath,
+		isHDWallet:     true,
+	}
+
+	addr := acctKey.PublicKey
+	hash := sha256.Sum256(addr[1:])
+	addressBytes := hash[len(hash)-20:]
+
+	addressStr := wallet.encodeAddressWithChecksum(addressBytes)
+
+	account := &Account{
+		Address:    addressStr,
+		PublicKey:  addr,
+		PrivateKey: acctKey.PrivateKey[1:],
+		Balance:    0,
+		Nonce:      0,
+	}
+
+	wallet.accounts[addressStr] = account
+
+	return wallet, nil
+}
+
+// DeriveChildKey derives a child key at the given BIP-44 derivation path
+func (w *Wallet) DeriveChildKey(path string) (*hd.ExtendedKey, error) {
+	if !w.isHDWallet || w.hdKey == nil {
+		return nil, fmt.Errorf("wallet is not an HD wallet")
+	}
+
+	return w.hdKey.DerivePath(path)
+}
+
+// GetMnemonic returns the mnemonic phrase for the HD wallet
+func (w *Wallet) GetMnemonic() ([]string, error) {
+	if !w.isHDWallet || w.mnemonic == nil {
+		return nil, fmt.Errorf("wallet is not an HD wallet or mnemonic is not available")
+	}
+
+	return w.mnemonic, nil
+}
+
+// GetHDAddress returns the address at the given derivation path
+func (w *Wallet) GetHDAddress(path string) (string, error) {
+	if !w.isHDWallet || w.hdKey == nil {
+		return "", fmt.Errorf("wallet is not an HD wallet")
+	}
+
+	ak, err := w.hdKey.DerivePath(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to derive key at path %s: %w", path, err)
+	}
+
+	addr := ak.PublicKey
+	hash := sha256.Sum256(addr[1:])
+	addressBytes := hash[len(hash)-20:]
+
+	return w.encodeAddressWithChecksum(addressBytes), nil
+}
+
+// IsHDWallet returns true if the wallet is an HD wallet
+func (w *Wallet) IsHDWallet() bool {
+	return w.isHDWallet
+}
 func (w *Wallet) Save() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()

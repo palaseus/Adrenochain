@@ -9,6 +9,7 @@ import (
 	"github.com/palaseus/adrenochain/pkg/block"   // Added import for block
 	"github.com/palaseus/adrenochain/pkg/storage" // Added import
 	"github.com/palaseus/adrenochain/pkg/utxo"
+	"github.com/palaseus/adrenochain/pkg/wallet/hd"
 	"github.com/stretchr/testify/assert" // Added import for assert
 )
 
@@ -467,4 +468,107 @@ func TestConcatRS(t *testing.T) {
 	// Verify the structure: first 32 bytes should contain r, last 32 bytes should contain s
 	// This is a basic verification of the concatenation logic
 	assert.Equal(t, 64, len(result3))
+}
+
+func TestHDWalletCreate(t *testing.T) {
+	s := newTestStorage(t)
+	config := DefaultWalletConfig()
+	us := utxo.NewUTXOSet()
+
+	wallet, err := NewHDWallet(config, us, s)
+	assert.NoError(t, err)
+	assert.NotNil(t, wallet)
+	assert.True(t, wallet.IsHDWallet())
+	assert.NotNil(t, wallet.hdKey)
+	assert.NotEmpty(t, wallet.mnemonic)
+	assert.Len(t, wallet.mnemonic, 12)
+	assert.Equal(t, "m/44'/0'/0'/0/0", wallet.hdPath)
+
+	// Mnemonic should be valid
+	assert.NoError(t, hd.ValidateMnemonic(wallet.mnemonic))
+}
+
+func TestHDWalletFromMnemonic(t *testing.T) {
+	s := newTestStorage(t)
+	config := DefaultWalletConfig()
+	us := utxo.NewUTXOSet()
+
+	// First create a wallet to get a mnemonic
+	wallet1, err := NewHDWallet(config, us, s)
+	assert.NoError(t, err)
+
+	// Create a new wallet from the same mnemonic
+	wallet2, err := NewHDWalletFromMnemonic(wallet1.mnemonic, config, us, s)
+	assert.NoError(t, err)
+	assert.NotNil(t, wallet2)
+	assert.True(t, wallet2.IsHDWallet())
+	assert.Equal(t, wallet1.mnemonic, wallet2.mnemonic)
+
+	// Both wallets should derive the same address
+	addr1, err := wallet1.GetHDAddress(wallet1.hdPath)
+	assert.NoError(t, err)
+	addr2, err := wallet2.GetHDAddress(wallet2.hdPath)
+	assert.NoError(t, err)
+	assert.Equal(t, addr1, addr2)
+
+	// Both should have the same default account
+	assert.Equal(t, wallet1.accounts[addr1].Address, wallet2.accounts[addr2].Address)
+}
+
+func TestHDWalletDeriveChildKey(t *testing.T) {
+	s := newTestStorage(t)
+	config := DefaultWalletConfig()
+	us := utxo.NewUTXOSet()
+
+	wallet, err := NewHDWallet(config, us, s)
+	assert.NoError(t, err)
+
+	// Derive a child key at m/44'/0'/0'/1/0
+	childKey, err := wallet.DeriveChildKey("m/44'/0'/0'/1/0")
+	assert.NoError(t, err)
+	assert.NotNil(t, childKey)
+	assert.NotNil(t, childKey.PrivateKey)
+	assert.NotNil(t, childKey.PublicKey)
+
+	// Derive the same path again - should get the same key
+	childKey2, err := wallet.DeriveChildKey("m/44'/0'/0'/1/0")
+	assert.NoError(t, err)
+	assert.Equal(t, childKey.PrivateKey, childKey2.PrivateKey)
+	assert.Equal(t, childKey.PublicKey, childKey2.PublicKey)
+
+	// Different path should give different key
+	childKey3, err := wallet.DeriveChildKey("m/44'/0'/0'/1/1")
+	assert.NoError(t, err)
+	assert.NotEqual(t, childKey.PrivateKey, childKey3.PrivateKey)
+}
+
+func TestHDWalletGetAddress(t *testing.T) {
+	s := newTestStorage(t)
+	config := DefaultWalletConfig()
+	us := utxo.NewUTXOSet()
+
+	wallet, err := NewHDWallet(config, us, s)
+	assert.NoError(t, err)
+
+	// Get address at default path
+	addr1, err := wallet.GetHDAddress(wallet.hdPath)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, addr1)
+
+	// Get address at a different path
+	addr2, err := wallet.GetHDAddress("m/44'/0'/0'/1/0")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, addr2)
+	assert.NotEqual(t, addr1, addr2)
+
+	// Get address at the same path again - should be deterministic
+	addr3, err := wallet.GetHDAddress(wallet.hdPath)
+	assert.NoError(t, err)
+	assert.Equal(t, addr1, addr3)
+
+	// Non-HD wallet should fail
+	nonHDWallet, err := NewWallet(config, us, s)
+	assert.NoError(t, err)
+	_, err = nonHDWallet.GetHDAddress("m/44'/0'/0'/0/0")
+	assert.Error(t, err)
 }
