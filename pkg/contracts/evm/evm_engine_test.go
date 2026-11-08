@@ -1276,7 +1276,9 @@ func TestEVMOpcodes_Log(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(evm.logs))
 	assert.Equal(t, 1, len(evm.logs[1].Topics))
-	assert.Equal(t, big.NewInt(42).Bytes(), evm.logs[1].Topics[0][:])
+	var expectedTopic engine.Hash
+	copy(expectedTopic[:], big.NewInt(42).Bytes())
+	assert.Equal(t, expectedTopic[:], evm.logs[1].Topics[0][:])
 }
 
 func TestEVMOpcodes_StaticCall(t *testing.T) {

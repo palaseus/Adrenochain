@@ -647,6 +647,10 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeSTATICCALL(ctx)
 		return false, err
 
+	case 0xFB: // CTXDATALOAD
+		err := evm.executeCTXDATALOAD(ctx)
+		return false, err
+
 	case 0xFD: // REVERT
 		return true, engine.ErrContractReverted
 
@@ -1193,6 +1197,33 @@ func (evm *EVMEngine) executeEXTCODEHASH(ctx *ExecutionContext) error {
 
 	hash := sha256.Sum256(code)
 	evm.stack.Push(new(big.Int).SetBytes(hash[:]))
+	return nil
+}
+
+func (evm *EVMEngine) executeCTXDATALOAD(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+
+	index := evm.stack.Pop()
+
+	switch index.Uint64() {
+	case 0: // BlockNum
+		evm.stack.Push(big.NewInt(int64(ctx.BlockNum)))
+	case 1: // Timestamp
+		evm.stack.Push(big.NewInt(int64(ctx.Timestamp)))
+	case 2: // ChainID
+		evm.stack.Push(new(big.Int).Set(ctx.ChainID))
+	case 3: // GasPrice
+		evm.stack.Push(new(big.Int).Set(ctx.GasPrice))
+	case 4: // Value
+		evm.stack.Push(new(big.Int).Set(ctx.Value))
+	case 5: // Difficulty
+		evm.stack.Push(new(big.Int).Set(ctx.Difficulty))
+	default:
+		return engine.ErrInvalidInstruction
+	}
+
 	return nil
 }
 
