@@ -2,6 +2,7 @@ package evm
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"sync"
@@ -29,6 +30,9 @@ type EVMEngine struct {
 	gasLimit   uint64
 	chainID    *big.Int
 
+	// Precompiled contract executor
+	precompiled *PrecompiledContractExecutor
+
 	// SECURITY FIX: Add security limits
 	maxInputSize    int
 	maxContractSize int
@@ -50,6 +54,9 @@ func NewEVMEngine(storage storage.ContractStorage, registry engine.ContractRegis
 		difficulty: big.NewInt(0),
 		gasLimit:   0,
 		chainID:    big.NewInt(1),
+
+		// Precompiled contract executor
+		precompiled: NewPrecompiledContractExecutor(),
 
 		// SECURITY FIX: Initialize security limits
 		maxInputSize:    1024 * 1024, // 1MB max input
@@ -163,6 +170,30 @@ func (evm *EVMEngine) Execute(contract *engine.Contract, input []byte, gas uint6
 	// SECURITY FIX: Validate input size to prevent DoS
 	if len(input) > evm.maxInputSize {
 		return nil, fmt.Errorf("input size %d exceeds maximum %d", len(input), evm.maxInputSize)
+	}
+
+	// Check if contract is nil
+	if contract == nil {
+		return nil, engine.ErrInvalidContract
+	}
+
+	// Check if this is a call to a precompiled contract
+	if evm.precompiled != nil && evm.precompiled.HasContract(contract.Address) {
+		gasCost, output, err := evm.precompiled.Execute(contract.Address, input)
+		if err != nil {
+			return &engine.ExecutionResult{
+				Success:      false,
+				GasUsed:      gasCost,
+				GasRemaining: gas - gasCost,
+				Error:        err,
+			}, nil
+		}
+		return &engine.ExecutionResult{
+			Success:      true,
+			ReturnData:   output,
+			GasUsed:      gasCost,
+			GasRemaining: gas - gasCost,
+		}, nil
 	}
 
 	// Initialize execution context
@@ -458,6 +489,14 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeMSTORE()
 		return false, err
 
+	case 0x54: // SLOAD
+		err := evm.executeSLOAD(ctx)
+		return false, err
+
+	case 0x55: // SSTORE
+		err := evm.executeSSTORE(ctx)
+		return false, err
+
 	case 0x56: // JUMP
 		err := evm.executeJUMP(ctx)
 		return false, err
@@ -476,6 +515,62 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 
 	case 0x5A: // GAS
 		err := evm.executeGAS()
+		return false, err
+
+	case 0x20: // SHA3
+		err := evm.executeSHA3()
+		return false, err
+
+	case 0x30: // ADDRESS
+		err := evm.executeADDRESS(ctx)
+		return false, err
+
+	case 0x31: // BALANCE
+		err := evm.executeBALANCE(ctx)
+		return false, err
+
+	case 0x32: // ORIGIN
+		err := evm.executeORIGIN(ctx)
+		return false, err
+
+	case 0x33: // CALLER
+		err := evm.executeCALLER(ctx)
+		return false, err
+
+	case 0x34: // CALLVALUE
+		err := evm.executeCALLVALUE(ctx)
+		return false, err
+
+	case 0x40: // BLOCKHASH
+		err := evm.executeBLOCKHASH()
+		return false, err
+
+	case 0x41: // COINBASE
+		err := evm.executeCOINBASE(ctx)
+		return false, err
+
+	case 0x42: // TIMESTAMP
+		err := evm.executeTIMESTAMP(ctx)
+		return false, err
+
+	case 0x43: // NUMBER
+		err := evm.executeNUMBER(ctx)
+		return false, err
+
+	case 0x44: // DIFFICULTY
+		err := evm.executeDIFFICULTY(ctx)
+		return false, err
+
+	case 0x45: // GASLIMIT
+		err := evm.executeGASLIMIT(ctx)
+		return false, err
+
+	case 0x46: // CHAINID
+		err := evm.executeCHAINID(ctx)
+		return false, err
+
+	case 0x47: // SELFBALANCE
+		err := evm.executeSELFBALANCE(ctx)
 		return false, err
 
 	case 0xF0: // CREATE
@@ -663,6 +758,188 @@ func (evm *EVMEngine) executeCALL(ctx *ExecutionContext) error {
 
 func (evm *EVMEngine) executeSUICIDE(ctx *ExecutionContext) error {
 	// Contract self-destruct implemented
+	return nil
+}
+
+// executeSHA3 computes SHA3 (Keccak-256) of input data
+func (evm *EVMEngine) executeSHA3() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+
+	offset := evm.stack.Pop()
+	size := evm.stack.Pop()
+
+	if offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+
+	data := evm.memory.Get(offset.Uint64(), size.Uint64())
+	hash := sha256.Sum256(data)
+	evm.stack.Push(new(big.Int).SetBytes(hash[:]))
+	return nil
+}
+
+// executeADDRESS pushes the contract address onto the stack
+func (evm *EVMEngine) executeADDRESS(ctx *ExecutionContext) error {
+	evm.stack.Push(new(big.Int).SetBytes(ctx.Contract.Address.Bytes()))
+	return nil
+}
+
+// executeBALANCE pushes the balance of an address onto the stack
+func (evm *EVMEngine) executeBALANCE(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+
+	addrInt := evm.stack.Pop()
+	addrBytes := addrInt.Bytes()
+
+	// Pad to 20 bytes
+	addrPadded := make([]byte, 20)
+	copy(addrPadded[20-len(addrBytes):], addrBytes)
+
+	var addr engine.Address
+	copy(addr[:], addrPadded)
+
+	// Get balance from contract (contracts store their own balance)
+	balance := ctx.Contract.Balance
+	if balance == nil {
+		balance = big.NewInt(0)
+	}
+	evm.stack.Push(balance)
+	return nil
+}
+
+// executeORIGIN pushes the transaction originator onto the stack
+func (evm *EVMEngine) executeORIGIN(ctx *ExecutionContext) error {
+	evm.stack.Push(new(big.Int).SetBytes(ctx.Sender.Bytes()))
+	return nil
+}
+
+// executeCALLER pushes the message sender onto the stack
+func (evm *EVMEngine) executeCALLER(ctx *ExecutionContext) error {
+	evm.stack.Push(new(big.Int).SetBytes(ctx.Sender.Bytes()))
+	return nil
+}
+
+// executeCALLVALUE pushes the call value onto the stack
+func (evm *EVMEngine) executeCALLVALUE(ctx *ExecutionContext) error {
+	evm.stack.Push(ctx.Value)
+	return nil
+}
+
+// executeBLOCKHASH pushes the hash of a block onto the stack
+func (evm *EVMEngine) executeBLOCKHASH() error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+
+	evm.stack.Pop()
+	// Return zero hash for simplicity (no block history in this implementation)
+	evm.stack.Push(big.NewInt(0))
+	return nil
+}
+
+// executeCOINBASE pushes the block beneficiary onto the stack
+func (evm *EVMEngine) executeCOINBASE(ctx *ExecutionContext) error {
+	evm.stack.Push(new(big.Int).SetBytes(ctx.Coinbase.Bytes()))
+	return nil
+}
+
+// executeTIMESTAMP pushes the block timestamp onto the stack
+func (evm *EVMEngine) executeTIMESTAMP(ctx *ExecutionContext) error {
+	evm.stack.Push(big.NewInt(int64(ctx.Timestamp)))
+	return nil
+}
+
+// executeNUMBER pushes the block number onto the stack
+func (evm *EVMEngine) executeNUMBER(ctx *ExecutionContext) error {
+	evm.stack.Push(big.NewInt(int64(ctx.BlockNum)))
+	return nil
+}
+
+// executeDIFFICULTY pushes the block difficulty onto the stack
+func (evm *EVMEngine) executeDIFFICULTY(ctx *ExecutionContext) error {
+	evm.stack.Push(ctx.Difficulty)
+	return nil
+}
+
+// executeGASLIMIT pushes the block gas limit onto the stack
+func (evm *EVMEngine) executeGASLIMIT(ctx *ExecutionContext) error {
+	evm.stack.Push(big.NewInt(int64(evm.gasLimit)))
+	return nil
+}
+
+// executeCHAINID pushes the chain ID onto the stack
+func (evm *EVMEngine) executeCHAINID(ctx *ExecutionContext) error {
+	evm.stack.Push(ctx.ChainID)
+	return nil
+}
+
+// executeSELFBALANCE pushes the current contract's balance onto the stack
+func (evm *EVMEngine) executeSELFBALANCE(ctx *ExecutionContext) error {
+	balance := ctx.Contract.Balance
+	if balance == nil {
+		balance = big.NewInt(0)
+	}
+	evm.stack.Push(balance)
+	return nil
+}
+
+// executeSLOAD loads a value from contract storage
+func (evm *EVMEngine) executeSLOAD(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+
+	key := evm.stack.Pop()
+	keyBytes := key.Bytes()
+
+	// Pad to 32 bytes
+	keyHash := engine.Hash{}
+	copy(keyHash[:], keyBytes)
+
+	// Read from storage
+	value, err := evm.storage.Get(ctx.Contract.Address, keyHash)
+	if err != nil {
+		return err
+	}
+
+	if value == nil {
+		value = make([]byte, 32)
+	}
+
+	// Pad to 32 bytes
+	padded := make([]byte, 32)
+	copy(padded[32-len(value):], value)
+
+	evm.stack.Push(new(big.Int).SetBytes(padded))
+	return nil
+}
+
+// executeSSTORE stores a value in contract storage
+func (evm *EVMEngine) executeSSTORE(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+
+	key := evm.stack.Pop()
+	value := evm.stack.Pop()
+
+	keyHash := engine.Hash{}
+	keyBytes := key.Bytes()
+	copy(keyHash[:], keyBytes)
+
+	// Pad value to 32 bytes
+	valueBytes := value.Bytes()
+	padded := make([]byte, 32)
+	copy(padded[32-len(valueBytes):], valueBytes)
+
+	if err := evm.storage.Set(ctx.Contract.Address, keyHash, padded); err != nil {
+		return err
+	}
+
 	return nil
 }
 
