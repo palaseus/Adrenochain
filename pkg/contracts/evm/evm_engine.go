@@ -423,9 +423,13 @@ func (evm *EVMEngine) executeContractInternal(contract *engine.Contract, input [
 	}
 
 	// Success
+	returnData := evm.lastReturnData
+	if returnData == nil {
+		returnData = evm.memory.Get(0, 32) // Return first 32 bytes from memory
+	}
 	return &engine.ExecutionResult{
 		Success:      true,
-		ReturnData:   evm.memory.Get(0, 32), // Return first 32 bytes from memory
+		ReturnData:   returnData,
 		GasUsed:      evm.gasMeter.GasConsumed(),
 		GasRemaining: evm.gasMeter.GasRemaining(),
 		Logs:         []engine.Log{},
@@ -1913,9 +1917,13 @@ func (evm *EVMEngine) executeContract(ctx *ExecutionContext) (*engine.ExecutionR
 	}
 
 	// Success
+	returnData := evm.lastReturnData
+	if returnData == nil {
+		returnData = evm.memory.Get(0, 32) // Return first 32 bytes from memory
+	}
 	return &engine.ExecutionResult{
 		Success:      true,
-		ReturnData:   evm.memory.Get(0, 32), // Return first 32 bytes from memory
+		ReturnData:   returnData,
 		GasUsed:      evm.gasMeter.GasConsumed(),
 		GasRemaining: evm.gasMeter.GasRemaining(),
 		Logs:         []engine.Log{},
