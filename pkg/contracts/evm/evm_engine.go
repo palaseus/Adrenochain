@@ -519,6 +519,31 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeGAS()
 		return false, err
 
+	case 0x5B: // JUMPDEST
+		// No-op, just a jump destination marker
+		return false, nil
+
+	case 0x5C: // PUSH0
+		evm.stack.Push(big.NewInt(0))
+		return false, nil
+
+	case 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69,
+		0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73,
+		0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D,
+		0x7E, 0x7F: // PUSH1-PUSH32
+		err := evm.executePUSH(ctx)
+		return false, err
+
+	case 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89,
+		0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F: // DUP1-DUP16
+		err := evm.executeDUP(ctx)
+		return false, err
+
+	case 0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99,
+		0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F: // SWAP1-SWAP16
+		err := evm.executeSWAP(ctx)
+		return false, err
+
 	case 0xA0: // LOG0
 		err := evm.executeLOG(ctx, 0)
 		return false, err
@@ -659,6 +684,14 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeGT()
 		return false, err
 
+	case 0x12: // SLT
+		err := evm.executeSLT()
+		return false, err
+
+	case 0x13: // SGT
+		err := evm.executeSGT()
+		return false, err
+
 	case 0x14: // EQ
 		err := evm.executeEQ()
 		return false, err
@@ -683,6 +716,10 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeNOT()
 		return false, err
 
+	case 0x1A: // BYTE
+		err := evm.executeBYTE()
+		return false, err
+
 	case 0x05: // SDIV
 		err := evm.executeSDIV()
 		return false, err
@@ -703,13 +740,13 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeEXP()
 		return false, err
 
+	case 0x0A: // SIGNEXTEND
+		err := evm.executeSIGNEXTEND()
+		return false, err
+
 	case 0x53: // MSTORE8
 		err := evm.executeMSTORE8()
 		return false, err
-
-	case 0x5B: // JUMPDEST
-		// No-op, just a jump destination marker
-		return false, nil
 
 	case 0xF2: // CALLCODE
 		err := evm.executeCALL(ctx) // Simplified: treat like CALL
@@ -725,6 +762,10 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 
 	case 0xFD: // REVERT
 		return true, engine.ErrContractReverted
+
+	case 0xF3: // RETURN
+		err := evm.executeRETURN(ctx)
+		return true, err
 
 	case 0xFF: // SUICIDE
 		err := evm.executeSUICIDE(ctx)
@@ -902,6 +943,38 @@ func (evm *EVMEngine) executeCALL(ctx *ExecutionContext) error {
 
 func (evm *EVMEngine) executeSUICIDE(ctx *ExecutionContext) error {
 	// Contract self-destruct implemented
+	return nil
+}
+
+func (evm *EVMEngine) executeRETURN(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+
+	offset := evm.stack.Pop()
+	size := evm.stack.Pop()
+
+	if offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+
+	start := offset.Uint64()
+	size64 := size.Uint64()
+	var end uint64
+	memSize := uint64(evm.memory.Size())
+	if size64 > 0 && start <= memSize {
+		end = start + size64
+		if end < start {
+			end = memSize // overflow
+		} else if end > memSize {
+			end = memSize
+		}
+	} else {
+		end = start
+	}
+
+	data := evm.memory.Get(start, end-start)
+	evm.lastReturnData = data
 	return nil
 }
 
@@ -1107,6 +1180,120 @@ func (evm *EVMEngine) executeMSTORE8() error {
 	// Store only the least significant byte
 	byteVal := byte(value.Uint64() & 0xFF)
 	evm.memory.Set(offset.Uint64(), []byte{byteVal})
+	return nil
+}
+
+func (evm *EVMEngine) executePUSH(ctx *ExecutionContext) error {
+	opcode := ctx.Contract.Code[evm.pc]
+	size := int(opcode - 0x60 + 1)
+	if evm.pc+1+uint64(size) > uint64(len(ctx.Contract.Code)) {
+		return engine.ErrInvalidInstruction
+	}
+	data := ctx.Contract.Code[evm.pc+1 : evm.pc+1+uint64(size)]
+	padded := make([]byte, 32)
+	copy(padded[32-size:], data)
+	evm.stack.Push(new(big.Int).SetBytes(padded))
+	return nil
+}
+
+func (evm *EVMEngine) executeDUP(ctx *ExecutionContext) error {
+	opcode := ctx.Contract.Code[evm.pc]
+	n := int(opcode - 0x80 + 1)
+	if evm.stack.Size() < n {
+		return engine.ErrStackUnderflow
+	}
+	evm.stack.mu.Lock()
+	items := evm.stack.items
+	value := new(big.Int).Set(items[len(items)-n])
+	evm.stack.items = append(evm.stack.items, value)
+	evm.stack.mu.Unlock()
+	return nil
+}
+
+func (evm *EVMEngine) executeSWAP(ctx *ExecutionContext) error {
+	opcode := ctx.Contract.Code[evm.pc]
+	n := int(opcode - 0x90 + 1)
+	if evm.stack.Size() < n+1 {
+		return engine.ErrStackUnderflow
+	}
+	evm.stack.mu.Lock()
+	items := evm.stack.items
+	topIdx := len(items) - 1
+	swapIdx := len(items) - 1 - n
+	items[topIdx], items[swapIdx] = items[swapIdx], items[topIdx]
+	evm.stack.mu.Unlock()
+	return nil
+}
+
+func (evm *EVMEngine) executeSIGNEXTEND() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	bit := evm.stack.Pop()
+	x := evm.stack.Pop()
+	if bit.Uint64() > 31 {
+		evm.stack.Push(x)
+		return nil
+	}
+	signBit := uint(255 - bit.Uint64()*8)
+	if x.Bit(int(signBit)) == 1 {
+		// Sign extend: set all bits above signBit to 1
+		mask := new(big.Int).Lsh(big.NewInt(1), uint(signBit+1))
+		mask.Sub(mask, big.NewInt(1))
+		x.Or(x, new(big.Int).Not(mask))
+	} else {
+		// Clear all bits above signBit
+		mask := new(big.Int).Lsh(big.NewInt(1), uint(signBit+1))
+		mask.Sub(mask, big.NewInt(1))
+		x.And(x, mask)
+	}
+	evm.stack.Push(x)
+	return nil
+}
+
+func (evm *EVMEngine) executeSLT() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if a.Cmp(b) < 0 {
+		evm.stack.Push(big.NewInt(1))
+	} else {
+		evm.stack.Push(big.NewInt(0))
+	}
+	return nil
+}
+
+func (evm *EVMEngine) executeSGT() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if a.Cmp(b) > 0 {
+		evm.stack.Push(big.NewInt(1))
+	} else {
+		evm.stack.Push(big.NewInt(0))
+	}
+	return nil
+}
+
+func (evm *EVMEngine) executeBYTE() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	position := evm.stack.Pop()
+	value := evm.stack.Pop()
+	if position.Uint64() > 31 {
+		evm.stack.Push(big.NewInt(0))
+		return nil
+	}
+	// BYTE returns the byte at position (0 = most significant)
+	bytePos := 31 - position.Uint64()
+	result := new(big.Int).Rsh(value, uint(bytePos*8))
+	result.And(result, big.NewInt(0xFF))
+	evm.stack.Push(result)
 	return nil
 }
 

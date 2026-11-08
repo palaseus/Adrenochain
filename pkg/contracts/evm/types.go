@@ -266,6 +266,7 @@ var Instructions = map[byte]*Instruction{
 	0x59: {Opcode: 0x59, Name: "MSIZE", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x5A: {Opcode: 0x5A, Name: "GAS", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 	0x5B: {Opcode: 0x5B, Name: "JUMPDEST", GasCost: 1, Size: 1, Halts: false, Pops: 0, Pushes: 0},
+	0x5C: {Opcode: 0x5C, Name: "PUSH0", GasCost: 2, Size: 1, Halts: false, Pops: 0, Pushes: 1},
 
 	// Push operations
 	0x60: {Opcode: 0x60, Name: "PUSH1", GasCost: 3, Size: 2, Halts: false, Pops: 0, Pushes: 1},
