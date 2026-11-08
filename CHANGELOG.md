@@ -1,6 +1,38 @@
 # AdrenaChain Changelog
 [Unreleased]
 
+## Latest Changes (2026-11-08) — Intent Framework, RWA Tokenization & Confidential Transfers
+### Cross-chain intents (ERC-7683 aligned)
+- **pkg/xintent (new)**: Intent-based cross-chain architecture — users sign
+  declarative outcomes instead of execution steps; competitive solvers race to
+  fulfill them:
+  - CrossChainOrder (ERC-7683 aligned): settlement contract, swapper, nonce,
+    chains, deadlines, opaque order data, signature
+  - Intent: user-signed declaration with ID, type, fill reward, expiry, status
+  - Resolver/Solver interfaces: protocol normalization and fill execution
+  - IntentRegistry: register, fill, cancel, open-intents listing
+
+### RWA tokenization with embedded compliance (ERC-3643 / T-REX aligned)
+- **pkg/rwa (new)**: Compliant real-world asset tokenization where every
+  transfer is gated on on-chain identity, investor eligibility, and sanctions
+  clearance:
+  - Token: draft/issued/paused/redeemed lifecycle, mint/burn/compliant transfer
+  - IdentityRegistry: ONCHAINID-aligned identities + claims (KYC, accredited,
+    sanctions-clear) issued by registered claim issuers
+  - ComplianceEngine: transfer-compliance evaluation with extensible rules
+  - Asset: links token to real-world asset (custodian, auditor, NAV, jurisdiction)
+  - ProofOfReserve: auditor attestation that token supply matches reserves
+
+### Zero-knowledge proofs & confidential transfers
+- **pkg/zk (new)**: ZK primitives and confidential transfers inspired by Solana's
+  Token-2022 Confidential Transfer extension:
+  - Commitment: Pedersen commitment (hiding + binding)
+  - Ciphertext: encrypted amount (EC-ElGamal style placeholder)
+  - RangeProof: Bulletproofs-style range proof
+  - ConfidentialBalance: encrypted balance + commitment + range proof + view key
+  - ConfidentialTransfer: visible sender/recipient, encrypted amount, ZK proofs
+  - ViewKeyDerivation: per-asset view key for selective disclosure
+
 ## Latest Changes (2026-11-08) — Solana Integration & Multi-Chain
 ### Solana blockchain (deep integration)
 - **pkg/multichain/solana (new)**: Native Solana integration using only the Go
