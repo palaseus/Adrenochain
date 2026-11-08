@@ -19,6 +19,8 @@ type ExecutionContext struct {
 	Coinbase   engine.Address
 	Difficulty *big.Int
 	ChainID    *big.Int
+	TxHash     engine.Hash
+	TxIndex    uint
 }
 
 // EVMStack represents the EVM execution stack

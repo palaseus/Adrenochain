@@ -1153,7 +1153,6 @@ func TestValidateTransaction(t *testing.T) {
 		},
 		Hash: make([]byte, 32),
 	}
-	copy(noInputsTx2.Hash, []byte("no_inputs_hash"))
 	// This should pass because it's a valid coinbase transaction
 	err = consensus.validateTransaction(noInputsTx2)
 	assert.NoError(t, err, "Coinbase transaction should be valid")

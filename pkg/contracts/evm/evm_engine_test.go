@@ -1,16 +1,18 @@
 package evm
 
 import (
+	"crypto/sha256"
 	"math/big"
 	"testing"
 
 	"github.com/palaseus/adrenochain/pkg/contracts/engine"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEVMEngine(t *testing.T) {
 	// Create mock storage and registry
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
@@ -41,7 +43,7 @@ func TestNewEVMEngine(t *testing.T) {
 
 func TestEVMEngineExecute(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Initialize gas meter to prevent nil pointer dereference
@@ -94,7 +96,7 @@ func TestEVMEngineExecute(t *testing.T) {
 
 func TestEVMEngineDeploy(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Test deployment without constructor
@@ -136,7 +138,7 @@ func TestEVMEngineDeploy(t *testing.T) {
 
 func TestEVMEngineEstimateGas(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Create a test contract
@@ -160,7 +162,7 @@ func TestEVMEngineEstimateGas(t *testing.T) {
 
 func TestEVMEngineCall(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Create a test contract
@@ -183,7 +185,7 @@ func TestEVMEngineCall(t *testing.T) {
 
 func TestEVMEngineSetBlockContext(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	blockNum := uint64(12345)
@@ -212,7 +214,7 @@ func TestEVMEngineSetBlockContext(t *testing.T) {
 
 func TestEVMEngineSetGasPrice(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	gasPrice := big.NewInt(20000000000) // 20 gwei
@@ -225,7 +227,7 @@ func TestEVMEngineSetGasPrice(t *testing.T) {
 
 func TestEVMEngineSetChainID(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	chainID := big.NewInt(1337)
@@ -238,7 +240,7 @@ func TestEVMEngineSetChainID(t *testing.T) {
 
 func TestEVMEngineClone(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Set some context
@@ -329,60 +331,102 @@ func (m *MockContractStorage) VerifyStorageProof(root engine.Hash, key engine.Ha
 	return true
 }
 
-type MockContractRegistry struct{}
+type MockContractRegistry struct {
+	contracts map[engine.Address]*engine.Contract
+}
+
+func NewMockContractRegistry() *MockContractRegistry {
+	return &MockContractRegistry{
+		contracts: make(map[engine.Address]*engine.Contract),
+	}
+}
 
 func (m *MockContractRegistry) Register(contract *engine.Contract) error {
+	m.contracts[contract.Address] = contract
 	return nil
 }
 
 func (m *MockContractRegistry) Get(address engine.Address) (*engine.Contract, error) {
-	return nil, engine.ErrContractNotFound
+	contract, exists := m.contracts[address]
+	if !exists {
+		return nil, engine.ErrContractNotFound
+	}
+	return contract, nil
 }
 
 func (m *MockContractRegistry) Exists(address engine.Address) bool {
-	return false
+	_, exists := m.contracts[address]
+	return exists
 }
 
 func (m *MockContractRegistry) Remove(address engine.Address) error {
+	delete(m.contracts, address)
 	return nil
 }
 
 func (m *MockContractRegistry) List() []*engine.Contract {
-	return []*engine.Contract{}
+	contracts := make([]*engine.Contract, 0, len(m.contracts))
+	for _, c := range m.contracts {
+		contracts = append(contracts, c)
+	}
+	return contracts
 }
 
 func (m *MockContractRegistry) GetContractCount() int {
-	return 0
+	return len(m.contracts)
 }
 
 func (m *MockContractRegistry) GetContractByCodeHash(codeHash engine.Hash) []*engine.Contract {
-	return []*engine.Contract{}
+	var contracts []*engine.Contract
+	for _, c := range m.contracts {
+		if c.CodeHash == codeHash {
+			contracts = append(contracts, c)
+		}
+	}
+	return contracts
 }
 
 func (m *MockContractRegistry) GetContractsByCreator(creator engine.Address) []*engine.Contract {
-	return []*engine.Contract{}
+	var contracts []*engine.Contract
+	for _, c := range m.contracts {
+		if c.Creator == creator {
+			contracts = append(contracts, c)
+		}
+	}
+	return contracts
 }
 
 func (m *MockContractRegistry) UpdateContract(contract *engine.Contract) error {
+	m.contracts[contract.Address] = contract
 	return nil
 }
 
 func (m *MockContractRegistry) GetContractAddresses() []engine.Address {
-	return []engine.Address{}
+	addresses := make([]engine.Address, 0, len(m.contracts))
+	for addr := range m.contracts {
+		addresses = append(addresses, addr)
+	}
+	return addresses
 }
 
 func (m *MockContractRegistry) HasContracts() bool {
-	return false
+	return len(m.contracts) > 0
 }
 
-func (m *MockContractRegistry) Clear() {}
-
-func (m *MockContractRegistry) GenerateAddress() engine.Address {
-	return generateRandomAddress()
+func (m *MockContractRegistry) Clear() {
+	m.contracts = make(map[engine.Address]*engine.Contract)
 }
 
 func (m *MockContractRegistry) GetContractStats() engine.ContractStats {
 	return engine.ContractStats{}
+}
+
+func (m *MockContractRegistry) GenerateAddress() engine.Address {
+	var addr engine.Address
+	for i := 0; i < 20; i++ {
+		addr[i] = byte(i + 1)
+	}
+	return addr
 }
 
 // Helper function to generate random addresses for testing
@@ -526,7 +570,7 @@ func TestEVMMemoryOperations(t *testing.T) {
 
 func TestEVMInstructionExecution(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Create execution context
@@ -665,7 +709,7 @@ func TestEVMInstructionExecution(t *testing.T) {
 
 func TestEVMBasicInstructions(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Create execution context
@@ -763,7 +807,7 @@ func TestEVMMemoryClone(t *testing.T) {
 
 func TestEVMExecuteInstruction(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Initialize gas meter to prevent panic
@@ -958,7 +1002,7 @@ func TestEVMExecuteInstruction(t *testing.T) {
 
 func TestEVMFetchOpcodeAndDecode(t *testing.T) {
 	mockStorage := &MockContractStorage{}
-	mockRegistry := &MockContractRegistry{}
+	mockRegistry := NewMockContractRegistry()
 	evm := NewEVMEngine(mockStorage, mockRegistry)
 
 	// Create execution context with contract code
@@ -1034,4 +1078,251 @@ func TestEVMMemoryEdgeCases(t *testing.T) {
 	if len(data) != 0 {
 		t.Error("Memory should return empty slice for zero size")
 	}
+}
+
+func TestEVMOpcodes_CallData(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Input:      []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test CALLDATASIZE
+	err := evm.executeCALLDATASIZE(ctx)
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(6), result.Int64()) // input length
+
+	// Test CALLDATALOAD - load first 32 bytes
+	evm.stack.Push(big.NewInt(0)) // offset 0
+	err = evm.executeCALLDATALOAD(ctx)
+	assert.NoError(t, err)
+	loaded := evm.stack.Peek()
+	expected := new(big.Int).SetBytes([]byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff})
+	assert.Equal(t, expected.Int64(), loaded.Int64())
+	_ = loaded
+
+	// Test CALLDATACOPY
+	evm.stack.Push(big.NewInt(0)) // dest offset
+	evm.stack.Push(big.NewInt(0)) // src offset
+	evm.stack.Push(big.NewInt(6)) // size
+	err = evm.executeCALLDATACOPY(ctx)
+	assert.NoError(t, err)
+	copied := evm.memory.Get(0, 6)
+	assert.Equal(t, []byte{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}, copied)
+}
+
+func TestEVMOpcodes_Code(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{Code: []byte{0xde, 0xad, 0xbe, 0xef}},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test CODESIZE
+	evm.stack.Push(big.NewInt(0)) // dummy
+	evm.stack.Pop()
+	err := evm.executeCODESIZE(ctx)
+	assert.NoError(t, err)
+	result := evm.stack.Peek()
+	assert.Equal(t, int64(4), result.Int64())
+
+	// Test CODECOPY - copy code to memory at offset 10
+	evm.stack.Push(big.NewInt(10)) // dest offset
+	evm.stack.Push(big.NewInt(0))  // code offset
+	evm.stack.Push(big.NewInt(4))  // size
+	err = evm.executeCODECOPY(ctx)
+	assert.NoError(t, err)
+	copied := evm.memory.Get(10, 4)
+	assert.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, copied)
+}
+
+func TestEVMOpcodes_ExtCode(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Register a contract in the registry
+	targetAddr := engine.Address{0x01, 0x02, 0x03, 0x04, 0x05}
+	targetCode := []byte{0x60, 0x80} // PUSH1 0x80
+	err := evm.registry.Register(&engine.Contract{
+		Address: targetAddr,
+		Code:    targetCode,
+	})
+	assert.NoError(t, err)
+
+	// Test EXTCODESIZE
+	addrInt := new(big.Int).SetBytes(targetAddr[:])
+	evm.stack.Push(addrInt)
+	err = evm.executeEXTCODESIZE(ctx)
+	assert.NoError(t, err)
+	result := evm.stack.Peek()
+	assert.Equal(t, int64(2), result.Int64()) // code length is 2
+
+	// Test EXTCODECOPY
+	evm.stack.Push(big.NewInt(10)) // dest offset
+	evm.stack.Push(big.NewInt(0))  // code offset
+	evm.stack.Push(big.NewInt(2))  // size
+	evm.stack.Push(addrInt)        // address
+	err = evm.executeEXTCODECOPY(ctx)
+	assert.NoError(t, err)
+	copied := evm.memory.Get(10, 2)
+	assert.Equal(t, []byte{0x60, 0x80}, copied)
+
+	// Test EXTCODEHASH
+	evm.stack.Push(addrInt)
+	err = evm.executeEXTCODEHASH(ctx)
+	assert.NoError(t, err)
+	hash := evm.stack.Peek()
+	expectedHash := sha256.Sum256(targetCode)
+	assert.Equal(t, new(big.Int).SetBytes(expectedHash[:]).Int64(), hash.Int64())
+}
+
+func TestEVMOpcodes_ReturnData(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Set lastReturnData directly
+	evm.lastReturnData = []byte{0xde, 0xad, 0xbe, 0xef}
+
+	// Test RETURNDATASIZE
+	evm.stack.Push(big.NewInt(0)) // dummy
+	evm.stack.Pop()
+	err := evm.executeRETURNDATASIZE()
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(4), result.Int64())
+
+	// Test RETURNDATACOPY
+	evm.stack.Push(big.NewInt(20)) // dest offset
+	evm.stack.Push(big.NewInt(0))  // offset
+	evm.stack.Push(big.NewInt(4))  // size
+	err = evm.executeRETURNDATACOPY()
+	assert.NoError(t, err)
+	copied := evm.memory.Get(20, 4)
+	assert.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, copied)
+}
+
+func TestEVMOpcodes_Log(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{Address: engine.Address{0xaa, 0xbb}},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	evm.stack.Push(big.NewInt(0)) // offset
+	evm.stack.Push(big.NewInt(0)) // offset
+	evm.stack.Push(big.NewInt(4)) // size
+	evm.stack.Push(big.NewInt(0)) // offset
+	evm.stack.Push(big.NewInt(0)) // offset
+	evm.stack.Push(big.NewInt(4)) // size
+	evm.memory.Set(0, []byte{0x01, 0x02, 0x03, 0x04})
+	err := evm.executeLOG(ctx, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(evm.logs))
+	assert.Equal(t, evm.logs[0].Address, ctx.Contract.Address)
+	assert.Equal(t, []byte{0x01, 0x02, 0x03, 0x04}, evm.logs[0].Data)
+	assert.Len(t, evm.logs[0].Topics, 0)
+
+	// Test LOG1 - one topic
+	evm.stack.Push(big.NewInt(10)) // offset
+	evm.stack.Push(big.NewInt(4))  // size
+	evm.stack.Push(big.NewInt(42)) // topic
+	err = evm.executeLOG(ctx, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(evm.logs))
+	assert.Equal(t, 1, len(evm.logs[1].Topics))
+	assert.Equal(t, big.NewInt(42).Bytes(), evm.logs[1].Topics[0][:])
+}
+
+func TestEVMOpcodes_StaticCall(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Register a target contract
+	targetAddr := engine.Address{0x01, 0x02, 0x03, 0x04, 0x05}
+	targetContract := &engine.Contract{
+		Address: targetAddr,
+		Code:    []byte{0x60, 0x2a, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3}, // PUSH1 0x2a, PUSH1 0x00, MSTORE, PUSH1 0x20, PUSH1 0x00, RETURN
+	}
+	err := evm.registry.Register(targetContract)
+	assert.NoError(t, err)
+
+	// Call the target contract via STATICCALL
+	evm.stack.Push(big.NewInt(100000)) // gas
+	evm.stack.Push(big.NewInt(0))      // value
+	evm.stack.Push(big.NewInt(0))      // inOffset
+	evm.stack.Push(big.NewInt(0))      // inSize
+	evm.stack.Push(big.NewInt(10))     // retOffset
+	evm.stack.Push(big.NewInt(32))     // retSize
+	addrInt := new(big.Int).SetBytes(targetAddr[:])
+	evm.stack.Push(addrInt) // address
+
+	err = evm.executeSTATICCALL(ctx)
+	assert.NoError(t, err)
+
+	// STATICCALL should push 1 (success)
+	result := evm.stack.Pop()
+	assert.Equal(t, big.NewInt(1), result)
+
+	// Check return data was copied to memory
+	retData := evm.memory.Get(10, 32)
+	assert.NotEmpty(t, retData)
 }

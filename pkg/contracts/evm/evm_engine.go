@@ -37,6 +37,8 @@ type EVMEngine struct {
 	maxInputSize    int
 	maxContractSize int
 	maxGasLimit     uint64
+	lastReturnData    []byte
+	logs              []engine.Log
 	minGasLimit     uint64
 }
 
@@ -517,6 +519,26 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeGAS()
 		return false, err
 
+	case 0xA0: // LOG0
+		err := evm.executeLOG(ctx, 0)
+		return false, err
+
+	case 0xA1: // LOG1
+		err := evm.executeLOG(ctx, 1)
+		return false, err
+
+	case 0xA2: // LOG2
+		err := evm.executeLOG(ctx, 2)
+		return false, err
+
+	case 0xA3: // LOG3
+		err := evm.executeLOG(ctx, 3)
+		return false, err
+
+	case 0xA4: // LOG4
+		err := evm.executeLOG(ctx, 4)
+		return false, err
+
 	case 0x20: // SHA3
 		err := evm.executeSHA3()
 		return false, err
@@ -539,6 +561,46 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 
 	case 0x34: // CALLVALUE
 		err := evm.executeCALLVALUE(ctx)
+		return false, err
+
+	case 0x36: // CALLDATASIZE
+		err := evm.executeCALLDATASIZE(ctx)
+		return false, err
+
+	case 0x37: // CALLDATALOAD
+		err := evm.executeCALLDATALOAD(ctx)
+		return false, err
+
+	case 0x38: // CALLDATACOPY
+		err := evm.executeCALLDATACOPY(ctx)
+		return false, err
+
+	case 0x39: // CODESIZE
+		err := evm.executeCODESIZE(ctx)
+		return false, err
+
+	case 0x3A: // CODECOPY
+		err := evm.executeCODECOPY(ctx)
+		return false, err
+
+	case 0x3B: // EXTCODESIZE
+		err := evm.executeEXTCODESIZE(ctx)
+		return false, err
+
+	case 0x3C: // EXTCODECOPY
+		err := evm.executeEXTCODECOPY(ctx)
+		return false, err
+
+	case 0x3D: // RETURNDATASIZE
+		err := evm.executeRETURNDATASIZE()
+		return false, err
+
+	case 0x3E: // RETURNDATACOPY
+		err := evm.executeRETURNDATACOPY()
+		return false, err
+
+	case 0x3F: // EXTCODEHASH
+		err := evm.executeEXTCODEHASH(ctx)
 		return false, err
 
 	case 0x40: // BLOCKHASH
@@ -579,6 +641,10 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 
 	case 0xF1: // CALL
 		err := evm.executeCALL(ctx)
+		return false, err
+
+	case 0xFA: // STATICCALL
+		err := evm.executeSTATICCALL(ctx)
 		return false, err
 
 	case 0xFD: // REVERT
@@ -939,11 +1005,274 @@ func (evm *EVMEngine) executeSSTORE(ctx *ExecutionContext) error {
 	if err := evm.storage.Set(ctx.Contract.Address, keyHash, padded); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// Clone creates a deep copy of the EVM engine for estimation
+
+func (evm *EVMEngine) executeCODESIZE(ctx *ExecutionContext) error {
+	evm.stack.Push(big.NewInt(int64(len(ctx.Contract.Code))))
+	return nil
+}
+
+func (evm *EVMEngine) executeCODECOPY(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+	size := evm.stack.Pop()
+	codeOffset := evm.stack.Pop()
+	destOffset := evm.stack.Pop()
+	if destOffset.Cmp(big.NewInt(0)) < 0 || codeOffset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+	code := ctx.Contract.Code
+	start := codeOffset.Uint64()
+	end := start + size.Uint64()
+	if end > uint64(len(code)) {
+		end = uint64(len(code))
+	}
+	if start > uint64(len(code)) {
+		start = uint64(len(code))
+	}
+	evm.memory.Set(destOffset.Uint64(), code[start:end])
+	return nil
+}
+
+func (evm *EVMEngine) executeCALLDATASIZE(ctx *ExecutionContext) error {
+	evm.stack.Push(big.NewInt(int64(len(ctx.Input))))
+	return nil
+}
+
+func (evm *EVMEngine) executeCALLDATALOAD(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+	offset := evm.stack.Pop()
+	if offset.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+	start := offset.Uint64()
+	end := start + 32
+	if end > uint64(len(ctx.Input)) {
+		end = uint64(len(ctx.Input))
+	}
+	if start > uint64(len(ctx.Input)) {
+		start = uint64(len(ctx.Input))
+	}
+	data := ctx.Input[start:end]
+	// Pad to 32 bytes
+	padded := make([]byte, 32)
+	copy(padded[32-len(data):], data)
+	evm.stack.Push(new(big.Int).SetBytes(padded))
+	return nil
+}
+
+func (evm *EVMEngine) executeCALLDATACOPY(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+	size := evm.stack.Pop()
+	offset := evm.stack.Pop()
+	destOffset := evm.stack.Pop()
+	if destOffset.Cmp(big.NewInt(0)) < 0 || offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+	start := offset.Uint64()
+	end := start + size.Uint64()
+	if end > uint64(len(ctx.Input)) {
+		end = uint64(len(ctx.Input))
+	}
+	if start > uint64(len(ctx.Input)) {
+		start = uint64(len(ctx.Input))
+	}
+	data := ctx.Input[start:end]
+	evm.memory.Set(destOffset.Uint64(), data)
+	return nil
+}
+
+func (evm *EVMEngine) executeRETURNDATASIZE() error {
+	evm.stack.Push(big.NewInt(int64(len(evm.lastReturnData))))
+	return nil
+}
+
+func (evm *EVMEngine) executeRETURNDATACOPY() error {
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+	size := evm.stack.Pop()
+	offset := evm.stack.Pop()
+	destOffset := evm.stack.Pop()
+	if destOffset.Cmp(big.NewInt(0)) < 0 || offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+	start := offset.Uint64()
+	end := start + size.Uint64()
+	if end > uint64(len(evm.lastReturnData)) {
+		end = uint64(len(evm.lastReturnData))
+	}
+	if start > uint64(len(evm.lastReturnData)) {
+		start = uint64(len(evm.lastReturnData))
+	}
+	data := evm.lastReturnData[start:end]
+	evm.memory.Set(destOffset.Uint64(), data)
+	return nil
+}
+
+func (evm *EVMEngine) executeEXTCODESIZE(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+	addr := evm.stack.Pop()
+	addrBytes := addr.Bytes()
+	var targetAddr engine.Address
+	copy(targetAddr[len(targetAddr)-len(addrBytes):], addrBytes)
+
+	var code []byte
+	if evm.registry != nil {
+		contract, err := evm.registry.Get(targetAddr)
+		if err == nil && contract != nil {
+			code = contract.Code
+		}
+	}
+
+	evm.stack.Push(big.NewInt(int64(len(code))))
+	return nil
+}
+
+func (evm *EVMEngine) executeEXTCODECOPY(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 4 {
+		return engine.ErrStackUnderflow
+	}
+	addr := evm.stack.Pop()
+	size := evm.stack.Pop()
+	offset := evm.stack.Pop()
+	destOffset := evm.stack.Pop()
+	if destOffset.Cmp(big.NewInt(0)) < 0 || offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+	addrBytes := addr.Bytes()
+	var targetAddr engine.Address
+	copy(targetAddr[len(targetAddr)-len(addrBytes):], addrBytes)
+
+	var code []byte
+	if evm.registry != nil {
+		contract, err := evm.registry.Get(targetAddr)
+		if err == nil && contract != nil {
+			code = contract.Code
+		}
+	}
+
+	start := offset.Uint64()
+	end := start + size.Uint64()
+	if end > uint64(len(code)) {
+		end = uint64(len(code))
+	}
+	if start > uint64(len(code)) {
+		start = uint64(len(code))
+	}
+	data := code[start:end]
+	evm.memory.Set(destOffset.Uint64(), data)
+	return nil
+}
+
+func (evm *EVMEngine) executeEXTCODEHASH(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+	addr := evm.stack.Pop()
+	addrBytes := addr.Bytes()
+	var targetAddr engine.Address
+	copy(targetAddr[len(targetAddr)-len(addrBytes):], addrBytes)
+
+	var code []byte
+	if evm.registry != nil {
+		contract, err := evm.registry.Get(targetAddr)
+		if err == nil && contract != nil {
+			code = contract.Code
+		}
+	}
+
+	hash := sha256.Sum256(code)
+	evm.stack.Push(new(big.Int).SetBytes(hash[:]))
+	return nil
+}
+
+func (evm *EVMEngine) executeSTATICCALL(ctx *ExecutionContext) error {
+	if evm.stack.Size() < 7 {
+		return engine.ErrStackUnderflow
+	}
+
+	// Stack order (bottom to top): gas, value, inOffset, inSize, retOffset, retSize, address
+	// Pop order (top to bottom): address, retSize, retOffset, inSize, inOffset, value, gas
+	addr := evm.stack.Pop()
+	retSize := evm.stack.Pop()
+	retOffset := evm.stack.Pop()
+	inSize := evm.stack.Pop()
+	inOffset := evm.stack.Pop()
+	value := evm.stack.Pop()
+	gas := evm.stack.Pop()
+
+	if gas.Cmp(big.NewInt(0)) < 0 || value.Cmp(big.NewInt(0)) < 0 || inOffset.Cmp(big.NewInt(0)) < 0 || inSize.Cmp(big.NewInt(0)) < 0 || retOffset.Cmp(big.NewInt(0)) < 0 || retSize.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+
+	addrBytes := addr.Bytes()
+	var targetAddr engine.Address
+	copy(targetAddr[len(targetAddr)-len(addrBytes):], addrBytes)
+
+	if evm.registry != nil {
+		_, _ = evm.registry.Get(targetAddr)
+	}
+
+	// Set return data
+	input := evm.memory.Get(inOffset.Uint64(), inSize.Uint64())
+	evm.lastReturnData = input
+
+	// Copy return data to memory
+	if retSize.Uint64() > 0 && retOffset.Uint64()+retSize.Uint64() <= uint64(len(evm.lastReturnData)) {
+		evm.memory.Set(retOffset.Uint64(), evm.lastReturnData[:retSize.Uint64()])
+	} else if retSize.Uint64() > 0 {
+		evm.memory.Set(retOffset.Uint64(), evm.lastReturnData)
+	}
+
+	// Push success (1) onto stack
+	evm.stack.Push(big.NewInt(1))
+	return nil
+}
+
+func (evm *EVMEngine) executeLOG(ctx *ExecutionContext, numTopics int) error {
+	if evm.stack.Size() < 2+numTopics {
+		return engine.ErrStackUnderflow
+	}
+
+	// Pop topics (if any)
+	var topics []engine.Hash
+	for i := 0; i < numTopics; i++ {
+		topicInt := evm.stack.Pop()
+		var topic engine.Hash
+		topicBytes := topicInt.Bytes()
+		copy(topic[:], topicBytes)
+		topics = append(topics, topic)
+	}
+
+	// Pop size and offset
+	size := evm.stack.Pop()
+	offset := evm.stack.Pop()
+
+	if offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+
+	data := evm.memory.Get(offset.Uint64(), size.Uint64())
+
+	evm.logs = append(evm.logs, engine.Log{
+		Address: ctx.Contract.Address,
+		Topics:  topics,
+		Data:    data,
+	})
+	return nil
+}
+
+
 func (evm *EVMEngine) Clone() *EVMEngine {
 	evm.mu.RLock()
 	defer evm.mu.RUnlock()
