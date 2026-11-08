@@ -539,10 +539,14 @@ func (b *Bridge) verifySignature(transaction *CrossChainTransaction, signature [
 	return nil
 }
 
-// emitEvent emits an event to registered handlers
+// emitEvent emits an event to registered handlers.
+// Must be called while holding b.mutex (write lock). Collects handlers into a copy,
+// then calls them outside the lock to prevent deadlocks if handlers call back into Bridge methods.
 func (b *Bridge) emitEvent(eventType string, data interface{}) {
 	if handlers, exists := b.eventHandlers[eventType]; exists {
-		for _, handler := range handlers {
+		handlersCopy := make([]func(interface{}), len(handlers))
+		copy(handlersCopy, handlers)
+		for _, handler := range handlersCopy {
 			go handler(data)
 		}
 	}
