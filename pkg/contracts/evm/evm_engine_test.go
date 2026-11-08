@@ -1635,3 +1635,292 @@ func TestEVMOpcodes_ByteAndSignExtend(t *testing.T) {
 	result = evm.stack.Pop()
 	assert.Equal(t, int64(0x00), result.Int64())
 }
+
+func TestEVMOpcodes_Call(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Create a target contract that returns some data
+	var targetAddr engine.Address
+	for i := 0; i < 20; i++ {
+		targetAddr[i] = byte(i + 1)
+	}
+	targetContract := &engine.Contract{
+		Address: targetAddr,
+		Code:    []byte{0x60, 0x2a, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3}, // PUSH1 0x2a, PUSH1 0x00, MSTORE, PUSH1 0x20, PUSH1 0x00, RETURN
+	}
+	err := mockRegistry.Register(targetContract)
+	assert.NoError(t, err)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Set up stack for CALL: gas, value, inOffset, inSize, retOffset, retSize, address
+	// Stack order (bottom to top): gas, value, inOffset, inSize, retOffset, retSize, address
+	// Pop order (top to bottom): address, retSize, retOffset, inSize, inOffset, value, gas
+	addrInt := new(big.Int).SetBytes(targetAddr[:])
+
+	evm.stack.Push(big.NewInt(100000)) // gas
+	evm.stack.Push(big.NewInt(0))      // value
+	evm.stack.Push(big.NewInt(0))      // inOffset
+	evm.stack.Push(big.NewInt(0))      // inSize
+	evm.stack.Push(big.NewInt(10))     // retOffset
+	evm.stack.Push(big.NewInt(32))     // retSize
+	evm.stack.Push(addrInt)            // address
+
+	err = evm.executeCALL(ctx)
+	assert.NoError(t, err)
+
+	// CALL should push 1 (success)
+	result := evm.stack.Pop()
+	assert.Equal(t, big.NewInt(1), result)
+
+	// Return data should have been copied to memory
+	retData := evm.memory.Get(10, 32)
+	assert.NotEmpty(t, retData)
+
+	// Test CALL to non-existent contract
+	evm.stack.Push(big.NewInt(100000)) // gas
+	evm.stack.Push(big.NewInt(0))      // value
+	evm.stack.Push(big.NewInt(0))      // inOffset
+	evm.stack.Push(big.NewInt(0))      // inSize
+	evm.stack.Push(big.NewInt(20))     // retOffset
+	evm.stack.Push(big.NewInt(32))     // retSize
+
+	var nonexistentAddr engine.Address
+	for i := 0; i < 20; i++ {
+		nonexistentAddr[i] = byte(i + 100)
+	}
+	nonexistentAddrInt := new(big.Int).SetBytes(nonexistentAddr[:])
+	evm.stack.Push(nonexistentAddrInt) // address
+
+	err = evm.executeCALL(ctx)
+	assert.NoError(t, err)
+
+	// CALL should push 0 (failure)
+	result = evm.stack.Pop()
+	assert.Equal(t, big.NewInt(0), result)
+}
+
+func TestEVMOpcodes_Create(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{Address: generateRandomAddress()},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	evm.gasMeter = engine.NewGasMeter(1000000)
+
+	// Set up stack for CREATE: value, inOffset, inSize
+	evm.stack.Push(big.NewInt(0))      // value
+	evm.stack.Push(big.NewInt(0))      // offset
+	evm.stack.Push(big.NewInt(0))      // size
+
+	err := evm.executeCREATE(ctx)
+	assert.NoError(t, err)
+
+	// CREATE pushes new contract address onto stack
+	result := evm.stack.Pop()
+	assert.NotEqual(t, big.NewInt(0), result)
+	assert.Equal(t, 0, evm.stack.Size()) // Stack should be empty after popping
+}
+
+func TestEVMOpcodes_Suicide(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Set up contract with balance
+	contractAddr := generateRandomAddress()
+	ctx := &ExecutionContext{
+		Contract: &engine.Contract{
+			Address:  contractAddr,
+			Balance:  big.NewInt(1000),
+		},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	evm.registry = mockRegistry
+
+	// Register beneficiary contract
+	beneficiaryAddr := generateRandomAddress()
+	beneficiaryContract := &engine.Contract{
+		Address: beneficiaryAddr,
+		Balance: big.NewInt(0),
+	}
+	err := mockRegistry.Register(beneficiaryContract)
+	assert.NoError(t, err)
+
+	// Set up stack for SUICIDE: beneficiary address
+	addrInt := new(big.Int).SetBytes(beneficiaryAddr[:])
+	evm.stack.Push(addrInt)
+
+	err = evm.executeSUICIDE(ctx)
+	assert.NoError(t, err)
+
+	// Contract balance should be zeroed
+	assert.Equal(t, big.NewInt(0).Int64(), ctx.Contract.Balance.Int64())
+
+	// Beneficiary should have received the balance
+	updatedContract, err := mockRegistry.Get(beneficiaryAddr)
+	assert.NoError(t, err)
+	assert.Equal(t, big.NewInt(1000).Int64(), updatedContract.Balance.Int64())
+}
+
+func TestEVMOpcodes_GasPrice(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test GASPRICE with zero gas price
+	evm.stack.Push(big.NewInt(0)) // dummy
+	evm.stack.Pop()
+	err := evm.executeGASPRICE(ctx)
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(0), result.Int64())
+
+	// Test GASPRICE with non-zero gas price
+	ctx.GasPrice = big.NewInt(20000000000) // 20 gwei
+	evm.stack.Push(big.NewInt(0)) // dummy
+	evm.stack.Pop()
+	err = evm.executeGASPRICE(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(20000000000), result.Int64())
+}
+
+func TestEVMOpcodes_EdgeCases(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test stack underflow for opcodes requiring stack items
+	// ADD requires 2 items
+	err := evm.executeADD()
+	assert.Error(t, err)
+
+	// MUL requires 2 items
+	evm.stack.Push(big.NewInt(1)) // only 1 item
+	err = evm.executeMUL()
+	assert.Error(t, err)
+
+	// SLOAD requires 1 item
+	evm.stack.Push(big.NewInt(0)) // reset to 1 item
+	err = evm.executeSLOAD(ctx)
+	assert.NoError(t, err)
+
+	// SSTORE requires 2 items
+	evm.stack.Push(big.NewInt(0)) // key
+	evm.stack.Push(big.NewInt(0)) // value
+	err = evm.executeSSTORE(ctx)
+	assert.NoError(t, err)
+
+	// Set up contract code with enough bytes for jump tests
+	ctx.Contract.Code = make([]byte, 100)
+
+	// JUMP requires valid destination - jump beyond code length
+	evm.stack.Push(big.NewInt(999999)) // invalid jump destination
+	err = evm.executeJUMP(ctx)
+	assert.Error(t, err)
+
+	// JUMPI with zero condition should not jump
+	evm.stack.Push(big.NewInt(10))   // dest within code
+	evm.stack.Push(big.NewInt(0))    // condition (zero)
+	err = evm.executeJUMPI(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(0), evm.pc) // pc should not change
+
+	// JUMPI with non-zero condition should jump
+	evm.stack.Push(big.NewInt(42))   // dest within code
+	evm.stack.Push(big.NewInt(1))    // condition (non-zero)
+	err = evm.executeJUMPI(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(42), evm.pc)
+
+	// EXTCODESIZE for non-existent contract returns 0
+	var nonExistentAddr engine.Address
+	for i := 0; i < 20; i++ {
+		nonExistentAddr[i] = byte(i + 200)
+	}
+	addrInt := new(big.Int).SetBytes(nonExistentAddr[:])
+	evm.stack.Push(addrInt)
+	err = evm.executeEXTCODESIZE(ctx)
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(0), result.Int64())
+
+	// EXTCODEHASH for non-existent contract returns hash of empty code
+	evm.stack.Push(addrInt)
+	err = evm.executeEXTCODEHASH(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	// SHA256 of empty code
+	expectedHash := sha256.Sum256([]byte{})
+	assert.Equal(t, expectedHash[:], result.Bytes())
+
+	// CALLDATASIZE with empty input
+	evm.stack.Push(big.NewInt(0)) // dummy
+	evm.stack.Pop()
+	err = evm.executeCALLDATASIZE(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0), result.Int64())
+
+	// RETURNDATASIZE with empty return data
+	err = evm.executeRETURNDATASIZE()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0), result.Int64())
+}

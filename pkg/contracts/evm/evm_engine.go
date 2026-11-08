@@ -856,8 +856,8 @@ func (evm *EVMEngine) executeJUMPI(ctx *ExecutionContext) error {
 		return engine.ErrStackUnderflow
 	}
 
-	dest := evm.stack.Pop()
 	condition := evm.stack.Pop()
+	dest := evm.stack.Pop()
 
 	if condition.Sign() != 0 { // Non-zero condition
 		if dest.Cmp(big.NewInt(0)) < 0 || dest.Uint64() >= uint64(len(ctx.Contract.Code)) {
