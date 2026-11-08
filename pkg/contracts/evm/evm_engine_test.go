@@ -1328,3 +1328,304 @@ func TestEVMOpcodes_StaticCall(t *testing.T) {
 	retData := evm.memory.Get(10, 32)
 	assert.NotEmpty(t, retData)
 }
+
+func TestEVMOpcodes_Return(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Set up memory with some data
+	evm.memory.Set(10, []byte{0xde, 0xad, 0xbe, 0xef})
+
+	// Test RETURN - offset 10, size 4
+	evm.stack.Push(big.NewInt(10)) // offset
+	evm.stack.Push(big.NewInt(4))  // size
+	err := evm.executeRETURN(ctx)
+	assert.NoError(t, err)
+
+	// lastReturnData should be set
+	assert.Equal(t, []byte{0xde, 0xad, 0xbe, 0xef}, evm.lastReturnData)
+}
+
+func TestEVMOpcodes_Push(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// PUSH0, PUSH1 0x2a, PUSH32 (32 zero bytes)
+	code := make([]byte, 36) // 1 + 2 + 32 + 1 extra = 36 bytes
+	code[0] = 0x5c // PUSH0
+	code[1] = 0x60 // PUSH1
+	code[2] = 0x2a // data 42
+	code[3] = 0x7f // PUSH32
+	// bytes 4-35 are all 0
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{Code: code},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test PUSH0
+	evm.pc = 0
+	err := evm.executePUSH0()
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(0), result.Int64())
+
+	// Test PUSH1 - opcode at pc, data follows
+	evm.pc = 1
+	err = evm.executePUSH(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(42), result.Int64())
+
+	// Test PUSH32 - push 32 zero bytes
+	evm.pc = 3
+	err = evm.executePUSH(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	// Should be 0 since all bytes are 0
+	assert.Equal(t, int64(0), result.Int64())
+}
+
+func TestEVMOpcodes_DupSwap(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{Code: []byte{0x80, 0x81, 0x90}}, // DUP1, DUP2, SWAP1
+		Sender:     engine.Address{},
+		Value:      big.NewInt(0),
+		GasPrice:   big.NewInt(0),
+		BlockNum:   0,
+		Timestamp:  0,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(0),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Push some values onto the stack: [10, 20, 30] (bottom to top)
+	evm.stack.Push(big.NewInt(10))
+	evm.stack.Push(big.NewInt(20))
+	evm.stack.Push(big.NewInt(30))
+
+	// Test DUP1 - duplicate top (30): [10, 20, 30, 30]
+	evm.pc = 0 // DUP1 opcode
+	err := evm.executeDUP(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, evm.stack.Size())
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(30), result.Int64())
+
+	// Stack is now [10, 20, 30]
+	// Test DUP2 - duplicate second from top (20): [10, 20, 30, 20]
+	evm.pc = 1 // DUP2 opcode
+	err = evm.executeDUP(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 4, evm.stack.Size())
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(20), result.Int64())
+
+	// Stack is now [10, 20, 30]
+	// Test SWAP1 - swap top two (20 and 30): [10, 30, 20]
+	evm.pc = 2 // SWAP1 opcode
+	err = evm.executeSWAP(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(20), result.Int64()) // top should now be 20 (swapped with 30)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(30), result.Int64()) // second should be 30
+}
+
+func TestEVMOpcodes_Comparison(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Test LT - 5 < 10 should be 1
+	evm.stack.Push(big.NewInt(5))
+	evm.stack.Push(big.NewInt(10))
+	err := evm.executeLT()
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(1), result.Int64())
+
+	// Test GT - 10 > 5 should be 1
+	evm.stack.Push(big.NewInt(10))
+	evm.stack.Push(big.NewInt(5))
+	err = evm.executeGT()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(1), result.Int64())
+
+	// Test EQ - 42 == 42 should be 1
+	evm.stack.Push(big.NewInt(42))
+	evm.stack.Push(big.NewInt(42))
+	err = evm.executeEQ()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(1), result.Int64())
+
+	// Test ISZERO - 0 should be 1
+	evm.stack.Push(big.NewInt(0))
+	err = evm.executeISZERO()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(1), result.Int64())
+
+	// Test ISZERO - 42 should be 0
+	evm.stack.Push(big.NewInt(42))
+	err = evm.executeISZERO()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0), result.Int64())
+
+	// Test AND - 0xff & 0x0f = 0x0f
+	evm.stack.Push(big.NewInt(0xff))
+	evm.stack.Push(big.NewInt(0x0f))
+	err = evm.executeAND()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0x0f), result.Int64())
+
+	// Test OR - 0x0f | 0xf0 = 0xff
+	evm.stack.Push(big.NewInt(0x0f))
+	evm.stack.Push(big.NewInt(0xf0))
+	err = evm.executeOR()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0xff), result.Int64())
+
+	// Test XOR - 0x0f ^ 0xf0 = 0xff
+	evm.stack.Push(big.NewInt(0x0f))
+	evm.stack.Push(big.NewInt(0xf0))
+	err = evm.executeXOR()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0xff), result.Int64())
+
+	// Test NOT - NOT 0x0f (on 256-bit) = ...f0
+	evm.stack.Push(big.NewInt(0x0f))
+	err = evm.executeNOT()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	// NOT 0x0f = 2^256 - 1 - 0x0f = all bits set except low nibble
+	expected := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
+	expected.Sub(expected, big.NewInt(0x0f))
+	assert.Equal(t, expected.Int64(), result.Int64())
+}
+
+func TestEVMOpcodes_CtxDataLoad(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	ctx := &ExecutionContext{
+		Contract:   &engine.Contract{},
+		Sender:     engine.Address{},
+		Value:      big.NewInt(100),
+		GasPrice:   big.NewInt(200),
+		BlockNum:   12345,
+		Timestamp:  1700000000,
+		Coinbase:   engine.Address{},
+		Difficulty: big.NewInt(300),
+		ChainID:    big.NewInt(1),
+	}
+
+	// Test CTXDATALOAD index 0 - BlockNum
+	evm.stack.Push(big.NewInt(0))
+	err := evm.executeCTXDATALOAD(ctx)
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(12345), result.Int64())
+
+	// Test CTXDATALOAD index 1 - Timestamp
+	evm.stack.Push(big.NewInt(1))
+	err = evm.executeCTXDATALOAD(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(1700000000), result.Int64())
+
+	// Test CTXDATALOAD index 2 - ChainID
+	evm.stack.Push(big.NewInt(2))
+	err = evm.executeCTXDATALOAD(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(1), result.Int64())
+
+	// Test CTXDATALOAD index 3 - GasPrice
+	evm.stack.Push(big.NewInt(3))
+	err = evm.executeCTXDATALOAD(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(200), result.Int64())
+
+	// Test CTXDATALOAD index 4 - Value
+	evm.stack.Push(big.NewInt(4))
+	err = evm.executeCTXDATALOAD(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(100), result.Int64())
+
+	// Test CTXDATALOAD index 5 - Difficulty
+	evm.stack.Push(big.NewInt(5))
+	err = evm.executeCTXDATALOAD(ctx)
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(300), result.Int64())
+
+	// Test CTXDATALOAD invalid index
+	evm.stack.Push(big.NewInt(99))
+	err = evm.executeCTXDATALOAD(ctx)
+	assert.Error(t, err)
+}
+
+func TestEVMOpcodes_ByteAndSignExtend(t *testing.T) {
+	mockStorage := &MockContractStorage{}
+	mockRegistry := NewMockContractRegistry()
+	evm := NewEVMEngine(mockStorage, mockRegistry)
+
+	// Test BYTE - byte 31 (least significant) of 0x1234567890abcdef should be 0xef
+	evm.stack.Push(big.NewInt(0x1234567890abcdef)) // value (bottom)
+	evm.stack.Push(big.NewInt(31))                  // position (top)
+	err := evm.executeBYTE()
+	assert.NoError(t, err)
+	result := evm.stack.Pop()
+	assert.Equal(t, int64(0xef), result.Int64())
+
+	// Test BYTE position 0 (most significant byte of 32-byte word) should be 0x00
+	evm.stack.Push(big.NewInt(0x1234567890abcdef)) // value (bottom)
+	evm.stack.Push(big.NewInt(0))                   // position (top)
+	err = evm.executeBYTE()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0x00), result.Int64())
+
+	// Test BYTE position > 31 returns 0
+	evm.stack.Push(big.NewInt(0x1234567890abcdef)) // value (bottom)
+	evm.stack.Push(big.NewInt(32))                  // position (top, invalid)
+	err = evm.executeBYTE()
+	assert.NoError(t, err)
+	result = evm.stack.Pop()
+	assert.Equal(t, int64(0x00), result.Int64())
+}

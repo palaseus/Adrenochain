@@ -955,8 +955,10 @@ func (evm *EVMEngine) executeRETURN(ctx *ExecutionContext) error {
 		return engine.ErrStackUnderflow
 	}
 
-	offset := evm.stack.Pop()
+	// Stack order (bottom to top): offset, size
+	// Pop order (top to bottom): size, offset
 	size := evm.stack.Pop()
+	offset := evm.stack.Pop()
 
 	if offset.Cmp(big.NewInt(0)) < 0 || size.Cmp(big.NewInt(0)) < 0 {
 		return engine.ErrInvalidInstruction
@@ -1187,6 +1189,11 @@ func (evm *EVMEngine) executeMSTORE8() error {
 	return nil
 }
 
+func (evm *EVMEngine) executePUSH0() error {
+	evm.stack.Push(big.NewInt(0))
+	return nil
+}
+
 func (evm *EVMEngine) executePUSH(ctx *ExecutionContext) error {
 	opcode := ctx.Contract.Code[evm.pc]
 	size := int(opcode - 0x60 + 1)
@@ -1287,6 +1294,8 @@ func (evm *EVMEngine) executeBYTE() error {
 	if evm.stack.Size() < 2 {
 		return engine.ErrStackUnderflow
 	}
+	// Stack order (bottom to top): value, position
+	// Pop order (top to bottom): position, value
 	position := evm.stack.Pop()
 	value := evm.stack.Pop()
 	if position.Uint64() > 31 {
@@ -1825,6 +1834,10 @@ func (evm *EVMEngine) Clone() *EVMEngine {
 		maxContractSize: evm.maxContractSize,
 		maxGasLimit:     evm.maxGasLimit,
 		minGasLimit:     evm.minGasLimit,
+
+		// Copy execution state
+		lastReturnData: evm.lastReturnData,
+		logs:           evm.logs,
 	}
 
 	return clone
