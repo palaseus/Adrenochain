@@ -1270,7 +1270,8 @@ func (mbo *MainBenchmarkOrchestrator) GenerateSummary() string {
 
 // PrintSummary prints the benchmark summary to console
 func (mbo *MainBenchmarkOrchestrator) PrintSummary() {
-
+	summary := mbo.GenerateSummary()
+	fmt.Println(summary)
 }
 
 // GenerateComprehensiveReport generates a comprehensive benchmark report

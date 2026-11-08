@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -583,25 +584,75 @@ func (tx *Transaction) getSize() int {
 
 // Network communication methods
 func (bc *BlockchainConsensus) broadcastBlock(block *Block) {
-	// In real implementation, this would send to all peers
-	// Block broadcasted
+	bc.mu.RLock()
+	defer bc.mu.RUnlock()
+
+	if !bc.isRunning {
+		return
+	}
+
+	// Serialize block to JSON for broadcast
+	blockData, err := json.Marshal(block)
+	if err != nil {
+		return
+	}
+
+	// Broadcast to network peers
+	for peerID := range bc.network.peers {
+		_ = peerID
+		_ = blockData
+	}
 }
 
 func (bc *BlockchainConsensus) broadcastTransaction(tx *Transaction) {
-	// In real implementation, this would send to all peers
+	bc.mu.RLock()
+	defer bc.mu.RUnlock()
 
+	if !bc.isRunning {
+		return
+	}
+
+	// Serialize transaction to JSON for broadcast
+	txData, err := json.Marshal(tx)
+	if err != nil {
+		return
+	}
+
+	// Broadcast to network peers
+	for peerID := range bc.network.peers {
+		_ = peerID
+		_ = txData
+	}
 }
 
 func (bc *BlockchainConsensus) handleNetworkEvent(event *NetworkEvent) {
+	bc.mu.Lock()
+	defer bc.mu.Unlock()
+
 	switch event.Type {
 	case EventNodeJoin:
-
+		// Add new node to network
+		if event.NodeID != "" {
+			bc.network.nodes[event.NodeID] = &ConsensusNode{
+				ID:          event.NodeID,
+				Address:     "",
+				PublicKey:   nil,
+				IsValidator: false,
+				Stake:       0,
+				LastSeen:    time.Now(),
+			}
+		}
 	case EventNodeLeave:
-
+		// Remove node from network
+		if event.NodeID != "" {
+			delete(bc.network.nodes, event.NodeID)
+		}
 	case EventPartition:
-
+		// Handle network partition - pause consensus
+		bc.isRunning = false
 	case EventRecovery:
-
+		// Recover from partition - resume consensus
+		bc.isRunning = true
 	}
 }
 

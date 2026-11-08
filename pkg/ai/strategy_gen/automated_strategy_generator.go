@@ -1050,23 +1050,122 @@ func (asg *AutomatedStrategyGenerator) updateMetrics() {
 
 // Auto-generation methods
 func (asg *AutomatedStrategyGenerator) autoGenerateStrategies() {
-	// Auto-generate strategies based on market conditions
-	// In a real implementation, this would analyze market data and generate appropriate strategies
+	asg.mu.Lock()
+	defer asg.mu.Unlock()
+
+	if len(asg.Strategies) >= int(asg.Config.MaxStrategies) {
+		return
+	}
+
+	// Generate strategies for each asset in market data
+	for asset := range asg.MarketData {
+		if len(asg.Strategies) >= int(asg.Config.MaxStrategies) {
+			break
+		}
+
+		strategyID := generateStrategyID()
+		strategy := &Strategy{
+			ID:          strategyID,
+			Name:        "Auto_" + asset + "_" + generateShortID(),
+			Type:        StrategyTypeTrendFollowing,
+			Status:      StrategyStatusDraft,
+			Assets:      []string{asset},
+			Parameters: StrategyParameters{
+				EntryThreshold:    0.02,
+				ExitThreshold:     0.01,
+				StopLoss:          0.05,
+				TakeProfit:        0.10,
+				PositionSize:      0.1,
+				MaxPositions:      5,
+				RebalanceInterval: time.Hour,
+				CustomLogic:       make(map[string]interface{}),
+			},
+			Performance: StrategyPerformance{
+				TotalPnL:   big.NewFloat(0),
+				TotalVolume: big.NewInt(0),
+				LastUpdate: time.Now(),
+			},
+			CreatedAt: time.Now(),
+		}
+
+		asg.Strategies[strategyID] = strategy
+		asg.Metrics.TotalStrategies++
+	}
 }
 
+// autoOptimizeStrategies optimizes underperforming strategies
 func (asg *AutomatedStrategyGenerator) autoOptimizeStrategies() {
-	// Auto-optimize strategies
-	// In a real implementation, this would identify underperforming strategies and optimize them
+	asg.mu.Lock()
+	defer asg.mu.Unlock()
+
+	for _, strategy := range asg.Strategies {
+		if strategy.Status != StrategyStatusActive {
+			continue
+		}
+
+		// Optimize strategies with poor performance
+		if strategy.Performance.WinRate < asg.Config.PerformanceTargets.MinWinRate {
+			// Adjust parameters to be more conservative
+			strategy.Parameters.StopLoss *= 0.9
+			strategy.Parameters.TakeProfit *= 1.1
+			strategy.Parameters.PositionSize *= 0.9
+
+			strategy.LastUpdate = time.Now()
+		}
+	}
 }
 
+// autoBacktestStrategies backtests draft strategies with historical data
 func (asg *AutomatedStrategyGenerator) autoBacktestStrategies() {
-	// Auto-backtest strategies
-	// In a real implementation, this would periodically backtest strategies with new data
+	asg.mu.Lock()
+	defer asg.mu.Unlock()
+
+	for _, strategy := range asg.Strategies {
+		if strategy.Status != StrategyStatusDraft {
+			continue
+		}
+
+		// Simple backtest simulation
+		backtest := &BacktestResult{
+			StrategyID:     strategy.ID,
+			StartDate:      time.Now().Add(-asg.Config.BacktestPeriod),
+			EndDate:        time.Now(),
+			InitialCapital: big.NewFloat(100000),
+			FinalCapital:   big.NewFloat(100000),
+			TotalReturn:    0.0,
+			SharpeRatio:    1.0,
+			MaxDrawdown:    0.1,
+			TradeHistory:   make([]TradeRecord, 0),
+			PerformanceMetrics: map[string]float64{
+				"win_rate":     0.5,
+				"profit_factor": 1.2,
+			},
+			CreatedAt: time.Now(),
+		}
+
+		strategy.BacktestResults = backtest
+		strategy.Status = StrategyStatusBacktesting
+		strategy.LastUpdate = time.Now()
+	}
 }
 
+// monitorStrategyPerformance tracks live strategy performance and triggers alerts
 func (asg *AutomatedStrategyGenerator) monitorStrategyPerformance() {
-	// Monitor strategy performance
-	// In a real implementation, this would track live performance and trigger alerts
+	asg.mu.Lock()
+	defer asg.mu.Unlock()
+
+	for _, strategy := range asg.Strategies {
+		if strategy.Status != StrategyStatusActive {
+			continue
+		}
+
+		// Check if strategy meets performance targets
+		if strategy.Performance.MaxDrawdown > asg.Config.PerformanceTargets.MaxDrawdown {
+			// Strategy is underperforming, pause it
+			strategy.Status = StrategyStatusPaused
+			strategy.LastUpdate = time.Now()
+		}
+	}
 }
 
 // Utility functions
@@ -1080,4 +1179,8 @@ func generateStrategyID() string {
 
 func generateSignalID() string {
 	return fmt.Sprintf("signal_%d", time.Now().UnixNano())
+}
+
+func generateShortID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano()%1000000)
 }

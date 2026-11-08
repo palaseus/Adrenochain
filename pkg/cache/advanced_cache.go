@@ -335,9 +335,41 @@ func (ac *AdvancedCache) performMaintenance() {
 
 // balanceCacheLevels redistributes items between cache levels
 func (ac *AdvancedCache) balanceCacheLevels() {
-	// Move frequently accessed items to higher levels
-	// Move rarely accessed items to lower levels
-	// This is a simplified implementation
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
+
+	// Move frequently accessed items from L2 to L1
+	for key, elem := range ac.l2Cache.cache {
+		node := elem.Value.(*LRUNode)
+		item := node.Value
+		if item.Hits > 100 && ac.l1Cache.Size() < ac.config.L1Size {
+			item.Level = LevelL1
+			ac.l1Cache.Set(key, item)
+			ac.l2Cache.Delete(key)
+		}
+	}
+
+	// Move rarely accessed items from L1 to L2
+	for key, elem := range ac.l1Cache.cache {
+		node := elem.Value.(*LRUNode)
+		item := node.Value
+		if item.Hits < 10 && ac.l2Cache.Size() < ac.config.L2Size {
+			item.Level = LevelL2
+			ac.l2Cache.Set(key, item)
+			ac.l1Cache.Delete(key)
+		}
+	}
+
+	// Move rarely accessed items from L2 to L3
+	for key, elem := range ac.l2Cache.cache {
+		node := elem.Value.(*LRUNode)
+		item := node.Value
+		if item.Hits < 5 && ac.l3Cache.Size() < ac.config.L3Size {
+			item.Level = LevelL3
+			ac.l3Cache.Set(key, item)
+			ac.l2Cache.Delete(key)
+		}
+	}
 }
 
 // generateCacheKey generates a cache key from multiple components

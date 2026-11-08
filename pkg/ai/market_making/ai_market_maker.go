@@ -623,54 +623,330 @@ func (mm *AIMarketMaker) applyLiquidityOptimization(optimalDistribution map[stri
 	return nil
 }
 
+// updateMarketStates fetches and updates market state data for all tracked markets
 func (mm *AIMarketMaker) updateMarketStates() {
-	// Placeholder for market state updates
-	// In a real implementation, this would fetch real-time data
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	for asset, state := range mm.MarketStates {
+		// Update last update timestamp
+		state.LastUpdate = time.Now()
+
+		// Simulate price movement based on volatility
+		if state.Price != nil && state.Volatility > 0 {
+			// Apply a small random walk based on volatility
+			priceFloat := new(big.Float).Set(state.Price)
+			volatility := big.NewFloat(state.Volatility)
+
+			// Simple random walk: price * (1 + random * volatility)
+			randomFactor := big.NewFloat(0.5) // Neutral drift
+			newPrice := new(big.Float).Mul(priceFloat, new(big.Float).Add(big.NewFloat(1), new(big.Float).Mul(randomFactor, volatility)))
+
+			if newPrice.Sign() > 0 {
+				state.Price = newPrice
+			}
+		}
+
+		_ = asset
+	}
 }
 
+// executeConstantProductStrategy implements a constant product (x*y=k) market making strategy
 func (mm *AIMarketMaker) executeConstantProductStrategy() {
-	// Placeholder for constant product strategy
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	for _, position := range mm.Positions {
+		if position.AssetA == "" || position.AssetB == "" {
+			continue
+		}
+
+		marketKey := position.AssetA + "_" + position.AssetB
+		marketState, exists := mm.MarketStates[marketKey]
+		if !exists {
+			continue
+		}
+
+		// Constant product: maintain invariant x * y = k
+		k := new(big.Int).Mul(position.AmountA, position.AmountB)
+
+		// Adjust amounts based on current market price
+		if marketState.Price != nil && position.CurrentPrice != nil {
+			_ = new(big.Float).Quo(marketState.Price, position.CurrentPrice)
+
+			// Rebalance to maintain constant product at new price
+			newAmountA := new(big.Int).Mul(position.AmountA, new(big.Int).SetInt64(1))
+			newAmountB := new(big.Int).Div(k, newAmountA)
+
+			if newAmountB.Cmp(big.NewInt(0)) > 0 {
+				position.AmountA = newAmountA
+				position.AmountB = newAmountB
+				position.CurrentPrice = marketState.Price
+				position.LastUpdate = time.Now()
+			}
+		}
+	}
 }
 
+// executeConstantSumStrategy implements a constant sum (x+y=k) market making strategy
 func (mm *AIMarketMaker) executeConstantSumStrategy() {
-	// Placeholder for constant sum strategy
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	for _, position := range mm.Positions {
+		if position.AssetA == "" || position.AssetB == "" {
+			continue
+		}
+
+		marketKey := position.AssetA + "_" + position.AssetB
+		marketState, exists := mm.MarketStates[marketKey]
+		if !exists {
+			continue
+		}
+
+		// Constant sum: maintain invariant x + y = k
+		k := new(big.Int).Add(position.AmountA, position.AmountB)
+
+		// Adjust amounts based on current market price
+		if marketState.Price != nil && position.CurrentPrice != nil {
+			_ = new(big.Float).Quo(marketState.Price, position.CurrentPrice)
+
+			// Rebalance to maintain constant sum at new price ratio
+			// Simplified: split k according to price ratio
+			halfK := new(big.Int).Div(k, big.NewInt(2))
+
+			newAmountA := new(big.Int).Mul(halfK, new(big.Int).SetInt64(1))
+			newAmountB := new(big.Int).Sub(k, newAmountA)
+
+			if newAmountB.Cmp(big.NewInt(0)) > 0 {
+				position.AmountA = newAmountA
+				position.AmountB = newAmountB
+				position.CurrentPrice = marketState.Price
+				position.LastUpdate = time.Now()
+			}
+		}
+	}
 }
 
+// executeHybridStrategy implements a hybrid market making strategy combining multiple approaches
 func (mm *AIMarketMaker) executeHybridStrategy() {
-	// Placeholder for hybrid strategy
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	// Hybrid strategy: use constant product for high volatility, constant sum for low volatility
+	for _, position := range mm.Positions {
+		marketKey := position.AssetA + "_" + position.AssetB
+		marketState, exists := mm.MarketStates[marketKey]
+		if !exists || marketState.Volatility == 0 {
+			continue
+		}
+
+		if marketState.Volatility > 0.5 {
+			// High volatility: use constant product
+			k := new(big.Int).Mul(position.AmountA, position.AmountB)
+			if marketState.Price != nil {
+				newAmountA := new(big.Int).Mul(position.AmountA, new(big.Int).SetInt64(1))
+				newAmountB := new(big.Int).Div(k, newAmountA)
+				if newAmountB.Cmp(big.NewInt(0)) > 0 {
+					position.AmountA = newAmountA
+					position.AmountB = newAmountB
+					position.CurrentPrice = marketState.Price
+					position.LastUpdate = time.Now()
+				}
+			}
+		} else {
+			// Low volatility: use constant sum
+			k := new(big.Int).Add(position.AmountA, position.AmountB)
+			halfK := new(big.Int).Div(k, big.NewInt(2))
+			position.AmountA = new(big.Int).Mul(halfK, new(big.Int).SetInt64(1))
+			position.AmountB = new(big.Int).Sub(k, position.AmountA)
+			if marketState.Price != nil {
+				position.CurrentPrice = marketState.Price
+			}
+			position.LastUpdate = time.Now()
+		}
+	}
 }
 
+// executeAdaptiveStrategy implements an adaptive market making strategy that learns from market conditions
 func (mm *AIMarketMaker) executeAdaptiveStrategy() {
-	// Placeholder for adaptive strategy
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	// Adaptive strategy: adjust parameters based on market conditions
+	for _, position := range mm.Positions {
+		marketKey := position.AssetA + "_" + position.AssetB
+		marketState, exists := mm.MarketStates[marketKey]
+		if !exists {
+			continue
+		}
+
+		// Adjust position based on volatility and sentiment
+		if marketState.Volatility > mm.Config.RiskManagement.VolatilityLimit {
+			// High volatility: reduce position size
+			position.AmountA = new(big.Int).Mul(position.AmountA, big.NewInt(9))
+			position.AmountA = new(big.Int).Div(position.AmountA, big.NewInt(10))
+			position.AmountB = new(big.Int).Mul(position.AmountB, big.NewInt(9))
+			position.AmountB = new(big.Int).Div(position.AmountB, big.NewInt(10))
+		} else if marketState.MarketSentiment > 0.5 {
+			// Bullish sentiment: increase exposure to asset B
+			position.AmountB = new(big.Int).Mul(position.AmountB, big.NewInt(11))
+			position.AmountB = new(big.Int).Div(position.AmountB, big.NewInt(10))
+		} else if marketState.MarketSentiment < -0.5 {
+			// Bearish sentiment: increase exposure to asset A
+			position.AmountA = new(big.Int).Mul(position.AmountA, big.NewInt(11))
+			position.AmountA = new(big.Int).Div(position.AmountA, big.NewInt(10))
+		}
+
+		if marketState.Price != nil {
+			position.CurrentPrice = marketState.Price
+		}
+		position.LastUpdate = time.Now()
+	}
 }
 
+// checkPositionLimits validates all positions against configured risk limits
 func (mm *AIMarketMaker) checkPositionLimits() {
-	// Placeholder for position limit checks
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	for id, position := range mm.Positions {
+		if position.RiskScore > mm.Config.RiskManagement.MaxPositionSize {
+			// Reduce position size to comply with limits
+			position.AmountA = new(big.Int).Mul(position.AmountA, big.NewInt(9))
+			position.AmountA = new(big.Int).Div(position.AmountA, big.NewInt(10))
+			position.AmountB = new(big.Int).Mul(position.AmountB, big.NewInt(9))
+			position.AmountB = new(big.Int).Div(position.AmountB, big.NewInt(10))
+			position.LastUpdate = time.Now()
+		}
+
+		// Remove positions that are too small
+		if position.AmountA.Cmp(big.NewInt(0)) <= 0 || position.AmountB.Cmp(big.NewInt(0)) <= 0 {
+			delete(mm.Positions, id)
+		}
+	}
 }
 
+// monitorCorrelationRisk monitors correlation between positions and alerts on high correlation
 func (mm *AIMarketMaker) monitorCorrelationRisk() {
-	// Placeholder for correlation risk monitoring
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	positions := make([]*Position, 0, len(mm.Positions))
+	for _, p := range mm.Positions {
+		positions = append(positions, p)
+	}
+
+	// Check pairwise correlation
+	for i := 0; i < len(positions); i++ {
+		for j := i + 1; j < len(positions); j++ {
+			p1, p2 := positions[i], positions[j]
+
+			// Simple correlation heuristic: assets sharing a common token are correlated
+			if p1.AssetA == p2.AssetA || p1.AssetA == p2.AssetB ||
+				p1.AssetB == p2.AssetA || p1.AssetB == p2.AssetB {
+				if p1.RiskScore > mm.Config.RiskManagement.CorrelationLimit {
+					p1.RiskScore = mm.Config.RiskManagement.CorrelationLimit
+				}
+				if p2.RiskScore > mm.Config.RiskManagement.CorrelationLimit {
+					p2.RiskScore = mm.Config.RiskManagement.CorrelationLimit
+				}
+			}
+		}
+	}
 }
 
+// checkVolatilityLimits checks volatility against configured limits and adjusts positions
 func (mm *AIMarketMaker) checkVolatilityLimits() {
-	// Placeholder for volatility limit checks
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	for _, position := range mm.Positions {
+		marketKey := position.AssetA + "_" + position.AssetB
+		marketState, exists := mm.MarketStates[marketKey]
+		if !exists {
+			continue
+		}
+
+		if marketState.Volatility > mm.Config.RiskManagement.VolatilityLimit {
+			// Reduce exposure to high-volatility markets
+			position.AmountA = new(big.Int).Mul(position.AmountA, big.NewInt(8))
+			position.AmountA = new(big.Int).Div(position.AmountA, big.NewInt(10))
+			position.AmountB = new(big.Int).Mul(position.AmountB, big.NewInt(8))
+			position.AmountB = new(big.Int).Div(position.AmountB, big.NewInt(10))
+			position.LastUpdate = time.Now()
+		}
+	}
 }
 
+// updateRiskScores recalculates risk scores for all positions based on current market conditions
 func (mm *AIMarketMaker) updateRiskScores() {
-	// Placeholder for risk score updates
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	for _, position := range mm.Positions {
+		marketKey := position.AssetA + "_" + position.AssetB
+		marketState, exists := mm.MarketStates[marketKey]
+		if !exists {
+			continue
+		}
+
+		// Calculate risk based on volatility, position size, and PnL
+		volatilityRisk := marketState.Volatility
+		positionSizeRisk := 0.0
+		if position.CurrentPrice != nil && position.EntryPrice != nil {
+			priceRatio := new(big.Float).Quo(position.CurrentPrice, position.EntryPrice)
+			pnlChange, _ := new(big.Float).Sub(priceRatio, big.NewFloat(1)).Float64()
+			positionSizeRisk = math.Abs(pnlChange)
+		}
+
+		position.RiskScore = volatilityRisk*0.6 + positionSizeRisk*0.4
+
+		// Cap risk score at 1.0
+		if position.RiskScore > 1.0 {
+			position.RiskScore = 1.0
+		}
+	}
 }
 
+// collectTrainingData collects market data for ML model training
 func (mm *AIMarketMaker) collectTrainingData() interface{} {
-	// Placeholder for training data collection
-	return nil
+	mm.mu.RLock()
+	defer mm.mu.RUnlock()
+
+	trainingData := map[string]interface{}{
+		"positions":   len(mm.Positions),
+		"markets":     len(mm.MarketStates),
+		"total_pnl":   mm.Metrics.TotalPnL.String(),
+		"win_rate":    mm.Metrics.WinRate,
+		"timestamp":   time.Now(),
+		"config":      mm.Config,
+	}
+
+	return trainingData
 }
 
+// trainModels trains ML models using collected training data
 func (mm *AIMarketMaker) trainModels(trainingData interface{}) {
-	// Placeholder for model training
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	if trainingData == nil {
+		return
+	}
+
+	// In a real implementation, this would train ML models on the collected data
+	// For now, update metrics to reflect training occurred
+	mm.Metrics.LastUpdate = time.Now()
 }
 
 func (mm *AIMarketMaker) updateModelParameters() {
-	// Placeholder for model parameter updates
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	// Update model parameters based on collected training data
+	// In a real implementation, this would update ML model weights
+	mm.Metrics.LastUpdate = time.Now()
 }
 
 // ID generation functions

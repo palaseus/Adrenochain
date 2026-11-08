@@ -368,7 +368,10 @@ func (bmm *BasicMarketMaking) calculateQuoteSize(position Position, side string)
 }
 
 func (bmm *BasicMarketMaking) UpdateStrategy(marketData MarketData, trades []Trade) {
-	// Basic strategy doesn't need complex updates
+	// Basic market making strategy doesn't adapt to market conditions
+	// Parameters remain constant as configured
+	_ = marketData
+	_ = trades
 }
 
 func (bmm *BasicMarketMaking) GetStrategyType() string {

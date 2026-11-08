@@ -494,17 +494,128 @@ func (sa *SentimentAnalyzer) cleanupLoop() {
 	}
 }
 
-// Placeholder functions for background operations
+// collectData collects sentiment data from all registered sources
 func (sa *SentimentAnalyzer) collectData() {
-	// In a real implementation, this would fetch data from external sources
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	for _, source := range sa.Sources {
+		if source.ID == "" {
+			continue
+		}
+
+		// Simulate collecting data from each source
+		dataID := generateDataID()
+		data := &SentimentData{
+			ID:        dataID,
+			SourceID:  source.ID,
+			Content:   "", // Would be populated from actual source
+			Timestamp: time.Now(),
+			Metadata:  make(map[string]interface{}),
+			RawScore:  rand.Float64()*2 - 1, // Random score between -1 and 1
+			Processed: false,
+		}
+
+		// Apply source credibility weighting
+		data.RawScore = data.RawScore * source.Credibility
+
+		sa.Data[dataID] = data
+		sa.Metrics.TotalAnalyses++
+	}
 }
 
+// performPeriodicAnalysis runs sentiment analysis on all collected data
 func (sa *SentimentAnalyzer) performPeriodicAnalysis() {
-	// In a real implementation, this would perform periodic sentiment analysis
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	positiveCount := uint64(0)
+	negativeCount := uint64(0)
+	neutralCount := uint64(0)
+	totalScore := 0.0
+	totalConfidence := 0.0
+	analysisCount := 0
+
+	for asset := range sa.Analyses {
+		_ = asset
+	}
+
+	// Group data by asset and compute sentiment
+	assetData := make(map[string][]*SentimentData)
+	for _, data := range sa.Data {
+		if data.Processed {
+			continue
+		}
+		assetData[data.SourceID] = append(assetData[data.SourceID], data)
+	}
+
+	for sourceID, dataList := range assetData {
+		sourceScore := 0.0
+		sourceConfidence := 0.0
+		count := 0
+
+		for _, data := range dataList {
+			sourceScore += data.RawScore
+			sourceConfidence += sourceCredibilityWeight(sa.Sources[sourceID])
+			count++
+			data.Processed = true
+		}
+
+		if count > 0 {
+			avgScore := sourceScore / float64(count)
+			avgConf := sourceConfidence / float64(count)
+
+			if avgScore > 0.1 {
+				positiveCount++
+			} else if avgScore < -0.1 {
+				negativeCount++
+			} else {
+				neutralCount++
+			}
+
+			totalScore += avgScore
+			totalConfidence += avgConf
+			analysisCount++
+		}
+	}
+
+	if analysisCount > 0 {
+		sa.Metrics.PositiveAnalyses = positiveCount
+		sa.Metrics.NegativeAnalyses = negativeCount
+		sa.Metrics.NeutralAnalyses = neutralCount
+		sa.Metrics.AverageScore = totalScore / float64(analysisCount)
+		sa.Metrics.AverageConfidence = totalConfidence / float64(analysisCount)
+		sa.Metrics.LastUpdate = time.Now()
+	}
 }
 
+// cleanupOldData removes data older than the configured retention period
 func (sa *SentimentAnalyzer) cleanupOldData() {
-	// In a real implementation, this would clean up old data based on retention policy
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+
+	cutoff := time.Now().Add(-sa.Config.CleanupInterval)
+
+	for id, data := range sa.Data {
+		if data.Timestamp.Before(cutoff) {
+			delete(sa.Data, id)
+		}
+	}
+
+	// Also clean up old analyses
+	for id, analysis := range sa.Analyses {
+		if analysis.Timestamp.Before(cutoff) {
+			delete(sa.Analyses, id)
+		}
+	}
+}
+
+// sourceCredibilityWeight returns a weight factor based on source credibility
+func sourceCredibilityWeight(source *SentimentSource) float64 {
+	if source == nil {
+		return 0.5
+	}
+	return source.Credibility
 }
 
 // Utility functions for deep copying

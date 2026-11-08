@@ -522,8 +522,36 @@ func (cpg *CrossProtocolGovernance) processProposals() {
 
 // processProposal processes a single proposal
 func (cpg *CrossProtocolGovernance) processProposal(proposal *GovernanceProposal) {
-	// Process proposal logic here
-	// This could include notifications, integrations, etc.
+	if proposal == nil {
+		return
+	}
+
+	cpg.mu.Lock()
+	defer cpg.mu.Unlock()
+
+	// Validate proposal
+	if proposal.Status != ProposalActive {
+		return
+	}
+
+	// Check if voting period has ended
+	if time.Now().After(proposal.EndTime) {
+		// Tally votes
+		totalVotes := big.NewInt(0)
+		for _, vote := range proposal.Votes {
+			totalVotes.Add(totalVotes, vote.VotingPower)
+		}
+		proposal.TotalVotes = totalVotes
+
+		// Determine if threshold is met
+		if proposal.Threshold != nil && totalVotes.Cmp(proposal.Threshold) >= 0 {
+			proposal.Approved = true
+		}
+		proposal.Status = ProposalExecuted
+		now := time.Now()
+		proposal.ExecutionTime = &now
+		proposal.UpdatedAt = now
+	}
 }
 
 // updateAlignments updates protocol alignment metrics
