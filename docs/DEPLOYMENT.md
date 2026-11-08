@@ -47,10 +47,10 @@ security:
   rate_limiting: true
   max_connections: 1000
   
-  # Admin whitelist
+  # Admin whitelist (set via environment variables, not hardcoded)
   admin_whitelist:
-    - "0x1234567890123456789012345678901234567890"
-    - "0x0987654321098765432109876543210987654321"
+    - "{{.AdminApiAddress}}"
+    - "{{.WebsocketsAdminAddress}}"
   
   # Alert thresholds
   alert_thresholds:
@@ -155,6 +155,83 @@ volumes:
   postgres_data:
   redis_data:
 ```
+
+## 🐳 **Docker Volume Documentation**
+
+The `docker-compose.yml` mounts named volumes so runtime data survives container
+restarts and is not baked into the image:
+
+| Volume | Container path | Purpose |
+|--------|----------------|---------|
+| `adrenochain_data` | `/app/data` | LevelDB chain data, UTXO set, wallet store |
+| `adrenochain_logs` | `/app/logs` | Application log files |
+| `prometheus_data` | `/prometheus` | Prometheus TSDB storage |
+| `grafana_data` | `/var/lib/grafana` | Grafana dashboards & state |
+| `redis_data` | `/data` | Redis cache (append-only) |
+
+All runtime directories (`data/`, `logs/`, `wallet_data/`, `fresh_data/`, etc.) are
+listed in `.gitignore` and must **not** be committed. Back up `adrenochain_data`
+regularly — it contains the canonical blockchain state.
+
+### Volume backup example
+```bash
+docker run --rm -v adrenochain_data:/data -v $(pwd)/backup:/backup \
+  alpine tar czf /backup/adrenochain_data_$(date +%F).tar.gz -C /data .
+```
+
+## ☸️ **Method 3: Kubernetes Deployment**
+
+Kubernetes manifests live under `scripts/deployment/k8s/` and are applied by
+`scripts/deploy.sh kubernetes`:
+
+```bash
+# Build and tag the image for your registry
+docker build -t <registry>/adrenochain:latest .
+docker push <registry>/adrenochain:latest
+
+# Update image name/tag in scripts/deployment/k8s/kustomization.yaml, then:
+kubectl apply -k scripts/deployment/k8s/ -n adrenochain
+```
+
+The manifests provide:
+
+- **Namespace + RBAC** — least-privilege ServiceAccount/Role
+- **ConfigMap** — `production.yaml` configuration
+- **Secret template** (`secret.example.yaml`) — admin whitelist, reward address,
+  and API secrets **must** be provided via a secrets manager (never committed)
+- **Deployment** — rolling updates, liveness/readiness/startup probes, resource
+  limits, non-root container
+- **Services** — ClusterIP (internal) and LoadBalancer (external)
+- **HPA + PDB + NetworkPolicy** — autoscaling, disruption budget, ingress/egress rules
+
+### Production storage on K8s
+
+The Deployment uses `emptyDir` volumes for `/app/data` and `/app/logs` (ephemeral).
+For production, replace them with `PersistentVolumeClaim`s backed by your cluster's
+default StorageClass:
+
+```yaml
+volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: adrenochain-data
+  - name: logs
+    persistentVolumeClaim:
+      claimName: adrenochain-logs
+```
+
+## 🔐 **Secrets & Environment Configuration**
+
+Hardcoded admin addresses were removed from `config/production.yaml` and replaced
+with environment-variable placeholders (`{{.AdminApiAddress}}`,
+`{{.WebsocketsAdminAddress}}`, `{{.RewardAddress}}`). Provide them at runtime:
+
+- **Docker Compose**: add to the `environment:` block or an `.env` file
+  (see `config/env.example` and root `env.example`)
+- **Kubernetes**: create `adrenochain-secrets` from
+  `scripts/deployment/k8s/secret.example.yaml` and mount via `secretKeyRef`
+
+Never commit `.env` or real secrets — both are covered by `.gitignore`.
 
 ## 📊 **Monitoring & Observability**
 

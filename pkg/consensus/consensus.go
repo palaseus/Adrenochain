@@ -109,12 +109,12 @@ func (c *Consensus) IsBlockFinal(blockHeight uint64) bool {
 	}
 
 	// 3. SECURITY FIX: Verify accumulated difficulty is sufficient
-	accumulatedDiff, err := c.GetAccumulatedDifficulty(currentHeight)
+	accumulatedDiff, err := c.chain.GetAccumulatedDifficulty(currentHeight)
 	if err != nil {
 		return false // Cannot verify difficulty
 	}
 
-	blockDiff, err := c.GetAccumulatedDifficulty(blockHeight)
+	blockDiff, err := c.chain.GetAccumulatedDifficulty(blockHeight)
 	if err != nil {
 		return false // Cannot verify block difficulty
 	}
@@ -201,7 +201,7 @@ func (c *Consensus) validateBlockInChain(block *block.Block, height uint64) bool
 
 	// For height > 0, verify previous block exists and is valid
 	if height > 0 {
-		prevBlock := c.chain.GetBlock(block.Header.PrevBlockHash)
+		prevBlock := c.chain.GetBlockByHeight(height - 1)
 		if prevBlock == nil {
 			return false // Previous block doesn't exist
 		}

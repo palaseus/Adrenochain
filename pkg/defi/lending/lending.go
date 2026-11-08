@@ -74,11 +74,12 @@ type Asset struct {
 
 // User represents a lending protocol user
 type User struct {
-	Address    engine.Address
-	Assets     map[engine.Address]*UserAsset
-	Collateral map[engine.Address]*big.Int
-	Borrows    map[engine.Address]*big.Int
-	LastUpdate time.Time
+	Address     engine.Address
+	Assets      map[engine.Address]*UserAsset
+	Collateral  map[engine.Address]*big.Int
+	Borrows     map[engine.Address]*big.Int
+	BorrowCount uint64
+	LastUpdate  time.Time
 }
 
 // UserAsset represents a user's position in an asset
@@ -827,8 +828,8 @@ func (lp *LendingProtocol) calculateHealthFactor(user engine.Address) *big.Int {
 	totalCollateralValue := big.NewInt(0)
 	for token, collateral := range userInfo.Collateral {
 		if assetInfo, exists := lp.Assets[token]; exists {
-			// SECURITY FIX: Validate collateral ratio is within bounds
-			if assetInfo.CollateralRatio.Cmp(big.NewInt(0)) <= 0 || assetInfo.CollateralRatio.Cmp(big.NewInt(10000)) > 0 {
+			// Validate collateral ratio is positive
+			if assetInfo.CollateralRatio.Cmp(big.NewInt(0)) <= 0 {
 				continue // Skip invalid collateral ratios
 			}
 

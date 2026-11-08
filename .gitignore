@@ -101,8 +101,9 @@ COMPREHENSIVE_AUDIT_REPORT.md
 AUDIT_REPORT.md
 
 # Test files and generated content
-test.pdf
+# test.pdf is a committed test fixture for pkg/pdf tests; generated PDFs remain ignored
 *.pdf
+!test.pdf
 
 # Generated config during audit process
 pkg/config/

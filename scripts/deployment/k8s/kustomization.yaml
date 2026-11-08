@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+nameprefix: adrenochain-
+namespace: adrenochain
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - configmap.yaml
+  - secret.example.yaml
+  - deployment.yaml
+  - autoscaling.yaml
+images:
+  - name: adrenochain
+    newName: adrenochain/adrenochain
+    newTag: latest
