@@ -378,63 +378,7 @@ func (evm *EVMEngine) executeContractInternal(contract *engine.Contract, input [
 		evm.memory.Set(0, ctx.Input)
 	}
 
-	// Main execution loop
-	for evm.pc < uint64(len(ctx.Contract.Code)) {
-		// Check gas
-		if evm.gasMeter.IsOutOfGas() {
-			return &engine.ExecutionResult{
-				Success:      false,
-				GasUsed:      evm.gasMeter.GasConsumed(),
-				GasRemaining: 0,
-				Error:        engine.ErrOutOfGas,
-			}, nil
-		}
-
-		// Fetch and decode instruction
-		opcode := evm.fetchOpcode(ctx)
-		instruction, err := evm.decodeInstruction(opcode)
-		if err != nil {
-			return &engine.ExecutionResult{
-				Success:      false,
-				GasUsed:      evm.gasMeter.GasConsumed(),
-				GasRemaining: evm.gasMeter.GasRemaining(),
-				Error:        err,
-			}, nil
-		}
-
-		// Execute instruction
-		halts, err := evm.executeInstruction(instruction, ctx)
-		if err != nil {
-			return &engine.ExecutionResult{
-				Success:      false,
-				GasUsed:      evm.gasMeter.GasConsumed(),
-				GasRemaining: evm.gasMeter.GasRemaining(),
-				Error:        err,
-			}, nil
-		}
-
-		// Check for halt conditions
-		if halts {
-			break
-		}
-
-		// Advance program counter
-		evm.pc += instruction.Size
-	}
-
-	// Success
-	returnData := evm.lastReturnData
-	if returnData == nil {
-		returnData = evm.memory.Get(0, 32) // Return first 32 bytes from memory
-	}
-	return &engine.ExecutionResult{
-		Success:      true,
-		ReturnData:   returnData,
-		GasUsed:      evm.gasMeter.GasConsumed(),
-		GasRemaining: evm.gasMeter.GasRemaining(),
-		Logs:         []engine.Log{},
-		StateChanges: []engine.StateChange{},
-	}, nil
+	return evm.runExecutionLoop(ctx)
 }
 
 // fetchOpcode fetches the next opcode from contract code
@@ -592,24 +536,28 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeCALLVALUE(ctx)
 		return false, err
 
+	case 0x35: // CALLDATALOAD
+		err := evm.executeCALLDATALOAD(ctx)
+		return false, err
+
 	case 0x36: // CALLDATASIZE
 		err := evm.executeCALLDATASIZE(ctx)
 		return false, err
 
-	case 0x37: // CALLDATALOAD
-		err := evm.executeCALLDATALOAD(ctx)
-		return false, err
-
-	case 0x38: // CALLDATACOPY
+	case 0x37: // CALLDATACOPY
 		err := evm.executeCALLDATACOPY(ctx)
 		return false, err
 
-	case 0x39: // CODESIZE
+	case 0x38: // CODESIZE
 		err := evm.executeCODESIZE(ctx)
 		return false, err
 
-	case 0x3A: // CODECOPY
+	case 0x39: // CODECOPY
 		err := evm.executeCODECOPY(ctx)
+		return false, err
+
+	case 0x3A: // GASPRICE
+		err := evm.executeGASPRICE(ctx)
 		return false, err
 
 	case 0x3B: // EXTCODESIZE
@@ -766,6 +714,9 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 
 	case 0xFD: // REVERT
 		return true, engine.ErrContractReverted
+
+	case 0xFE: // INVALID
+		return true, engine.ErrInvalidOpcode
 
 	case 0xF3: // RETURN
 		err := evm.executeRETURN(ctx)
@@ -934,19 +885,142 @@ func (evm *EVMEngine) executeGAS() error {
 }
 
 func (evm *EVMEngine) executeCREATE(ctx *ExecutionContext) error {
-	// Contract creation implemented
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+
+	// Stack order (bottom to top): value, inOffset, inSize
+	// Pop order (top to bottom): inSize, inOffset, value
+	inSize := evm.stack.Pop()
+	inOffset := evm.stack.Pop()
+	value := evm.stack.Pop()
+
+	if inOffset.Cmp(big.NewInt(0)) < 0 || inSize.Cmp(big.NewInt(0)) < 0 || value.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+
+	// Copy init code from memory
+	initCode := evm.memory.Get(inOffset.Uint64(), inSize.Uint64())
+
+	// Execute init code to get contract code
+	initContract := &engine.Contract{
+		Address: ctx.Contract.Address,
+		Code:    initCode,
+	}
+
+	result, err := evm.executeContractInternal(initContract, nil, evm.gasMeter.GasRemaining(), ctx.Sender, value)
+	if err != nil || !result.Success {
+		evm.stack.Push(big.NewInt(0)) // failure - return 0 address
+		return nil
+	}
+
+	// Deploy the new contract
+	newContract, _, err := evm.Deploy(result.ReturnData, nil, evm.gasMeter.GasRemaining(), ctx.Sender, value)
+	if err != nil {
+		evm.stack.Push(big.NewInt(0)) // failure
+		return nil
+	}
+
+	// Push the new contract address onto the stack
+	evm.stack.Push(new(big.Int).SetBytes(newContract.Address.Bytes()))
 	return nil
 }
 
 func (evm *EVMEngine) executeCALL(ctx *ExecutionContext) error {
-	// Contract calls implemented
-	// Set lastReturnData to empty for CALL (no actual execution in simplified version)
-	evm.lastReturnData = nil
+	if evm.stack.Size() < 7 {
+		return engine.ErrStackUnderflow
+	}
+
+	// Stack order (bottom to top): gas, value, inOffset, inSize, retOffset, retSize, address
+	// Pop order (top to bottom): address, retSize, retOffset, inSize, inOffset, value, gas
+	addr := evm.stack.Pop()
+	retSize := evm.stack.Pop()
+	retOffset := evm.stack.Pop()
+	inSize := evm.stack.Pop()
+	inOffset := evm.stack.Pop()
+	value := evm.stack.Pop()
+	gas := evm.stack.Pop()
+
+	if gas.Cmp(big.NewInt(0)) < 0 || value.Cmp(big.NewInt(0)) < 0 || inOffset.Cmp(big.NewInt(0)) < 0 || inSize.Cmp(big.NewInt(0)) < 0 || retOffset.Cmp(big.NewInt(0)) < 0 || retSize.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+
+	addrBytes := addr.Bytes()
+	var targetAddr engine.Address
+	copy(targetAddr[len(targetAddr)-len(addrBytes):], addrBytes)
+
+	var targetContract *engine.Contract
+	if evm.registry != nil {
+		var err error
+		targetContract, err = evm.registry.Get(targetAddr)
+		if err != nil {
+			targetContract = nil
+		}
+	}
+
+	if targetContract == nil {
+		evm.stack.Push(big.NewInt(0)) // failure
+		return nil
+	}
+
+	// Copy input from memory
+	input := evm.memory.Get(inOffset.Uint64(), inSize.Uint64())
+
+	// Execute target contract
+	result, err := evm.executeContractInternal(targetContract, input, gas.Uint64(), ctx.Sender, value)
+	if err != nil {
+		evm.stack.Push(big.NewInt(0)) // failure
+		return nil
+	}
+
+	evm.lastReturnData = result.ReturnData
+
+	// Copy return data to memory
+	retSize64 := retSize.Uint64()
+	retOffset64 := retOffset.Uint64()
+	if retSize64 > 0 && retOffset64 <= uint64(len(evm.lastReturnData)) {
+		end := retOffset64 + retSize64
+		if end < retOffset64 {
+			end = uint64(len(evm.lastReturnData)) // overflow
+		} else if end > uint64(len(evm.lastReturnData)) {
+			end = uint64(len(evm.lastReturnData))
+		}
+		evm.memory.Set(retOffset64, evm.lastReturnData[retOffset64:end])
+	} else if retSize64 > 0 {
+		evm.memory.Set(retOffset64, evm.lastReturnData)
+	}
+
+	if result.Success {
+		evm.stack.Push(big.NewInt(1)) // success
+	} else {
+		evm.stack.Push(big.NewInt(0)) // failure
+	}
 	return nil
 }
 
 func (evm *EVMEngine) executeSUICIDE(ctx *ExecutionContext) error {
-	// Contract self-destruct implemented
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+
+	beneficiary := evm.stack.Pop()
+	beneficiaryBytes := beneficiary.Bytes()
+	var beneficiaryAddr engine.Address
+	copy(beneficiaryAddr[len(beneficiaryAddr)-len(beneficiaryBytes):], beneficiaryBytes)
+
+	// Transfer contract balance to beneficiary (if ctx is available)
+	if ctx != nil && ctx.Contract != nil && ctx.Contract.Balance != nil && ctx.Contract.Balance.Sign() > 0 {
+		if evm.registry != nil {
+			if target, err := evm.registry.Get(beneficiaryAddr); err == nil && target != nil {
+				if target.Balance == nil {
+					target.Balance = big.NewInt(0)
+				}
+				target.Balance.Add(target.Balance, ctx.Contract.Balance)
+			}
+		}
+		ctx.Contract.Balance = big.NewInt(0)
+	}
+
 	return nil
 }
 
@@ -1356,6 +1430,12 @@ func (evm *EVMEngine) executeCALLER(ctx *ExecutionContext) error {
 // executeCALLVALUE pushes the call value onto the stack
 func (evm *EVMEngine) executeCALLVALUE(ctx *ExecutionContext) error {
 	evm.stack.Push(ctx.Value)
+	return nil
+}
+
+// executeGASPRICE pushes the current gas price onto the stack
+func (evm *EVMEngine) executeGASPRICE(ctx *ExecutionContext) error {
+	evm.stack.Push(new(big.Int).Set(ctx.GasPrice))
 	return nil
 }
 
@@ -1885,6 +1965,12 @@ func (evm *EVMEngine) executeContract(ctx *ExecutionContext) (*engine.ExecutionR
 		evm.memory.Set(0, ctx.Input)
 	}
 
+	return evm.runExecutionLoop(ctx)
+}
+
+// runExecutionLoop executes the main EVM instruction loop.
+// Both executeContract and executeContractInternal delegate to this shared function.
+func (evm *EVMEngine) runExecutionLoop(ctx *ExecutionContext) (*engine.ExecutionResult, error) {
 	// Main execution loop
 	for evm.pc < uint64(len(ctx.Contract.Code)) {
 		// Check gas

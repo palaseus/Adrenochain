@@ -726,39 +726,45 @@ func TestEVMBasicInstructions(t *testing.T) {
 		ChainID:    big.NewInt(1),
 	}
 
-	// Test CREATE instruction (currently just a stub)
+	// Test CREATE instruction
+	evm.gasMeter = engine.NewGasMeter(1000000)
 	evm.stack.Push(big.NewInt(0)) // value
 	evm.stack.Push(big.NewInt(0)) // offset
 	evm.stack.Push(big.NewInt(0)) // size
 	evm.executeCREATE(ctx)
 
-	// CREATE is currently a stub, so it doesn't consume operands
-	if evm.stack.Size() != 3 {
-		t.Error("CREATE stub should not consume operands")
+	// CREATE consumes operands and pushes new address (or 0 on failure)
+	if evm.stack.Size() != 1 {
+		t.Errorf("CREATE should consume 3 operands and push 1 result, got stack size %d", evm.stack.Size())
 	}
 
-	// Test CALL instruction (currently just a stub)
-	evm.stack.Push(big.NewInt(0)) // gas
-	evm.stack.Push(big.NewInt(0)) // address
-	evm.stack.Push(big.NewInt(0)) // value
-	evm.stack.Push(big.NewInt(0)) // argsOffset
-	evm.stack.Push(big.NewInt(0)) // argsSize
-	evm.stack.Push(big.NewInt(0)) // retOffset
-	evm.stack.Push(big.NewInt(0)) // retSize
+	// Test CALL instruction
+	evm.gasMeter = engine.NewGasMeter(1000000)
+	evm.stack.Push(big.NewInt(100000)) // gas
+	evm.stack.Push(big.NewInt(0))      // address
+	evm.stack.Push(big.NewInt(0))      // value
+	evm.stack.Push(big.NewInt(0))      // argsOffset
+	evm.stack.Push(big.NewInt(0))      // argsSize
+	evm.stack.Push(big.NewInt(0))      // retOffset
+	evm.stack.Push(big.NewInt(0))      // retSize
 	evm.executeCALL(ctx)
 
-	// CALL is currently a stub, so it doesn't consume operands
-	if evm.stack.Size() != 10 {
-		t.Error("CALL stub should not consume operands")
+	// CALL consumes 7 operands and pushes 1 result (net -6)
+	// Stack before CALL: 1 (from CREATE) + 7 pushed = 8
+	// Stack after CALL: 8 - 7 + 1 = 2
+	if evm.stack.Size() != 2 {
+		t.Errorf("CALL should consume 7 operands and push 1 result, got stack size %d", evm.stack.Size())
 	}
 
-	// Test SUICIDE instruction (currently just a stub)
+	// Test SUICIDE instruction
 	evm.stack.Push(big.NewInt(0)) // address
 	evm.executeSUICIDE(ctx)
 
-	// SUICIDE is currently a stub, so it doesn't consume operands
-	if evm.stack.Size() != 11 {
-		t.Error("SUICIDE stub should not consume operands")
+	// SUICIDE consumes 1 operand and pushes 0 (net -1)
+	// Stack before SUICIDE: 2 + 1 pushed = 3
+	// Stack after SUICIDE: 3 - 1 = 2
+	if evm.stack.Size() != 2 {
+		t.Errorf("SUICIDE should consume 1 operand, got stack size %d", evm.stack.Size())
 	}
 }
 
