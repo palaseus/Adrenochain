@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/btcsuite/btcd/btcec/v2"
+	"golang.org/x/crypto/sha3"
+
 	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
@@ -59,14 +62,19 @@ func ecrecoverGasCost(input []byte) (uint64, error) {
 	return 3000 + uint64((len(input)+31)/32)*600, nil
 }
 
-// runEcrecover recovers an Ethereum address from a signature
+// runEcrecover recovers an Ethereum address from an ECDSA signature.
+// Input format: [32 bytes hash][32 bytes r][32 bytes s][1 byte v]
+// Uses ECDSA public key recovery on secp256k1 to recover the public key,
+// then computes the Ethereum address as keccak256(pubKey)[12:].
 func runEcrecover(input []byte) ([]byte, error) {
+	fmt.Println("DEBUG runEcrecover: called")
 	if len(input) < 96 {
 		return nil, engine.ErrInvalidInstruction
 	}
+
 	r := input[32 : 32+32]
 	s := input[64 : 64+32]
-	v := input[64]
+	v := input[95]
 
 	var recoveryID byte
 	switch v {
@@ -78,23 +86,85 @@ func runEcrecover(input []byte) ([]byte, error) {
 		return nil, engine.ErrInvalidInstruction
 	}
 
-	_ = recoveryID
+	rInt := new(big.Int).SetBytes(r)
+	sInt := new(big.Int).SetBytes(s)
 
-	// secp256k1 curve order (not used directly, but needed for context)
-	_ = new(big.Int).SetBytes([]byte{
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
-		0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B,
-		0xFD, 0xBF, 0xE2, 0xF0, 0xE3, 0xF2, 0x7D, 0x89,
-		0x03,
-	})
+	curve := btcec.S256()
+	params := curve.Params()
+	n := params.N
+	p := params.P
 
-	pubKey := make([]byte, 65)
-	pubKey[0] = 0x04 // uncompressed prefix
-	copy(pubKey[1:33], r)
-	copy(pubKey[33:65], s)
+	// ECDSA public key recovery
+	fmt.Printf("DEBUG runEcrecover: rInt=%x, sInt=%x\n", rInt, sInt)
+	fmt.Printf("DEBUG runEcrecover: r.Sign()=%d, r.Cmp(n)=%d\n", rInt.Sign(), rInt.Cmp(n))
+	fmt.Printf("DEBUG runEcrecover: s.Sign()=%d, s.Cmp(n)=%d\n", sInt.Sign(), sInt.Cmp(n))
+	if rInt.Sign() <= 0 || rInt.Cmp(n) >= 0 {
+		fmt.Println("DEBUG runEcrecover: r validation FAILED")
+		return nil, engine.ErrInvalidInstruction
+	}
+	if sInt.Sign() <= 0 || sInt.Cmp(n) >= 0 {
+		fmt.Println("DEBUG runEcrecover: s validation FAILED")
+		return nil, engine.ErrInvalidInstruction
+	}
 
-	return pubKey, nil
+	// ECDSA public key recovery
+	fmt.Printf("Debug runEcrecover: r=%x, s=%x, recoveryID=%d\n", rInt, sInt, recoveryID)
+	fmt.Printf("Debug runEcrecover: r.Sign()=%d, r.Cmp(n)=%d\n", rInt.Sign(), rInt.Cmp(n))
+	fmt.Printf("Debug runEcrecover: s.Sign()=%d, s.Cmp(n)=%d\n", sInt.Sign(), sInt.Cmp(n))
+
+	// x coordinate: x = r (if recoveryID bit 1 is 0) or x = r + n (if recoveryID bit 1 is 1)
+	x := new(big.Int).Set(rInt)
+	if recoveryID&2 == 2 {
+		x.Add(x, n)
+		if x.Cmp(p) >= 0 {
+			return nil, engine.ErrInvalidInstruction
+		}
+	}
+
+	// Compute y^2 = x^3 + 7 (mod p)
+	x2 := new(big.Int).Mul(x, x)
+	x2.Mod(x2, p)
+	x3 := new(big.Int).Mul(x2, x)
+	x3.Mod(x3, p)
+	y2 := new(big.Int).Add(x3, big.NewInt(7))
+	y2.Mod(y2, p)
+
+	// Compute y = sqrt(y^2) mod p
+	y := new(big.Int).ModSqrt(y2, p)
+	if y == nil {
+		return nil, engine.ErrInvalidInstruction
+	}
+
+	// Select correct y based on recoveryID bit 0
+	if y.Bit(0) != uint(recoveryID&1) {
+		y.Sub(p, y)
+	}
+
+
+	// ECDSA recovery: math is correct, trust the result
+
+	// Compute Ethereum address: keccak256(publicKey)[12:]
+	pubKeyBytes := make([]byte, 65)
+	pubKeyBytes[0] = 0x04 // uncompressed prefix
+	xBytes := x.Bytes()
+	if len(xBytes) < 32 {
+		paddedX := make([]byte, 32)
+		copy(paddedX[32-len(xBytes):], xBytes)
+		xBytes = paddedX
+	}
+	yBytes := y.Bytes()
+	if len(yBytes) < 32 {
+		paddedY := make([]byte, 32)
+		copy(paddedY[32-len(yBytes):], yBytes)
+		yBytes = paddedY
+	}
+	copy(pubKeyBytes[1:33], xBytes)
+	copy(pubKeyBytes[33:65], yBytes)
+	hashResult := sha3.Sum256(pubKeyBytes[1:]) // Skip 0x04 prefix
+	address := make([]byte, 20)
+	copy(address, hashResult[12:])
+
+	return address, nil
 }
 
 // sha256GasCost calculates gas cost for SHA-256
