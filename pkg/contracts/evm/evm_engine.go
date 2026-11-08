@@ -651,6 +651,78 @@ func (evm *EVMEngine) executeInstruction(instruction *Instruction, ctx *Executio
 		err := evm.executeCTXDATALOAD(ctx)
 		return false, err
 
+	case 0x10: // LT
+		err := evm.executeLT()
+		return false, err
+
+	case 0x11: // GT
+		err := evm.executeGT()
+		return false, err
+
+	case 0x14: // EQ
+		err := evm.executeEQ()
+		return false, err
+
+	case 0x15: // ISZERO
+		err := evm.executeISZERO()
+		return false, err
+
+	case 0x16: // AND
+		err := evm.executeAND()
+		return false, err
+
+	case 0x17: // OR
+		err := evm.executeOR()
+		return false, err
+
+	case 0x18: // XOR
+		err := evm.executeXOR()
+		return false, err
+
+	case 0x19: // NOT
+		err := evm.executeNOT()
+		return false, err
+
+	case 0x05: // SDIV
+		err := evm.executeSDIV()
+		return false, err
+
+	case 0x06: // SMOD
+		err := evm.executeSMOD()
+		return false, err
+
+	case 0x07: // ADDMOD
+		err := evm.executeADDMOD()
+		return false, err
+
+	case 0x08: // MULMOD
+		err := evm.executeMULMOD()
+		return false, err
+
+	case 0x09: // EXP
+		err := evm.executeEXP()
+		return false, err
+
+	case 0x53: // MSTORE8
+		err := evm.executeMSTORE8()
+		return false, err
+
+	case 0x5B: // JUMPDEST
+		// No-op, just a jump destination marker
+		return false, nil
+
+	case 0xF2: // CALLCODE
+		err := evm.executeCALL(ctx) // Simplified: treat like CALL
+		return false, err
+
+	case 0xF4: // DELEGATECALL
+		err := evm.executeCALL(ctx) // Simplified: treat like CALL
+		return false, err
+
+	case 0xF5: // CREATE2
+		err := evm.executeCREATE(ctx) // Simplified: treat like CREATE
+		return false, err
+
 	case 0xFD: // REVERT
 		return true, engine.ErrContractReverted
 
@@ -823,6 +895,8 @@ func (evm *EVMEngine) executeCREATE(ctx *ExecutionContext) error {
 
 func (evm *EVMEngine) executeCALL(ctx *ExecutionContext) error {
 	// Contract calls implemented
+	// Set lastReturnData to empty for CALL (no actual execution in simplified version)
+	evm.lastReturnData = nil
 	return nil
 }
 
@@ -847,6 +921,192 @@ func (evm *EVMEngine) executeSHA3() error {
 	data := evm.memory.Get(offset.Uint64(), size.Uint64())
 	hash := sha256.Sum256(data)
 	evm.stack.Push(new(big.Int).SetBytes(hash[:]))
+	return nil
+}
+
+func (evm *EVMEngine) executeLT() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if a.Cmp(b) < 0 {
+		evm.stack.Push(big.NewInt(1))
+	} else {
+		evm.stack.Push(big.NewInt(0))
+	}
+	return nil
+}
+
+func (evm *EVMEngine) executeGT() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if a.Cmp(b) > 0 {
+		evm.stack.Push(big.NewInt(1))
+	} else {
+		evm.stack.Push(big.NewInt(0))
+	}
+	return nil
+}
+
+func (evm *EVMEngine) executeEQ() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if a.Cmp(b) == 0 {
+		evm.stack.Push(big.NewInt(1))
+	} else {
+		evm.stack.Push(big.NewInt(0))
+	}
+	return nil
+}
+
+func (evm *EVMEngine) executeISZERO() error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+	a := evm.stack.Pop()
+	if a.Sign() == 0 {
+		evm.stack.Push(big.NewInt(1))
+	} else {
+		evm.stack.Push(big.NewInt(0))
+	}
+	return nil
+}
+
+func (evm *EVMEngine) executeAND() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	evm.stack.Push(new(big.Int).And(a, b))
+	return nil
+}
+
+func (evm *EVMEngine) executeOR() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	evm.stack.Push(new(big.Int).Or(a, b))
+	return nil
+}
+
+func (evm *EVMEngine) executeXOR() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	evm.stack.Push(new(big.Int).Xor(a, b))
+	return nil
+}
+
+func (evm *EVMEngine) executeNOT() error {
+	if evm.stack.Size() < 1 {
+		return engine.ErrStackUnderflow
+	}
+	a := evm.stack.Pop()
+	// NOT is bitwise complement on 256-bit value
+	max256 := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
+	evm.stack.Push(new(big.Int).And(new(big.Int).Not(a), max256))
+	return nil
+}
+
+func (evm *EVMEngine) executeSDIV() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	divisor := evm.stack.Pop()
+	dividend := evm.stack.Pop()
+	if divisor.Sign() == 0 {
+		evm.stack.Push(big.NewInt(0))
+		return nil
+	}
+	result := new(big.Int).Quo(dividend, divisor)
+	evm.stack.Push(result)
+	return nil
+}
+
+func (evm *EVMEngine) executeSMOD() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	divisor := evm.stack.Pop()
+	dividend := evm.stack.Pop()
+	if divisor.Sign() == 0 {
+		evm.stack.Push(big.NewInt(0))
+		return nil
+	}
+	result := new(big.Int).Rem(dividend, divisor)
+	evm.stack.Push(result)
+	return nil
+}
+
+func (evm *EVMEngine) executeADDMOD() error {
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+	modulus := evm.stack.Pop()
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if modulus.Sign() == 0 {
+		evm.stack.Push(big.NewInt(0))
+		return nil
+	}
+	result := new(big.Int).Add(a, b)
+	result.Mod(result, modulus)
+	evm.stack.Push(result)
+	return nil
+}
+
+func (evm *EVMEngine) executeMULMOD() error {
+	if evm.stack.Size() < 3 {
+		return engine.ErrStackUnderflow
+	}
+	modulus := evm.stack.Pop()
+	b := evm.stack.Pop()
+	a := evm.stack.Pop()
+	if modulus.Sign() == 0 {
+		evm.stack.Push(big.NewInt(0))
+		return nil
+	}
+	result := new(big.Int).Mul(a, b)
+	result.Mod(result, modulus)
+	evm.stack.Push(result)
+	return nil
+}
+
+func (evm *EVMEngine) executeEXP() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	exponent := evm.stack.Pop()
+	base := evm.stack.Pop()
+	result := new(big.Int).Exp(base, exponent, nil)
+	evm.stack.Push(result)
+	return nil
+}
+
+func (evm *EVMEngine) executeMSTORE8() error {
+	if evm.stack.Size() < 2 {
+		return engine.ErrStackUnderflow
+	}
+	offset := evm.stack.Pop()
+	value := evm.stack.Pop()
+	if offset.Cmp(big.NewInt(0)) < 0 {
+		return engine.ErrInvalidInstruction
+	}
+	// Store only the least significant byte
+	byteVal := byte(value.Uint64() & 0xFF)
+	evm.memory.Set(offset.Uint64(), []byte{byteVal})
 	return nil
 }
 
@@ -1030,9 +1290,17 @@ func (evm *EVMEngine) executeCODECOPY(ctx *ExecutionContext) error {
 	}
 	code := ctx.Contract.Code
 	start := codeOffset.Uint64()
-	end := start + size.Uint64()
-	if end > uint64(len(code)) {
-		end = uint64(len(code))
+	size64 := size.Uint64()
+	var end uint64
+	if size64 > 0 && start <= uint64(len(code)) {
+		end = start + size64
+		if end < start {
+			end = uint64(len(code)) // overflow
+		} else if end > uint64(len(code)) {
+			end = uint64(len(code))
+		}
+	} else {
+		end = start
 	}
 	if start > uint64(len(code)) {
 		start = uint64(len(code))
@@ -1055,9 +1323,17 @@ func (evm *EVMEngine) executeCALLDATALOAD(ctx *ExecutionContext) error {
 		return engine.ErrInvalidInstruction
 	}
 	start := offset.Uint64()
-	end := start + 32
-	if end > uint64(len(ctx.Input)) {
-		end = uint64(len(ctx.Input))
+	size64 := uint64(32)
+	var end uint64
+	if size64 > 0 && start <= uint64(len(ctx.Input)) {
+		end = start + size64
+		if end < start {
+			end = uint64(len(ctx.Input)) // overflow
+		} else if end > uint64(len(ctx.Input)) {
+			end = uint64(len(ctx.Input))
+		}
+	} else {
+		end = start
 	}
 	if start > uint64(len(ctx.Input)) {
 		start = uint64(len(ctx.Input))
@@ -1081,9 +1357,17 @@ func (evm *EVMEngine) executeCALLDATACOPY(ctx *ExecutionContext) error {
 		return engine.ErrInvalidInstruction
 	}
 	start := offset.Uint64()
-	end := start + size.Uint64()
-	if end > uint64(len(ctx.Input)) {
-		end = uint64(len(ctx.Input))
+	size64 := size.Uint64()
+	var end uint64
+	if size64 > 0 && start <= uint64(len(ctx.Input)) {
+		end = start + size64
+		if end < start {
+			end = uint64(len(ctx.Input)) // overflow
+		} else if end > uint64(len(ctx.Input)) {
+			end = uint64(len(ctx.Input))
+		}
+	} else {
+		end = start
 	}
 	if start > uint64(len(ctx.Input)) {
 		start = uint64(len(ctx.Input))
@@ -1109,9 +1393,17 @@ func (evm *EVMEngine) executeRETURNDATACOPY() error {
 		return engine.ErrInvalidInstruction
 	}
 	start := offset.Uint64()
-	end := start + size.Uint64()
-	if end > uint64(len(evm.lastReturnData)) {
-		end = uint64(len(evm.lastReturnData))
+	size64 := size.Uint64()
+	var end uint64
+	if size64 > 0 && start <= uint64(len(evm.lastReturnData)) {
+		end = start + size64
+		if end < start {
+			end = uint64(len(evm.lastReturnData)) // overflow
+		} else if end > uint64(len(evm.lastReturnData)) {
+			end = uint64(len(evm.lastReturnData))
+		}
+	} else {
+		end = start
 	}
 	if start > uint64(len(evm.lastReturnData)) {
 		start = uint64(len(evm.lastReturnData))
@@ -1166,9 +1458,17 @@ func (evm *EVMEngine) executeEXTCODECOPY(ctx *ExecutionContext) error {
 	}
 
 	start := offset.Uint64()
-	end := start + size.Uint64()
-	if end > uint64(len(code)) {
-		end = uint64(len(code))
+	size64 := size.Uint64()
+	var end uint64
+	if size64 > 0 && start <= uint64(len(code)) {
+		end = start + size64
+		if end < start {
+			end = uint64(len(code)) // overflow
+		} else if end > uint64(len(code)) {
+			end = uint64(len(code))
+		}
+	} else {
+		end = start
 	}
 	if start > uint64(len(code)) {
 		start = uint64(len(code))
@@ -1259,8 +1559,15 @@ func (evm *EVMEngine) executeSTATICCALL(ctx *ExecutionContext) error {
 	evm.lastReturnData = input
 
 	// Copy return data to memory
-	if retSize.Uint64() > 0 && retOffset.Uint64()+retSize.Uint64() <= uint64(len(evm.lastReturnData)) {
-		evm.memory.Set(retOffset.Uint64(), evm.lastReturnData[:retSize.Uint64()])
+	if retSize.Uint64() > 0 && retOffset.Uint64() <= uint64(len(evm.lastReturnData)) {
+		end := retOffset.Uint64() + retSize.Uint64()
+		if end < retOffset.Uint64() {
+			// Integer overflow, clamp to end of data
+			end = uint64(len(evm.lastReturnData))
+		} else if end > uint64(len(evm.lastReturnData)) {
+			end = uint64(len(evm.lastReturnData))
+		}
+		evm.memory.Set(retOffset.Uint64(), evm.lastReturnData[retOffset.Uint64():end])
 	} else if retSize.Uint64() > 0 {
 		evm.memory.Set(retOffset.Uint64(), evm.lastReturnData)
 	}
@@ -1478,10 +1785,14 @@ func (ce *EVMEngine) generateStateChanges(contract *engine.Contract, input []byt
 	// Generate state changes based on execution
 	if result.Success {
 		// Contract balance change
+		balanceBytes := []byte{0}
+		if contract.Balance != nil {
+			balanceBytes = contract.Balance.Bytes()
+		}
 		changes = append(changes, engine.StateChange{
 			Address: contract.Address,
 			Key:     engine.Hash{0x01}, // Balance key
-			Value:   contract.Balance.Bytes(),
+			Value:   balanceBytes,
 		})
 
 		// Nonce increment
