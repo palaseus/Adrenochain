@@ -134,6 +134,9 @@ func (ep *EntryPoint) ValidateUserOp(uo *UserOperation) (*ValidationResult, erro
 	if !ok {
 		return &ValidationResult{Valid: false, Reason: "sender account not registered"}, nil
 	}
+	if acct == nil {
+		return &ValidationResult{Valid: false, Reason: "sender account is nil"}, nil
+	}
 	return acct.ValidateUserOp(uo, uo.Sender)
 }
 
@@ -156,6 +159,9 @@ type SponsoredPaymaster struct {
 func (pm *SponsoredPaymaster) ValidatePaymasterUserOp(uo *UserOperation) (*ValidationResult, error) {
 	if pm == nil || pm.Senders == nil {
 		return &ValidationResult{Valid: false, Reason: "paymaster not configured"}, nil
+	}
+	if uo == nil {
+		return &ValidationResult{Valid: false, Reason: "nil user operation"}, nil
 	}
 	if !pm.Senders[string(uo.Sender)] {
 		return &ValidationResult{Valid: false, Reason: "sender not sponsored"}, nil
@@ -181,6 +187,12 @@ func (auth *Authorization) SignHash() []byte {
 	if auth == nil {
 		return nil
 	}
+	if auth.ContractAddress == nil {
+		return nil
+	}
+	if auth.ChainID == nil || auth.Nonce == nil {
+		return nil
+	}
 	h := sha256.New()
 	h.Write(auth.ContractAddress)
 	h.Write(auth.ChainID.Bytes())
@@ -202,6 +214,15 @@ type GasEstimate struct {
 
 // EstimateGas sums the gas components.
 func EstimateGas(pre, verification, call *big.Int) *GasEstimate {
+	if pre == nil {
+		pre = big.NewInt(0)
+	}
+	if verification == nil {
+		verification = big.NewInt(0)
+	}
+	if call == nil {
+		call = big.NewInt(0)
+	}
 	total := new(big.Int).Add(pre, verification)
 	total.Add(total, call)
 	return &GasEstimate{
@@ -214,5 +235,8 @@ func EstimateGas(pre, verification, call *big.Int) *GasEstimate {
 
 // MaxFeeForGas returns the max total fee (gas * maxFeePerGas) with cap.
 func MaxFeeForGas(gas, maxFeePerGas *big.Int) *big.Int {
+	if gas == nil || maxFeePerGas == nil {
+		return big.NewInt(0)
+	}
 	return new(big.Int).Mul(gas, maxFeePerGas)
 }
