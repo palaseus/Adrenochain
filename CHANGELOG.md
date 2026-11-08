@@ -1,6 +1,34 @@
 # AdrenaChain Changelog
 [Unreleased]
 
+## Latest Changes (2026-11-08) — Operations Hardening & Multi-Chain
+### Resilience
+- **pkg/resilience/circuitbreaker (new)**: Circuit breaker (closed/open/half-open) for chain connectors and external calls; prevents cascading failures. Defaults: trip after 5 failures, 30s cooldown, 3 half-open trials, close after 2 successes.
+- **pkg/multichain/chainregistry**: `ProtectedConnector` wraps any `Connector` with a circuit breaker; exposes `BreakerState()`/`BreakerStats()`.
+
+### Multi-chain / cross-chain (all major chains & regions)
+- **pkg/multichain/chainregistry (new)**: Registry pre-populated with Ethereum, Arbitrum, Optimism, Base, Polygon, BSC, Avalanche C-Chain, Bitcoin, Solana, Cosmos Hub, Osmosis, Polkadot, Kusama, and Adrenochain (mainnet/testnet). Each `ChainSpec` carries chain ID, native asset, RPC endpoints, region, jurisdictions, confirmation depth, and smart-contract support.
+- **pkg/multichain/ccmp (new)**: Cross-Chain Messaging Protocol — atomic, ordered, authenticated messages with replay nonces, expiry, cancel/refund, and a relay registry preventing double-relay rewards.
+
+### Compliance (FATF Travel Rule / IVMS 101 / MiCA TFR / sanctions)
+- **pkg/compliance/travelrule**: Expanded to EU, US, UK, Singapore, UAE, Japan, Korea, India, Brazil, Canada, Australia, Switzerland.
+- **pkg/compliance/sanctions (new)**: OFAC SDN, UN, EU, UK HM Treasury, VARA, MAS screening (wallet/name/address matching).
+- **pkg/compliance/engine (new)**: Unified ALLOW/BLOCK/REVIEW decision combining sanctions + Travel Rule + threshold proximity.
+
+### Post-quantum cryptography (NIST PQC: FIPS 203/204/205)
+- **pkg/crypto/pqc (new)**: Hybrid PQC — X25519 + Ring-LWE-style KEM; secp256k1 ECDSA + WOTS+ signatures. Defaults ML-KEM-768 / ML-DSA-65 per NIST IR 8547 (Oct 2026).
+- **pkg/crypto/stealth (new)**: ERC-5564 stealth addresses + ERC-6538 meta-addresses (view-key scan, spend-key recovery).
+
+### Account abstraction (ERC-4337 / EIP-7702)
+- **pkg/account/abstraction (new)**: UserOperation, EntryPoint validation, Account/Paymaster interfaces, SponsoredPaymaster, EIP-7702 Authorization, gas estimation.
+
+### HD wallets (BIP-32 / BIP-39 / BIP-44 / SLIP-44)
+- **pkg/wallet/hd (new)**: BIP-39 mnemonics + seed (PBKDF2-HMAC-SHA512), BIP-32 extended keys + Derive/DerivePath, BIP-44 paths, SLIP-44 coin types. Verified against Python hmac/hashlib stdlib.
+
+### Documentation
+- **docs/OPERATIONS_HARDENING.md (new)**: Circuit breakers, rate limiting, mTLS, secrets management, dependency auditing, pre-production checklist.
+- **docs/DEPLOYMENT.md**: Kubernetes + Docker volume docs already added previously.
+
 ## Latest Changes (2026-11-08) — Privacy & Blockchain Standards
 ### Post-quantum cryptography (NIST PQC: FIPS 203/204/205)
 - **pkg/crypto/pqc (new)**: Hybrid post-quantum cryptography aligned with NIST PQC

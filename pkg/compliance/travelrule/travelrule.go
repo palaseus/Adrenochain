@@ -33,6 +33,13 @@ const (
 	UnitedKingdom Jurisdiction = "UK" // FCA
 	Singapore     Jurisdiction = "SG" // MAS
 	UAE           Jurisdiction = "AE" // VARA
+	Japan         Jurisdiction = "JP" // FSA: no minimum threshold for crypto
+	Korea         Jurisdiction = "KR" // FIU: > KRW 1 million (approx USD 750)
+	India         Jurisdiction = "IN" // FIU-IND: all virtual asset transfers
+	Brazil        Jurisdiction = "BR" // Bacen/CVMB: no minimum threshold
+	Canada        Jurisdiction = "CA" // FINTRAC: > CAD 10,000
+	Australia     Jurisdiction = "AU" // AUSTRAC: > AUD 10,000
+	Switzerland   Jurisdiction = "CH" // FINMA: no minimum threshold
 )
 
 // Threshold returns the Travel Rule value threshold for a jurisdiction.
@@ -49,6 +56,20 @@ func (j Jurisdiction) Threshold() (amount *big.Int, currency string, ok bool) {
 		return big.NewInt(1500), "SGD", true
 	case UAE:
 		return nil, "", true // VARA: all virtual asset transfers
+	case Japan:
+		return nil, "", true // FSA: no minimum threshold for crypto transfers
+	case Korea:
+		return big.NewInt(1000000), "KRW", true // FIU: > KRW 1 million
+	case India:
+		return nil, "", true // FIU-IND: all virtual asset transfers
+	case Brazil:
+		return nil, "", true // Bacen: all virtual asset transfers
+	case Canada:
+		return big.NewInt(10000), "CAD", true // FINTRAC: > CAD 10,000
+	case Australia:
+		return big.NewInt(10000), "AUD", true // AUSTRAC: > AUD 10,000
+	case Switzerland:
+		return nil, "", true // FINMA: no minimum threshold
 	case FATFGlobal:
 		return big.NewInt(1000), "USD/EUR", true
 	default:
