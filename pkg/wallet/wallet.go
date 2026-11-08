@@ -113,6 +113,10 @@ func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wal
 		config = DefaultWalletConfig()
 	}
 
+	if s == nil {
+		return nil, fmt.Errorf("storage cannot be nil")
+	}
+
 	var defaultKey *btcec.PrivateKey
 	var errKey error
 
@@ -159,6 +163,10 @@ func NewWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wal
 func NewHDWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
 	if config == nil {
 		config = DefaultWalletConfig()
+	}
+
+	if s == nil {
+		return nil, fmt.Errorf("storage cannot be nil")
 	}
 
 	// Generate a new mnemonic (128 bits = 12 words)
@@ -226,6 +234,10 @@ func NewHDWallet(config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*W
 func NewHDWalletFromMnemonic(mnemonic []string, config *WalletConfig, us *utxo.UTXOSet, s *storage.Storage) (*Wallet, error) {
 	if config == nil {
 		config = DefaultWalletConfig()
+	}
+
+	if s == nil {
+		return nil, fmt.Errorf("storage cannot be nil")
 	}
 
 	// Validate mnemonic
