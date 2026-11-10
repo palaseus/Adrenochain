@@ -1,8 +1,8 @@
 package defi
 
 import (
-	"crypto/sha256"
 	"fmt"
+	"github.com/google/uuid"
 	"math/big"
 	"sync"
 	"time"
@@ -614,7 +614,10 @@ func (defi *CrossChainDeFi) AddNetwork(network *BlockchainNetwork) error {
 	defi.mu.Lock()
 	defer defi.mu.Unlock()
 
-	if len(defi.Networks) >= int(defi.config.MaxNetworks) {
+	if network == nil || network.ID == "" {
+		return fmt.Errorf("network and ID are required")
+	}
+	if uint64(len(defi.Networks)) >= defi.config.MaxNetworks {
 		return fmt.Errorf("maximum number of networks reached")
 	}
 
@@ -943,35 +946,8 @@ func (pool *LiquidityPool) GetLiquidityPoolMetrics() LiquidityPoolMetrics {
 	return pool.metrics
 }
 
-// generateDeFiID generates a unique DeFi system ID
-func generateDeFiID() string {
-	random := make([]byte, 16)
-	// In a real implementation, use crypto/rand
-	random[0] = byte(time.Now().UnixNano())
-	hash := sha256.Sum256(random)
-	return fmt.Sprintf("defi_%x", hash[:8])
-}
-
-// generateNetworkID generates a unique network ID
-func generateNetworkID() string {
-	random := make([]byte, 16)
-	random[0] = byte(time.Now().UnixNano())
-	hash := sha256.Sum256(random)
-	return fmt.Sprintf("network_%x", hash[:8])
-}
-
-// generatePoolID generates a unique pool ID
-func generatePoolID() string {
-	random := make([]byte, 16)
-	random[0] = byte(time.Now().UnixNano())
-	hash := sha256.Sum256(random)
-	return fmt.Sprintf("pool_%x", hash[:8])
-}
-
-// generateFarmID generates a unique farm ID
-func generateFarmID() string {
-	random := make([]byte, 16)
-	random[0] = byte(time.Now().UnixNano())
-	hash := sha256.Sum256(random)
-	return fmt.Sprintf("farm_%x", hash[:8])
-}
+// IDs must remain unique even when many objects are created in one clock tick.
+func generateDeFiID() string    { return "defi_" + uuid.NewString() }
+func generateNetworkID() string { return "network_" + uuid.NewString() }
+func generatePoolID() string    { return "pool_" + uuid.NewString() }
+func generateFarmID() string    { return "farm_" + uuid.NewString() }

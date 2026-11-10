@@ -191,16 +191,14 @@ func TestNewChainWithCorruptedChainState(t *testing.T) {
 		t.Fatalf("Failed to store corrupted state: %v", err)
 	}
 
-	// Create new chain instance - should recover from corrupted state
+	// Corruption must fail without overwriting the persisted tip or balances.
 	chain2, err := NewChain(config, consensusConfig, storageInstance)
-	if err != nil {
-		t.Fatalf("Failed to create chain with corrupted state: %v", err)
-	}
+	assert.Error(t, err)
+	assert.Nil(t, chain2)
+	persisted, err := storageInstance.GetChainState()
+	assert.NoError(t, err)
+	assert.Equal(t, corruptedState, persisted)
 
-	// Should have reset to genesis state
-	assert.Equal(t, uint64(0), chain2.GetHeight())
-	assert.NotNil(t, chain2.GetGenesisBlock())
-	assert.Equal(t, chain2.GetGenesisBlock().CalculateHash(), chain2.GetTipHash())
 }
 
 // TestNewChainStorageErrors tests NewChain with various storage errors

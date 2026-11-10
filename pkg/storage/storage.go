@@ -77,17 +77,10 @@ func (s *Storage) StoreBlock(b *block.Block) error {
 		return fmt.Errorf("cannot store nil block")
 	}
 
-	file, err := os.Create(filepath.Join(s.dataDir, b.HexHash()))
-	if err != nil {
-		return fmt.Errorf("failed to create block file: %w", err)
+	if b.Header == nil {
+		return fmt.Errorf("cannot store block with nil header")
 	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(b); err != nil {
-		return fmt.Errorf("failed to encode block: %w", err)
-	}
-	return nil
+	return s.writeJSONAtomic(b.HexHash(), b)
 }
 
 // GetBlock retrieves a block from a file.
@@ -122,17 +115,7 @@ func (s *Storage) StoreChainState(state *ChainState) error {
 		return fmt.Errorf("cannot store nil chain state")
 	}
 
-	file, err := os.Create(filepath.Join(s.dataDir, "chainstate"))
-	if err != nil {
-		return fmt.Errorf("failed to create chain state file: %w", err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(state); err != nil {
-		return fmt.Errorf("failed to encode chain state: %w", err)
-	}
-	return nil
+	return s.writeJSONAtomic("chainstate", state)
 }
 
 // GetChainState retrieves the chain state from a file.
@@ -298,4 +281,33 @@ func (s *Storage) Has(key []byte) (bool, error) {
 // Close is a no-op for file-based storage.
 func (s *Storage) Close() error {
 	return nil
+}
+
+// writeJSONAtomic leaves the previous committed file intact if encoding or writing fails.
+func (s *Storage) writeJSONAtomic(name string, value interface{}) error {
+	file, err := os.CreateTemp(s.dataDir, ".pending-*")
+	if err != nil {
+		return err
+	}
+	path := file.Name()
+	defer os.Remove(path)
+	defer file.Close()
+	if err := json.NewEncoder(file).Encode(value); err != nil {
+		return fmt.Errorf("encode %s: %w", name, err)
+	}
+	if err := file.Sync(); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(path, filepath.Join(s.dataDir, name)); err != nil {
+		return err
+	}
+	dir, err := os.Open(s.dataDir)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	return dir.Sync()
 }

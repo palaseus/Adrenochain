@@ -19,6 +19,7 @@ import (
 
 // Chain represents the blockchain, managing blocks, chain state, and interactions with storage, UTXO set, and consensus.
 type Chain struct {
+	mutationMu    sync.Mutex
 	mu            sync.RWMutex             // mu protects concurrent access to chain fields.
 	blocks        map[string]*block.Block  // blocks is an in-memory cache of hash -> block.
 	blockByHeight map[uint64]*block.Block  // blockByHeight is an in-memory cache of height -> block.
@@ -92,75 +93,60 @@ func NewChain(config *ChainConfig, consensusConfig *consensus.ConsensusConfig, s
 		return nil, fmt.Errorf("failed to load chain state: %w", err)
 	}
 
-	if chainState.Height == 0 {
-		// No chain state found, create genesis block
+	if chainState == nil {
+		return nil, fmt.Errorf("storage returned nil chain state")
+	}
+	if len(chainState.BestBlockHash) == 0 {
+		if chainState.Height != 0 {
+			return nil, fmt.Errorf("chain state has height without a tip")
+		}
 		chain.createGenesisBlock()
-		// Store genesis block in storage
 		if err := chain.storage.StoreBlock(chain.genesisBlock); err != nil {
 			return nil, fmt.Errorf("failed to store genesis block: %w", err)
 		}
-		if err := chain.storage.StoreChainState(&storage.ChainState{
-			BestBlockHash: chain.genesisBlock.CalculateHash(),
-			Height:        chain.genesisBlock.Header.Height,
-		}); err != nil {
+		if err := chain.storage.StoreChainState(&storage.ChainState{BestBlockHash: chain.tipHash, Height: 0}); err != nil {
 			return nil, fmt.Errorf("failed to store chain state: %w", err)
 		}
-		// Process genesis block to update UTXO set
-		if err := chain.UTXOSet.ProcessBlock(chain.genesisBlock); err != nil {
-			return nil, fmt.Errorf("failed to process genesis block for UTXO set: %w", err)
-		}
-
-		// Initialize accumulated difficulty for genesis
-		chain.accumulatedDifficulty[0] = big.NewInt(0)
 	} else {
-		// Load best block from storage
-		chain.logger.Info("Loading best block from storage, hash: %x", chainState.BestBlockHash)
-		bestBlock, err := chain.storage.GetBlock(chainState.BestBlockHash)
-		if err != nil {
-			chain.logger.Error("Failed to load best block, resetting to genesis: %v", err)
-			// If we can't load the best block, the chain state is inconsistent
-			// Reset to genesis state
-			chain.createGenesisBlock()
-			if err := chain.storage.StoreBlock(chain.genesisBlock); err != nil {
-				return nil, fmt.Errorf("failed to store genesis block after reset: %w", err)
+		// Follow parent hashes from the persisted tip. Never reset persisted funds on a read error.
+		hash := chainState.BestBlockHash
+		for height := chainState.Height; ; height-- {
+			current, err := chain.storage.GetBlock(hash)
+			if err != nil {
+				return nil, fmt.Errorf("failed to restore block at height %d: %w", height, err)
 			}
-			if err := chain.storage.StoreChainState(&storage.ChainState{
-				BestBlockHash: chain.genesisBlock.CalculateHash(),
-				Height:        chain.genesisBlock.Header.Height,
-			}); err != nil {
-				return nil, fmt.Errorf("failed to store chain state after reset: %w", err)
+			if current == nil || current.Header == nil || current.Header.Height != height || !constantTimeEqual(current.CalculateHash(), hash) {
+				return nil, fmt.Errorf("invalid stored block at height %d", height)
 			}
-			chain.accumulatedDifficulty[0] = big.NewInt(0)
-			return chain, nil
+			chain.blocks[string(hash)] = current
+			chain.blockByHeight[height] = current
+			if height == chainState.Height {
+				chain.bestBlock = current
+			}
+			if height == 0 {
+				chain.genesisBlock = current
+				break
+			}
+			hash = current.Header.PrevBlockHash
 		}
-
-		chain.logger.Info("Best block loaded successfully, height: %d, hash: %x", bestBlock.Header.Height, bestBlock.CalculateHash())
-		chain.bestBlock = bestBlock
-		chain.tipHash = chainState.BestBlockHash
 		chain.height = chainState.Height
-
-		// Load all blocks from storage into memory
-		if err := chain.loadBlocksFromStorage(); err != nil {
-			return nil, fmt.Errorf("failed to load blocks from storage: %w", err)
+		chain.tipHash = append([]byte(nil), chainState.BestBlockHash...)
+	}
+	// Rebuild balances and work from the complete canonical history, including genesis.
+	chain.accumulatedDifficulty[0] = big.NewInt(0)
+	for height := uint64(0); ; height++ {
+		current := chain.blockByHeight[height]
+		if err := chain.UTXOSet.ProcessBlock(current); err != nil {
+			return nil, fmt.Errorf("failed to restore UTXOs at height %d: %w", height, err)
 		}
-
-		// Rebuild UTXO set from scratch (for simplicity, in a real chain, this would be optimized)
-		// For now, we assume the UTXO set is built up as blocks are added
-
-		// Only rebuild accumulated difficulty if we actually have blocks loaded
-		// This prevents errors when the chain state is inconsistent with actual block data
-		if len(chain.blocks) > 1 { // More than just genesis
-			if err := chain.rebuildAccumulatedDifficulty(); err != nil {
-				return nil, fmt.Errorf("failed to rebuild accumulated difficulty: %w", err)
-			}
-		} else {
-			// Initialize with just genesis if that's all we have
-			chain.accumulatedDifficulty[0] = big.NewInt(0)
+		chain.updateAccumulatedDifficulty(current)
+		if height == chain.height {
+			break
 		}
 	}
-
-	// Note: Chain state validation removed for now to prevent test failures
-	// Chain operations validation implemented
+	if err := chain.validateChainState(); err != nil {
+		return nil, err
+	}
 
 	return chain, nil
 }
@@ -284,67 +270,54 @@ func (c *Chain) AddBlock(block *block.Block) error {
 		return fmt.Errorf("block header cannot be nil")
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// Validate the block using consensus rules
+	// Serialize writers while allowing consensus to use the public chain readers.
+	c.mutationMu.Lock()
+	defer c.mutationMu.Unlock()
+	hash := block.CalculateHash()
+	c.mu.RLock()
+	_, exists := c.blocks[string(hash)]
+	c.mu.RUnlock()
+	if exists {
+		return fmt.Errorf("block already exists")
+	}
 	prevBlock := c.GetBlock(block.Header.PrevBlockHash)
 	if err := c.consensus.ValidateBlock(block, prevBlock); err != nil {
 		return fmt.Errorf("consensus validation failed: %w", err)
 	}
-
-	// Validate the block using chain-specific rules (size, etc.)
+	if !constantTimeEqual(block.Header.PrevBlockHash, c.GetTipHash()) {
+		return fmt.Errorf("block does not extend the canonical tip; fork reorganization is unsupported")
+	}
 	if err := c.validateBlock(block); err != nil {
 		return fmt.Errorf("chain validation failed: %w", err)
 	}
-
-	// Check if block already exists
-	hash := block.CalculateHash()
+	c.mu.Lock()
 	if _, exists := c.blocks[string(hash)]; exists {
+		c.mu.Unlock()
 		return fmt.Errorf("block already exists")
 	}
-
-	// Add block to storage
+	// Commit the persisted tip before publishing the new in-memory state.
 	if err := c.storage.StoreBlock(block); err != nil {
+		c.mu.Unlock()
 		return fmt.Errorf("failed to store block: %w", err)
 	}
-
-	// Update chain tip if this block extends the current best chain
-	if c.isBetterChain(block) {
-		c.bestBlock = block
-		c.tipHash = hash
-		c.height = block.Header.Height
-
-		// Update consensus
-		if prevBlock != nil {
-			blockTime := block.Header.Timestamp.Sub(prevBlock.Header.Timestamp)
-			c.consensus.UpdateDifficulty(blockTime)
-		}
-
-		// Store updated chain state
-		if err := c.storage.StoreChainState(&storage.ChainState{
-			BestBlockHash: c.tipHash,
-			Height:        c.height,
-		}); err != nil {
-			return fmt.Errorf("failed to store chain state: %w", err)
-		}
-		// Process block to update UTXO set
-		if err := c.UTXOSet.ProcessBlock(block); err != nil {
-			return fmt.Errorf("failed to process block for UTXO set: %w", err)
-		}
-
-		// Update accumulated difficulty cache
-		c.updateAccumulatedDifficulty(block)
-	} else {
-		// Even if not the best chain, update height if this block has higher height
-		if block.Header.Height > c.height {
-			c.height = block.Header.Height
-		}
+	if err := c.storage.StoreChainState(&storage.ChainState{BestBlockHash: hash, Height: block.Header.Height}); err != nil {
+		c.mu.Unlock()
+		return fmt.Errorf("failed to store chain state: %w", err)
 	}
-
-	// Always add to in-memory caches
+	if err := c.UTXOSet.ProcessBlock(block); err != nil {
+		c.mu.Unlock()
+		return fmt.Errorf("failed to process block: %w", err)
+	}
+	c.bestBlock = block
+	c.tipHash = hash
+	c.height = block.Header.Height
 	c.blocks[string(hash)] = block
 	c.blockByHeight[block.Header.Height] = block
+	c.updateAccumulatedDifficulty(block)
+	c.mu.Unlock()
+	if prevBlock != nil {
+		c.consensus.UpdateDifficulty(block.Header.Timestamp.Sub(prevBlock.Header.Timestamp))
+	}
 
 	return nil
 }
@@ -397,11 +370,8 @@ func (c *Chain) validateBlock(block *block.Block) error {
 		return fmt.Errorf("invalid proof of work")
 	}
 
-	// Validate transactions against UTXO set
-	for _, tx := range block.Transactions {
-		if err := c.UTXOSet.ValidateTransaction(tx); err != nil {
-			return fmt.Errorf("transaction validation failed: %w", err)
-		}
+	if err := c.UTXOSet.ValidateBlockTransactions(block); err != nil {
+		return fmt.Errorf("transaction validation failed: %w", err)
 	}
 
 	return nil
@@ -409,59 +379,43 @@ func (c *Chain) validateBlock(block *block.Block) error {
 
 // GetBlockSize calculates the approximate size of a block
 // GetBlockSize calculates the approximate size of a block in bytes.
-func (c *Chain) GetBlockSize(block *block.Block) uint64 {
-	if block == nil {
+func (c *Chain) GetBlockSize(b *block.Block) uint64 {
+	if b == nil || b.Header == nil {
 		return 0
 	}
-
-	size := uint64(0)
-
-	// Header size (fixed)
-	size += 80 // 32 + 32 + 8 + 8 + 8 + 4 = 92, rounded to 80 for simplicity
-
-	// Transaction count
-	size += 4
-
-	// Transaction sizes
-	for _, tx := range block.Transactions {
-		size += c.getTransactionSize(tx)
+	// Header fields, header length, and transaction count.
+	size := uint64(44 + len(b.Header.PrevBlockHash) + len(b.Header.MerkleRoot))
+	for _, tx := range b.Transactions {
+		size += 4 + c.getTransactionSize(tx)
 	}
-
 	return size
 }
 
-// getTransactionSize calculates the approximate size of a transaction
-// getTransactionSize calculates the approximate size of a transaction in bytes.
+// getTransactionSize matches the length-prefixed binary transaction encoding.
 func (c *Chain) getTransactionSize(tx *block.Transaction) uint64 {
 	if tx == nil {
 		return 0
 	}
-
-	size := uint64(0)
-
-	// Version + LockTime + Fee
-	size += 4 + 8 + 8
-
-	// Input count + Output count
-	size += 4 + 4
-
-	// Inputs
+	size := uint64(28 + len(tx.Hash))
 	for _, input := range tx.Inputs {
-		size += 32 + 4 + uint64(len(input.ScriptSig)) + 4
+		if input != nil {
+			size += uint64(16 + len(input.PrevTxHash) + len(input.ScriptSig))
+		}
 	}
-
-	// Outputs
 	for _, output := range tx.Outputs {
-		size += 8 + uint64(len(output.ScriptPubKey))
+		if output != nil {
+			size += uint64(16 + len(output.ScriptPubKey))
+		}
 	}
-
 	return size
 }
 
 // isBetterChain checks if the new block creates a better chain
 // isBetterChain checks if the new block creates a better chain than the current best chain.
-// Currently, it implements the longest chain rule.
+// Competing branches are not adopted without an explicit reorganization implementation.
 func (c *Chain) isBetterChain(block *block.Block) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if block == nil || block.Header == nil {
 		return false
 	}
@@ -483,7 +437,7 @@ func (c *Chain) isBetterChain(block *block.Block) bool {
 		return false // Can't calculate, assume not better
 	}
 
-	currentChainDiff, err := c.GetAccumulatedDifficulty(c.height)
+	currentChainDiff, err := c.calculateAccumulatedDifficulty(c.height)
 	if err != nil {
 		return false // Can't calculate, assume not better
 	}
@@ -495,6 +449,12 @@ func (c *Chain) isBetterChain(block *block.Block) bool {
 // GetBlock returns a block by its hash.
 // It first checks the in-memory cache, then loads from storage if not found.
 func (c *Chain) GetBlock(hash []byte) *block.Block {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.getBlockLocked(hash)
+}
+
+func (c *Chain) getBlockLocked(hash []byte) *block.Block {
 	if hash == nil {
 		return nil
 	}
@@ -519,18 +479,27 @@ func (c *Chain) GetBlock(hash []byte) *block.Block {
 // GetBlockByHeight returns a block by its height.
 // It first checks the in-memory cache, then iterates through blocks (less efficient) if not found.
 func (c *Chain) GetBlockByHeight(height uint64) *block.Block {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.getBlockByHeightLocked(height)
+}
+
+func (c *Chain) getBlockByHeightLocked(height uint64) *block.Block {
 	// Try to get from in-memory cache first
 	if block, exists := c.blockByHeight[height]; exists {
 		return block
 	}
 
-	// Otherwise, iterate through blocks to find by height (less efficient)
-	// In a real implementation, storage would provide this directly
-	for _, block := range c.blocks {
-		if block.Header.Height == height {
-			c.blockByHeight[height] = block // Cache it
-			return block
-		}
+	if height > c.height {
+		return nil
+	}
+	current := c.bestBlock
+	for current != nil && current.Header.Height > height {
+		current = c.getBlockLocked(current.Header.PrevBlockHash)
+	}
+	if current != nil && current.Header.Height == height {
+		c.blockByHeight[height] = current
+		return current
 	}
 
 	return nil
@@ -546,6 +515,8 @@ func (c *Chain) GetBestBlock() *block.Block {
 
 // GetHeight returns the current height of the chain.
 func (c *Chain) GetHeight() uint64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.height
 }
 
@@ -554,7 +525,7 @@ func (c *Chain) GetTipHash() []byte {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	return c.tipHash
+	return append([]byte(nil), c.tipHash...)
 }
 
 // GetGenesisBlock returns the genesis block of the chain.
@@ -578,11 +549,11 @@ func (c *Chain) GetConsensus() *consensus.Consensus {
 // GetAccumulatedDifficulty returns the accumulated difficulty up to the given height.
 // This implements the consensus.ChainReader interface.
 func (c *Chain) GetAccumulatedDifficulty(height uint64) (*big.Int, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	if diff, exists := c.accumulatedDifficulty[height]; exists {
-		return diff, nil
+		return new(big.Int).Set(diff), nil
 	}
 
 	// Calculate if not cached
@@ -594,12 +565,12 @@ func (c *Chain) calculateAccumulatedDifficulty(height uint64) (*big.Int, error) 
 	accumulated := big.NewInt(0)
 
 	for h := uint64(1); h <= height; h++ {
-		block := c.GetBlockByHeight(h)
+		block := c.getBlockByHeightLocked(h)
 		if block == nil {
 			return nil, fmt.Errorf("block not found at height %d", h)
 		}
 
-		blockDiff := big.NewInt(int64(block.Header.Difficulty))
+		blockDiff := new(big.Int).SetUint64(block.Header.Difficulty)
 		accumulated.Add(accumulated, blockDiff)
 	}
 
@@ -621,7 +592,7 @@ func (c *Chain) rebuildAccumulatedDifficulty() error {
 	if c.height > 0 {
 		for h := uint64(1); h <= c.height; h++ {
 			// Check if we actually have a block at this height before calculating difficulty
-			block := c.GetBlockByHeight(h)
+			block := c.getBlockByHeightLocked(h)
 			if block == nil {
 				// Skip this height if no block exists
 				// This can happen if the chain state is inconsistent
@@ -631,7 +602,7 @@ func (c *Chain) rebuildAccumulatedDifficulty() error {
 			// Calculate accumulated difficulty up to this height
 			accumulated := big.NewInt(0)
 			for height := uint64(1); height <= h; height++ {
-				blockAtHeight := c.GetBlockByHeight(height)
+				blockAtHeight := c.getBlockByHeightLocked(height)
 				if blockAtHeight == nil {
 					// Skip this height if no block exists
 					continue
@@ -688,7 +659,7 @@ func (c *Chain) updateAccumulatedDifficulty(block *block.Block) {
 	}
 
 	// Add current block difficulty
-	blockDiff := big.NewInt(int64(block.Header.Difficulty))
+	blockDiff := new(big.Int).SetUint64(block.Header.Difficulty)
 	newDiff := new(big.Int).Add(prevDiff, blockDiff)
 	c.accumulatedDifficulty[height] = newDiff
 }
@@ -700,12 +671,7 @@ func (c *Chain) ForkChoice(newBlock *block.Block) error {
 		return fmt.Errorf("cannot perform fork choice on nil block")
 	}
 
-	// Check if this block creates a better chain
-	if c.isBetterChain(newBlock) {
-		return c.AddBlock(newBlock)
-	}
-
-	return fmt.Errorf("block does not create a better chain")
+	return c.AddBlock(newBlock)
 }
 
 // Close closes the chain's underlying storage.
@@ -788,7 +754,10 @@ func (c *Chain) CleanupMemory() {
 	// Clean up old blocks beyond reorg depth
 	if len(c.blocks) > int(c.reorgDepth*2) {
 		// Keep only the most recent blocks
-		height := c.GetHeight()
+		height := c.height
+		if height <= c.reorgDepth {
+			return
+		}
 		cutoffHeight := height - c.reorgDepth
 
 		for hash, block := range c.blocks {

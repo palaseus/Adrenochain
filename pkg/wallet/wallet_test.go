@@ -156,7 +156,7 @@ func TestSignTransaction(t *testing.T) {
 
 	// Create a test UTXO for the fromAccount so it has funds to spend
 	testUTXO := &utxo.UTXO{
-		TxHash:       []byte("test_tx_hash_sign"),
+		TxHash:       append([]byte("test_tx_hash_sign"), make([]byte, 15)...),
 		TxIndex:      0,
 		Value:        5000, // Give it 5000 to spend
 		ScriptPubKey: fromAccount.PublicKey,

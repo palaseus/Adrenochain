@@ -3,7 +3,6 @@ package miner
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -18,8 +17,7 @@ import (
 )
 
 func TestMiner(t *testing.T) {
-	dataDir := "./test_miner_data_test_miner"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
@@ -47,8 +45,7 @@ func TestMiner(t *testing.T) {
 }
 
 func TestCreateNewBlock(t *testing.T) {
-	dataDir := "./test_miner_data_test_create_new_block"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	if err != nil {
@@ -76,8 +73,7 @@ func TestCreateNewBlock(t *testing.T) {
 
 // TestMinerAdvancedScenarios tests advanced miner scenarios
 func TestMinerAdvancedScenarios(t *testing.T) {
-	dataDir := "./test_miner_data_test_advanced_scenarios"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -142,8 +138,7 @@ func TestMinerAdvancedScenarios(t *testing.T) {
 
 // TestMinerConcurrency tests miner behavior under concurrent operations
 func TestMinerConcurrency(t *testing.T) {
-	dataDir := "./test_miner_data_test_concurrency"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -207,8 +202,7 @@ func TestMinerConcurrency(t *testing.T) {
 
 // TestMinerEdgeCases tests miner edge cases and error conditions
 func TestMinerEdgeCases(t *testing.T) {
-	dataDir := "./test_miner_data_test_edge_cases"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -266,8 +260,7 @@ func TestMinerEdgeCases(t *testing.T) {
 
 // TestMinerIntegration tests miner integration with other components
 func TestMinerIntegration(t *testing.T) {
-	dataDir := "./test_miner_data_test_integration"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -339,8 +332,7 @@ func TestMinerIntegration(t *testing.T) {
 
 // TestMinerPerformance tests miner performance characteristics
 func TestMinerPerformance(t *testing.T) {
-	dataDir := "./test_miner_data_test_performance"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -408,8 +400,7 @@ func TestMinerPerformance(t *testing.T) {
 
 // TestMinerRecovery tests miner recovery mechanisms
 func TestMinerRecovery(t *testing.T) {
-	dataDir := "./test_miner_data_test_recovery"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -470,8 +461,7 @@ func TestMinerRecovery(t *testing.T) {
 
 // TestMinerStatistics tests miner statistics and monitoring
 func TestMinerStatistics(t *testing.T) {
-	dataDir := "./test_miner_data_test_statistics"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -513,8 +503,7 @@ func TestMinerStatistics(t *testing.T) {
 
 // TestMinerUncoveredFunctions tests all the previously uncovered functions
 func TestMinerUncoveredFunctions(t *testing.T) {
-	dataDir := "./test_miner_data_test_uncovered"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -731,8 +720,7 @@ func TestMinerUncoveredFunctions(t *testing.T) {
 
 // TestMinerEdgeCaseCoverage tests edge cases to achieve 100% coverage
 func TestMinerEdgeCaseCoverage(t *testing.T) {
-	dataDir := "./test_miner_data_test_edge_cases"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -887,8 +875,7 @@ func TestMinerEdgeCaseCoverage(t *testing.T) {
 
 // TestMinerFinalCoverage tests the final uncovered code paths to achieve 100%
 func TestMinerFinalCoverage(t *testing.T) {
-	dataDir := "./test_miner_data_test_final"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -1052,8 +1039,7 @@ func TestMinerFinalCoverage(t *testing.T) {
 
 // TestMinerAggressiveCoverage uses aggressive techniques to achieve 100% coverage
 func TestMinerAggressiveCoverage(t *testing.T) {
-	dataDir := "./test_miner_data_test_aggressive"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -1229,8 +1215,7 @@ func TestMinerAggressiveCoverage(t *testing.T) {
 
 // TestMinerFinalPush uses the most aggressive techniques to achieve 100% coverage
 func TestMinerFinalPush(t *testing.T) {
-	dataDir := "./test_miner_data_test_final_push"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)
@@ -1438,8 +1423,7 @@ func TestMinerFinalPush(t *testing.T) {
 
 // TestMinerUltraFinal uses the most extreme techniques to achieve 100% coverage
 func TestMinerUltraFinal(t *testing.T) {
-	dataDir := "./test_miner_data_test_ultra_final"
-	defer os.RemoveAll(dataDir)
+	dataDir := t.TempDir()
 
 	storage, err := storage.NewStorage(&storage.StorageConfig{DataDir: dataDir})
 	require.NoError(t, err)

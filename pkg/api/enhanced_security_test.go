@@ -129,13 +129,13 @@ func TestEnhancedSecurityMiddleware_getClientIP(t *testing.T) {
 			name:       "X-Forwarded-For header",
 			remoteAddr: "192.168.1.1:8080",
 			headers:    map[string]string{"X-Forwarded-For": "203.0.113.1, 192.168.1.1"},
-			expectedIP: "203.0.113.1",
+			expectedIP: "192.168.1.1",
 		},
 		{
 			name:       "X-Real-IP header",
 			remoteAddr: "192.168.1.1:8080",
 			headers:    map[string]string{"X-Real-IP": "203.0.113.2"},
-			expectedIP: "203.0.113.2",
+			expectedIP: "192.168.1.1",
 		},
 		{
 			name:       "RemoteAddr fallback",

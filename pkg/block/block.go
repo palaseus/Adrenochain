@@ -242,6 +242,9 @@ func buildMerkleTree(hashes [][]byte) []byte {
 // IsValid checks if the block is valid according to its internal consistency rules.
 // It validates the header, Merkle root, and all contained transactions.
 func (b *Block) IsValid() error {
+	if b == nil {
+		return fmt.Errorf("block is nil")
+	}
 	// Check if header exists
 	if b.Header == nil {
 		return fmt.Errorf("block header is nil")
@@ -252,18 +255,18 @@ func (b *Block) IsValid() error {
 		return fmt.Errorf("invalid header: %w", err)
 	}
 
-	// Check if Merkle root matches
-	calculatedRoot := b.CalculateMerkleRoot()
-	if !bytesEqual(b.Header.MerkleRoot, calculatedRoot) {
-		return fmt.Errorf("merkle root mismatch: expected %x, got %x",
-			b.Header.MerkleRoot, calculatedRoot)
-	}
-
 	// Validate all transactions
 	for i, tx := range b.Transactions {
 		if err := tx.IsValid(); err != nil {
 			return fmt.Errorf("invalid transaction %d: %w", i, err)
 		}
+	}
+
+	// Check if Merkle root matches
+	calculatedRoot := b.CalculateMerkleRoot()
+	if !bytesEqual(b.Header.MerkleRoot, calculatedRoot) {
+		return fmt.Errorf("merkle root mismatch: expected %x, got %x",
+			b.Header.MerkleRoot, calculatedRoot)
 	}
 
 	return nil
@@ -272,6 +275,9 @@ func (b *Block) IsValid() error {
 // IsValid checks if the header is valid according to its internal consistency rules.
 // It validates fields like version, previous block hash, Merkle root, timestamp, and difficulty.
 func (h *Header) IsValid() error {
+	if h == nil {
+		return fmt.Errorf("header is nil")
+	}
 	if h.Version == 0 {
 		return fmt.Errorf("invalid version: %d", h.Version)
 	}
@@ -300,6 +306,9 @@ func (h *Header) IsValid() error {
 // IsValid checks if the transaction is valid according to its internal consistency rules.
 // It validates fields like version, hash, and the structure of inputs and outputs.
 func (tx *Transaction) IsValid() error {
+	if tx == nil {
+		return fmt.Errorf("transaction is nil")
+	}
 	if tx.Version == 0 {
 		return fmt.Errorf("invalid version: %d", tx.Version)
 	}
@@ -345,6 +354,9 @@ func (tx *Transaction) IsValid() error {
 // IsValid checks if the transaction input is valid according to its internal consistency rules.
 // It primarily validates the length of the previous transaction hash.
 func (in *TxInput) IsValid() error {
+	if in == nil {
+		return fmt.Errorf("input is nil")
+	}
 	if len(in.PrevTxHash) != 32 {
 		return fmt.Errorf("invalid previous transaction hash length: %d", len(in.PrevTxHash))
 	}
@@ -355,6 +367,9 @@ func (in *TxInput) IsValid() error {
 // IsValid checks if the transaction output is valid according to its internal consistency rules.
 // It validates the output value and the presence of a script public key.
 func (out *TxOutput) IsValid() error {
+	if out == nil {
+		return fmt.Errorf("output is nil")
+	}
 	if out.Value == 0 {
 		return fmt.Errorf("output value cannot be zero")
 	}
@@ -488,6 +503,10 @@ func (b *Block) Deserialize(data []byte) error {
 	}
 	txCount := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
+
+	if uint64(txCount) > uint64(len(data)-offset)/64 {
+		return fmt.Errorf("txCount exceeds remaining data")
+	}
 
 	// Deserialize transactions
 	b.Transactions = make([]*Transaction, 0, txCount)
@@ -724,6 +743,10 @@ func (tx *Transaction) Deserialize(data []byte) error {
 	inputCount := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 
+	if uint64(inputCount) > uint64(len(data)-offset)/48 {
+		return fmt.Errorf("inputCount exceeds remaining data")
+	}
+
 	// Deserialize inputs
 	tx.Inputs = make([]*TxInput, 0, inputCount)
 	for i := uint32(0); i < inputCount; i++ {
@@ -752,6 +775,10 @@ func (tx *Transaction) Deserialize(data []byte) error {
 	}
 	outputCount := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
+
+	if uint64(outputCount) > uint64(len(data)-offset)/16 {
+		return fmt.Errorf("outputCount exceeds remaining data")
+	}
 
 	// Deserialize outputs
 	tx.Outputs = make([]*TxOutput, 0, outputCount)

@@ -1380,12 +1380,15 @@ func TestChainAdapterWithRealChain(t *testing.T) {
 
 	// Create chain config
 	chainConfig := &chain.ChainConfig{
-		MaxReorgDepth: 10,
+		MaxReorgDepth:      10,
+		GenesisBlockReward: 5,
+		MaxBlockSize:       1048576,
 	}
 
 	// Create consensus config
 	consensusConfig := &consensus.ConsensusConfig{
 		TargetBlockTime:              10 * time.Second,
+		MinDifficulty:                1,
 		DifficultyAdjustmentInterval: 2016,
 	}
 

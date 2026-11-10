@@ -623,6 +623,7 @@ func TestStorageAdvancedScenarios(t *testing.T) {
 	t.Run("RapidBlockOperations", func(t *testing.T) {
 		var wg sync.WaitGroup
 		numBlocks := 100
+		hashes := make([][]byte, numBlocks)
 
 		// Store blocks concurrently
 		for i := 0; i < numBlocks; i++ {
@@ -640,6 +641,7 @@ func TestStorageAdvancedScenarios(t *testing.T) {
 				}
 				b.Header.MerkleRoot = b.CalculateMerkleRoot()
 
+				hashes[height] = b.CalculateHash()
 				err := s.StoreBlock(b)
 				assert.NoError(t, err)
 			}(i)
@@ -649,18 +651,7 @@ func TestStorageAdvancedScenarios(t *testing.T) {
 
 		// Verify all blocks can be retrieved
 		for i := 0; i < numBlocks; i++ {
-			b := &block.Block{
-				Header: &block.Header{
-					Version:       1,
-					PrevBlockHash: []byte{},
-					Timestamp:     time.Now(),
-					Difficulty:    1,
-					Height:        uint64(i),
-				},
-			}
-			b.Header.MerkleRoot = b.CalculateMerkleRoot()
-
-			_, err := s.GetBlock(b.CalculateHash())
+			_, err := s.GetBlock(hashes[i])
 			assert.NoError(t, err)
 		}
 	})

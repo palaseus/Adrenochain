@@ -38,13 +38,13 @@ help:
 # Build the project
 build:
 	     @echo "🔨 Building Adrenochain..."
-	go build -o bin/adrenochain ./cmd/adrenochain
+	go build -o bin/adrenochain ./cmd/gochain
 	     @echo "✅ Build complete: bin/adrenochain"
 
 # Install to GOPATH
 install:
 	     @echo "📦 Installing Adrenochain..."
-	go install ./cmd/adrenochain
+	go install ./cmd/gochain
 	@echo "✅ Installation complete"
 
 # Clean build artifacts

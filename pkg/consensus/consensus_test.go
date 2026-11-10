@@ -506,7 +506,7 @@ func TestConsensus_Performance(t *testing.T) {
 	// The exact behavior depends on the mining implementation
 	if err != nil {
 		// Expected timeout or error
-		assert.Contains(t, err.Error(), "timeout", "Should get timeout error")
+		assert.Contains(t, err.Error(), "mining stopped", "Should stop when the stop channel closes")
 	}
 }
 
@@ -683,7 +683,7 @@ func TestConsensus_BlockValidationComprehensive(t *testing.T) {
 					PrevBlockHash: make([]byte, 32),
 					MerkleRoot:    make([]byte, 32),
 					Timestamp:     time.Now().Add(-10 * time.Second),
-					Difficulty:    1000,
+					Difficulty:    1,
 					Nonce:         0,
 					Height:        100,
 				},
@@ -711,7 +711,7 @@ func TestConsensus_BlockValidationComprehensive(t *testing.T) {
 						PrevBlockHash: make([]byte, 32),
 						MerkleRoot:    make([]byte, 32),
 						Timestamp:     time.Now(),
-						Difficulty:    1000,
+						Difficulty:    1,
 						Nonce:         0,
 						Height:        101,
 					},
@@ -748,7 +748,7 @@ func TestConsensus_BlockValidationComprehensive(t *testing.T) {
 					PrevBlockHash: make([]byte, 32),
 					MerkleRoot:    make([]byte, 32),
 					Timestamp:     time.Now(),
-					Difficulty:    1000,
+					Difficulty:    1,
 					Nonce:         0,
 					Height:        101,
 				},
@@ -766,7 +766,7 @@ func TestConsensus_BlockValidationComprehensive(t *testing.T) {
 					PrevBlockHash: make([]byte, 32),
 					MerkleRoot:    make([]byte, 32),
 					Timestamp:     time.Time{}, // Zero time
-					Difficulty:    1000,
+					Difficulty:    1,
 					Nonce:         0,
 					Height:        101,
 				},
@@ -1427,10 +1427,9 @@ func TestMineBlock(t *testing.T) {
 	// Test that mining sets the nonce (even if it doesn't complete successfully)
 	stopChan := make(chan struct{})
 
-	// Start mining in a goroutine
-	go func() {
-		consensus.MineBlock(testBlock, stopChan)
-	}()
+	// Start mining in a goroutine and wait for its result before inspecting the block.
+	done := make(chan error, 1)
+	go func() { done <- consensus.MineBlock(testBlock, stopChan) }()
 
 	// Let it run for a short time to see if it sets the nonce
 	time.Sleep(100 * time.Millisecond)
@@ -1438,11 +1437,13 @@ func TestMineBlock(t *testing.T) {
 	// Stop mining
 	close(stopChan)
 
-	// Verify that the nonce was set (even if mining didn't complete)
-	assert.True(t, testBlock.Header.Nonce >= 0, "Nonce should be set during mining")
-
-	// Test that the mining function can be stopped
-	time.Sleep(50 * time.Millisecond) // Give time for goroutine to finish
+	select {
+	case err := <-done:
+		assert.ErrorContains(t, err, "mining stopped")
+	case <-time.After(time.Second):
+		t.Fatal("mining did not stop")
+	}
+	assert.Greater(t, testBlock.Header.Nonce, uint64(0))
 }
 
 // TestUpdateDifficulty tests difficulty updates

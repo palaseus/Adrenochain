@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"math/big"
 	"sync"
 
@@ -53,6 +54,12 @@ func NewUTXO(txHash []byte, txIndex uint32, value uint64, scriptPubKey []byte, a
 
 // AddUTXO adds a UTXO to the set
 func (us *UTXOSet) AddUTXO(utxo *UTXO) {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	us.addUTXO(utxo)
+}
+
+func (us *UTXOSet) addUTXO(utxo *UTXO) {
 	if utxo == nil {
 		return
 	}
@@ -66,7 +73,17 @@ func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 	}
 
 	key := us.makeKey(utxo.TxHash, utxo.TxIndex)
-	us.utxos[key] = utxo
+	balance := us.balances[utxo.Address]
+	if old := us.utxos[key]; old != nil && old.Address == utxo.Address {
+		balance -= old.Value
+	}
+	if utxo.Value > math.MaxUint64-balance {
+		return
+	}
+	if old := us.utxos[key]; old != nil {
+		us.removeUTXO(old.TxHash, old.TxIndex)
+	}
+	us.utxos[key] = cloneUTXO(utxo)
 
 	// Update balance
 	us.balances[utxo.Address] += utxo.Value
@@ -74,13 +91,17 @@ func (us *UTXOSet) AddUTXO(utxo *UTXO) {
 
 // AddUTXOSafe adds a UTXO to the set with proper locking (for external use)
 func (us *UTXOSet) AddUTXOSafe(utxo *UTXO) {
-	us.mu.Lock()
-	defer us.mu.Unlock()
 	us.AddUTXO(utxo)
 }
 
 // RemoveUTXO removes a UTXO from the set
 func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	return us.removeUTXO(txHash, txIndex)
+}
+
+func (us *UTXOSet) removeUTXO(txHash []byte, txIndex uint32) *UTXO {
 	key := us.makeKey(txHash, txIndex)
 	utxo, exists := us.utxos[key]
 	if !exists {
@@ -99,8 +120,6 @@ func (us *UTXOSet) RemoveUTXO(txHash []byte, txIndex uint32) *UTXO {
 
 // RemoveUTXOSafe removes a UTXO from the set with proper locking (for external use)
 func (us *UTXOSet) RemoveUTXOSafe(txHash []byte, txIndex uint32) *UTXO {
-	us.mu.Lock()
-	defer us.mu.Unlock()
 	return us.RemoveUTXO(txHash, txIndex)
 }
 
@@ -110,7 +129,7 @@ func (us *UTXOSet) GetUTXO(txHash []byte, txIndex uint32) *UTXO {
 	defer us.mu.RUnlock()
 
 	key := us.makeKey(txHash, txIndex)
-	return us.utxos[key]
+	return cloneUTXO(us.utxos[key])
 }
 
 // GetBalance returns the balance of an address
@@ -129,7 +148,7 @@ func (us *UTXOSet) GetAddressUTXOs(address string) []*UTXO {
 	var addressUTXOs []*UTXO
 	for _, utxo := range us.utxos {
 		if utxo.Address == address {
-			addressUTXOs = append(addressUTXOs, utxo)
+			addressUTXOs = append(addressUTXOs, cloneUTXO(utxo))
 		}
 	}
 
@@ -158,9 +177,61 @@ func (us *UTXOSet) ProcessBlock(block *block.Block) error {
 	us.mu.Lock()
 	defer us.mu.Unlock()
 
-	// Process each transaction in the block
 	for _, tx := range block.Transactions {
+		if err := validateAmounts(tx); err != nil {
+			return err
+		}
+		if len(tx.Hash) == 0 {
+			return fmt.Errorf("transaction hash is empty")
+		}
+	}
+
+	// Record only touched entries so a failed application can be rolled back.
+	undoUTXOs := make(map[string]*UTXO)
+	type balanceEntry struct {
+		value  uint64
+		exists bool
+	}
+	undoBalances := make(map[string]balanceEntry)
+	rememberBalance := func(address string) {
+		if _, seen := undoBalances[address]; !seen {
+			value, exists := us.balances[address]
+			undoBalances[address] = balanceEntry{value, exists}
+		}
+	}
+	rememberUTXO := func(hash []byte, index uint32) {
+		key := us.makeKey(hash, index)
+		if _, seen := undoUTXOs[key]; !seen {
+			old := us.utxos[key]
+			undoUTXOs[key] = old
+			if old != nil {
+				rememberBalance(old.Address)
+			}
+		}
+	}
+	for _, tx := range block.Transactions {
+		for _, input := range tx.Inputs {
+			rememberUTXO(input.PrevTxHash, input.PrevTxIndex)
+		}
+		for i, output := range tx.Outputs {
+			rememberUTXO(tx.Hash, uint32(i))
+			rememberBalance(us.extractAddress(output.ScriptPubKey))
+		}
 		if err := us.processTransaction(tx, block.Header.Height); err != nil {
+			for key, old := range undoUTXOs {
+				if old == nil {
+					delete(us.utxos, key)
+				} else {
+					us.utxos[key] = old
+				}
+			}
+			for address, old := range undoBalances {
+				if old.exists {
+					us.balances[address] = old.value
+				} else {
+					delete(us.balances, address)
+				}
+			}
 			return fmt.Errorf("failed to process transaction: %w", err)
 		}
 	}
@@ -178,7 +249,7 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 		}
 
 		// Remove the spent UTXO
-		us.RemoveUTXO(input.PrevTxHash, input.PrevTxIndex)
+		us.removeUTXO(input.PrevTxHash, input.PrevTxIndex)
 	}
 
 	// Add new outputs
@@ -199,7 +270,14 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 			Height:       height,
 		}
 
-		us.AddUTXO(utxo)
+		balance := us.balances[address]
+		if old := us.utxos[us.makeKey(tx.Hash, uint32(i))]; old != nil && old.Address == address {
+			balance -= old.Value
+		}
+		if output.Value > math.MaxUint64-balance {
+			return fmt.Errorf("address balance overflow")
+		}
+		us.addUTXO(utxo)
 	}
 
 	return nil
@@ -211,6 +289,9 @@ func (us *UTXOSet) processTransaction(tx *block.Transaction, height uint64) erro
 // Note: This method treats transactions with no inputs as potentially valid (coinbase-like),
 // but for strict validation in block context, use ValidateTransactionInBlock.
 func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
+	if err := validateAmounts(tx); err != nil {
+		return err
+	}
 	if tx == nil {
 		return fmt.Errorf("transaction is nil")
 	}
@@ -312,6 +393,9 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 			return fmt.Errorf("input %d: invalid signature for UTXO %x:%d", i, input.PrevTxHash, input.PrevTxIndex)
 		}
 
+		if utxo.Value > math.MaxUint64-totalInput {
+			return fmt.Errorf("input value overflow")
+		}
 		totalInput += utxo.Value
 	}
 
@@ -355,6 +439,9 @@ func (us *UTXOSet) ValidateTransaction(tx *block.Transaction) error {
 // (fees, dust, outputs vs inputs) without performing signature verification.
 // This is useful for testing business logic scenarios where signature creation would be complex.
 func (us *UTXOSet) ValidateTransactionBusinessLogic(tx *block.Transaction) error {
+	if err := validateAmounts(tx); err != nil {
+		return err
+	}
 	if tx == nil {
 		return fmt.Errorf("transaction is nil")
 	}
@@ -408,6 +495,9 @@ func (us *UTXOSet) ValidateTransactionBusinessLogic(tx *block.Transaction) error
 
 		// Skip signature verification for business logic testing
 
+		if utxo.Value > math.MaxUint64-totalInput {
+			return fmt.Errorf("input value overflow")
+		}
 		totalInput += utxo.Value
 	}
 
@@ -451,6 +541,9 @@ func (us *UTXOSet) ValidateTransactionBusinessLogic(tx *block.Transaction) error
 // This method properly distinguishes between coinbase transactions (first transaction in block)
 // and regular transactions.
 func (us *UTXOSet) ValidateTransactionInBlock(tx *block.Transaction, block *block.Block, txIndex int) error {
+	if err := validateAmounts(tx); err != nil {
+		return err
+	}
 	if tx == nil {
 		return fmt.Errorf("transaction is nil")
 	}
@@ -567,6 +660,9 @@ func (us *UTXOSet) ValidateTransactionInBlock(tx *block.Transaction, block *bloc
 			return fmt.Errorf("input %d: invalid signature for UTXO %x:%d", i, input.PrevTxHash, input.PrevTxIndex)
 		}
 
+		if utxo.Value > math.MaxUint64-totalInput {
+			return fmt.Errorf("input value overflow")
+		}
 		totalInput += utxo.Value
 	}
 
@@ -639,6 +735,9 @@ func (us *UTXOSet) IsDoubleSpend(tx *block.Transaction) bool {
 
 // CalculateFee calculates the transaction fee based on input and output values
 func (us *UTXOSet) CalculateFee(tx *block.Transaction) (uint64, error) {
+	if err := validateAmounts(tx); err != nil {
+		return 0, err
+	}
 	if len(tx.Inputs) == 0 {
 		// Coinbase transaction has no fee
 		return 0, nil
@@ -649,6 +748,9 @@ func (us *UTXOSet) CalculateFee(tx *block.Transaction) (uint64, error) {
 		utxo := us.GetUTXO(input.PrevTxHash, input.PrevTxIndex)
 		if utxo == nil {
 			return 0, fmt.Errorf("UTXO not found for input %x:%d", input.PrevTxHash, input.PrevTxIndex)
+		}
+		if utxo.Value > math.MaxUint64-totalInput {
+			return 0, fmt.Errorf("input value overflow")
 		}
 		totalInput += utxo.Value
 	}
@@ -729,7 +831,7 @@ func (us *UTXOSet) GetSpendableUTXOs(address string, minValue uint64) []*UTXO {
 	var spendableUTXOs []*UTXO
 	for _, utxo := range us.utxos {
 		if utxo.Address == address && utxo.Value >= minValue {
-			spendableUTXOs = append(spendableUTXOs, utxo)
+			spendableUTXOs = append(spendableUTXOs, cloneUTXO(utxo))
 		}
 	}
 	return spendableUTXOs
@@ -841,4 +943,97 @@ func concatRS(r, s *big.Int) []byte {
 	copy(out[32-len(rb):32], rb)
 	copy(out[64-len(sb):], sb)
 	return out
+}
+
+// validateAmounts checks structure and sums before any signature or fee work.
+func validateAmounts(tx *block.Transaction) error {
+	if tx == nil {
+		return fmt.Errorf("transaction is nil")
+	}
+	if tx.LockTime > math.MaxUint32 {
+		return fmt.Errorf("lock time exceeds signature format range")
+	}
+	for i, input := range tx.Inputs {
+		if input == nil {
+			return fmt.Errorf("input %d is nil", i)
+		}
+	}
+	var total uint64
+	for i, output := range tx.Outputs {
+		if output == nil {
+			return fmt.Errorf("output %d is nil", i)
+		}
+		if output.Value == 0 {
+			return fmt.Errorf("output %d has zero value", i)
+		}
+		if len(output.ScriptPubKey) == 0 {
+			return fmt.Errorf("output %d has empty script public key", i)
+		}
+		if output.Value > math.MaxUint64-total {
+			return fmt.Errorf("output value overflow")
+		}
+		total += output.Value
+	}
+	return nil
+}
+
+// ValidateBlockTransactions checks transactions against a temporary state in block order.
+// This permits spending an earlier output and rejects spending it twice in one block.
+func (us *UTXOSet) ValidateBlockTransactions(b *block.Block) error {
+	if b == nil || b.Header == nil {
+		return fmt.Errorf("block or header is nil")
+	}
+	staged := us.snapshot()
+	seen := make(map[string]bool)
+	for i, tx := range b.Transactions {
+		if err := tx.IsValid(); err != nil {
+			return fmt.Errorf("transaction %d: %w", i, err)
+		}
+		key := string(tx.Hash)
+		if seen[key] {
+			return fmt.Errorf("duplicate transaction %x", tx.Hash)
+		}
+		seen[key] = true
+		if err := staged.ValidateTransactionInBlock(tx, b, i); err != nil {
+			return fmt.Errorf("transaction %d: %w", i, err)
+		}
+		for j := range tx.Outputs {
+			if staged.GetUTXO(tx.Hash, uint32(j)) != nil {
+				return fmt.Errorf("transaction overwrites unspent output")
+			}
+		}
+		if err := staged.processTransaction(tx, b.Header.Height); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (us *UTXOSet) snapshot() *UTXOSet {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+	copy := NewUTXOSet()
+	for key, value := range us.utxos {
+		copy.utxos[key] = cloneUTXO(value)
+	}
+	for key, value := range us.balances {
+		copy.balances[key] = value
+	}
+	return copy
+}
+
+// TransactionSignatureHash is the signing digest used by UTXO validation.
+// The legacy wire format supports a 32-bit lock time; callers must reject larger values.
+func TransactionSignatureHash(tx *block.Transaction) []byte {
+	return new(UTXOSet).getTxSignatureData(tx)
+}
+
+func cloneUTXO(value *UTXO) *UTXO {
+	if value == nil {
+		return nil
+	}
+	clone := *value
+	clone.TxHash = append([]byte(nil), value.TxHash...)
+	clone.ScriptPubKey = append([]byte(nil), value.ScriptPubKey...)
+	return &clone
 }

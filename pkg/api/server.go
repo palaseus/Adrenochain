@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -143,22 +144,16 @@ func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
 
 // SECURITY FIX: getClientIP extracts client IP from request
 func (s *Server) getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return strings.Split(xff, ",")[0]
-	}
+	return remoteClientIP(r)
+}
 
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
+// Forwarding headers are client-controlled unless a trusted proxy is configured.
+func remoteClientIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		return host
 	}
-
-	// Use RemoteAddr as fallback
-	ip := r.RemoteAddr
-	if idx := strings.LastIndex(ip, ":"); idx != -1 {
-		ip = ip[:idx]
-	}
-	return ip
+	return r.RemoteAddr
 }
 
 // setupRoutes configures all the API routes
@@ -181,8 +176,9 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/api/v1/blocks/{hash}", s.getBlockHandler).Methods("GET")
 
 	// Transaction operations
-	s.router.HandleFunc("/api/v1/transactions/{hash}", s.getTransactionHandler).Methods("GET")
+
 	s.router.HandleFunc("/api/v1/transactions/pending", s.getPendingTransactionsHandler).Methods("GET")
+	s.router.HandleFunc("/api/v1/transactions/{hash}", s.getTransactionHandler).Methods("GET")
 
 	// Wallet operations
 	s.router.HandleFunc("/api/v1/wallet/balance/{address}", s.getBalanceHandler).Methods("GET")
@@ -197,7 +193,8 @@ func (s *Server) setupRoutes() {
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%d", s.port)
 
-	return http.ListenAndServe(addr, s.router)
+	server := &http.Server{Addr: addr, Handler: s.router, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
+	return server.ListenAndServe()
 }
 
 // healthHandler provides a simple health check endpoint

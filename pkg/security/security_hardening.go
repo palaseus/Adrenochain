@@ -249,8 +249,8 @@ func (sm *SecurityManager) checkAlertThresholds(eventType, ipAddress string) {
 // BlockIP blocks an IP address temporarily
 func (sm *SecurityManager) BlockIP(ipAddress string, duration time.Duration) {
 	sm.mu.Lock()
+	defer sm.mu.Unlock()
 	sm.blockedIPs[ipAddress] = time.Now().Add(duration)
-	sm.mu.Unlock()
 
 	// Create block event directly to avoid recursive call
 	blockEvent := SecurityEvent{

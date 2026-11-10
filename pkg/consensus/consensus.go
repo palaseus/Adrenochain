@@ -83,15 +83,16 @@ func (c *Consensus) GetFinalityDepth() uint64 {
 
 // SECURITY FIX: IsBlockFinal checks if a block is final with enhanced security
 func (c *Consensus) IsBlockFinal(blockHeight uint64) bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	if c.chain == nil {
+		return false
+	}
 
 	// Get current chain height
 	currentHeight := c.chain.GetHeight()
 
 	// SECURITY FIX: Enhanced finality check with multiple criteria
 	// 1. Block must be deep enough in the chain
-	if currentHeight-blockHeight < c.finalityDepth {
+	if blockHeight > currentHeight || currentHeight-blockHeight < c.finalityDepth {
 		return false
 	}
 
@@ -121,7 +122,7 @@ func (c *Consensus) IsBlockFinal(blockHeight uint64) bool {
 
 	// Block is final if accumulated difficulty has increased significantly
 	diffIncrease := new(big.Int).Sub(accumulatedDiff, blockDiff)
-	minDiffIncrease := new(big.Int).SetUint64(c.finalityDepth * 1000) // Minimum difficulty increase
+	minDiffIncrease := new(big.Int).Mul(new(big.Int).SetUint64(c.finalityDepth), big.NewInt(1000)) // Minimum difficulty increase
 
 	return diffIncrease.Cmp(minDiffIncrease) >= 0
 }
@@ -131,7 +132,7 @@ func (c *Consensus) IsBlockFinal(blockHeight uint64) bool {
 func (c *Consensus) AddCheckpoint(height uint64, hash []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.checkpoints[height] = hash
+	c.checkpoints[height] = append([]byte(nil), hash...)
 }
 
 // hasCheckpoint checks if a checkpoint exists at the given height
@@ -235,7 +236,7 @@ func (c *Consensus) GetAccumulatedDifficulty(height uint64) (*big.Int, error) {
 		}
 
 		// Add the difficulty of this block to accumulated difficulty
-		blockDiff := big.NewInt(int64(block.Header.Difficulty))
+		blockDiff := new(big.Int).SetUint64(block.Header.Difficulty)
 		accumulated.Add(accumulated, blockDiff)
 	}
 
@@ -249,6 +250,9 @@ func (c *Consensus) calculateExpectedDifficulty(blockHeight uint64) (uint64, err
 		return c.config.MinDifficulty, nil // Genesis block always has min difficulty
 	}
 
+	if c.config.DifficultyAdjustmentInterval == 0 {
+		return 0, fmt.Errorf("difficulty adjustment interval is zero")
+	}
 	if blockHeight%c.config.DifficultyAdjustmentInterval != 0 {
 		// If not an adjustment block, difficulty is the same as the previous block
 		prevBlock := c.chain.GetBlockByHeight(blockHeight - 1)
@@ -351,7 +355,10 @@ func (c *Consensus) ValidateBlock(block *block.Block, prevBlock *block.Block) er
 
 	// Validate checkpoint if this height has one
 	if c.hasCheckpoint(block.Header.Height) {
-		if !c.ValidateCheckpoint(block.Header.Height, block.CalculateHash()) {
+		c.mu.RLock()
+		matches := c.constantTimeCompare(c.checkpoints[block.Header.Height], block.CalculateHash())
+		c.mu.RUnlock()
+		if !matches {
 			return fmt.Errorf("block hash does not match checkpoint at height %d", block.Header.Height)
 		}
 	}
@@ -438,6 +445,9 @@ func (c *Consensus) validateBlockTransactions(block *block.Block) error {
 
 	// Validate each transaction
 	for i, tx := range block.Transactions {
+		if i > 0 && tx.IsCoinbase() {
+			return fmt.Errorf("multiple coinbase transactions")
+		}
 		if err := c.validateTransaction(tx); err != nil {
 			return fmt.Errorf("transaction %d validation failed: %w", i, err)
 		}
@@ -488,14 +498,10 @@ func (c *Consensus) bytesEqual(a, b []byte) bool {
 // ValidateProofOfWork validates the proof of work for a block.
 // It checks if the block's hash is less than or equal to the target derived from the current difficulty.
 func (c *Consensus) ValidateProofOfWork(block *block.Block) bool {
-	c.mu.RLock()
-	difficulty := c.difficulty
-	c.mu.RUnlock()
-
-	hash := block.CalculateHash()
-	target := c.calculateTarget(difficulty)
-
-	return c.hashLessThan(hash, target)
+	if block == nil || block.Header == nil || block.Header.Difficulty == 0 || block.Header.Difficulty > 256 {
+		return false
+	}
+	return c.hashLessThan(block.CalculateHash(), c.calculateTarget(block.Header.Difficulty))
 }
 
 // calculateTarget calculates the target hash for a given difficulty.
@@ -548,7 +554,13 @@ func (c *Consensus) hashLessThan(hash1, hash2 []byte) bool {
 // MineBlock mines a block by finding a nonce that satisfies the proof-of-work requirement.
 // It continuously increments the nonce and calculates the block hash until the target is met or mining is stopped.
 func (c *Consensus) MineBlock(block *block.Block, stopChan <-chan struct{}) error {
-	target := c.calculateTarget(c.difficulty)
+	if block == nil || block.Header == nil {
+		return fmt.Errorf("block or header is nil")
+	}
+	if block.Header.Difficulty == 0 || block.Header.Difficulty > 256 {
+		return fmt.Errorf("difficulty is outside the proof-of-work range")
+	}
+	target := c.calculateTarget(block.Header.Difficulty)
 
 	// Try different nonces
 	for nonce := uint64(0); nonce < ^uint64(0); nonce++ {

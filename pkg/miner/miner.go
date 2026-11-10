@@ -16,6 +16,7 @@ import (
 
 // Miner represents a blockchain miner
 type Miner struct {
+	workMu       sync.Mutex
 	mu           sync.RWMutex
 	chain        *chain.Chain
 	mempool      *mempool.Mempool
@@ -97,7 +98,7 @@ func (m *Miner) StartMining() error {
 	m.stopMining = make(chan struct{})
 
 	// Start mining in a goroutine
-	go m.mineBlocks()
+	go m.mineBlocksWithStop(m.stopMining)
 
 	return nil
 }
@@ -161,6 +162,16 @@ func (m *Miner) shouldContinueMining() bool {
 
 // mineBlocks continuously mines new blocks
 func (m *Miner) mineBlocks() {
+	m.mineBlocksWithStop(m.miningStopChannel())
+}
+
+func (m *Miner) miningStopChannel() <-chan struct{} {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.stopMining
+}
+
+func (m *Miner) mineBlocksWithStop(stop <-chan struct{}) {
 	ticker := time.NewTicker(m.config.BlockTime)
 	defer ticker.Stop()
 
@@ -172,7 +183,7 @@ func (m *Miner) mineBlocks() {
 		select {
 		case <-m.ctx.Done():
 			return
-		case <-m.stopMining:
+		case <-stop:
 			return
 		case <-ticker.C:
 			// Check if we should still be mining
@@ -190,7 +201,7 @@ func (m *Miner) mineBlocks() {
 			miningMutex.Unlock()
 
 			// Try to mine a new block
-			if err := m.mineNextBlock(); err != nil {
+			if err := m.mineNextBlockWithStop(stop); err != nil {
 				// Log error but continue mining
 
 			}
@@ -205,6 +216,17 @@ func (m *Miner) mineBlocks() {
 
 // mineNextBlock mines the next block
 func (m *Miner) mineNextBlock() error {
+	return m.mineNextBlockWithStop(m.miningStopChannel())
+}
+
+func (m *Miner) mineNextBlockWithStop(stop <-chan struct{}) error {
+	m.workMu.Lock()
+	defer m.workMu.Unlock()
+	select {
+	case <-stop:
+		return fmt.Errorf("mining stopped")
+	default:
+	}
 	// Get the current best block
 	bestBlock := m.chain.GetBestBlock()
 	if bestBlock == nil {
@@ -224,7 +246,7 @@ func (m *Miner) mineNextBlock() error {
 	}
 
 	// Mine the block
-	if err := m.mineBlock(newBlock); err != nil {
+	if err := m.consensus.MineBlock(newBlock, stop); err != nil {
 		if err.Error() == "mining stopped" {
 			// This is expected when stopping mining, don't log as error
 			return err
@@ -232,6 +254,11 @@ func (m *Miner) mineNextBlock() error {
 		return fmt.Errorf("failed to mine block: %w", err)
 	}
 
+	select {
+	case <-stop:
+		return fmt.Errorf("mining stopped")
+	default:
+	}
 	// Add the block to the chain
 	if err := m.chain.AddBlock(newBlock); err != nil {
 		if err.Error() == "block already exists" {
@@ -242,9 +269,16 @@ func (m *Miner) mineNextBlock() error {
 		return fmt.Errorf("failed to add block to chain: %w", err)
 	}
 
+	// Confirmed transactions must not be selected again for the next block.
+	for _, tx := range newBlock.Transactions[1:] {
+		m.mempool.RemoveTransaction(tx.Hash)
+	}
 	// Call the callback if set
-	if m.onBlockMined != nil {
-		m.onBlockMined(newBlock)
+	m.mu.RLock()
+	callback := m.onBlockMined
+	m.mu.RUnlock()
+	if callback != nil {
+		callback(newBlock)
 	}
 
 	return nil
@@ -275,7 +309,17 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 	m.mu.Unlock()
 
 	// Create coinbase transaction
-	coinbaseTx := m.createCoinbaseTransaction(prevBlock.Header.Height + 1)
+	var fees uint64
+	for _, tx := range transactions {
+		if tx.Fee > ^uint64(0)-fees {
+			return nil
+		}
+		fees += tx.Fee
+	}
+	if m.config.CoinbaseReward > ^uint64(0)-fees {
+		return nil
+	}
+	coinbaseTx := m.createCoinbaseTransactionWithFees(prevBlock.Header.Height+1, fees)
 
 	// Add coinbase transaction first
 	newBlock.AddTransaction(coinbaseTx)
@@ -293,17 +337,20 @@ func (m *Miner) createNewBlock(prevBlock *block.Block) *block.Block {
 
 // createCoinbaseTransaction creates a coinbase transaction
 func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
-	// Calculate total fees from transactions
-	totalFees := uint64(0)
-
-	// Protect currentBlock access with mutex
+	var fees uint64
 	m.mu.RLock()
-	for _, tx := range m.currentBlock.Transactions {
-		if tx != nil {
-			totalFees += tx.Fee
+	if m.currentBlock != nil {
+		for _, tx := range m.currentBlock.Transactions {
+			if tx != nil {
+				fees += tx.Fee
+			}
 		}
 	}
 	m.mu.RUnlock()
+	return m.createCoinbaseTransactionWithFees(height, fees)
+}
+
+func (m *Miner) createCoinbaseTransactionWithFees(height, totalFees uint64) *block.Transaction {
 
 	// Create coinbase output
 	// Ensure we have a valid script public key (cannot be empty)
@@ -328,7 +375,7 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 		Version:  1,
 		Inputs:   make([]*block.TxInput, 0), // Coinbase has no inputs
 		Outputs:  []*block.TxOutput{out},
-		LockTime: 0,
+		LockTime: height,
 		Fee:      0,
 	}
 
@@ -340,7 +387,7 @@ func (m *Miner) createCoinbaseTransaction(height uint64) *block.Transaction {
 
 // mineBlock performs proof-of-work mining on a block
 func (m *Miner) mineBlock(block *block.Block) error {
-	return m.consensus.MineBlock(block, m.stopMining)
+	return m.consensus.MineBlock(block, m.miningStopChannel())
 }
 
 // calculateTransactionHash calculates the hash of a transaction

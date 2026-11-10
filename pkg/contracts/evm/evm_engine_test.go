@@ -1,14 +1,13 @@
 package evm
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	secpECDSA "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/palaseus/adrenochain/pkg/contracts/engine"
@@ -1378,10 +1377,10 @@ func TestEVMOpcodes_Push(t *testing.T) {
 
 	// PUSH0, PUSH1 0x2a, PUSH32 (32 zero bytes)
 	code := make([]byte, 36) // 1 + 2 + 32 + 1 extra = 36 bytes
-	code[0] = 0x5c // PUSH0
-	code[1] = 0x60 // PUSH1
-	code[2] = 0x2a // data 42
-	code[3] = 0x7f // PUSH32
+	code[0] = 0x5c           // PUSH0
+	code[1] = 0x60           // PUSH1
+	code[2] = 0x2a           // data 42
+	code[3] = 0x7f           // PUSH32
 	// bytes 4-35 are all 0
 
 	ctx := &ExecutionContext{
@@ -1619,7 +1618,7 @@ func TestEVMOpcodes_ByteAndSignExtend(t *testing.T) {
 
 	// Test BYTE - byte 31 (least significant) of 0x1234567890abcdef should be 0xef
 	evm.stack.Push(big.NewInt(0x1234567890abcdef)) // value (bottom)
-	evm.stack.Push(big.NewInt(31))                  // position (top)
+	evm.stack.Push(big.NewInt(31))                 // position (top)
 	err := evm.executeBYTE()
 	assert.NoError(t, err)
 	result := evm.stack.Pop()
@@ -1627,7 +1626,7 @@ func TestEVMOpcodes_ByteAndSignExtend(t *testing.T) {
 
 	// Test BYTE position 0 (most significant byte of 32-byte word) should be 0x00
 	evm.stack.Push(big.NewInt(0x1234567890abcdef)) // value (bottom)
-	evm.stack.Push(big.NewInt(0))                   // position (top)
+	evm.stack.Push(big.NewInt(0))                  // position (top)
 	err = evm.executeBYTE()
 	assert.NoError(t, err)
 	result = evm.stack.Pop()
@@ -1635,7 +1634,7 @@ func TestEVMOpcodes_ByteAndSignExtend(t *testing.T) {
 
 	// Test BYTE position > 31 returns 0
 	evm.stack.Push(big.NewInt(0x1234567890abcdef)) // value (bottom)
-	evm.stack.Push(big.NewInt(32))                  // position (top, invalid)
+	evm.stack.Push(big.NewInt(32))                 // position (top, invalid)
 	err = evm.executeBYTE()
 	assert.NoError(t, err)
 	result = evm.stack.Pop()
@@ -1643,125 +1642,38 @@ func TestEVMOpcodes_ByteAndSignExtend(t *testing.T) {
 }
 
 func TestEVMOpcodes_Ecrecover(t *testing.T) {
-	mockStorage := &MockContractStorage{}
-	mockRegistry := NewMockContractRegistry()
-	_ = NewEVMEngine(mockStorage, mockRegistry)
-
-	// Generate a random private key on secp256k1
-	privKey, err := ecdsa.GenerateKey(btcec.S256(), rand.Reader)
-	assert.NoError(t, err)
-
-	// Compute expected Ethereum address: keccak256(pubKey)[12:]
-	pubKeyX := privKey.PublicKey.X
-	pubKeyY := privKey.PublicKey.Y
-	pubKeyBytes := make([]byte, 65)
-	pubKeyBytes[0] = 0x04
-	xBytes := pubKeyX.Bytes()
-	if len(xBytes) < 32 {
-		paddedX := make([]byte, 32)
-		copy(paddedX[32-len(xBytes):], xBytes)
-		xBytes = paddedX
-	}
-	yBytes := pubKeyY.Bytes()
-	if len(yBytes) < 32 {
-		paddedY := make([]byte, 32)
-		copy(paddedY[32-len(yBytes):], yBytes)
-		yBytes = paddedY
-	}
-	copy(pubKeyBytes[1:33], xBytes)
-	copy(pubKeyBytes[33:65], yBytes)
-	hashResult := sha3.Sum256(pubKeyBytes[1:])
-	expectedAddress := make([]byte, 20)
-	copy(expectedAddress, hashResult[12:])
-
-	// Sign a message hash
-	msgHash := []byte("hello world test message hash for ecrecover")
-	msgHashSha := sha256.Sum256(msgHash)
-	sigR, sigS, err := ecdsa.Sign(rand.Reader, privKey, msgHashSha[:])
-	assert.NoError(t, err)
-
-	// Compute recovery ID from public key Y coordinate
-	// v = 27 + recoveryID, where recoveryID = 0 if Y is even, 1 if Y is odd
-	recoveryID := byte(0)
-	if privKey.PublicKey.Y.Bit(0) == 1 {
-		recoveryID = 1
-	}
-
-	// Prepare ecrecover input: [32 bytes hash][32 bytes r][32 bytes s][1 byte v]
-	input := make([]byte, 96)
-	copy(input[:32], msgHashSha[:])
-	rBytes := sigR.Bytes()
-	if len(rBytes) < 32 {
-		paddedR := make([]byte, 32)
-		copy(paddedR[32-len(rBytes):], rBytes)
-		rBytes = paddedR
-	}
-	copy(input[32:64], rBytes)
-	sBytes := sigS.Bytes()
-	if len(sBytes) < 32 {
-		paddedS := make([]byte, 32)
-		copy(paddedS[32-len(sBytes):], sBytes)
-		sBytes = paddedS
-	}
-	copy(input[64:96], sBytes)
-	// Compute recovery ID from the signature
-	// For ECDSA: v = 27 + recovery_id (pre-EIP-155)
-	// recovery_id = 0 if y is even, 1 if y is odd (based on the public key's y coordinate)
-	// For simplicity, we try both recovery IDs and use the one that recovers the correct address
-	input[95] = 27 + recoveryID // v byte
-
-	// Execute ecrecover precompiled contract directly (same package)
+	keyBytes := make([]byte, 32)
+	keyBytes[31] = 1
+	priv, pub := btcec.PrivKeyFromBytes(keyBytes)
+	hash := sha256.Sum256([]byte("ecrecover regression"))
+	signature := secpECDSA.SignCompact(priv, hash[:], false)
+	input := make([]byte, 97)
+	copy(input, hash[:])
+	copy(input[32:96], signature[1:])
+	input[96] = signature[0]
+	hasher := sha3.NewLegacyKeccak256()
+	hasher.Write(pub.SerializeUncompressed()[1:])
+	expected := hasher.Sum(nil)[12:]
 	output, err := runEcrecover(input)
-	fmt.Printf("DEBUG TEST: input[:32]=%x\n", input[:32])
-	fmt.Printf("DEBUG TEST: input[32:64]=%x\n", input[32:64])
-	fmt.Printf("DEBUG TEST: input[64:96]=%x\n", input[64:96])
-	fmt.Printf("DEBUG TEST: input[95]=%d\n", input[95])
 	assert.NoError(t, err)
-
-	// Debug output
-	fmt.Printf("Debug Ecrecover:\n")
-	fmt.Printf("  expected address: %x\n", expectedAddress)
-	fmt.Printf("  recovered address: %x\n", output)
-	fmt.Printf("  pubKey.X: %x\n", privKey.PublicKey.X)
-	fmt.Printf("  pubKey.Y: %x\n", privKey.PublicKey.Y)
-	fmt.Printf("  sigR (test): %x\n", sigR)
-	fmt.Printf("  sigR.Bytes(): %x\n", sigR.Bytes())
-	fmt.Printf("  sigS (test): %x\n", sigS)
-	fmt.Printf("  sigS.Bytes(): %x\n", sigS.Bytes())
-	
-	fmt.Printf("  hash: %x\n", msgHashSha)
-	fmt.Printf("  recoveryID: %d\n", recoveryID)
-
-	// Verify the original public key validates the signature
-
-	// Verify recovered address matches expected
-	assert.Equal(t, expectedAddress, output, "Recovered address does not match expected address")
-
-	// Debug output
-	fmt.Printf("Debug Ecrecover:\n")
-	fmt.Printf("  expected address: %x\n", expectedAddress)
-	fmt.Printf("  recovered address: %x\n", output)
-	fmt.Printf("  pubKey.X: %x\n", privKey.PublicKey.X)
-	fmt.Printf("  pubKey.Y: %x\n", privKey.PublicKey.Y)
-	fmt.Printf("  sigR (test): %x\n", sigR)
-	fmt.Printf("  sigR.Bytes(): %x\n", sigR.Bytes())
-	fmt.Printf("  sigS (test): %x\n", sigS)
-	fmt.Printf("  sigS.Bytes(): %x\n", sigS.Bytes())
-	
-	fmt.Printf("  hash: %x\n", msgHashSha)
-	fmt.Printf("  recoveryID: %d\n", recoveryID)
-
-	// Verify the original public key validates the signature
-	origPubKey := &ecdsa.PublicKey{
-		Curve: btcec.S256(),
-		X:     privKey.PublicKey.X,
-		Y:     privKey.PublicKey.Y,
+	assert.Equal(t, expected, output)
+	// The address of secp256k1 private key 1 is a known Keccak vector.
+	assert.Equal(t, "7e5f4552091a69125d5dfcb7b8c2659029395bdf", fmt.Sprintf("%x", output))
+	input[96] -= 27
+	output, err = runEcrecover(input)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, output)
+	for _, length := range []int{0, 95, 96, 98, 128} {
+		_, err := runEcrecover(make([]byte, length))
+		assert.Error(t, err)
 	}
-	fmt.Printf("Debug Ecrecover: ecdsa.Verify with original pubKey: %v\n", ecdsa.Verify(origPubKey, msgHashSha[:], sigR, sigS))
-
-	// Debug: print both addresses
-	fmt.Printf("Debug: expected address = %x\n", expectedAddress)
-	fmt.Printf("Debug: recovered address = %x\n", output)
+	input[96] = 29
+	_, err = runEcrecover(input)
+	assert.Error(t, err)
+	input[96] = 27
+	clear(input[32:64])
+	_, err = runEcrecover(input)
+	assert.Error(t, err)
 }
 
 func TestEVMOpcodes_EcrecoverInvalidInput(t *testing.T) {
@@ -1772,9 +1684,9 @@ func TestEVMOpcodes_EcrecoverInvalidInput(t *testing.T) {
 	assert.Error(t, err)
 
 	// Test with invalid signature values
-	input := make([]byte, 96)
-	input[32] = 1 // r = 1
-	input[64] = 1 // s = 1
+	input := make([]byte, 97)
+	input[32] = 1  // r = 1
+	input[64] = 1  // s = 1
 	input[95] = 27 // v = 27 (recoveryID 0)
 	_, _, err = precompiled.Execute(engine.Address{1}, input)
 	assert.Error(t, err)

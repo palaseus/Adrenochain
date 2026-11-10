@@ -1,7 +1,7 @@
 // Package wallet provides a secure cryptocurrency wallet implementation with the following security features:
 //
 // SECURITY FEATURES:
-// - Canonical DER signature encoding with low-S enforcement to prevent signature malleability
+// - Fixed-width signature encoding with low-S enforcement to prevent signature malleability
 // - Secure key derivation using PBKDF2 with 100,000 iterations and per-wallet salt
 // - AES-GCM authenticated encryption for wallet storage
 // - Base58Check address encoding with checksums to prevent typos
@@ -9,15 +9,15 @@
 // - Proper change output handling to prevent fund loss
 //
 // SIGNATURE FORMAT:
-// - ECDSA signatures encoded in ASN.1 DER format
+// - ECDSA signatures encoded as fixed-width R and S scalars
 // - Low-S enforcement (s <= N/2) to prevent signature malleability
 // - Public key stored as uncompressed 65-byte format
-// - Wire format: [public_key(65)][der_signature(variable)]
+// - Wire format: [public_key(65)][R(32)][S(32)]
 //
 // ADDRESS FORMAT:
 // - Base58Check encoding with double SHA256 checksum
 // - Version byte (0x00 for mainnet)
-// - 20-byte public key hash (RIPEMD160(SHA256(public_key)))
+// - 20-byte public key hash (last 20 bytes of SHA256(public_key))
 // - 4-byte checksum for error detection
 //
 // ENCRYPTION:
@@ -31,6 +31,7 @@
 package wallet
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdsa"
@@ -43,6 +44,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"sync"
 
@@ -681,6 +683,12 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 
 	// Get available UTXOs for the sender
 	utxos := w.utxoSet.GetAddressUTXOs(fromAddress)
+	// Processed chain outputs are indexed by the hex public-key hash.
+	senderHash, err := addressToPubKeyHash(fromAddress)
+	if err != nil {
+		return nil, err
+	}
+	utxos = append(utxos, w.utxoSet.GetAddressUTXOs(hex.EncodeToString(senderHash))...)
 	if len(utxos) == 0 {
 		return nil, fmt.Errorf("no available UTXOs for address: %s", fromAddress)
 	}
@@ -688,10 +696,16 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 	// Calculate total available balance
 	var totalAvailable uint64
 	for _, utxo := range utxos {
+		if utxo.Value > math.MaxUint64-totalAvailable {
+			return nil, fmt.Errorf("available balance overflow")
+		}
 		totalAvailable += utxo.Value
 	}
 
 	// Check if we have enough funds
+	if amount == 0 || amount > math.MaxUint64-fee {
+		return nil, fmt.Errorf("invalid amount or amount plus fee overflow")
+	}
 	totalNeeded := amount + fee
 	if totalAvailable < totalNeeded {
 		return nil, fmt.Errorf("insufficient funds: need %d, have %d", totalNeeded, totalAvailable)
@@ -767,6 +781,19 @@ func (w *Wallet) CreateTransaction(fromAddress, toAddress string, amount, fee ui
 
 // SignTransaction signs a transaction with the specified account's private key
 func (w *Wallet) SignTransaction(tx *block.Transaction, fromAddress string) error {
+	if tx == nil || tx.LockTime > math.MaxUint32 {
+		return fmt.Errorf("invalid transaction or lock time")
+	}
+	for _, input := range tx.Inputs {
+		if input == nil {
+			return fmt.Errorf("input is nil")
+		}
+	}
+	for _, output := range tx.Outputs {
+		if output == nil {
+			return fmt.Errorf("output is nil")
+		}
+	}
 	account := w.GetAccount(fromAddress)
 	if account == nil {
 		return fmt.Errorf("account not found: %s", fromAddress)
@@ -787,34 +814,30 @@ func (w *Wallet) SignTransaction(tx *block.Transaction, fromAddress string) erro
 		return fmt.Errorf("failed to sign transaction: %w", err)
 	}
 
-	// Encode signature in canonical DER format
-	signature, err := encodeSignatureDER(r, s)
-	if err != nil {
-		return fmt.Errorf("failed to encode signature: %w", err)
-	}
-
+	r, s = canonicalSignature(r, s, btcec.S256())
+	signature := concatRS(r, s)
 	pubBytes := publicKeyToBytes(&privateKey.PublicKey)
-
-	// Add signature to all inputs
 	for i := range tx.Inputs {
-		// Store public key followed by DER signature
-		combined := make([]byte, 0, len(pubBytes)+len(signature))
-		combined = append(combined, pubBytes...)
-		combined = append(combined, signature...)
-		tx.Inputs[i].ScriptSig = combined
+		combined := append([]byte(nil), pubBytes...)
+		tx.Inputs[i].ScriptSig = append(combined, signature...)
 	}
-
-	// Set the transaction hash to the signature data hash for verification
-	tx.Hash = signatureData
+	tx.Hash = tx.CalculateHash()
 
 	return nil
 }
 
 // VerifyTransaction verifies the cryptographic signatures of a transaction
 func (w *Wallet) VerifyTransaction(tx *block.Transaction) (bool, error) {
+	if err := tx.IsValid(); err != nil {
+		return false, err
+	}
+	if tx.LockTime > math.MaxUint32 || !bytes.Equal(tx.Hash, tx.CalculateHash()) {
+		return false, fmt.Errorf("transaction hash or lock time is invalid")
+	}
+	digest := w.createSignatureData(tx)
 	for i, input := range tx.Inputs {
 		// Get the public key from the input
-		if len(input.ScriptSig) < 65 {
+		if len(input.ScriptSig) != 129 {
 			return false, fmt.Errorf("input %d: script signature too short", i)
 		}
 
@@ -830,11 +853,8 @@ func (w *Wallet) VerifyTransaction(tx *block.Transaction) (bool, error) {
 		// Convert to ecdsa.PublicKey for compatibility
 		pub := btcPubKey.ToECDSA()
 
-		// Decode the signature
-		r, s, err := decodeSignatureDER(sigBytes)
-		if err != nil {
-			return false, fmt.Errorf("input %d: failed to decode signature: %w", i, err)
-		}
+		r := new(big.Int).SetBytes(sigBytes[:32])
+		s := new(big.Int).SetBytes(sigBytes[32:])
 
 		// Verify canonical form
 		if err := verifyCanonicalSignature(r, s, btcec.S256()); err != nil {
@@ -842,7 +862,7 @@ func (w *Wallet) VerifyTransaction(tx *block.Transaction) (bool, error) {
 		}
 
 		// Verify signature against the transaction hash (which should be the signature data hash)
-		if !ecdsa.Verify(pub, tx.Hash, r, s) {
+		if !ecdsa.Verify(pub, digest, r, s) {
 			return false, fmt.Errorf("input %d: signature verification failed", i)
 		}
 	}
@@ -852,67 +872,11 @@ func (w *Wallet) VerifyTransaction(tx *block.Transaction) (bool, error) {
 
 // createSignatureData creates the data to be signed
 func (w *Wallet) createSignatureData(tx *block.Transaction) []byte {
-	// In a real implementation, this would create a proper signature hash
-	// For now, we'll use a simplified approach
-
-	data := make([]byte, 0)
-
-	// Version
-	data = append(data, byte(tx.Version))
-
-	// Inputs (excluding signatures)
-	for _, input := range tx.Inputs {
-		data = append(data, input.PrevTxHash...)
-		data = append(data, byte(input.PrevTxIndex))
-		data = append(data, byte(input.Sequence))
-	}
-
-	// Outputs
-	for _, output := range tx.Outputs {
-		data = append(data, byte(output.Value))
-		data = append(data, output.ScriptPubKey...)
-	}
-
-	// Lock time and fee
-	data = append(data, byte(tx.LockTime))
-	data = append(data, byte(tx.Fee))
-
-	// Hash the data
-	hash := sha256.Sum256(data)
-	return hash[:]
+	return utxo.TransactionSignatureHash(tx)
 }
 
-// calculateTransactionHash calculates the hash of a transaction
 func (w *Wallet) calculateTransactionHash(tx *block.Transaction) []byte {
-	// This is a simplified hash calculation
-	// In a real implementation, this would follow the specific blockchain's rules
-
-	data := make([]byte, 0)
-
-	// Version
-	data = append(data, byte(tx.Version))
-
-	// Inputs
-	for _, input := range tx.Inputs {
-		data = append(data, input.PrevTxHash...)
-		data = append(data, byte(input.PrevTxIndex))
-		data = append(data, input.ScriptSig...)
-		data = append(data, byte(input.Sequence))
-	}
-
-	// Outputs
-	for _, output := range tx.Outputs {
-		data = append(data, byte(output.Value))
-		data = append(data, output.ScriptPubKey...)
-	}
-
-	// Lock time and fee
-	data = append(data, byte(tx.LockTime))
-	data = append(data, byte(tx.Fee))
-
-	// Hash the data
-	hash := sha256.Sum256(data)
-	return hash[:]
+	return tx.CalculateHash()
 }
 
 // UpdateBalance updates the balance of an account

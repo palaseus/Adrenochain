@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -15,6 +15,7 @@ type EnhancedSecurityMiddleware struct {
 	validator      *security.EnhancedSecurityValidator
 	rateLimiter    *security.SecurityRateLimitTracker
 	blockedIPs     map[string]time.Time
+	blockedMu      sync.Mutex
 	allowedOrigins []string
 }
 
@@ -85,25 +86,12 @@ func (esm *EnhancedSecurityMiddleware) HashValidationMiddleware(next http.Handle
 
 // Helper methods
 func (esm *EnhancedSecurityMiddleware) getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return strings.Split(xff, ",")[0]
-	}
-
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
-
-	// Use RemoteAddr as fallback
-	ip := r.RemoteAddr
-	if idx := strings.LastIndex(ip, ":"); idx != -1 {
-		ip = ip[:idx]
-	}
-	return ip
+	return remoteClientIP(r)
 }
 
 func (esm *EnhancedSecurityMiddleware) isIPBlocked(ip string) bool {
+	esm.blockedMu.Lock()
+	defer esm.blockedMu.Unlock()
 	if blockTime, exists := esm.blockedIPs[ip]; exists {
 		if time.Since(blockTime) < 24*time.Hour {
 			return true
