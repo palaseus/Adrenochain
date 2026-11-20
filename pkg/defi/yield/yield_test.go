@@ -803,3 +803,39 @@ func TestYieldFarm_EventRecording(t *testing.T) {
 		t.Errorf("expected 1 harvest event, got %d", len(yf.HarvestEvents))
 	}
 }
+
+func TestRewardShortIntervalsMatchOneInterval(t *testing.T) {
+	owner := generateRandomAddress()
+	token := generateRandomAddress()
+	now := time.Now()
+	yf := NewYieldFarm("id", "farm", "F", 18, owner, token, token, big.NewInt(100), now.Add(-time.Hour), time.Time{})
+	pid, err := yf.AddPool(token, big.NewInt(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	user := generateRandomAddress()
+	if err := yf.Deposit(user, pid, big.NewInt(1000), 1, engine.Hash{}); err != nil {
+		t.Fatal(err)
+	}
+
+	accrue := func(steps int, step time.Duration) *big.Int {
+		yf.mu.Lock()
+		defer yf.mu.Unlock()
+		pool := yf.Pools[pid]
+		pool.AccRewardPerShare = big.NewInt(0)
+		for i := 0; i < steps; i++ {
+			pool.LastRewardTime = time.Now().Add(-step)
+			yf.updatePool(pid)
+		}
+		return rewardShare(big.NewInt(1000), pool.AccRewardPerShare)
+	}
+
+	one := accrue(1, 2*time.Second)
+	two := accrue(2, time.Second)
+	if one.Sign() == 0 || two.Sign() == 0 {
+		t.Fatalf("short intervals dropped the reward: one=%s two=%s", one, two)
+	}
+	if one.Cmp(two) != 0 {
+		t.Fatalf("two 1s updates = %s, one 2s update = %s", two, one)
+	}
+}

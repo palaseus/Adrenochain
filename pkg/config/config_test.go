@@ -49,3 +49,22 @@ func TestLoadSystemConfigFillsZeros(t *testing.T) {
 		t.Fatalf("defaults were not preserved: %+v", cfg)
 	}
 }
+
+func TestLoadSystemConfigRestoresExplicitZeroMaxDifficulty(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	body := []byte("consensus:\n  max_difficulty: 0\n  min_difficulty: 4\n")
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadSystemConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Consensus.MaxDifficulty != 1<<30 {
+		t.Fatalf("max difficulty = %d", cfg.Consensus.MaxDifficulty)
+	}
+	if cfg.Consensus.MinDifficulty != 4 {
+		t.Fatalf("min difficulty = %d", cfg.Consensus.MinDifficulty)
+	}
+}

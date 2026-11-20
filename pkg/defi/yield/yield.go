@@ -8,6 +8,18 @@ import (
 	"github.com/palaseus/adrenochain/pkg/contracts/engine"
 )
 
+// rewardPrecision keeps fractional rewards when an interval's emission is
+// smaller than the amount staked. Pending rewards divide by the same scale.
+const rewardPrecision int64 = 1_000_000_000_000
+
+func rewardShare(staked, accPerShare *big.Int) *big.Int {
+	if staked == nil || accPerShare == nil || staked.Sign() == 0 {
+		return big.NewInt(0)
+	}
+	share := new(big.Int).Mul(staked, accPerShare)
+	return share.Quo(share, big.NewInt(rewardPrecision))
+}
+
 // YieldFarm represents a yield farming protocol
 type YieldFarm struct {
 	mu sync.RWMutex
@@ -227,14 +239,14 @@ func (yf *YieldFarm) Deposit(
 
 	// Calculate pending rewards
 	if userPool.StakedAmount.Sign() > 0 {
-		pending := new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+		pending := rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 		pending = new(big.Int).Sub(pending, userPool.RewardDebt)
 		userPool.PendingRewards = new(big.Int).Add(userPool.PendingRewards, pending)
 	}
 
 	// Update staked amount
 	userPool.StakedAmount = new(big.Int).Add(userPool.StakedAmount, amount)
-	userPool.RewardDebt = new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+	userPool.RewardDebt = rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 
 	// Update pool totals
 	pool.TotalStaked = new(big.Int).Add(pool.TotalStaked, amount)
@@ -300,13 +312,13 @@ func (yf *YieldFarm) Withdraw(
 	yf.updatePool(pid)
 
 	// Calculate pending rewards
-	pending := new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+	pending := rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 	pending = new(big.Int).Sub(pending, userPool.RewardDebt)
 	userPool.PendingRewards = new(big.Int).Add(userPool.PendingRewards, pending)
 
 	// Update staked amount
 	userPool.StakedAmount = new(big.Int).Sub(userPool.StakedAmount, amount)
-	userPool.RewardDebt = new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+	userPool.RewardDebt = rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 
 	// Update pool totals
 	pool.TotalStaked = new(big.Int).Sub(pool.TotalStaked, amount)
@@ -366,12 +378,12 @@ func (yf *YieldFarm) Harvest(
 	yf.updatePool(pid)
 
 	// Calculate pending rewards
-	pending := new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+	pending := rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 	pending = new(big.Int).Sub(pending, userPool.RewardDebt)
 	userPool.PendingRewards = new(big.Int).Add(userPool.PendingRewards, pending)
 
 	// Reset reward debt
-	userPool.RewardDebt = new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+	userPool.RewardDebt = rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 
 	// Get total pending rewards
 	totalPending := new(big.Int).Set(userPool.PendingRewards)
@@ -415,7 +427,7 @@ func (yf *YieldFarm) GetPendingRewards(user engine.Address, pid uint64) (*big.In
 	}
 
 	// Calculate pending rewards
-	pending := new(big.Int).Mul(userPool.StakedAmount, pool.AccRewardPerShare)
+	pending := rewardShare(userPool.StakedAmount, pool.AccRewardPerShare)
 	pending = new(big.Int).Sub(pending, userPool.RewardDebt)
 
 	return new(big.Int).Add(userPool.PendingRewards, pending), nil
@@ -561,9 +573,10 @@ func (yf *YieldFarm) updatePool(pid uint64) {
 		rewards = new(big.Int).Div(rewards, yf.TotalAllocPoint)
 	}
 
-	// Share this interval's rewards across current stake. Adding the raw total
-	// pays each staker stake*emission instead of their fraction of it.
-	increment := new(big.Int).Quo(rewards, pool.TotalStaked)
+	// Share this interval's rewards across current stake. The precision scale
+	// keeps a short interval from rounding the whole payout to zero.
+	scaled := new(big.Int).Mul(rewards, big.NewInt(rewardPrecision))
+	increment := new(big.Int).Quo(scaled, pool.TotalStaked)
 	pool.AccRewardPerShare = new(big.Int).Add(pool.AccRewardPerShare, increment)
 	pool.LastRewardTime = now
 

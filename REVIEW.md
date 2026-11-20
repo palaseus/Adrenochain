@@ -44,7 +44,7 @@ Severity is impact if the code is used as a live chain or exchange, not a style 
 | High | `Consensus.GetStats` held `c.mu` and called `GetNextDifficulty`, which locks the same `RWMutex`. That deadlocks in Go. | `GetStats` calls an unlocked helper. |
 | High | `Chain.AddBlock` persisted the new tip, then applied the UTXO set. A UTXO error left storage ahead of memory. | On UTXO failure the previous chain state is written back before the error is returned. The in-memory tip is not published. |
 | High | AMM `Swap` always added input to `ReserveA` and subtracted output from `ReserveB`, including for a Token B to Token A swap. | Reserves follow the input token. |
-| High | Yield `updatePool` added the whole interval reward to `AccRewardPerShare`. Pending rewards are `stake * acc - debt`, so each staker was paid `stake` times the emission. | The increment is `rewards / totalStaked`. |
+| High | Yield `updatePool` added the whole interval reward to `AccRewardPerShare`. Pending rewards are `stake * acc - debt`, so each staker was paid `stake` times the emission. | The accumulator uses a 1e12 scale, `rewards * scale / totalStaked`, and every pending and debt calculation divides by the same scale. |
 | Medium | A crossing limit sell was recorded at the sell order's price, not the resting bid. Buys already used the resting ask. | The trade and both fills use `bestBid.Price`. |
 | Medium | libp2p, quic-go, webtransport, and DTLS had reachable vulnerability-database findings. | libp2p 0.49.0, kad-dht 0.42.2, pubsub 0.18.0, quic-go 0.60.0, webtransport-go 0.11.1, pion/dtls v3.1.15. `dht.New` now takes the host first, matching v0.42. The test `network.Conn` mock implements `As`. |
 

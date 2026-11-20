@@ -105,6 +105,9 @@ func LoadSystemConfig(path string) (*SystemConfig, error) {
 	if cfg.Consensus.MinDifficulty == 0 {
 		cfg.Consensus.MinDifficulty = 1
 	}
+	if cfg.Consensus.MaxDifficulty == 0 {
+		cfg.Consensus.MaxDifficulty = 1 << 30
+	}
 	if cfg.Consensus.TargetBlockTime == 0 {
 		cfg.Consensus.TargetBlockTime = 12 * time.Second
 	}
