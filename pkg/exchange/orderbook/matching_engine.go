@@ -240,7 +240,8 @@ func (me *MatchingEngine) matchLimitSellOrder(sellOrder *Order) (*TradeExecution
 		}
 
 		// Execute the trade
-		trade, err := me.executeTrade(bestBid, sellOrder, tradeQuantity, sellOrder.Price)
+		// A crossing sell executes at the resting bid.
+		trade, err := me.executeTrade(bestBid, sellOrder, tradeQuantity, bestBid.Price)
 		if err != nil {
 			return execution, err
 		}
@@ -250,12 +251,16 @@ func (me *MatchingEngine) matchLimitSellOrder(sellOrder *Order) (*TradeExecution
 
 		// Update the sell order in the order book
 		updatedSellOrder := sellOrder.Clone()
-		updatedSellOrder.Fill(tradeQuantity, sellOrder.Price)
+		if err := updatedSellOrder.Fill(tradeQuantity, bestBid.Price); err != nil {
+			return execution, err
+		}
 		me.orderBook.UpdateOrder(updatedSellOrder)
 
 		// Update the buy order in the order book
 		updatedBuyOrder := bestBid.Clone()
-		updatedBuyOrder.Fill(tradeQuantity, sellOrder.Price)
+		if err := updatedBuyOrder.Fill(tradeQuantity, bestBid.Price); err != nil {
+			return execution, err
+		}
 
 		// If the buy order is completely filled, remove it
 		if updatedBuyOrder.RemainingQuantity.Cmp(big.NewInt(0)) == 0 {

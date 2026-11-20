@@ -561,8 +561,10 @@ func (yf *YieldFarm) updatePool(pid uint64) {
 		rewards = new(big.Int).Div(rewards, yf.TotalAllocPoint)
 	}
 
-	// Update pool
-	pool.AccRewardPerShare = new(big.Int).Add(pool.AccRewardPerShare, rewards)
+	// Share this interval's rewards across current stake. Adding the raw total
+	// pays each staker stake*emission instead of their fraction of it.
+	increment := new(big.Int).Quo(rewards, pool.TotalStaked)
+	pool.AccRewardPerShare = new(big.Int).Add(pool.AccRewardPerShare, increment)
 	pool.LastRewardTime = now
 
 	// Record update event
