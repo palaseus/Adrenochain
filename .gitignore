@@ -105,8 +105,7 @@ AUDIT_REPORT.md
 *.pdf
 !test.pdf
 
-# Generated config during audit process
-pkg/config/
+# Runtime node data. The Go package in pkg/config is source and must be tracked.
 
 # PDF test files (generated during testing) - but allow actual test files
 # pkg/pdf/*_test.go

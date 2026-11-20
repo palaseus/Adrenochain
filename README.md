@@ -1040,7 +1040,7 @@ adrenochain/
 ## 🚀 **Quick Start for Developers & Researchers**
 
 ### **Prerequisites**
-- **Go 1.21+** (latest stable recommended)
+- **Go 1.27.4** (`go` and `toolchain` in `go.mod`). See [REVIEW.md](REVIEW.md) for the 2026 audit.
 - **Git**
 
 ### **Installation & Setup**

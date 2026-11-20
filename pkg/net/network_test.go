@@ -1465,6 +1465,7 @@ func (m *mockConn) RemoteMultiaddr() multiaddr.Multiaddr {
 func (m *mockConn) Close() error                                           { return nil }
 func (m *mockConn) CloseWithError(network.ConnErrorCode) error             { return nil }
 func (m *mockConn) ID() string                                             { return m.connID }
+func (m *mockConn) As(any) bool                                            { return false }
 func (m *mockConn) LocalPeer() peer.ID                                     { return "" }
 func (m *mockConn) LocalMultiaddr() multiaddr.Multiaddr                    { return nil }
 func (m *mockConn) RemotePrivateKey() crypto.PrivKey                       { return nil }

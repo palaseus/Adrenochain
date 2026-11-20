@@ -395,9 +395,11 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 	}
 
 	// Create DHT
-	dht, err := dht.New(ctx, host, dht.Mode(dht.ModeServer))
+	// kad-dht v0.42 takes the host first and uses the host context.
+	dhtNode, err := dht.New(host, dht.Mode(dht.ModeServer))
 	if err != nil {
 		cancel()
+		_ = host.Close()
 		return nil, fmt.Errorf("failed to create DHT: %w", err)
 	}
 
@@ -405,6 +407,8 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 	pubsub, err := pubsub.NewGossipSub(ctx, host, pubsub.WithMessageSigning(true))
 	if err != nil {
 		cancel()
+		_ = dhtNode.Close()
+		_ = host.Close()
 		return nil, fmt.Errorf("failed to create pubsub: %w", err)
 	}
 
@@ -420,7 +424,7 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 
 	network := &Network{
 		host:           host,
-		dht:            dht,
+		dht:            dhtNode,
 		pubsub:         pubsub,
 		peers:          make(map[peer.ID]*PeerInfo),
 		bootstrapPeers: bootstrapPeers,
@@ -444,6 +448,8 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 	// Start peer discovery
 	if err := network.startPeerDiscovery(); err != nil {
 		cancel()
+		_ = dhtNode.Close()
+		_ = host.Close()
 		return nil, fmt.Errorf("failed to start peer discovery: %w", err)
 	}
 

@@ -506,7 +506,7 @@ func TestMatchingEngineMatchLimitOrders(t *testing.T) {
 		assert.Equal(t, "buy2", trades[0].BuyOrderID)
 		assert.Equal(t, "sell2", trades[0].SellOrderID)
 		assert.Equal(t, big.NewInt(75), trades[0].Quantity)
-		assert.Equal(t, big.NewInt(1100), trades[0].Price) // Should match at sell price
+		assert.Equal(t, big.NewInt(1200), trades[0].Price) // Resting bid is the trade price
 	})
 }
 

@@ -250,9 +250,15 @@ func (amm *AMM) Swap(
 	fee := amm.calculateFee(amountIn)
 	amountInAfterFee := new(big.Int).Sub(amountIn, fee)
 
-	// Update reserves
-	amm.ReserveA = new(big.Int).Add(amm.ReserveA, amountInAfterFee)
-	amm.ReserveB = new(big.Int).Sub(amm.ReserveB, amountOut)
+	// Credit the input reserve and debit the output reserve. Always mutating
+	// ReserveA/ReserveB in that order corrupts a TokenB -> TokenA swap.
+	if tokenIn == amm.TokenA {
+		amm.ReserveA = new(big.Int).Add(amm.ReserveA, amountInAfterFee)
+		amm.ReserveB = new(big.Int).Sub(amm.ReserveB, amountOut)
+	} else {
+		amm.ReserveB = new(big.Int).Add(amm.ReserveB, amountInAfterFee)
+		amm.ReserveA = new(big.Int).Sub(amm.ReserveA, amountOut)
+	}
 
 	// Update statistics
 	amm.updateSwapStats(amountIn, fee)

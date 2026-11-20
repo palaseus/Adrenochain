@@ -300,11 +300,18 @@ func (c *Chain) AddBlock(block *block.Block) error {
 		c.mu.Unlock()
 		return fmt.Errorf("failed to store block: %w", err)
 	}
+	// mu is already held; do not call GetHeight/GetTipHash (they lock again).
+	prevHeight := c.height
+	prevTip := append([]byte(nil), c.tipHash...)
 	if err := c.storage.StoreChainState(&storage.ChainState{BestBlockHash: hash, Height: block.Header.Height}); err != nil {
 		c.mu.Unlock()
 		return fmt.Errorf("failed to store chain state: %w", err)
 	}
 	if err := c.UTXOSet.ProcessBlock(block); err != nil {
+		if rbErr := c.storage.StoreChainState(&storage.ChainState{BestBlockHash: prevTip, Height: prevHeight}); rbErr != nil {
+			c.mu.Unlock()
+			return fmt.Errorf("failed to process block: %w (chain state rollback failed: %v)", err, rbErr)
+		}
 		c.mu.Unlock()
 		return fmt.Errorf("failed to process block: %w", err)
 	}

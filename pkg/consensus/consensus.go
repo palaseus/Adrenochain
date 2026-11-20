@@ -683,7 +683,12 @@ func (c *Consensus) GetTarget() []byte {
 func (c *Consensus) GetNextDifficulty() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	return c.nextDifficultyLocked()
+}
 
+// nextDifficultyLocked is GetNextDifficulty for a caller that already holds c.mu.
+// sync.RWMutex is not reentrant, so GetStats must not call GetNextDifficulty.
+func (c *Consensus) nextDifficultyLocked() uint64 {
 	// If we have enough block times, calculate what the next difficulty would be
 	if len(c.blockTimes) == int(c.config.DifficultyAdjustmentInterval) {
 		// Calculate what the difficulty would be after adjustment using the same logic as adjustDifficulty
@@ -731,7 +736,7 @@ func (c *Consensus) GetStats() map[string]interface{} {
 
 	stats := make(map[string]interface{})
 	stats["difficulty"] = c.difficulty
-	stats["next_difficulty"] = c.GetNextDifficulty()
+	stats["next_difficulty"] = c.nextDifficultyLocked()
 	stats["target"] = fmt.Sprintf("%x", c.calculateTarget(c.difficulty))
 	stats["block_times_count"] = len(c.blockTimes)
 	stats["last_adjustment"] = c.lastAdjustment

@@ -122,7 +122,7 @@ coverage:
 lint:
 	@echo "🔍 Running linter checks..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
+		golangci-lint run --timeout 10m; \
 	elif command -v golint >/dev/null 2>&1; then \
 		golint ./...; \
 	else \
