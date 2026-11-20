@@ -395,7 +395,8 @@ func NewNetwork(config *NetworkConfig, chain *chain.Chain, mempool *mempool.Memp
 	}
 
 	// Create DHT
-	dht, err := dht.New(ctx, host, dht.Mode(dht.ModeServer))
+	// kad-dht v0.42 takes the host first and uses the host context.
+	dht, err := dht.New(host, dht.Mode(dht.ModeServer))
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create DHT: %w", err)
